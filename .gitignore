@@ -1,0 +1,101 @@
+# ==================== 通用 ====================
+# 操作系统
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# 日志
+*.log
+logs/
+
+# 临时文件
+*.tmp
+*.temp
+*.bak
+*.cache
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# ==================== 后端 (Java/Spring Boot/Maven) ====================
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Java 编译
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+
+# Spring Boot
+*.pid
+
+# SQLite 数据库文件（根据需要调整）
+# backend/data/landit.db
+
+# ==================== 前端 (Vue/Node.js/Vite) ====================
+# 依赖目录
+node_modules/
+.pnp
+.pnp.js
+
+# 构建输出
+dist/
+dist-ssr/
+*.local
+
+# 测试覆盖率
+coverage/
+*.lcov
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# TypeScript
+*.tsbuildinfo
+
+# ESLint
+.eslintcache
+
+# Parcel
+.parcel-cache
+
+# ==================== 其他 ====================
+# 打包文件
+*.zip
+*.tar.gz
+*.rar
+
+# 敏感信息
+*.pem
+*.key
+*.crt
+credentials.json
+secrets.json

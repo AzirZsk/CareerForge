@@ -1,0 +1,32 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /landit
+
+spring:
+  application:
+    name: landit-backend
+  datasource:
+    driver-class-name: org.sqlite.JDBC
+    url: jdbc:sqlite:./data/landit.db
+    # SQLite 不需要用户名密码
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  global-config:
+    db-config:
+      id-type: assign_id
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+      column-format: "\"%s\""  # SQLite 字段名加引号防止关键字冲突
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+    jdbc-type-for-null: NULL  # SQLite 处理 NULL 值
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
