@@ -33,7 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Tag(name = "interviews", description = "面试管理")
 @RestController
-@RequestMapping("/api/interviews")
+@RequestMapping("/interviews")
 @RequiredArgsConstructor
 public class InterviewController {
 

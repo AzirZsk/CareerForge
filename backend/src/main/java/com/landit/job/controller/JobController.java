@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Tag(name = "jobs", description = "职位推荐")
 @RestController
-@RequestMapping("/api/jobs")
+@RequestMapping("/jobs")
 @RequiredArgsConstructor
 public class JobController {
 

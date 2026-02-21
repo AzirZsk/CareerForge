@@ -7,7 +7,6 @@ import com.landit.resume.dto.DeriveResumeRequest;
 import com.landit.resume.dto.OptimizeResumeRequest;
 import com.landit.resume.dto.OptimizeResumeResponse;
 import com.landit.resume.dto.ResumeDetailVO;
-import com.landit.resume.dto.ResumeParseResult;
 import com.landit.resume.dto.ResumeSuggestionVO;
 import com.landit.resume.dto.ResumeVersionVO;
 import com.landit.resume.dto.UpdateResumeRequest;
@@ -37,7 +36,7 @@ import java.util.List;
  */
 @Tag(name = "resumes", description = "简历管理")
 @RestController
-@RequestMapping("/api/resumes")
+@RequestMapping("/resumes")
 @RequiredArgsConstructor
 public class ResumeController {
 
@@ -49,10 +48,10 @@ public class ResumeController {
         return ApiResponse.success(resumeService.getResumes(status));
     }
 
-    @Operation(summary = "解析简历文件")
+    @Operation(summary = "解析简历文件为图片列表")
     @PostMapping("/parse")
-    public ApiResponse<ResumeParseResult> parseResume(@RequestParam("file") MultipartFile file) {
-        return ApiResponse.success(resumeService.parseResume(file));
+    public ApiResponse<List<String>> parseResume(@RequestParam("file") MultipartFile file) {
+        return ApiResponse.success(resumeService.parseResumeToImages(file));
     }
 
     @Operation(summary = "获取简历详情")

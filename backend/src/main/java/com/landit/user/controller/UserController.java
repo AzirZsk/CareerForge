@@ -1,8 +1,13 @@
 package com.landit.user.controller;
 
 import com.landit.common.response.ApiResponse;
+import com.landit.common.service.AIService;
+import com.landit.common.service.FileToImageService;
+import com.landit.resume.dto.ResumeParseResult;
 import com.landit.user.dto.AvatarUploadResponse;
-import com.landit.user.dto.UserExistsResponse;
+import com.landit.user.dto.ResumeImagesResponse;
+import com.landit.user.dto.UserCreateRequest;
+import com.landit.user.dto.UserStatusResponse;
 import com.landit.user.dto.UserInitResponse;
 import com.landit.user.dto.UserUpdateRequest;
 import com.landit.user.entity.User;
@@ -32,17 +37,45 @@ import org.springframework.web.multipart.MultipartFile;
 public class UserController {
 
     private final UserService userService;
+    private final AIService aiService;
+    private final FileToImageService fileToImageService;
 
-    @Operation(summary = "检查用户是否存在")
-    @GetMapping("/exists")
-    public ApiResponse<UserExistsResponse> checkUserExists() {
-        return ApiResponse.success(userService.checkUserExists());
+    @Operation(summary = "检查用户状态")
+    @GetMapping("/status")
+    public ApiResponse<UserStatusResponse> getUserStatus() {
+        return ApiResponse.success(userService.getUserStatus());
     }
 
-    @Operation(summary = "初始化用户（上传简历解析）")
+    @Operation(summary = "初始化用户（上传简历文件解析）")
     @PostMapping("/init")
     public ApiResponse<UserInitResponse> initUser(@RequestParam("file") MultipartFile file) {
-        return ApiResponse.success(userService.initUser(file));
+        // 验证文件类型：仅支持图片和PDF
+        String filename = file.getOriginalFilename();
+        String contentType = file.getContentType();
+        if (!fileToImageService.isSupported(contentType, filename)) {
+            throw new IllegalArgumentException("仅支持图片（jpg/png/gif等）和PDF格式的文件");
+        }
+        // 调用AI服务解析简历
+        ResumeParseResult parsedResume = aiService.parseResumeFromFile(file);
+        // 创建用户
+        UserCreateRequest createRequest = UserCreateRequest.builder()
+                .name(parsedResume.getName())
+                .gender(parsedResume.getGender())
+                .build();
+        UserInitResponse response = userService.createUser(createRequest);
+        return ApiResponse.success(response);
+    }
+
+    @Operation(summary = "解析简历为图片列表（用于初始化用户）")
+    @PostMapping("/parse-resume")
+    public ApiResponse<ResumeImagesResponse> parseResumeForInit(@RequestParam("file") MultipartFile file) {
+        return ApiResponse.success(userService.parseResumeForInit(file));
+    }
+
+    @Operation(summary = "创建用户（AI解析简历后调用）")
+    @PostMapping("/create")
+    public ApiResponse<UserInitResponse> createUser(@Valid @RequestBody UserCreateRequest request) {
+        return ApiResponse.success(userService.createUser(request));
     }
 
     @Operation(summary = "获取当前用户信息")

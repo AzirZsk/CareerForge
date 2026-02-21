@@ -22,4 +22,22 @@ public enum Gender {
     @JsonValue
     private final String description;
 
+    /**
+     * 从文本解析性别枚举
+     *
+     * @param text 性别文本（男/女）
+     * @return Gender枚举，未知返回null
+     */
+    public static Gender fromText(String text) {
+        if (text == null) {
+            return null;
+        }
+        for (Gender gender : values()) {
+            if (gender.description.equals(text)) {
+                return gender;
+            }
+        }
+        return null;
+    }
+
 }

@@ -1,15 +1,12 @@
 package com.landit.resume.service;
 
-import cn.hutool.core.io.IoUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.landit.common.enums.ChangeType;
-import com.landit.common.enums.Gender;
 import com.landit.common.enums.ResumeStatus;
 import com.landit.common.enums.ResumeType;
 import com.landit.common.service.AIService;
+import com.landit.common.service.FileToImageService;
 import com.landit.resume.convertor.ResumeConvertor;
 import com.landit.resume.dto.CreateResumeRequest;
 import com.landit.resume.dto.DeriveResumeRequest;
@@ -17,7 +14,6 @@ import com.landit.resume.dto.OptimizeResumeRequest;
 import com.landit.resume.dto.OptimizeResumeResponse;
 import com.landit.resume.dto.ResumeDetailVO;
 import com.landit.resume.dto.ResumeSuggestionVO;
-import com.landit.resume.dto.ResumeParseResult;
 import com.landit.resume.dto.ResumeVersionVO;
 import com.landit.resume.dto.UpdateResumeRequest;
 import com.landit.resume.entity.Resume;
@@ -32,10 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 简历服务实现类
@@ -51,6 +44,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
     private final ResumeSectionMapper resumeSectionMapper;
     private final ResumeConvertor resumeConvertor;
     private final AIService aiService;
+    private final FileToImageService fileToImageService;
 
     /**
      * 获取简历列表
@@ -60,81 +54,22 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
     }
 
     /**
-     * 解析简历文件，提取姓名和性别
-     * 使用 AI 从简历文本中提取用户基本信息
+     * 解析简历文件，将文件转换为图片列表
+     * 返回的图片列表可用于视觉模型解析
      */
-    public ResumeParseResult parseResume(MultipartFile file) {
-        // 读取文件内容
-        String rawText = readFileContent(file);
-        if (StrUtil.isBlank(rawText)) {
-            throw new RuntimeException("简历内容为空，无法解析");
+    public List<String> parseResumeToImages(MultipartFile file) {
+        // 校验文件类型
+        String filename = file.getOriginalFilename();
+        if (!fileToImageService.isSupported(file.getContentType(), filename)) {
+            throw new RuntimeException("不支持的文件格式，请上传图片（jpg/png）、PDF 或 Word 文档");
         }
-        // 构建 AI 提示词
-        String systemPrompt = """
-                你是一个专业的简历解析助手。请从用户提供的简历文本中提取以下信息：
-                1. 姓名 (name)：简历中的人名
-                2. 性别 (gender)：男 或 女，如果没有明确提到则为 null
-
-                请只返回 JSON 格式的数据，不要包含任何其他说明文字。
-                """;
-        String jsonSchema = """
-                {
-                  "type": "object",
-                  "properties": {
-                    "name": { "type": "string", "description": "简历中的姓名" },
-                    "gender": { "type": "string", "enum": ["MALE", "FEMALE", null], "description": "性别" }
-                  },
-                  "required": ["name"]
-                }
-                """;
-        String userPrompt = "请从以下简历内容中提取姓名和性别：\n\n" + rawText;
-        // 调用 AI 解析
-        String aiResponse = aiService.chatWithJsonOutput(systemPrompt, userPrompt, jsonSchema);
-        log.info("AI 解析简历结果: {}", aiResponse);
-        // 解析 AI 返回的 JSON
-        try {
-            Map<String, Object> result = JSONUtil.toBean(aiResponse, Map.class);
-            String name = (String) result.get("name");
-            String genderStr = (String) result.get("gender");
-            Gender gender = parseGender(genderStr);
-            return ResumeParseResult.builder()
-                    .name(name)
-                    .gender(gender)
-                    .rawText(rawText)
-                    .build();
-        } catch (Exception e) {
-            log.error("解析 AI 返回结果失败: {}", aiResponse, e);
-            throw new RuntimeException("解析简历失败，请检查简历格式");
+        // 将文件转换为图片
+        List<String> imageDataUrls = fileToImageService.convertToImages(file);
+        if (imageDataUrls.isEmpty()) {
+            throw new RuntimeException("文件转换失败，无法提取简历内容");
         }
-    }
-
-    /**
-     * 读取文件内容
-     * 目前支持纯文本格式，后续可扩展 PDF、Word 等格式
-     */
-    private String readFileContent(MultipartFile file) {
-        try {
-            // 简单处理：直接读取为文本
-            // TODO: 后续可添加 PDF、Word 等格式的解析支持
-            return IoUtil.read(file.getInputStream(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            log.error("读取简历文件失败", e);
-            throw new RuntimeException("读取简历文件失败: " + e.getMessage());
-        }
-    }
-
-    /**
-     * 解析性别字符串
-     */
-    private Gender parseGender(String genderStr) {
-        if (StrUtil.isBlank(genderStr)) {
-            return null;
-        }
-        return switch (genderStr.toUpperCase()) {
-            case "MALE", "男" -> Gender.MALE;
-            case "FEMALE", "女" -> Gender.FEMALE;
-            default -> null;
-        };
+        log.info("简历文件转换为 {} 张图片", imageDataUrls.size());
+        return imageDataUrls;
     }
 
     /**

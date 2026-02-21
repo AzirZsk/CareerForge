@@ -2,10 +2,11 @@ package com.landit.user.service;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.landit.common.enums.Gender;
-import com.landit.resume.dto.ResumeParseResult;
 import com.landit.resume.service.ResumeService;
 import com.landit.user.dto.AvatarUploadResponse;
-import com.landit.user.dto.UserExistsResponse;
+import com.landit.user.dto.ResumeImagesResponse;
+import com.landit.user.dto.UserCreateRequest;
+import com.landit.user.dto.UserStatusResponse;
 import com.landit.user.dto.UserInitResponse;
 import com.landit.user.dto.UserUpdateRequest;
 import com.landit.user.entity.User;
@@ -19,6 +20,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -38,29 +40,49 @@ public class UserService extends ServiceImpl<UserMapper, User> {
     private String avatarUploadPath;
 
     /**
-     * 检查用户是否存在
+     * 获取用户状态
      */
-    public UserExistsResponse checkUserExists() {
+    public UserStatusResponse getUserStatus() {
         User user = getById(SINGLE_USER_ID);
-        return UserExistsResponse.of(user != null && user.getName() != null && !user.getName().isEmpty());
+        // 用户不存在或未初始化
+        if (user == null || user.getName() == null || user.getName().isEmpty()) {
+            return UserStatusResponse.notExists();
+        }
+        // 用户存在，返回用户信息
+        String genderValue = user.getGender() != null ? user.getGender().name() : null;
+        return UserStatusResponse.exists(user.getId(), user.getName(), genderValue, user.getAvatar());
     }
 
     /**
-     * 初始化用户（通过简历解析）
+     * 解析简历文件为图片列表
+     * 用于初始化用户前的简历解析，返回图片列表供视觉模型提取用户信息
      */
-    public UserInitResponse initUser(MultipartFile file) {
+    public ResumeImagesResponse parseResumeForInit(MultipartFile file) {
         // 检查用户是否已存在
         User existingUser = getById(SINGLE_USER_ID);
         if (existingUser != null && existingUser.getName() != null && !existingUser.getName().isEmpty()) {
             throw new RuntimeException("用户已存在，无法重复初始化");
         }
-        // 解析简历获取用户信息
-        ResumeParseResult parseResult = resumeService.parseResume(file);
+        // 将简历转换为图片列表
+        List<String> images = resumeService.parseResumeToImages(file);
+        return ResumeImagesResponse.of(images);
+    }
+
+    /**
+     * 创建用户
+     * 在 AI 解析简历获取用户信息后调用此方法创建用户
+     */
+    public UserInitResponse createUser(UserCreateRequest request) {
+        // 检查用户是否已存在
+        User existingUser = getById(SINGLE_USER_ID);
+        if (existingUser != null && existingUser.getName() != null && !existingUser.getName().isEmpty()) {
+            throw new RuntimeException("用户已存在，无法重复初始化");
+        }
         // 创建用户
         User user = new User();
         user.setId(SINGLE_USER_ID);
-        user.setName(parseResult.getName());
-        user.setGender(parseResult.getGender());
+        user.setName(request.getName());
+        user.setGender(request.getGender());
         save(user);
         return UserInitResponse.builder()
                 .name(user.getName())

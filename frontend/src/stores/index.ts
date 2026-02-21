@@ -17,6 +17,7 @@ import {
   statistics,
   jobRecommendations
 } from '@/mock/data'
+import * as userApi from '@/api/user'
 import type {
   User,
   Resume,
@@ -29,8 +30,7 @@ import type {
   Statistics,
   Job,
   UserUpdateInfo,
-  UserExistsResponse,
-  ResumeParseResult,
+  UserStatusResponse,
   Gender
 } from '@/types'
 
@@ -102,70 +102,41 @@ export const useAppStore = defineStore('app', () => {
   }
 
   // 检查用户是否存在
-  async function checkUserExists(): Promise<boolean> {
+  async function checkUserExists(): Promise<UserStatusResponse> {
     try {
-      // TODO: 调用真实 API
-      // const response = await fetch('/landit/api/user/exists')
-      // const data: ApiResponse<UserExistsResponse> = await response.json()
-      // return data.data.exists
-      // 暂时使用 mock 数据
-      return user.value.name !== ''
+      const status = await userApi.getUserStatus()
+      if (status.exists && status.user) {
+        user.value = {
+          ...user.value,
+          id: String(status.user.id),
+          name: status.user.name,
+          gender: status.user.gender as Gender | null,
+          avatar: status.user.avatar
+        }
+        isInitialized.value = true
+        isLoggedIn.value = true
+      }
+      return status
     } catch (error) {
       console.error('检查用户状态失败', error)
-      return false
+      return { exists: false }
     }
   }
 
-  // 初始化用户
-  async function initUser(data: { name: string; gender: Gender | null }): Promise<void> {
+  // 初始化用户（上传简历文件）
+  async function initUser(file: File): Promise<void> {
     try {
-      // TODO: 调用真实 API
-      // const response = await fetch('/landit/api/user/init', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(data)
-      // })
-      // const result: ApiResponse<User> = await response.json()
-      // user.value = result.data
-      // 暂时使用 mock 数据
+      const result = await userApi.initUser(file)
       user.value = {
         ...user.value,
-        name: data.name,
-        gender: data.gender
+        name: result.name,
+        gender: result.gender
       }
       isInitialized.value = true
       isLoggedIn.value = true
     } catch (error) {
       console.error('初始化用户失败', error)
       throw error
-    }
-  }
-
-  // 解析简历
-  async function parseResume(file: File): Promise<ResumeParseResult> {
-    try {
-      // TODO: 调用真实 API
-      // const formData = new FormData()
-      // formData.append('file', file)
-      // const response = await fetch('/landit/api/resumes/parse', {
-      //   method: 'POST',
-      //   body: formData
-      // })
-      // const result: ApiResponse<ResumeParseResult> = await response.json()
-      // return result.data
-      // 暂时返回空结果
-      return {
-        name: '',
-        gender: null,
-        rawText: ''
-      }
-    } catch (error) {
-      console.error('解析简历失败', error)
-      return {
-        name: '',
-        gender: null,
-        rawText: ''
-      }
     }
   }
 
@@ -196,7 +167,6 @@ export const useAppStore = defineStore('app', () => {
     setPrimaryResume,
     addInterview,
     checkUserExists,
-    initUser,
-    parseResume
+    initUser
   }
 })

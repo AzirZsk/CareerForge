@@ -82,12 +82,9 @@ router.beforeEach(async (to: RouteLocationNormalized, _from: RouteLocationNormal
 
   // 检查用户是否已初始化
   if (!store.isInitialized) {
-    const exists = await store.checkUserExists()
-    if (!exists && to.name !== 'Onboarding') {
+    const status = await store.checkUserExists()
+    if (!status.exists && to.name !== 'Onboarding') {
       return next({ name: 'Onboarding' })
-    }
-    if (exists) {
-      store.isInitialized = true
     }
   }
 

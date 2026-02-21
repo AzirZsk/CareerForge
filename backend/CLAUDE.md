@@ -38,7 +38,7 @@ mvn spring-boot:run
 ```
 
 ### 访问地址
-- API 基础路径：`http://localhost:8080/landit/api/`
+- API 基础路径：`http://localhost:8080/landit/`
 - Swagger UI：`http://localhost:8080/landit/swagger-ui.html`
 
 ---
@@ -49,12 +49,12 @@ mvn spring-boot:run
 
 | 模块 | 基础路径 | 控制器 | 描述 |
 |------|---------|--------|------|
-| user | `/api/user` | UserController | 用户信息管理 |
-| resume | `/api/resumes` | ResumeController | 简历CRUD与优化 |
-| interview | `/api/interviews` | InterviewController | 面试会话管理 |
-| review | `/api/reviews` | ReviewController | 面试复盘 |
-| statistics | `/api/statistics` | StatisticsController | 数据统计 |
-| job | `/api/jobs` | JobController | 职位推荐 |
+| user | `/user` | UserController | 用户信息管理 |
+| resume | `/resumes` | ResumeController | 简历CRUD与优化 |
+| interview | `/interviews` | InterviewController | 面试会话管理 |
+| review | `/reviews` | ReviewController | 面试复盘 |
+| statistics | `/statistics` | StatisticsController | 数据统计 |
+| job | `/jobs` | JobController | 职位推荐 |
 
 ### 统一响应格式
 ```java
@@ -168,9 +168,9 @@ public abstract class BaseEntity {
 - **路径**：`src/main/java/com/landit/user/`
 - **实体**：User（name, avatar, email, phone, skills...）
 - **API**：
-  - `GET /api/user/profile` - 获取用户信息
-  - `PUT /api/user/profile` - 更新用户信息
-  - `POST /api/user/avatar` - 上传头像
+  - `GET /user/profile` - 获取用户信息
+  - `PUT /user/profile` - 更新用户信息
+  - `POST /user/avatar` - 上传头像
 
 ### resume - 简历模块
 - **路径**：`src/main/java/com/landit/resume/`

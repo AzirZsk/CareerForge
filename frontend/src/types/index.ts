@@ -15,16 +15,29 @@ export interface User {
   createdAt: string
 }
 
-// 用户存在检查响应
-export interface UserExistsResponse {
+// 用户状态响应（新版）
+export interface UserStatusResponse {
   exists: boolean
+  user?: {
+    id: number
+    name: string
+    gender: string
+    avatar: string | null
+  }
 }
 
-// 简历解析结果
-export interface ResumeParseResult {
+// 用户初始化响应
+export interface UserInitResponse {
   name: string
   gender: Gender | null
-  rawText: string
+}
+
+// API 统一响应格式
+export interface ApiResponse<T> {
+  code: number
+  message: string
+  data: T
+  timestamp: number
 }
 
 // 简历状态

@@ -19,5 +19,13 @@ export default defineConfig({
                 api: 'modern-compiler'
             }
         }
+    },
+    server: {
+        proxy: {
+            '/landit': {
+                target: 'http://localhost:8080',
+                changeOrigin: true
+            }
+        }
     }
 });

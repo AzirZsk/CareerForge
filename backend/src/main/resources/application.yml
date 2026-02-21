@@ -6,6 +6,10 @@ server:
 spring:
   application:
     name: landit-backend
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 100MB
   datasource:
     driver-class-name: org.sqlite.JDBC
     url: jdbc:sqlite:./data/landit.db
