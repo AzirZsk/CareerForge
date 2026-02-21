@@ -3,7 +3,7 @@ package com.landit.user.controller;
 import com.landit.common.response.ApiResponse;
 import com.landit.user.dto.AvatarUploadResponse;
 import com.landit.user.dto.UserExistsResponse;
-import com.landit.user.dto.UserInitRequest;
+import com.landit.user.dto.UserInitResponse;
 import com.landit.user.dto.UserUpdateRequest;
 import com.landit.user.entity.User;
 import com.landit.user.service.UserService;
@@ -27,7 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
  */
 @Tag(name = "user", description = "用户管理")
 @RestController
-@RequestMapping("/api/user")
+@RequestMapping("/user")
 @RequiredArgsConstructor
 public class UserController {
 
@@ -39,10 +39,10 @@ public class UserController {
         return ApiResponse.success(userService.checkUserExists());
     }
 
-    @Operation(summary = "初始化用户")
+    @Operation(summary = "初始化用户（上传简历解析）")
     @PostMapping("/init")
-    public ApiResponse<User> initUser(@Valid @RequestBody UserInitRequest request) {
-        return ApiResponse.success(userService.initUser(request));
+    public ApiResponse<UserInitResponse> initUser(@RequestParam("file") MultipartFile file) {
+        return ApiResponse.success(userService.initUser(file));
     }
 
     @Operation(summary = "获取当前用户信息")

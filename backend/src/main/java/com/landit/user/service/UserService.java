@@ -2,9 +2,11 @@ package com.landit.user.service;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.landit.common.enums.Gender;
+import com.landit.resume.dto.ResumeParseResult;
+import com.landit.resume.service.ResumeService;
 import com.landit.user.dto.AvatarUploadResponse;
 import com.landit.user.dto.UserExistsResponse;
-import com.landit.user.dto.UserInitRequest;
+import com.landit.user.dto.UserInitResponse;
 import com.landit.user.dto.UserUpdateRequest;
 import com.landit.user.entity.User;
 import com.landit.user.mapper.UserMapper;
@@ -13,7 +15,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,6 +32,8 @@ public class UserService extends ServiceImpl<UserMapper, User> {
 
     private static final Long SINGLE_USER_ID = 1L;
 
+    private final ResumeService resumeService;
+
     @Value("${app.upload.avatar-path:./data/avatars}")
     private String avatarUploadPath;
 
@@ -43,15 +46,26 @@ public class UserService extends ServiceImpl<UserMapper, User> {
     }
 
     /**
-     * 初始化用户
+     * 初始化用户（通过简历解析）
      */
-    public User initUser(UserInitRequest request) {
+    public UserInitResponse initUser(MultipartFile file) {
+        // 检查用户是否已存在
+        User existingUser = getById(SINGLE_USER_ID);
+        if (existingUser != null && existingUser.getName() != null && !existingUser.getName().isEmpty()) {
+            throw new RuntimeException("用户已存在，无法重复初始化");
+        }
+        // 解析简历获取用户信息
+        ResumeParseResult parseResult = resumeService.parseResume(file);
+        // 创建用户
         User user = new User();
         user.setId(SINGLE_USER_ID);
-        user.setName(request.getName());
-        user.setGender(request.getGender());
+        user.setName(parseResult.getName());
+        user.setGender(parseResult.getGender());
         save(user);
-        return user;
+        return UserInitResponse.builder()
+                .name(user.getName())
+                .gender(user.getGender())
+                .build();
     }
 
     /**
