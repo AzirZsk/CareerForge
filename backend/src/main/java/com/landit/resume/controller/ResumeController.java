@@ -11,6 +11,7 @@ import com.landit.resume.dto.ResumeSuggestionVO;
 import com.landit.resume.dto.ResumeVersionVO;
 import com.landit.resume.dto.UpdateResumeRequest;
 import com.landit.resume.entity.Resume;
+import com.landit.resume.handler.ResumeHandler;
 import com.landit.resume.service.ResumeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,6 +32,7 @@ import java.util.List;
 
 /**
  * 简历管理控制器
+ * 仅负责接收 HTTP 请求和返回响应，业务逻辑由 Handler 处理
  *
  * @author Azir
  */
@@ -41,6 +43,7 @@ import java.util.List;
 public class ResumeController {
 
     private final ResumeService resumeService;
+    private final ResumeHandler resumeHandler;
 
     @Operation(summary = "获取简历列表")
     @GetMapping
@@ -51,7 +54,7 @@ public class ResumeController {
     @Operation(summary = "解析简历文件为图片列表")
     @PostMapping("/parse")
     public ApiResponse<List<String>> parseResume(@RequestParam("file") MultipartFile file) {
-        return ApiResponse.success(resumeService.parseResumeToImages(file));
+        return ApiResponse.success(resumeHandler.parseResumeToImages(file));
     }
 
     @Operation(summary = "获取简历详情")
@@ -63,7 +66,7 @@ public class ResumeController {
     @Operation(summary = "上传简历文件")
     @PostMapping("/upload")
     public ApiResponse<ResumeDetailVO> uploadResume(@RequestParam("file") MultipartFile file) {
-        return ApiResponse.success(resumeService.uploadResume(file));
+        return ApiResponse.success(resumeHandler.uploadResume(file));
     }
 
     @Operation(summary = "创建空白简历")
@@ -101,19 +104,19 @@ public class ResumeController {
     @Operation(summary = "应用优化建议")
     @PostMapping("/{id}/suggestions/{suggestionId}/apply")
     public ApiResponse<ResumeDetailVO> applyResumeSuggestion(@PathVariable Long id, @PathVariable Long suggestionId) {
-        return ApiResponse.success(resumeService.applyResumeSuggestion(id, suggestionId));
+        return ApiResponse.success(resumeHandler.applyResumeSuggestion(id, suggestionId));
     }
 
     @Operation(summary = "AI优化简历")
     @PostMapping("/{id}/optimize")
     public ApiResponse<OptimizeResumeResponse> optimizeResume(@PathVariable Long id, @RequestBody OptimizeResumeRequest request) {
-        return ApiResponse.success(resumeService.optimizeResume(id, request));
+        return ApiResponse.success(resumeHandler.optimizeResume(id, request));
     }
 
     @Operation(summary = "导出简历PDF")
     @GetMapping("/{id}/export")
     public byte[] exportResume(@PathVariable Long id) {
-        return resumeService.exportResume(id);
+        return resumeHandler.exportResume(id);
     }
 
     @Operation(summary = "获取简历版本历史")
@@ -131,13 +134,13 @@ public class ResumeController {
     @Operation(summary = "回滚到指定版本")
     @PostMapping("/{id}/rollback/{version}")
     public ApiResponse<ResumeDetailVO> rollbackToVersion(@PathVariable Long id, @PathVariable Integer version) {
-        return ApiResponse.success(resumeService.rollbackToVersion(id, version));
+        return ApiResponse.success(resumeHandler.rollbackToVersion(id, version));
     }
 
     @Operation(summary = "基于主简历派生岗位定制简历")
     @PostMapping("/{id}/derive")
     public ApiResponse<Resume> deriveResume(@PathVariable Long id, @Valid @RequestBody DeriveResumeRequest request) {
-        return ApiResponse.success(resumeService.deriveResume(id, request));
+        return ApiResponse.success(resumeHandler.deriveResume(id, request));
     }
 
 }

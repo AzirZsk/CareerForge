@@ -13,6 +13,7 @@ import com.landit.interview.dto.StartSessionResponse;
 import com.landit.interview.dto.SubmitAnswerRequest;
 import com.landit.interview.dto.SubmitAnswerResponse;
 import com.landit.interview.entity.Interview;
+import com.landit.interview.handler.InterviewHandler;
 import com.landit.interview.service.InterviewService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 面试管理控制器
+ * 仅负责接收 HTTP 请求和返回响应，业务逻辑由 Handler 处理
  *
  * @author Azir
  */
@@ -38,29 +40,30 @@ import org.springframework.web.bind.annotation.RestController;
 public class InterviewController {
 
     private final InterviewService interviewService;
+    private final InterviewHandler interviewHandler;
 
     @Operation(summary = "开始面试会话")
     @PostMapping("/sessions")
     public ApiResponse<StartSessionResponse> startInterviewSession(@Valid @RequestBody StartSessionRequest request) {
-        return ApiResponse.success(interviewService.startInterviewSession(request));
+        return ApiResponse.success(interviewHandler.startInterviewSession(request));
     }
 
     @Operation(summary = "提交回答")
     @PostMapping("/sessions/{sessionId}/answers")
     public ApiResponse<SubmitAnswerResponse> submitAnswer(@PathVariable Long sessionId, @Valid @RequestBody SubmitAnswerRequest request) {
-        return ApiResponse.success(interviewService.submitAnswer(sessionId, request));
+        return ApiResponse.success(interviewHandler.submitAnswer(sessionId, request));
     }
 
     @Operation(summary = "请求提示")
     @GetMapping("/sessions/{sessionId}/hints")
     public ApiResponse<HintResponse> getHint(@PathVariable Long sessionId, @RequestParam Long questionId) {
-        return ApiResponse.success(interviewService.getHint(sessionId, questionId));
+        return ApiResponse.success(interviewHandler.getHint(sessionId, questionId));
     }
 
     @Operation(summary = "结束面试")
     @PostMapping("/sessions/{sessionId}/finish")
     public ApiResponse<FinishSessionResponse> finishInterview(@PathVariable Long sessionId, @RequestBody FinishSessionRequest request) {
-        return ApiResponse.success(interviewService.finishInterview(sessionId, request));
+        return ApiResponse.success(interviewHandler.finishInterview(sessionId, request));
     }
 
     @Operation(summary = "获取面试历史")

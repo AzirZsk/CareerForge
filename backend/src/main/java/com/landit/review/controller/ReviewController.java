@@ -4,6 +4,7 @@ import com.landit.common.response.ApiResponse;
 import com.landit.common.response.PageResponse;
 import com.landit.review.dto.InterviewReviewVO;
 import com.landit.review.dto.ReviewListItemVO;
+import com.landit.review.handler.ReviewHandler;
 import com.landit.review.service.ReviewService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 复盘管理控制器
+ * 仅负责接收 HTTP 请求和返回响应，业务逻辑由 Handler 处理
  *
  * @author Azir
  */
@@ -26,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ReviewController {
 
     private final ReviewService reviewService;
+    private final ReviewHandler reviewHandler;
 
     @Operation(summary = "获取复盘列表")
     @GetMapping
@@ -42,7 +45,7 @@ public class ReviewController {
     @Operation(summary = "导出复盘报告")
     @GetMapping("/{id}/export")
     public byte[] exportReview(@PathVariable Long id) {
-        return reviewService.exportReview(id);
+        return reviewHandler.exportReview(id);
     }
 
 }

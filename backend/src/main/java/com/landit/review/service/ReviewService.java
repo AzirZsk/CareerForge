@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 /**
  * 复盘服务实现类
+ * 仅负责复盘表的 CRUD 操作，聚合操作由 ReviewHandler 处理
  *
  * @author Azir
  */
@@ -20,6 +21,7 @@ public class ReviewService extends ServiceImpl<InterviewReviewMapper, InterviewR
      * 获取复盘列表
      */
     public PageResponse<ReviewListItemVO> getReviews(Integer page, Integer size) {
+        // TODO: 实现查询逻辑
         return null;
     }
 
@@ -27,13 +29,7 @@ public class ReviewService extends ServiceImpl<InterviewReviewMapper, InterviewR
      * 获取复盘详情
      */
     public InterviewReviewVO getReviewDetail(Long id) {
-        return null;
-    }
-
-    /**
-     * 导出复盘报告
-     */
-    public byte[] exportReview(Long id) {
+        // TODO: 实现查询逻辑
         return null;
     }
 
