@@ -20,7 +20,7 @@ spring:
       api-key: ${DASHSCOPE_API_KEY:}
       chat:
         options:
-          model: ${AI_MODEL:qwen-turbo}
+          model: ${AI_MODEL:qwen3.5-plus}
           temperature: 0.7
 
 mybatis-plus:
@@ -42,3 +42,13 @@ springdoc:
     path: /swagger-ui.html
   api-docs:
     path: /v3/api-docs
+
+# 日志配置 - 打印 AI 请求详情
+logging:
+  level:
+    org:
+      springframework:
+        ai:
+          chat:
+            client:
+              advisor: debug

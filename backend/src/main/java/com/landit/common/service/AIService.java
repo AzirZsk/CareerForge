@@ -39,6 +39,7 @@ public class AIService {
     /**
      * 从文件中解析简历信息
      * 支持图片、PDF等格式的简历文件，使用大模型进行多模态识别
+     * 使用流式请求，在服务层收集完整响应后返回
      *
      * @param file 上传的简历文件（图片或PDF）
      * @return 解析后的简历信息
@@ -52,11 +53,11 @@ public class AIService {
         // 创建UserMessage，包含文本和媒体
         UserMessage userMessage = UserMessage.builder()
                 .text(parsePrompt)
-                .media(mediaList)
+                 .media(mediaList)
                 .build();
-        // 创建Prompt并调用大模型
+        // 创建Prompt并调用大模型（使用流式请求）
         Prompt prompt = new Prompt(List.of(userMessage));
-        String jsonResponse = chatClient.prompt(prompt)
+        Flux<String> streamResponse = chatClient.prompt(prompt)
                 .options(DashScopeChatOptions.builder()
                         .multiModel(true)
                         .incrementalOutput(true)
@@ -87,8 +88,13 @@ public class AIService {
                                         .build())
                                 .build())
                         .build())
-                .call()
+                .stream()
                 .content();
+        // 收集流式响应的所有块，拼接为完整JSON
+        String jsonResponse = streamResponse
+                .collectList()
+                .map(chunks -> String.join("", chunks))
+                .block();
         // 解析JSON响应
         ResumeParseResult result = parseResumeJsonResponse(jsonResponse);
         log.info("简历文件解析完成: 姓名={}", result.getName());
