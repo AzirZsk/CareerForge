@@ -17,10 +17,24 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ResumeParseResult {
 
+    /**
+     * 姓名（兼容旧逻辑）
+     */
     private String name;
 
+    /**
+     * 性别（兼容旧逻辑）
+     */
     private Gender gender;
 
+    /**
+     * 原始 Markdown 文本
+     */
     private String rawText;
+
+    /**
+     * 结构化简历数据
+     */
+    private ResumeStructuredData structuredData;
 
 }

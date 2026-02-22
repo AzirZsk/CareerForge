@@ -18,6 +18,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class UserInitResponse {
 
+    private Long id;
+
     private String name;
 
     private Gender gender;

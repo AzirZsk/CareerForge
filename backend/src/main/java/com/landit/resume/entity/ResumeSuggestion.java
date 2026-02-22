@@ -1,5 +1,6 @@
 package com.landit.resume.entity;
 
+import com.baomidou.mybatisplus.annotation.TableName;
 import com.landit.common.entity.BaseEntity;
 import com.landit.common.enums.SuggestionType;
 import lombok.Data;
@@ -12,6 +13,7 @@ import lombok.EqualsAndHashCode;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
+@TableName(value = "t_resume_suggestion", autoResultMap = true)
 public class ResumeSuggestion extends BaseEntity {
 
     private Long resumeId;

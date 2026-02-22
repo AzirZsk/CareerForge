@@ -1,5 +1,6 @@
 package com.landit.interview.entity;
 
+import com.baomidou.mybatisplus.annotation.TableName;
 import com.landit.common.entity.BaseEntity;
 import com.landit.common.enums.ConversationRole;
 import lombok.Data;
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
+@TableName(value = "t_conversation", autoResultMap = true)
 public class Conversation extends BaseEntity {
 
     private Long sessionId;

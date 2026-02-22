@@ -1,5 +1,6 @@
 package com.landit.review.entity;
 
+import com.baomidou.mybatisplus.annotation.TableName;
 import com.landit.common.entity.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -11,6 +12,7 @@ import lombok.EqualsAndHashCode;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
+@TableName("t_interview_review")
 public class InterviewReview extends BaseEntity {
 
     private Long interviewId;

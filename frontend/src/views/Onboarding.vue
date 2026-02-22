@@ -33,7 +33,7 @@
           <input
             ref="fileInput"
             type="file"
-            accept="image/*,.pdf"
+            accept=".jpg,.jpeg,.png,.pdf"
             class="hidden-input"
             @change="handleFileSelect"
           />
@@ -46,7 +46,7 @@
               </svg>
             </div>
             <p class="upload-text">点击或拖拽上传简历</p>
-            <p class="upload-hint">支持图片（jpg/png等）和PDF格式</p>
+            <p class="upload-hint">支持 JPG、PNG 图片和 PDF 格式</p>
           </div>
           <div v-else class="upload-loading">
             <div class="loading-spinner"></div>
@@ -84,7 +84,13 @@ function triggerFileInput(): void {
 function handleFileSelect(event: Event): void {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
+  // 重置 input value，确保选择同一文件时也能触发 change 事件
+  target.value = ''
   if (file) {
+    if (!validateFileType(file)) {
+      errorMessage.value = '仅支持 JPG、PNG 图片和 PDF 格式'
+      return
+    }
     uploadResume(file)
   }
 }
@@ -93,8 +99,27 @@ function handleDrop(event: DragEvent): void {
   isDragOver.value = false
   const file = event.dataTransfer?.files?.[0]
   if (file) {
+    if (!validateFileType(file)) {
+      errorMessage.value = '仅支持 JPG、PNG 图片和 PDF 格式'
+      return
+    }
     uploadResume(file)
   }
+}
+
+/**
+ * 验证文件类型
+ * 支持：jpg, jpeg, png, pdf
+ */
+function validateFileType(file: File): boolean {
+  const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf']
+  const allowedExtensions = ['.jpg', '.jpeg', '.png', '.pdf']
+
+  const fileTypeValid = allowedTypes.includes(file.type)
+  const fileName = file.name.toLowerCase()
+  const extensionValid = allowedExtensions.some(ext => fileName.endsWith(ext))
+
+  return fileTypeValid || extensionValid
 }
 
 async function uploadResume(file: File): Promise<void> {

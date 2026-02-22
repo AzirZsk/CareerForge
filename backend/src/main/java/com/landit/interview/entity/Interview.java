@@ -1,5 +1,6 @@
 package com.landit.interview.entity;
 
+import com.baomidou.mybatisplus.annotation.TableName;
 import com.landit.common.entity.BaseEntity;
 import com.landit.common.enums.InterviewStatus;
 import com.landit.common.enums.InterviewType;
@@ -15,6 +16,7 @@ import java.time.LocalDate;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
+@TableName(value = "t_interview", autoResultMap = true)
 public class Interview extends BaseEntity {
 
     private Long userId;

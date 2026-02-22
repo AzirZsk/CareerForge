@@ -63,6 +63,7 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         user.setGender(request.getGender());
         save(user);
         return UserInitResponse.builder()
+                .id(user.getId())
                 .name(user.getName())
                 .gender(user.getGender())
                 .build();

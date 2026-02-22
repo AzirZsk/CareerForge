@@ -1,5 +1,6 @@
 package com.landit.resume.entity;
 
+import com.baomidou.mybatisplus.annotation.TableName;
 import com.landit.common.entity.BaseEntity;
 import com.landit.common.enums.ChangeType;
 import com.landit.common.enums.ResumeStatus;
@@ -13,6 +14,7 @@ import lombok.EqualsAndHashCode;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
+@TableName(value = "t_resume_version", autoResultMap = true)
 public class ResumeVersion extends BaseEntity {
 
     private Long resumeId;
