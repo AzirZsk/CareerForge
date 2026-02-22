@@ -17,7 +17,7 @@ import lombok.EqualsAndHashCode;
 @TableName(value = "t_resume_version", autoResultMap = true)
 public class ResumeVersion extends BaseEntity {
 
-    private Long resumeId;
+    private String resumeId;
 
     private Integer version;
 

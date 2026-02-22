@@ -28,7 +28,7 @@ public class ReviewService extends ServiceImpl<InterviewReviewMapper, InterviewR
     /**
      * 获取复盘详情
      */
-    public InterviewReviewVO getReviewDetail(Long id) {
+    public InterviewReviewVO getReviewDetail(String id) {
         // TODO: 实现查询逻辑
         return null;
     }

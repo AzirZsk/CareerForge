@@ -19,7 +19,7 @@ import java.time.LocalDate;
 @TableName(value = "t_interview", autoResultMap = true)
 public class Interview extends BaseEntity {
 
-    private Long userId;
+    private String userId;
 
     private InterviewType type;
 

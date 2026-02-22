@@ -21,7 +21,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class UserService extends ServiceImpl<UserMapper, User> {
 
-    private static final Long SINGLE_USER_ID = 1L;
+    private static final String SINGLE_USER_ID = "1";
 
     /**
      * 获取用户状态

@@ -16,9 +16,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class FinishSessionResponse {
 
-    private Long interviewId;
+    private String interviewId;
 
-    private Long reviewId;
+    private String reviewId;
 
     private Integer overallScore;
 

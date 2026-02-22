@@ -15,7 +15,7 @@ import lombok.EqualsAndHashCode;
 @TableName("t_review_dimension")
 public class ReviewDimension extends BaseEntity {
 
-    private Long reviewId;
+    private String reviewId;
 
     private String name;
 

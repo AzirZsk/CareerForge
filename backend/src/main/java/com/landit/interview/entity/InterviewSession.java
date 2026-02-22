@@ -17,7 +17,7 @@ import lombok.EqualsAndHashCode;
 @TableName(value = "t_interview_session", autoResultMap = true)
 public class InterviewSession extends BaseEntity {
 
-    private Long userId;
+    private String userId;
 
     private InterviewType type;
 

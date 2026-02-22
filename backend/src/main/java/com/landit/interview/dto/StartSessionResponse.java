@@ -18,7 +18,7 @@ import java.util.List;
 @AllArgsConstructor
 public class StartSessionResponse {
 
-    private Long sessionId;
+    private String sessionId;
 
     private SessionQuestionVO firstQuestion;
 
@@ -31,7 +31,7 @@ public class StartSessionResponse {
     @AllArgsConstructor
     public static class SessionQuestionVO {
 
-        private Long id;
+        private String id;
 
         private String question;
 

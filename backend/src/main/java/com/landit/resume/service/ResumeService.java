@@ -39,9 +39,35 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
 
+    private static final String SINGLE_USER_ID = "1";
+
     private final ResumeVersionMapper resumeVersionMapper;
     private final ResumeSectionMapper resumeSectionMapper;
     private final ResumeConvertor resumeConvertor;
+
+    /**
+     * 获取主简历
+     *
+     * @return 主简历实体，不存在则返回 null
+     */
+    public Resume getPrimaryResume() {
+        LambdaQueryWrapper<Resume> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Resume::getUserId, SINGLE_USER_ID)
+                .eq(Resume::getIsPrimary, true);
+        return getOne(wrapper);
+    }
+
+    /**
+     * 判断简历是否已完成分析
+     * 根据评分和完整度是否有效来判断
+     *
+     * @param resume 简历实体
+     * @return true 已完成分析，false 未完成
+     */
+    public boolean isResumeAnalyzed(Resume resume) {
+        return resume.getScore() != null && resume.getScore() > 0
+                && resume.getCompleteness() != null && resume.getCompleteness() > 0;
+    }
 
     /**
      * 获取简历列表
@@ -53,10 +79,56 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
 
     /**
      * 获取简历详情
+     *
+     * @param id 简历ID
+     * @return 简历详情VO
      */
-    public ResumeDetailVO getResumeDetail(Long id) {
-        // TODO: 实现查询逻辑
-        return null;
+    public ResumeDetailVO getResumeDetail(String id) {
+        // 查询简历主信息
+        Resume resume = getById(id);
+        if (resume == null) {
+            throw new RuntimeException("简历不存在");
+        }
+
+        // 转换为VO（基础字段映射）
+        ResumeDetailVO vo = resumeConvertor.toDetailVO(resume);
+
+        // 查询简历模块列表（非版本快照）
+        List<ResumeSection> sections = getResumeSections(id);
+        vo.setSections(resumeConvertor.toSectionVOList(sections));
+
+        // 设置是否已完成分析
+        vo.setAnalyzed(isResumeAnalyzed(resume));
+
+        // 计算评分（基于模块评分的平均值）
+        calculateScores(vo, sections);
+
+        return vo;
+    }
+
+    /**
+     * 计算简历各项评分
+     */
+    private void calculateScores(ResumeDetailVO vo, List<ResumeSection> sections) {
+        if (sections.isEmpty()) {
+            vo.setOverallScore(0);
+            vo.setFormatScore(0);
+            vo.setContentScore(0);
+            return;
+        }
+
+        // 计算模块平均分作为综合评分
+        double avgScore = sections.stream()
+                .filter(s -> s.getScore() != null && s.getScore() > 0)
+                .mapToInt(ResumeSection::getScore)
+                .average()
+                .orElse(0);
+        vo.setOverallScore((int) Math.round(avgScore));
+
+        // TODO: 后续可根据实际算法计算格式规范、内容质量分数
+        // 暂时使用综合评分的近似值
+        vo.setFormatScore(Math.min(100, (int) (avgScore * 1.0)));
+        vo.setContentScore(Math.min(100, (int) (avgScore * 0.95)));
     }
 
     /**
@@ -70,7 +142,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
     /**
      * 更新简历
      */
-    public ResumeDetailVO updateResume(Long id, UpdateResumeRequest request) {
+    public ResumeDetailVO updateResume(String id, UpdateResumeRequest request) {
         // TODO: 实现更新逻辑
         return null;
     }
@@ -78,21 +150,21 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
     /**
      * 删除简历
      */
-    public void deleteResume(Long id) {
+    public void deleteResume(String id) {
         // TODO: 实现删除逻辑
     }
 
     /**
      * 设置主简历
      */
-    public void setPrimaryResume(Long id) {
+    public void setPrimaryResume(String id) {
         // TODO: 实现设置逻辑
     }
 
     /**
      * 获取优化建议
      */
-    public List<ResumeSuggestionVO> getResumeSuggestions(Long id) {
+    public List<ResumeSuggestionVO> getResumeSuggestions(String id) {
         // TODO: 实现查询逻辑
         return null;
     }
@@ -100,7 +172,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
     /**
      * 获取简历版本历史
      */
-    public List<ResumeVersionVO> getVersionHistory(Long resumeId) {
+    public List<ResumeVersionVO> getVersionHistory(String resumeId) {
         LambdaQueryWrapper<ResumeVersion> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ResumeVersion::getResumeId, resumeId)
                 .orderByDesc(ResumeVersion::getVersion);
@@ -111,7 +183,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
     /**
      * 获取指定版本详情
      */
-    public ResumeDetailVO getVersionDetail(Long resumeId, Integer version) {
+    public ResumeDetailVO getVersionDetail(String resumeId, Integer version) {
         // TODO: 实现查询逻辑
         return null;
     }
@@ -123,7 +195,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
      * @param version  版本号
      * @return 版本实体
      */
-    public ResumeVersion getVersionEntity(Long resumeId, Integer version) {
+    public ResumeVersion getVersionEntity(String resumeId, Integer version) {
         LambdaQueryWrapper<ResumeVersion> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ResumeVersion::getResumeId, resumeId)
                 .eq(ResumeVersion::getVersion, version);
@@ -136,7 +208,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
      * @param resumeId 简历ID
      * @return 内容模块列表
      */
-    public List<ResumeSection> getResumeSections(Long resumeId) {
+    public List<ResumeSection> getResumeSections(String resumeId) {
         LambdaQueryWrapper<ResumeSection> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ResumeSection::getResumeId, resumeId)
                 .isNull(ResumeSection::getResumeVersionId);
@@ -175,7 +247,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
      * @param parsedResume  解析后的简历数据
      * @return 创建的简历实体
      */
-    public Resume createResumeFromParsedData(Long userId, ResumeParseResult parsedResume) {
+    public Resume createResumeFromParsedData(String userId, ResumeParseResult parsedResume) {
         ResumeStructuredData data = parsedResume.getStructuredData();
         String targetPosition = data != null && data.getBasicInfo() != null
                 ? Objects.toString(data.getBasicInfo().getTargetPosition(), "")
@@ -244,7 +316,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
     /**
      * 创建简历各模块记录
      */
-    private void createResumeSections(Long resumeId, ResumeStructuredData data, String rawText) {
+    private void createResumeSections(String resumeId, ResumeStructuredData data, String rawText) {
         if (data == null) {
             createSection(resumeId, "RAW_TEXT", "简历内容", Map.of("content", Objects.toString(rawText, "")));
             return;
@@ -263,7 +335,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
     /**
      * 创建基本信息模块
      */
-    private void createBasicInfoSection(Long resumeId, ResumeStructuredData.BasicInfo info) {
+    private void createBasicInfoSection(String resumeId, ResumeStructuredData.BasicInfo info) {
         if (info == null) {
             return;
         }
@@ -281,7 +353,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
     /**
      * 创建教育经历模块
      */
-    private void createEducationSections(Long resumeId, List<ResumeStructuredData.EducationExperience> educations) {
+    private void createEducationSections(String resumeId, List<ResumeStructuredData.EducationExperience> educations) {
         if (educations == null || educations.isEmpty()) {
             return;
         }
@@ -299,7 +371,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
     /**
      * 创建工作经历模块
      */
-    private void createWorkSections(Long resumeId, List<ResumeStructuredData.WorkExperience> works) {
+    private void createWorkSections(String resumeId, List<ResumeStructuredData.WorkExperience> works) {
         if (works == null || works.isEmpty()) {
             return;
         }
@@ -317,7 +389,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
     /**
      * 创建项目经验模块
      */
-    private void createProjectSections(Long resumeId, List<ResumeStructuredData.ProjectExperience> projects) {
+    private void createProjectSections(String resumeId, List<ResumeStructuredData.ProjectExperience> projects) {
         if (projects == null || projects.isEmpty()) {
             return;
         }
@@ -336,7 +408,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
     /**
      * 创建技能模块
      */
-    private void createSkillsSection(Long resumeId, List<String> skills) {
+    private void createSkillsSection(String resumeId, List<String> skills) {
         if (skills == null || skills.isEmpty()) {
             return;
         }
@@ -346,7 +418,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
     /**
      * 创建证书模块
      */
-    private void createCertificateSections(Long resumeId, List<ResumeStructuredData.Certificate> certificates) {
+    private void createCertificateSections(String resumeId, List<ResumeStructuredData.Certificate> certificates) {
         if (certificates == null || certificates.isEmpty()) {
             return;
         }
@@ -362,7 +434,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
     /**
      * 通用方法：创建并保存一个简历模块
      */
-    private void createSection(Long resumeId, String type, String title, Map<String, Object> content) {
+    private void createSection(String resumeId, String type, String title, Map<String, Object> content) {
         ResumeSection section = new ResumeSection();
         section.setResumeId(resumeId);
         section.setResumeVersionId(null);

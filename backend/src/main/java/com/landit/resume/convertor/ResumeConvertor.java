@@ -45,9 +45,9 @@ public interface ResumeConvertor {
      */
     @Mapping(target = "sections", ignore = true)
     @Mapping(target = "overallScore", source = "score")
-    @Mapping(target = "keywordMatch", constant = "0")
     @Mapping(target = "formatScore", constant = "0")
     @Mapping(target = "contentScore", constant = "0")
+    @Mapping(target = "analyzed", constant = "false")
     ResumeDetailVO toDetailVO(Resume resume);
 
     /**

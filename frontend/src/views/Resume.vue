@@ -39,19 +39,19 @@
             </div>
             <div class="resume-info">
               <h3 class="resume-name">{{ store.primaryResume.name }}</h3>
-              <p class="resume-target">目标岗位：{{ store.primaryResume.targetPosition }}</p>
+              <p class="resume-target">目标岗位：{{ store.primaryResume.targetPosition || '未设置' }}</p>
             </div>
           </div>
           <div class="resume-stats">
             <div class="stat-item">
-              <div class="stat-ring" :style="{ '--score': store.primaryResume.score }">
-                <span class="ring-value">{{ store.primaryResume.score }}</span>
+              <div class="stat-ring" :style="{ '--score': store.primaryResume.analyzed ? (store.primaryResume.score || 0) : 0 }">
+                <span class="ring-value">{{ store.primaryResume.analyzed ? (store.primaryResume.score || 0) : '~' }}</span>
               </div>
               <span class="stat-label">简历评分</span>
             </div>
             <div class="stat-item">
-              <div class="stat-ring" :style="{ '--score': store.primaryResume.completeness }">
-                <span class="ring-value">{{ store.primaryResume.completeness }}%</span>
+              <div class="stat-ring" :style="{ '--score': store.primaryResume.analyzed ? (store.primaryResume.completeness || 0) : 0 }">
+                <span class="ring-value">{{ store.primaryResume.analyzed ? (store.primaryResume.completeness || 0) + '%' : '~' }}</span>
               </div>
               <span class="stat-label">完整度</span>
             </div>
@@ -64,11 +64,11 @@
               </svg>
               查看详情
             </button>
-            <button class="action-btn secondary" @click="optimizeResume(store.primaryResume.id)">
+            <button class="action-btn secondary" @click="optimizeResume(store.primaryResume.id)" :disabled="!store.primaryResume.analyzed">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
               </svg>
-              AI优化
+              {{ store.primaryResume.analyzed ? 'AI优化' : '待分析' }}
             </button>
           </div>
         </div>
@@ -193,7 +193,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAppStore } from '@/stores'
 import { useRouter } from 'vue-router'
 import type { Resume, ResumeStatus } from '@/types'
@@ -209,9 +209,14 @@ const router = useRouter()
 const activeFilter = ref<string>('all')
 const filters: FilterItem[] = [
   { key: 'all', label: '全部' },
-  { key: 'optimized', label: '已优化' },
-  { key: 'draft', label: '草稿' }
+  { key: 'OPTIMIZED', label: '已优化' },
+  { key: 'DRAFT', label: '草稿' }
 ]
+
+// 页面加载时获取主简历信息
+onMounted(async () => {
+  await store.fetchPrimaryResume()
+})
 
 const filteredResumes = computed<Resume[]>(() => {
   if (activeFilter.value === 'all') {
@@ -222,8 +227,8 @@ const filteredResumes = computed<Resume[]>(() => {
 
 function getStatusText(status: ResumeStatus): string {
   const statusMap: Record<ResumeStatus, string> = {
-    optimized: '已优化',
-    draft: '草稿'
+    OPTIMIZED: '已优化',
+    DRAFT: '草稿'
   }
   return statusMap[status] || status
 }
@@ -435,18 +440,22 @@ function deleteResume(id: string): void {
   font-weight: $weight-medium;
   border-radius: $radius-md;
   transition: all $transition-fast;
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
   &.primary {
     background: $color-accent-glow;
     color: $color-accent;
     border: 1px solid rgba(212, 168, 83, 0.3);
-    &:hover {
+    &:hover:not(:disabled) {
       background: rgba(212, 168, 83, 0.2);
     }
   }
   &.secondary {
     background: rgba(255, 255, 255, 0.05);
     color: $color-text-secondary;
-    &:hover {
+    &:hover:not(:disabled) {
       background: rgba(255, 255, 255, 0.1);
       color: $color-text-primary;
     }

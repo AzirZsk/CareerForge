@@ -28,7 +28,7 @@ public class ReviewHandler {
      * @return PDF 字节数组
      */
     @Transactional(readOnly = true)
-    public byte[] exportReview(Long id) {
+    public byte[] exportReview(String id) {
         // TODO: 实现导出复盘报告逻辑
         // 1. 获取复盘详情
         // 2. 生成 PDF 报告

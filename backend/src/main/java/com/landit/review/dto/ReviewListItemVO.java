@@ -16,9 +16,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ReviewListItemVO {
 
-    private Long id;
+    private String id;
 
-    private Long interviewId;
+    private String interviewId;
 
     private Integer overallScore;
 

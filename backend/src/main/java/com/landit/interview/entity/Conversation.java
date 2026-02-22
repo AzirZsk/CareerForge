@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 @TableName(value = "t_conversation", autoResultMap = true)
 public class Conversation extends BaseEntity {
 
-    private Long sessionId;
+    private String sessionId;
 
     private ConversationRole role;
 

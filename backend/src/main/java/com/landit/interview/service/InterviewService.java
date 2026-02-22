@@ -29,7 +29,7 @@ public class InterviewService extends ServiceImpl<InterviewMapper, Interview> {
     /**
      * 获取面试详情
      */
-    public InterviewDetailVO getInterviewDetail(Long id) {
+    public InterviewDetailVO getInterviewDetail(String id) {
         // TODO: 实现查询逻辑
         return null;
     }

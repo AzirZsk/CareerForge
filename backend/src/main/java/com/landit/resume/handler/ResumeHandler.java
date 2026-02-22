@@ -8,6 +8,7 @@ import com.landit.resume.convertor.ResumeConvertor;
 import com.landit.resume.dto.DeriveResumeRequest;
 import com.landit.resume.dto.OptimizeResumeRequest;
 import com.landit.resume.dto.OptimizeResumeResponse;
+import com.landit.resume.dto.PrimaryResumeVO;
 import com.landit.resume.dto.ResumeDetailVO;
 import com.landit.resume.entity.Resume;
 import com.landit.resume.entity.ResumeSection;
@@ -40,6 +41,44 @@ public class ResumeHandler {
     private final ResumeVersionMapper resumeVersionMapper;
     private final ResumeSectionMapper resumeSectionMapper;
     private final ResumeConvertor resumeConvertor;
+
+    /**
+     * 获取主简历
+     *
+     * @return 主简历VO，不存在则返回 null
+     */
+    public PrimaryResumeVO getPrimaryResume() {
+        Resume resume = resumeService.getPrimaryResume();
+        if (resume == null) {
+            return null;
+        }
+
+        // 判断是否已完成分析（根据评分和完整度）
+        boolean analyzed = resumeService.isResumeAnalyzed(resume);
+
+        PrimaryResumeVO vo = new PrimaryResumeVO();
+        vo.setId(resume.getId());
+        vo.setName(resume.getName());
+        vo.setTargetPosition(resume.getTargetPosition());
+        vo.setStatus(resume.getStatus());
+        vo.setScore(resume.getScore());
+        vo.setCompleteness(resume.getCompleteness());
+        vo.setAnalyzed(analyzed);
+        vo.setCreatedAt(resume.getCreatedAt());
+        vo.setUpdatedAt(resume.getUpdatedAt());
+
+        return vo;
+    }
+
+    /**
+     * 获取简历详情
+     *
+     * @param id 简历ID
+     * @return 简历详情VO
+     */
+    public ResumeDetailVO getResumeDetail(String id) {
+        return resumeService.getResumeDetail(id);
+    }
 
     /**
      * 解析简历文件，将文件转换为图片列表
@@ -92,7 +131,7 @@ public class ResumeHandler {
      * @return 更新后的简历详情
      */
     @Transactional(rollbackFor = Exception.class)
-    public ResumeDetailVO applyResumeSuggestion(Long id, Long suggestionId) {
+    public ResumeDetailVO applyResumeSuggestion(String id, String suggestionId) {
         // TODO: 实现应用建议逻辑
         log.info("应用优化建议: resumeId={}, suggestionId={}", id, suggestionId);
         return null;
@@ -107,7 +146,7 @@ public class ResumeHandler {
      * @return 优化结果
      */
     @Transactional(rollbackFor = Exception.class)
-    public OptimizeResumeResponse optimizeResume(Long id, OptimizeResumeRequest request) {
+    public OptimizeResumeResponse optimizeResume(String id, OptimizeResumeRequest request) {
         // TODO: 实现 AI 优化逻辑
         log.info("AI优化简历: resumeId={}", id);
         return null;
@@ -120,7 +159,7 @@ public class ResumeHandler {
      * @param id 简历ID
      * @return PDF字节数组
      */
-    public byte[] exportResume(Long id) {
+    public byte[] exportResume(String id) {
         // TODO: 实现 PDF 导出逻辑
         log.info("导出简历PDF: resumeId={}", id);
         return null;
@@ -135,7 +174,7 @@ public class ResumeHandler {
      * @return 回滚后的简历详情
      */
     @Transactional(rollbackFor = Exception.class)
-    public ResumeDetailVO rollbackToVersion(Long resumeId, Integer targetVersion) {
+    public ResumeDetailVO rollbackToVersion(String resumeId, Integer targetVersion) {
         // 获取当前简历
         Resume resume = resumeService.getById(resumeId);
         if (resume == null) {
@@ -173,7 +212,7 @@ public class ResumeHandler {
      * @return 派生后的简历
      */
     @Transactional(rollbackFor = Exception.class)
-    public Resume deriveResume(Long sourceResumeId, DeriveResumeRequest request) {
+    public Resume deriveResume(String sourceResumeId, DeriveResumeRequest request) {
         // 获取源简历
         Resume sourceResume = resumeService.getById(sourceResumeId);
         if (sourceResume == null) {
@@ -208,7 +247,7 @@ public class ResumeHandler {
     /**
      * 复制内容模块到派生简历
      */
-    private void copySectionsToDerivedResume(Long sourceResumeId, Long derivedResumeId) {
+    private void copySectionsToDerivedResume(String sourceResumeId, String derivedResumeId) {
         List<ResumeSection> sourceSections = resumeService.getResumeSections(sourceResumeId);
         for (ResumeSection section : sourceSections) {
             ResumeSection newSection = new ResumeSection();

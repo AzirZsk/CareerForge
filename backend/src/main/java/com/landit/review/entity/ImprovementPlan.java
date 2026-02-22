@@ -19,7 +19,7 @@ import java.util.List;
 @TableName(value = "t_improvement_plan", autoResultMap = true)
 public class ImprovementPlan extends BaseEntity {
 
-    private Long reviewId;
+    private String reviewId;
 
     private String category;
 

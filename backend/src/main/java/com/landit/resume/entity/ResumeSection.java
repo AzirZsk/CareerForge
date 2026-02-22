@@ -19,9 +19,9 @@ import java.util.Map;
 @TableName(value = "t_resume_section", autoResultMap = true)
 public class ResumeSection extends BaseEntity {
 
-    private Long resumeId;
+    private String resumeId;
 
-    private Long resumeVersionId;
+    private String resumeVersionId;
 
     private String type;
 

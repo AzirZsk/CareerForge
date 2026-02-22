@@ -38,13 +38,13 @@ public class ReviewController {
 
     @Operation(summary = "获取复盘详情")
     @GetMapping("/{id}")
-    public ApiResponse<InterviewReviewVO> getReviewDetail(@PathVariable Long id) {
+    public ApiResponse<InterviewReviewVO> getReviewDetail(@PathVariable String id) {
         return ApiResponse.success(reviewService.getReviewDetail(id));
     }
 
     @Operation(summary = "导出复盘报告")
     @GetMapping("/{id}/export")
-    public byte[] exportReview(@PathVariable Long id) {
+    public byte[] exportReview(@PathVariable String id) {
         return reviewHandler.exportReview(id);
     }
 

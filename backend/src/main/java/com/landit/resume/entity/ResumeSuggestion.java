@@ -16,7 +16,7 @@ import lombok.EqualsAndHashCode;
 @TableName(value = "t_resume_suggestion", autoResultMap = true)
 public class ResumeSuggestion extends BaseEntity {
 
-    private Long resumeId;
+    private String resumeId;
 
     private SuggestionType type;
 

@@ -26,7 +26,7 @@ public class UserStatusResponse {
     @AllArgsConstructor
     public static class UserInfo {
 
-        private Long id;
+        private String id;
 
         private String name;
 
@@ -40,7 +40,7 @@ public class UserStatusResponse {
         return UserStatusResponse.builder().exists(false).build();
     }
 
-    public static UserStatusResponse exists(Long id, String name, String gender, String avatar) {
+    public static UserStatusResponse exists(String id, String name, String gender, String avatar) {
         return UserStatusResponse.builder()
                 .exists(true)
                 .user(UserInfo.builder()

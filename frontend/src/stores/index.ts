@@ -18,6 +18,7 @@ import {
   jobRecommendations
 } from '@/mock/data'
 import * as userApi from '@/api/user'
+import * as resumeApi from '@/api/resume'
 import type {
   User,
   Resume,
@@ -31,7 +32,8 @@ import type {
   Job,
   UserUpdateInfo,
   UserStatusResponse,
-  Gender
+  Gender,
+  PrimaryResumeVO
 } from '@/types'
 
 export const useAppStore = defineStore('app', () => {
@@ -44,6 +46,7 @@ export const useAppStore = defineStore('app', () => {
   const resumeList = ref<Resume[]>(resumes)
   const currentResume = ref<ResumeDetail>(resumeDetail)
   const suggestions = ref<ResumeSuggestion[]>(resumeSuggestions)
+  const primaryResume = ref<PrimaryResumeVO | null>(null)
 
   // 面试相关
   const interviews = ref<Interview[]>(interviewHistory)
@@ -64,10 +67,6 @@ export const useAppStore = defineStore('app', () => {
   const sidebarCollapsed = ref<boolean>(false)
 
   // 计算属性
-  const primaryResume = computed(() => {
-    return resumeList.value.find((r: Resume) => r.isPrimary)
-  })
-
   const recentInterviews = computed(() => {
     return interviews.value.slice(0, 3)
   })
@@ -140,6 +139,26 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
+  // 获取主简历信息
+  async function fetchPrimaryResume(): Promise<void> {
+    try {
+      const result = await resumeApi.getPrimaryResume()
+      primaryResume.value = result
+    } catch (error) {
+      console.error('获取主简历失败', error)
+    }
+  }
+
+  // 获取简历详情
+  async function fetchResumeDetail(id: string): Promise<void> {
+    try {
+      const result = await resumeApi.getResumeDetail(id)
+      currentResume.value = result
+    } catch (error) {
+      console.error('获取简历详情失败', error)
+    }
+  }
+
   return {
     // 状态
     user,
@@ -148,6 +167,7 @@ export const useAppStore = defineStore('app', () => {
     resumeList,
     currentResume,
     suggestions,
+    primaryResume,
     interviews,
     questions,
     currentInterview,
@@ -157,7 +177,6 @@ export const useAppStore = defineStore('app', () => {
     activeNav,
     sidebarCollapsed,
     // 计算属性
-    primaryResume,
     recentInterviews,
     averageInterviewScore,
     // 方法
@@ -167,6 +186,8 @@ export const useAppStore = defineStore('app', () => {
     setPrimaryResume,
     addInterview,
     checkUserExists,
-    initUser
+    initUser,
+    fetchPrimaryResume,
+    fetchResumeDetail
   }
 })

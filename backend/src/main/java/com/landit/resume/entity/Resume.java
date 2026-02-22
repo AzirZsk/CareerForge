@@ -17,7 +17,7 @@ import lombok.EqualsAndHashCode;
 @TableName(value = "t_resume", autoResultMap = true)
 public class Resume extends BaseEntity {
 
-    private Long userId;
+    private String userId;
 
     private String name;
 
@@ -25,7 +25,7 @@ public class Resume extends BaseEntity {
 
     private ResumeType resumeType;
 
-    private Long sourceResumeId;
+    private String sourceResumeId;
 
     private Integer version;
 

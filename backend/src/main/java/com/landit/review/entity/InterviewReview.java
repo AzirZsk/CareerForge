@@ -15,9 +15,9 @@ import lombok.EqualsAndHashCode;
 @TableName("t_interview_review")
 public class InterviewReview extends BaseEntity {
 
-    private Long interviewId;
+    private String interviewId;
 
-    private Long userId;
+    private String userId;
 
     private Integer overallScore;
 

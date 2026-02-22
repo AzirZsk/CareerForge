@@ -20,7 +20,7 @@ import java.util.List;
 @AllArgsConstructor
 public class InterviewDetailVO {
 
-    private Long id;
+    private String id;
 
     private InterviewType type;
 
@@ -47,7 +47,7 @@ public class InterviewDetailVO {
     @AllArgsConstructor
     public static class ConversationVO {
 
-        private Long id;
+        private String id;
 
         private String role;
 

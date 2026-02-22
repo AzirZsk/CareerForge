@@ -18,9 +18,9 @@ import java.util.List;
 @AllArgsConstructor
 public class InterviewReviewVO {
 
-    private Long id;
+    private String id;
 
-    private Long interviewId;
+    private String interviewId;
 
     private Integer overallScore;
 

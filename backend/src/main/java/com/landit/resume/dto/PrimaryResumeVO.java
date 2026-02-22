@@ -1,24 +1,19 @@
 package com.landit.resume.dto;
 
-import com.landit.common.enums.ChangeType;
 import com.landit.common.enums.ResumeStatus;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
 /**
- * 简历版本VO
+ * 主简历VO
  *
  * @author Azir
  */
 @Data
-public class ResumeVersionVO {
+public class PrimaryResumeVO {
 
     private String id;
-
-    private String resumeId;
-
-    private Integer version;
 
     private String name;
 
@@ -30,10 +25,15 @@ public class ResumeVersionVO {
 
     private Integer completeness;
 
-    private String changeSummary;
-
-    private ChangeType changeType;
+    /**
+     * 是否已完成分析
+     * true: 已完成AI结构化分析
+     * false: 仅有原始文本，未完成分析
+     */
+    private Boolean analyzed;
 
     private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
 
 }

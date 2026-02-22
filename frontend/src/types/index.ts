@@ -19,7 +19,7 @@ export interface User {
 export interface UserStatusResponse {
   exists: boolean
   user?: {
-    id: number
+    id: string
     name: string
     gender: string
     avatar: string | null
@@ -41,7 +41,20 @@ export interface ApiResponse<T> {
 }
 
 // 简历状态
-export type ResumeStatus = 'optimized' | 'draft'
+export type ResumeStatus = 'OPTIMIZED' | 'DRAFT'
+
+// 主简历VO
+export interface PrimaryResumeVO {
+  id: string
+  name: string
+  targetPosition: string
+  status: ResumeStatus
+  score: number
+  completeness: number
+  analyzed: boolean
+  createdAt: string
+  updatedAt: string
+}
 
 // 简历列表项
 export interface Resume {
@@ -64,25 +77,67 @@ export interface ResumeSuggestionItem {
   content: string
 }
 
+// 简历模块类型枚举
+export type SectionType = 'BASIC_INFO' | 'EDUCATION' | 'WORK' | 'PROJECT' | 'SKILLS' | 'CERTIFICATE'
+
+// 基本信息（后端实际字段）
+export interface BasicInfoContent {
+  name: string
+  gender?: string
+  phone?: string
+  email?: string
+  targetPosition?: string
+  summary?: string
+}
+
+// 教育经历内容
+export interface EducationContent {
+  school: string
+  major?: string
+  degree?: string
+  period?: string
+}
+
 // 工作经历内容
 export interface WorkExperience {
   company: string
-  position: string
-  period: string
-  description: string
+  position?: string
+  period?: string
+  description?: string
 }
 
 // 项目经历内容
 export interface ProjectExperience {
   name: string
-  role: string
-  period: string
-  description: string
-  achievements: string[]
+  role?: string
+  period?: string
+  description?: string
+  achievements?: string[]
 }
 
-// 简历模块内容类型
-export type ResumeSectionContent = Record<string, unknown> | WorkExperience[] | ProjectExperience[] | string[]
+// 技能内容（后端返回 { skills: string[] }）
+export interface SkillsContent {
+  skills: string[]
+}
+
+// 证书内容
+export interface CertificateContent {
+  name: string
+  date?: string
+}
+
+// 简历模块内容类型（支持后端单个对象和 mock 数组格式）
+export type ResumeSectionContent =
+  | BasicInfoContent
+  | EducationContent
+  | WorkExperience
+  | WorkExperience[]
+  | ProjectExperience
+  | ProjectExperience[]
+  | SkillsContent
+  | string[]
+  | CertificateContent
+  | Record<string, unknown>
 
 // 简历模块
 export interface ResumeSection {
@@ -91,7 +146,7 @@ export interface ResumeSection {
   title: string
   content: ResumeSectionContent
   score: number
-  suggestions: ResumeSuggestionItem[]
+  suggestions: ResumeSuggestionItem[] | null
 }
 
 // 简历详情
@@ -101,9 +156,9 @@ export interface ResumeDetail {
   targetPosition: string
   sections: ResumeSection[]
   overallScore: number
-  keywordMatch: number
   formatScore: number
   contentScore: number
+  analyzed: boolean
 }
 
 // 简历优化建议
@@ -299,7 +354,7 @@ export interface InterviewSettings {
 
 // 会话问题
 export interface SessionQuestion {
-  id: number
+  id: string
   category: string
   question: string
   keyPoints: string[]
@@ -307,7 +362,7 @@ export interface SessionQuestion {
 
 // 会话消息
 export interface SessionMessage {
-  id: number
+  id: string
   role: ConversationRole
   content: string
   timestamp: Date

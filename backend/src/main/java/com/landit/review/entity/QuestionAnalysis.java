@@ -19,7 +19,7 @@ import java.util.List;
 @TableName(value = "t_question_analysis", autoResultMap = true)
 public class QuestionAnalysis extends BaseEntity {
 
-    private Long reviewId;
+    private String reviewId;
 
     private String question;
 

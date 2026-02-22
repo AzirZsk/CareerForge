@@ -20,7 +20,7 @@ import java.util.List;
 @AllArgsConstructor
 public class ResumeDetailVO {
 
-    private Long id;
+    private String id;
 
     private String name;
 
@@ -30,11 +30,16 @@ public class ResumeDetailVO {
 
     private Integer overallScore;
 
-    private Integer keywordMatch;
-
     private Integer formatScore;
 
     private Integer contentScore;
+
+    /**
+     * 是否已完成分析
+     * true: 已完成AI结构化分析
+     * false: 仅有原始文本，未完成分析
+     */
+    private Boolean analyzed;
 
     /**
      * 简历模块VO
@@ -45,7 +50,7 @@ public class ResumeDetailVO {
     @AllArgsConstructor
     public static class ResumeSectionVO {
 
-        private Long id;
+        private String id;
 
         private String type;
 

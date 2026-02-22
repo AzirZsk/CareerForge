@@ -50,19 +50,19 @@ public class InterviewController {
 
     @Operation(summary = "提交回答")
     @PostMapping("/sessions/{sessionId}/answers")
-    public ApiResponse<SubmitAnswerResponse> submitAnswer(@PathVariable Long sessionId, @Valid @RequestBody SubmitAnswerRequest request) {
+    public ApiResponse<SubmitAnswerResponse> submitAnswer(@PathVariable String sessionId, @Valid @RequestBody SubmitAnswerRequest request) {
         return ApiResponse.success(interviewHandler.submitAnswer(sessionId, request));
     }
 
     @Operation(summary = "请求提示")
     @GetMapping("/sessions/{sessionId}/hints")
-    public ApiResponse<HintResponse> getHint(@PathVariable Long sessionId, @RequestParam Long questionId) {
+    public ApiResponse<HintResponse> getHint(@PathVariable String sessionId, @RequestParam String questionId) {
         return ApiResponse.success(interviewHandler.getHint(sessionId, questionId));
     }
 
     @Operation(summary = "结束面试")
     @PostMapping("/sessions/{sessionId}/finish")
-    public ApiResponse<FinishSessionResponse> finishInterview(@PathVariable Long sessionId, @RequestBody FinishSessionRequest request) {
+    public ApiResponse<FinishSessionResponse> finishInterview(@PathVariable String sessionId, @RequestBody FinishSessionRequest request) {
         return ApiResponse.success(interviewHandler.finishInterview(sessionId, request));
     }
 
@@ -74,7 +74,7 @@ public class InterviewController {
 
     @Operation(summary = "获取面试详情")
     @GetMapping("/{id}")
-    public ApiResponse<InterviewDetailVO> getInterviewDetail(@PathVariable Long id) {
+    public ApiResponse<InterviewDetailVO> getInterviewDetail(@PathVariable String id) {
         return ApiResponse.success(interviewService.getInterviewDetail(id));
     }
 

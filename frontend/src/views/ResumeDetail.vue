@@ -31,7 +31,7 @@
               </div>
               <div class="score-labels">
                 <span class="score-title">综合评分</span>
-                <span class="score-detail">关键词匹配 {{ store.currentResume.keywordMatch }}%</span>
+                <span class="score-detail">格式规范 {{ store.currentResume.formatScore }}%</span>
               </div>
             </div>
           </div>
@@ -56,21 +56,6 @@
 
       <!-- 评分指标 -->
       <section class="metrics-section animate-in" style="--delay: 2">
-        <div class="metric-card">
-          <div class="metric-header">
-            <span class="metric-icon keyword">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
-            </span>
-            <span class="metric-title">关键词匹配</span>
-          </div>
-          <div class="metric-value">{{ store.currentResume.keywordMatch }}</div>
-          <div class="metric-bar">
-            <div class="metric-fill" :style="{ width: store.currentResume.keywordMatch + '%' }"></div>
-          </div>
-        </div>
         <div class="metric-card">
           <div class="metric-header">
             <span class="metric-icon format">
@@ -138,7 +123,7 @@
                 </div>
               </div>
               <p class="section-preview">{{ getSectionPreview(section) }}</p>
-              <div v-if="section.suggestions.length > 0" class="section-hint">
+              <div v-if="section.suggestions?.length" class="section-hint">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="10"></circle>
                   <line x1="12" y1="16" x2="12" y2="12"></line>
@@ -164,38 +149,63 @@
             </div>
           </div>
           <div class="detail-content">
-            <div class="content-block" v-if="currentSectionDetail?.type === 'basic' && basicContent">
+            <!-- 基本信息 -->
+            <div class="content-block" v-if="currentSectionDetail?.type === 'BASIC_INFO' && basicContent">
               <div class="info-row" v-for="(value, key) in basicContent" :key="key">
-                <span class="info-label">{{ getFieldLabel(key) }}</span>
-                <span class="info-value">{{ value }}</span>
+                <template v-if="value">
+                  <span class="info-label">{{ getFieldLabel(key as string) }}</span>
+                  <span class="info-value">{{ value }}</span>
+                </template>
               </div>
             </div>
-            <div class="content-block" v-else-if="currentSectionDetail?.type === 'experience'">
-              <div v-for="(item, idx) in experienceContent" :key="idx" class="experience-item">
+            <!-- 教育经历 -->
+            <div class="content-block" v-else-if="currentSectionDetail?.type === 'EDUCATION' && educationContent">
+              <div class="info-row" v-for="(value, key) in educationContent" :key="key">
+                <template v-if="value">
+                  <span class="info-label">{{ getFieldLabel(key as string) }}</span>
+                  <span class="info-value">{{ value }}</span>
+                </template>
+              </div>
+            </div>
+            <!-- 工作经历 -->
+            <div class="content-block" v-else-if="currentSectionDetail?.type === 'WORK' && workContent">
+              <div class="experience-item">
                 <div class="exp-header">
-                  <h4 class="exp-title">{{ item.company }}</h4>
-                  <span class="exp-period">{{ item.period }}</span>
+                  <h4 class="exp-title">{{ workContent.company }}</h4>
+                  <span class="exp-period" v-if="workContent.period">{{ workContent.period }}</span>
                 </div>
-                <p class="exp-position" v-if="item.position">{{ item.position }}</p>
-                <p class="exp-desc">{{ item.description }}</p>
+                <p class="exp-position" v-if="workContent.position">{{ workContent.position }}</p>
+                <p class="exp-desc" v-if="workContent.description">{{ workContent.description }}</p>
               </div>
             </div>
-            <div class="content-block" v-else-if="currentSectionDetail?.type === 'project'">
-              <div v-for="(item, idx) in projectContent" :key="idx" class="experience-item">
+            <!-- 项目经历 -->
+            <div class="content-block" v-else-if="currentSectionDetail?.type === 'PROJECT' && projectContent">
+              <div class="experience-item">
                 <div class="exp-header">
-                  <h4 class="exp-title">{{ item.name }}</h4>
-                  <span class="exp-period">{{ item.period }}</span>
+                  <h4 class="exp-title">{{ projectContent.name }}</h4>
+                  <span class="exp-period" v-if="projectContent.period">{{ projectContent.period }}</span>
                 </div>
-                <p class="exp-desc">{{ item.description }}</p>
-                <div v-if="item.achievements && item.achievements.length > 0" class="exp-achievements">
-                  <span v-for="a in item.achievements" :key="a" class="achievement-tag">{{ a }}</span>
+                <p class="exp-position" v-if="projectContent.role">{{ projectContent.role }}</p>
+                <p class="exp-desc" v-if="projectContent.description">{{ projectContent.description }}</p>
+                <div v-if="projectContent.achievements?.length" class="exp-achievements">
+                  <span v-for="a in projectContent.achievements" :key="a" class="achievement-tag">{{ a }}</span>
                 </div>
               </div>
             </div>
-            <div class="content-block" v-else-if="currentSectionDetail?.type === 'skill'">
+            <!-- 技能 -->
+            <div class="content-block" v-else-if="currentSectionDetail?.type === 'SKILLS'">
               <ul class="skill-list">
                 <li v-for="(skill, idx) in skillContent" :key="idx">{{ skill }}</li>
               </ul>
+            </div>
+            <!-- 证书 -->
+            <div class="content-block" v-else-if="currentSectionDetail?.type === 'CERTIFICATE' && certificateContent">
+              <div class="info-row" v-for="(value, key) in certificateContent" :key="key">
+                <template v-if="value">
+                  <span class="info-label">{{ getFieldLabel(key as string) }}</span>
+                  <span class="info-value">{{ value }}</span>
+                </template>
+              </div>
             </div>
           </div>
           <div v-if="hasSuggestions" class="suggestions-block">
@@ -218,67 +228,87 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores'
-import type { ResumeSection, ResumeSuggestionItem } from '@/types'
-
-interface BasicContent {
-  name: string
-  phone: string
-  email: string
-  location: string
-  age: number
-  workYears: number
-}
-
-interface ExperienceItem {
-  company: string
-  position: string
-  period: string
-  description: string
-}
-
-interface ProjectItem {
-  name: string
-  role: string
-  period: string
-  description: string
-  achievements: string[]
-}
+import type {
+  ResumeSection,
+  ResumeSuggestionItem,
+  BasicInfoContent,
+  EducationContent,
+  WorkExperience,
+  ProjectExperience,
+  SkillsContent,
+  CertificateContent
+} from '@/types'
 
 const store = useAppStore()
-const activeSection = ref<string>('section_001')
+const route = useRoute()
+const activeSection = ref<string>('')
+
+// 页面加载时获取简历详情
+onMounted(async () => {
+  const id = route.params.id as string
+  if (id) {
+    await store.fetchResumeDetail(id)
+    // 默认选中第一个模块
+    if (store.currentResume.sections.length > 0) {
+      activeSection.value = String(store.currentResume.sections[0].id)
+    }
+  }
+})
 
 const currentSectionDetail = computed<ResumeSection | undefined>(() => {
   return store.currentResume.sections.find((s: ResumeSection) => s.id === activeSection.value)
 })
 
-const basicContent = computed<BasicContent | null>(() => {
-  if (currentSectionDetail.value?.type === 'basic') {
-    return currentSectionDetail.value.content as unknown as BasicContent
+// 基本信息（BASIC_INFO）
+const basicContent = computed<BasicInfoContent | null>(() => {
+  if (currentSectionDetail.value?.type === 'BASIC_INFO') {
+    return currentSectionDetail.value.content as BasicInfoContent
   }
   return null
 })
 
-const experienceContent = computed<ExperienceItem[]>(() => {
-  if (currentSectionDetail.value?.type === 'experience') {
-    return currentSectionDetail.value.content as ExperienceItem[]
+// 教育经历（EDUCATION）
+const educationContent = computed<EducationContent | null>(() => {
+  if (currentSectionDetail.value?.type === 'EDUCATION') {
+    return currentSectionDetail.value.content as EducationContent
   }
-  return []
+  return null
 })
 
-const projectContent = computed<ProjectItem[]>(() => {
-  if (currentSectionDetail.value?.type === 'project') {
-    return currentSectionDetail.value.content as ProjectItem[]
+// 工作经历（WORK）
+const workContent = computed<WorkExperience | null>(() => {
+  if (currentSectionDetail.value?.type === 'WORK') {
+    return currentSectionDetail.value.content as WorkExperience
   }
-  return []
+  return null
 })
 
+// 项目经历（PROJECT）
+const projectContent = computed<ProjectExperience | null>(() => {
+  if (currentSectionDetail.value?.type === 'PROJECT') {
+    return currentSectionDetail.value.content as ProjectExperience
+  }
+  return null
+})
+
+// 技能（SKILLS）- 后端返回 { skills: string[] }
 const skillContent = computed<string[]>(() => {
-  if (currentSectionDetail.value?.type === 'skill') {
-    return currentSectionDetail.value.content as string[]
+  if (currentSectionDetail.value?.type === 'SKILLS') {
+    const content = currentSectionDetail.value.content as SkillsContent
+    return content.skills ?? []
   }
   return []
+})
+
+// 证书（CERTIFICATE）
+const certificateContent = computed<CertificateContent | null>(() => {
+  if (currentSectionDetail.value?.type === 'CERTIFICATE') {
+    return currentSectionDetail.value.content as CertificateContent
+  }
+  return null
 })
 
 const sectionSuggestions = computed<ResumeSuggestionItem[]>(() => {
@@ -289,12 +319,14 @@ const hasSuggestions = computed<boolean>(() => {
   return sectionSuggestions.value.length > 0
 })
 
+// 模块图标映射（后端大写格式）
 const sectionIcons: Record<string, string> = {
-  basic: '👤',
-  experience: '💼',
-  project: '🎯',
-  skill: '⚡',
-  education: '🎓'
+  BASIC_INFO: '👤',
+  EDUCATION: '🎓',
+  WORK: '💼',
+  PROJECT: '🎯',
+  SKILLS: '⚡',
+  CERTIFICATE: '🏆'
 }
 
 function getSectionIcon(type: string): string {
@@ -302,17 +334,34 @@ function getSectionIcon(type: string): string {
 }
 
 function getSectionPreview(section: ResumeSection): string {
-  if (section.type === 'basic') {
-    const content = section.content as Record<string, unknown>
-    return `${content.name as string} · ${content.workYears as number}年经验`
+  switch (section.type) {
+    case 'BASIC_INFO': {
+      const content = section.content as BasicInfoContent
+      return content.name ?? '基本信息'
+    }
+    case 'EDUCATION': {
+      const content = section.content as EducationContent
+      return content.school ?? '教育经历'
+    }
+    case 'WORK': {
+      const content = section.content as WorkExperience
+      return content.company ?? '工作经历'
+    }
+    case 'PROJECT': {
+      const content = section.content as ProjectExperience
+      return content.name ?? '项目经历'
+    }
+    case 'SKILLS': {
+      const content = section.content as SkillsContent
+      return `${content.skills?.length ?? 0} 项技能`
+    }
+    case 'CERTIFICATE': {
+      const content = section.content as CertificateContent
+      return content.name ?? '证书'
+    }
+    default:
+      return ''
   }
-  if (section.type === 'experience' || section.type === 'project') {
-    return `${(section.content as unknown[]).length} 条记录`
-  }
-  if (section.type === 'skill') {
-    return `${(section.content as string[]).length} 项技能`
-  }
-  return ''
 }
 
 function getScoreClass(score: number): string {
@@ -321,16 +370,29 @@ function getScoreClass(score: number): string {
   return 'average'
 }
 
+// 字段标签映射（适配后端字段）
+const fieldLabels: Record<string, string> = {
+  name: '姓名',
+  gender: '性别',
+  phone: '电话',
+  email: '邮箱',
+  targetPosition: '目标岗位',
+  summary: '简介',
+  school: '学校',
+  major: '专业',
+  degree: '学历',
+  period: '时间',
+  company: '公司',
+  position: '职位',
+  description: '描述',
+  role: '角色',
+  achievements: '成果',
+  skills: '技能',
+  date: '日期'
+}
+
 function getFieldLabel(key: string): string {
-  const labels: Record<string, string> = {
-    name: '姓名',
-    phone: '电话',
-    email: '邮箱',
-    location: '所在地',
-    age: '年龄',
-    workYears: '工作年限'
-  }
-  return labels[key] || key
+  return fieldLabels[key] || key
 }
 
 function optimizeResume(): void {
@@ -484,7 +546,7 @@ function optimizeResume(): void {
 // 指标区域
 .metrics-section {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: $spacing-lg;
 }
 

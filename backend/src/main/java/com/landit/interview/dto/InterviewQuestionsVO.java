@@ -31,7 +31,7 @@ public class InterviewQuestionsVO {
     @AllArgsConstructor
     public static class InterviewQuestionVO {
 
-        private Long id;
+        private String id;
 
         private String category;
 

@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ResumeSuggestionVO {
 
-    private Long id;
+    private String id;
 
     private SuggestionType type;
 

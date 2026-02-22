@@ -55,7 +55,7 @@ public class InterviewHandler {
      * @return 评分响应
      */
     @Transactional(rollbackFor = Exception.class)
-    public SubmitAnswerResponse submitAnswer(Long sessionId, SubmitAnswerRequest request) {
+    public SubmitAnswerResponse submitAnswer(String sessionId, SubmitAnswerRequest request) {
         // TODO: 实现提交回答逻辑
         // 1. 保存用户回答
         // 2. 调用 AI 进行评分
@@ -72,7 +72,7 @@ public class InterviewHandler {
      * @param questionId 题目ID
      * @return 提示响应
      */
-    public HintResponse getHint(Long sessionId, Long questionId) {
+    public HintResponse getHint(String sessionId, String questionId) {
         // TODO: 实现获取提示逻辑
         // 1. 获取当前题目
         // 2. 调用 AI 生成提示
@@ -89,7 +89,7 @@ public class InterviewHandler {
      * @return 结束响应
      */
     @Transactional(rollbackFor = Exception.class)
-    public FinishSessionResponse finishInterview(Long sessionId, FinishSessionRequest request) {
+    public FinishSessionResponse finishInterview(String sessionId, FinishSessionRequest request) {
         // TODO: 实现结束面试逻辑
         // 1. 更新会话状态为已完成
         // 2. 计算总分

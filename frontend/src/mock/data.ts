@@ -33,7 +33,7 @@ export const resumes: Resume[] = [
     name: '前端工程师简历_v3',
     targetPosition: '高级前端工程师',
     updatedAt: '2024-02-18 14:30',
-    status: 'optimized',
+    status: 'OPTIMIZED',
     score: 92,
     completeness: 95,
     isPrimary: true
@@ -43,7 +43,7 @@ export const resumes: Resume[] = [
     name: '全栈开发简历',
     targetPosition: '全栈开发工程师',
     updatedAt: '2024-02-15 09:20',
-    status: 'draft',
+    status: 'DRAFT',
     score: 78,
     completeness: 72,
     isPrimary: false
@@ -53,7 +53,7 @@ export const resumes: Resume[] = [
     name: '技术经理岗位简历',
     targetPosition: '技术经理',
     updatedAt: '2024-02-10 16:45',
-    status: 'optimized',
+    status: 'OPTIMIZED',
     score: 88,
     completeness: 90,
     isPrimary: false
@@ -143,9 +143,9 @@ export const resumeDetail: ResumeDetail = {
     }
   ],
   overallScore: 92,
-  keywordMatch: 87,
   formatScore: 95,
-  contentScore: 91
+  contentScore: 91,
+  analyzed: true
 }
 
 // 简历优化建议

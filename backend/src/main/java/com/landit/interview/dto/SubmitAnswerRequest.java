@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 public class SubmitAnswerRequest {
 
     @NotNull(message = "问题ID不能为空")
-    private Long questionId;
+    private String questionId;
 
     @NotBlank(message = "回答内容不能为空")
     private String answer;

@@ -180,32 +180,32 @@ const messagesContainer = ref<HTMLElement | null>(null)
 const totalQuestions: number = 10
 
 const questions = ref<SessionQuestion[]>([
-  { id: 1, category: 'Vue.js', question: '请解释 Vue 3 的响应式原理', keyPoints: ['Proxy', 'Reflect', '依赖收集', '触发更新'] },
-  { id: 2, category: 'JavaScript', question: '请解释事件循环机制', keyPoints: ['调用栈', '任务队列', '宏任务', '微任务'] },
-  { id: 3, category: '性能优化', question: '如何优化大型单页应用的首次加载', keyPoints: ['代码分割', '懒加载', '缓存', 'CDN'] }
+  { id: '1', category: 'Vue.js', question: '请解释 Vue 3 的响应式原理', keyPoints: ['Proxy', 'Reflect', '依赖收集', '触发更新'] },
+  { id: '2', category: 'JavaScript', question: '请解释事件循环机制', keyPoints: ['调用栈', '任务队列', '宏任务', '微任务'] },
+  { id: '3', category: '性能优化', question: '如何优化大型单页应用的首次加载', keyPoints: ['代码分割', '懒加载', '缓存', 'CDN'] }
 ])
 
 const messages = ref<SessionMessage[]>([
   {
-    id: 1,
+    id: '1',
     role: 'interviewer',
     content: '你好，我是今天的面试官。我们将进行一场前端技术面试，主要考察Vue.js、JavaScript基础和性能优化方面的知识。准备好了吗？',
     timestamp: new Date(Date.now() - 60000)
   },
   {
-    id: 2,
+    id: '2',
     role: 'candidate',
     content: '准备好了，请开始吧！',
     timestamp: new Date(Date.now() - 55000)
   },
   {
-    id: 3,
+    id: '3',
     role: 'interviewer',
     content: '好的，首先请你介绍一下自己，重点说说你的技术背景和项目经验。',
     timestamp: new Date(Date.now() - 50000)
   },
   {
-    id: 4,
+    id: '4',
     role: 'candidate',
     content: '我叫Azir，有5年前端开发经验，目前在字节跳动负责抖音创作者平台的前端架构工作。主要技术栈是Vue和React，对性能优化和工程化有深入研究。',
     timestamp: new Date(Date.now() - 40000),
@@ -245,7 +245,7 @@ function formatMessageTime(date: Date): string {
 async function submitAnswer(): Promise<void> {
   if (!userInput.value.trim() || isAIResponding.value) return
   messages.value.push({
-    id: messages.value.length + 1,
+    id: String(messages.value.length + 1),
     role: 'candidate',
     content: userInput.value,
     timestamp: new Date()
@@ -258,7 +258,7 @@ async function submitAnswer(): Promise<void> {
     isAIResponding.value = false
     const nextQuestion = questions.value[currentQuestionIndex.value + 1]
     messages.value.push({
-      id: messages.value.length + 1,
+      id: String(messages.value.length + 1),
       role: 'interviewer',
       content: '好的回答。那我们继续下一个问题：' + (nextQuestion?.question || ''),
       timestamp: new Date()
@@ -293,7 +293,7 @@ function endInterview(): void {
 
 function requestHint(): void {
   messages.value.push({
-    id: messages.value.length + 1,
+    id: String(messages.value.length + 1),
     role: 'interviewer',
     content: '提示：在回答时可以从以下角度考虑 - ' + currentKeyPoints.value.join('、'),
     timestamp: new Date()
