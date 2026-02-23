@@ -26,12 +26,12 @@
         <div class="header-right">
           <div class="score-overview">
             <div class="score-main">
-              <div class="score-ring" :style="{ '--score': store.currentResume.overallScore }">
-                <span>{{ store.currentResume.overallScore }}</span>
+              <div class="score-ring" :style="{ '--score': store.currentResume.analyzed ? store.currentResume.overallScore : 0 }">
+                <span>{{ store.currentResume.analyzed ? store.currentResume.overallScore : '~' }}</span>
               </div>
               <div class="score-labels">
                 <span class="score-title">综合评分</span>
-                <span class="score-detail">格式规范 {{ store.currentResume.formatScore }}%</span>
+                <span class="score-detail">格式规范 {{ store.currentResume.analyzed ? store.currentResume.formatScore + '%' : '~' }}</span>
               </div>
             </div>
           </div>
@@ -40,7 +40,7 @@
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
               </svg>
-              AI一键优化
+              {{ store.currentResume.analyzed ? 'AI一键优化' : 'AI分析' }}
             </button>
             <button class="action-btn secondary">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -67,9 +67,9 @@
             </span>
             <span class="metric-title">格式规范</span>
           </div>
-          <div class="metric-value">{{ store.currentResume.formatScore }}</div>
+          <div class="metric-value">{{ store.currentResume.analyzed ? store.currentResume.formatScore : '~' }}</div>
           <div class="metric-bar">
-            <div class="metric-fill" :style="{ width: store.currentResume.formatScore + '%' }"></div>
+            <div class="metric-fill" :style="{ width: store.currentResume.analyzed ? store.currentResume.formatScore + '%' : '0%' }"></div>
           </div>
         </div>
         <div class="metric-card">
@@ -84,9 +84,9 @@
             </span>
             <span class="metric-title">内容质量</span>
           </div>
-          <div class="metric-value">{{ store.currentResume.contentScore }}</div>
+          <div class="metric-value">{{ store.currentResume.analyzed ? store.currentResume.contentScore : '~' }}</div>
           <div class="metric-bar">
-            <div class="metric-fill" :style="{ width: store.currentResume.contentScore + '%' }"></div>
+            <div class="metric-fill" :style="{ width: store.currentResume.analyzed ? store.currentResume.contentScore + '%' : '0%' }"></div>
           </div>
         </div>
       </section>
@@ -118,8 +118,8 @@
                   <span class="section-icon">{{ getSectionIcon(section.type) }}</span>
                   <span class="section-name">{{ section.title }}</span>
                 </div>
-                <div class="section-score" :class="getScoreClass(section.score)">
-                  {{ section.score }}
+                <div class="section-score" :class="store.currentResume.analyzed ? getScoreClass(section.score) : ''">
+                  {{ store.currentResume.analyzed ? section.score : '~' }}
                 </div>
               </div>
               <p class="section-preview">{{ getSectionPreview(section) }}</p>
@@ -139,73 +139,155 @@
           <div class="panel-header">
             <h2 class="panel-title">{{ currentSectionDetail?.title }}</h2>
             <div class="panel-actions">
-              <button class="panel-btn">
+              <!-- 单条类型：显示编辑按钮 -->
+              <button v-if="!isAggregateSection" class="panel-btn" @click="openEditModal">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                 </svg>
                 编辑
               </button>
+              <!-- 聚合类型：显示添加按钮 -->
+              <button v-else class="panel-btn primary" @click="openAddItemModal">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                添加
+              </button>
             </div>
           </div>
           <div class="detail-content">
-            <!-- 基本信息 -->
+            <!-- 基本信息（单条） -->
             <div class="content-block" v-if="currentSectionDetail?.type === 'BASIC_INFO' && basicContent">
-              <div class="info-row" v-for="(value, key) in basicContent" :key="key">
-                <template v-if="value">
+              <template v-for="(value, key) in basicContent" :key="key">
+                <div class="info-row" v-if="value">
                   <span class="info-label">{{ getFieldLabel(key as string) }}</span>
                   <span class="info-value">{{ value }}</span>
-                </template>
-              </div>
-            </div>
-            <!-- 教育经历 -->
-            <div class="content-block" v-else-if="currentSectionDetail?.type === 'EDUCATION' && educationContent">
-              <div class="info-row" v-for="(value, key) in educationContent" :key="key">
-                <template v-if="value">
-                  <span class="info-label">{{ getFieldLabel(key as string) }}</span>
-                  <span class="info-value">{{ value }}</span>
-                </template>
-              </div>
-            </div>
-            <!-- 工作经历 -->
-            <div class="content-block" v-else-if="currentSectionDetail?.type === 'WORK' && workContent">
-              <div class="experience-item">
-                <div class="exp-header">
-                  <h4 class="exp-title">{{ workContent.company }}</h4>
-                  <span class="exp-period" v-if="workContent.period">{{ workContent.period }}</span>
                 </div>
-                <p class="exp-position" v-if="workContent.position">{{ workContent.position }}</p>
-                <p class="exp-desc" v-if="workContent.description">{{ workContent.description }}</p>
-              </div>
+              </template>
             </div>
-            <!-- 项目经历 -->
-            <div class="content-block" v-else-if="currentSectionDetail?.type === 'PROJECT' && projectContent">
-              <div class="experience-item">
-                <div class="exp-header">
-                  <h4 class="exp-title">{{ projectContent.name }}</h4>
-                  <span class="exp-period" v-if="projectContent.period">{{ projectContent.period }}</span>
-                </div>
-                <p class="exp-position" v-if="projectContent.role">{{ projectContent.role }}</p>
-                <p class="exp-desc" v-if="projectContent.description">{{ projectContent.description }}</p>
-                <div v-if="projectContent.achievements?.length" class="exp-achievements">
-                  <span v-for="a in projectContent.achievements" :key="a" class="achievement-tag">{{ a }}</span>
-                </div>
-              </div>
-            </div>
-            <!-- 技能 -->
+            <!-- 技能（单条） -->
             <div class="content-block" v-else-if="currentSectionDetail?.type === 'SKILLS'">
               <ul class="skill-list">
                 <li v-for="(skill, idx) in skillContent" :key="idx">{{ skill }}</li>
               </ul>
             </div>
-            <!-- 证书 -->
-            <div class="content-block" v-else-if="currentSectionDetail?.type === 'CERTIFICATE' && certificateContent">
-              <div class="info-row" v-for="(value, key) in certificateContent" :key="key">
-                <template v-if="value">
-                  <span class="info-label">{{ getFieldLabel(key as string) }}</span>
-                  <span class="info-value">{{ value }}</span>
-                </template>
-              </div>
+            <!-- 聚合类型（教育、工作、项目、证书） -->
+            <div class="content-block" v-else-if="currentSectionDetail?.items?.length">
+              <!-- 教育经历列表 -->
+              <template v-if="currentSectionDetail?.type === 'EDUCATION'">
+                <div class="experience-item" v-for="item in currentSectionDetail.items" :key="item.id">
+                  <div class="exp-header">
+                    <h4 class="exp-title">{{ item.content.school }}</h4>
+                    <div class="exp-actions">
+                      <span class="exp-period" v-if="item.content.period">{{ item.content.period }}</span>
+                      <button class="item-btn edit" @click="openEditItemModal(item.id)" title="编辑">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                      </button>
+                      <button class="item-btn delete" @click="deleteItem(item.id)" title="删除">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <polyline points="3 6 5 6 21 6"></polyline>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  <p class="exp-position" v-if="item.content.major || item.content.degree">
+                    {{ item.content.degree }} · {{ item.content.major }}
+                  </p>
+                </div>
+              </template>
+              <!-- 工作经历列表 -->
+              <template v-else-if="currentSectionDetail?.type === 'WORK'">
+                <div class="experience-item" v-for="item in currentSectionDetail.items" :key="item.id">
+                  <div class="exp-header">
+                    <h4 class="exp-title">{{ item.content.company }}</h4>
+                    <div class="exp-actions">
+                      <span class="exp-period" v-if="item.content.period">{{ item.content.period }}</span>
+                      <button class="item-btn edit" @click="openEditItemModal(item.id)" title="编辑">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                      </button>
+                      <button class="item-btn delete" @click="deleteItem(item.id)" title="删除">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <polyline points="3 6 5 6 21 6"></polyline>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  <p class="exp-position" v-if="item.content.position">{{ item.content.position }}</p>
+                  <p class="exp-desc" v-if="item.content.description">{{ item.content.description }}</p>
+                </div>
+              </template>
+              <!-- 项目经历列表 -->
+              <template v-else-if="currentSectionDetail?.type === 'PROJECT'">
+                <div class="experience-item" v-for="item in currentSectionDetail.items" :key="item.id">
+                  <div class="exp-header">
+                    <h4 class="exp-title">{{ item.content.name }}</h4>
+                    <div class="exp-actions">
+                      <span class="exp-period" v-if="item.content.period">{{ item.content.period }}</span>
+                      <button class="item-btn edit" @click="openEditItemModal(item.id)" title="编辑">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                      </button>
+                      <button class="item-btn delete" @click="deleteItem(item.id)" title="删除">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <polyline points="3 6 5 6 21 6"></polyline>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  <p class="exp-position" v-if="item.content.role">{{ item.content.role }}</p>
+                  <p class="exp-desc" v-if="item.content.description">{{ item.content.description }}</p>
+                  <div v-if="(item.content.achievements as string[])?.length" class="exp-achievements">
+                    <span v-for="a in (item.content.achievements as string[])" :key="a" class="achievement-tag">{{ a }}</span>
+                  </div>
+                </div>
+              </template>
+              <!-- 证书列表 -->
+              <template v-else-if="currentSectionDetail?.type === 'CERTIFICATE'">
+                <div class="experience-item" v-for="item in currentSectionDetail.items" :key="item.id">
+                  <div class="exp-header">
+                    <h4 class="exp-title">{{ item.content.name }}</h4>
+                    <div class="exp-actions">
+                      <span class="exp-period" v-if="item.content.date">{{ item.content.date }}</span>
+                      <button class="item-btn edit" @click="openEditItemModal(item.id)" title="编辑">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                      </button>
+                      <button class="item-btn delete" @click="deleteItem(item.id)" title="删除">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <polyline points="3 6 5 6 21 6"></polyline>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+            <!-- 聚合类型无数据提示 -->
+            <div class="empty-block" v-else-if="isAggregateSection && !currentSectionDetail?.items?.length">
+              <p class="empty-text">暂无记录</p>
+              <button class="add-item-btn" @click="openAddItemModal">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                添加第一条记录
+              </button>
             </div>
           </div>
           <div v-if="hasSuggestions" class="suggestions-block">
@@ -224,6 +306,17 @@
         </section>
       </div>
     </div>
+
+    <!-- 编辑弹窗 -->
+    <EditSectionModal
+      v-model:visible="isEditModalVisible"
+      :section="currentSectionDetail ?? null"
+      :item-id="editItemId"
+      :is-new="isNewItem"
+      :saving="isSaving"
+      @save="handleSave"
+      @cancel="closeEditModal"
+    />
   </div>
 </template>
 
@@ -231,25 +324,30 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores'
+import EditSectionModal from '@/components/resume/EditSectionModal.vue'
 import type {
   ResumeSection,
   ResumeSuggestionItem,
   BasicInfoContent,
-  EducationContent,
-  WorkExperience,
-  ProjectExperience,
-  SkillsContent,
-  CertificateContent
+  SkillsContent
 } from '@/types'
 
 const store = useAppStore()
 const route = useRoute()
 const activeSection = ref<string>('')
+const resumeId = ref<string>('')
+
+// 编辑状态
+const isEditModalVisible = ref<boolean>(false)
+const isSaving = ref<boolean>(false)
+const editItemId = ref<string | null>(null)
+const isNewItem = ref<boolean>(false)
 
 // 页面加载时获取简历详情
 onMounted(async () => {
   const id = route.params.id as string
   if (id) {
+    resumeId.value = id
     await store.fetchResumeDetail(id)
     // 默认选中第一个模块
     if (store.currentResume.sections.length > 0) {
@@ -262,53 +360,27 @@ const currentSectionDetail = computed<ResumeSection | undefined>(() => {
   return store.currentResume.sections.find((s: ResumeSection) => s.id === activeSection.value)
 })
 
-// 基本信息（BASIC_INFO）
+// 判断当前模块是否为聚合类型
+const isAggregateSection = computed<boolean>(() => {
+  const type = currentSectionDetail.value?.type
+  return ['EDUCATION', 'WORK', 'PROJECT', 'CERTIFICATE'].includes(type ?? '')
+})
+
+// 基本信息（BASIC_INFO）- 单条类型
 const basicContent = computed<BasicInfoContent | null>(() => {
-  if (currentSectionDetail.value?.type === 'BASIC_INFO') {
-    return currentSectionDetail.value.content as BasicInfoContent
+  if (currentSectionDetail.value?.type !== 'BASIC_INFO') {
+    return null
   }
-  return null
+  return currentSectionDetail.value.content as BasicInfoContent
 })
 
-// 教育经历（EDUCATION）
-const educationContent = computed<EducationContent | null>(() => {
-  if (currentSectionDetail.value?.type === 'EDUCATION') {
-    return currentSectionDetail.value.content as EducationContent
-  }
-  return null
-})
-
-// 工作经历（WORK）
-const workContent = computed<WorkExperience | null>(() => {
-  if (currentSectionDetail.value?.type === 'WORK') {
-    return currentSectionDetail.value.content as WorkExperience
-  }
-  return null
-})
-
-// 项目经历（PROJECT）
-const projectContent = computed<ProjectExperience | null>(() => {
-  if (currentSectionDetail.value?.type === 'PROJECT') {
-    return currentSectionDetail.value.content as ProjectExperience
-  }
-  return null
-})
-
-// 技能（SKILLS）- 后端返回 { skills: string[] }
+// 技能（SKILLS）- 单条类型，后端返回 { skills: string[] }
 const skillContent = computed<string[]>(() => {
-  if (currentSectionDetail.value?.type === 'SKILLS') {
-    const content = currentSectionDetail.value.content as SkillsContent
-    return content.skills ?? []
+  if (currentSectionDetail.value?.type !== 'SKILLS') {
+    return []
   }
-  return []
-})
-
-// 证书（CERTIFICATE）
-const certificateContent = computed<CertificateContent | null>(() => {
-  if (currentSectionDetail.value?.type === 'CERTIFICATE') {
-    return currentSectionDetail.value.content as CertificateContent
-  }
-  return null
+  const content = currentSectionDetail.value.content as SkillsContent
+  return content.skills ?? []
 })
 
 const sectionSuggestions = computed<ResumeSuggestionItem[]>(() => {
@@ -316,7 +388,7 @@ const sectionSuggestions = computed<ResumeSuggestionItem[]>(() => {
 })
 
 const hasSuggestions = computed<boolean>(() => {
-  return sectionSuggestions.value.length > 0
+  return (currentSectionDetail.value?.suggestions?.length ?? 0) > 0
 })
 
 // 模块图标映射（后端大写格式）
@@ -334,39 +406,29 @@ function getSectionIcon(type: string): string {
 }
 
 function getSectionPreview(section: ResumeSection): string {
-  switch (section.type) {
-    case 'BASIC_INFO': {
-      const content = section.content as BasicInfoContent
-      return content.name ?? '基本信息'
-    }
-    case 'EDUCATION': {
-      const content = section.content as EducationContent
-      return content.school ?? '教育经历'
-    }
-    case 'WORK': {
-      const content = section.content as WorkExperience
-      return content.company ?? '工作经历'
-    }
-    case 'PROJECT': {
-      const content = section.content as ProjectExperience
-      return content.name ?? '项目经历'
-    }
-    case 'SKILLS': {
-      const content = section.content as SkillsContent
-      return `${content.skills?.length ?? 0} 项技能`
-    }
-    case 'CERTIFICATE': {
-      const content = section.content as CertificateContent
-      return content.name ?? '证书'
-    }
-    default:
-      return ''
+  // 聚合类型（有items）
+  if (section.items?.length) {
+    return `${section.items.length} 条记录`
   }
+  // 单条类型（有content）
+  if (section.type === 'BASIC_INFO') {
+    const content = section.content as BasicInfoContent
+    return content.name ?? '基本信息'
+  }
+  if (section.type === 'SKILLS') {
+    const content = section.content as SkillsContent
+    return `${content.skills?.length ?? 0} 项技能`
+  }
+  return section.title ?? ''
 }
 
 function getScoreClass(score: number): string {
-  if (score >= 90) return 'excellent'
-  if (score >= 75) return 'good'
+  if (score >= 90) {
+    return 'excellent'
+  }
+  if (score >= 75) {
+    return 'good'
+  }
   return 'average'
 }
 
@@ -397,6 +459,81 @@ function getFieldLabel(key: string): string {
 
 function optimizeResume(): void {
   console.log('AI优化简历')
+}
+
+// ==================== 编辑功能 ====================
+
+// 打开编辑弹窗（单条类型）
+function openEditModal(): void {
+  if (!currentSectionDetail.value) {
+    return
+  }
+  editItemId.value = null
+  isNewItem.value = false
+  isEditModalVisible.value = true
+}
+
+// 打开编辑弹窗（聚合类型 - 编辑某条记录）
+function openEditItemModal(itemId: string): void {
+  editItemId.value = itemId
+  isNewItem.value = false
+  isEditModalVisible.value = true
+}
+
+// 打开新增弹窗（聚合类型 - 新增记录）
+function openAddItemModal(): void {
+  editItemId.value = null
+  isNewItem.value = true
+  isEditModalVisible.value = true
+}
+
+// 关闭编辑弹窗
+function closeEditModal(): void {
+  isEditModalVisible.value = false
+  editItemId.value = null
+  isNewItem.value = false
+}
+
+// 保存编辑
+async function handleSave(data: { content: Record<string, unknown>; itemId?: string; isNew: boolean }): Promise<void> {
+  if (!resumeId.value || !activeSection.value) {
+    return
+  }
+  isSaving.value = true
+  try {
+    if (isAggregateSection.value) {
+      // 聚合类型：新增或编辑条目
+      if (data.isNew) {
+        // 新增条目
+        await store.addResumeSectionItem(resumeId.value, activeSection.value, data.content)
+      } else if (data.itemId) {
+        // 编辑条目
+        await store.updateResumeSectionItem(resumeId.value, data.itemId, data.content)
+      }
+    } else {
+      // 单条类型：直接更新
+      await store.updateResumeSection(resumeId.value, activeSection.value, data.content)
+    }
+    closeEditModal()
+  } catch (error) {
+    console.error('保存失败', error)
+    alert('保存失败，请重试')
+  } finally {
+    isSaving.value = false
+  }
+}
+
+// 删除条目
+async function deleteItem(itemId: string): Promise<void> {
+  if (!confirm('确定要删除这条记录吗？')) {
+    return
+  }
+  try {
+    await store.deleteResumeSectionItem(resumeId.value, itemId)
+  } catch (error) {
+    console.error('删除失败', error)
+    alert('删除失败，请重试')
+  }
 }
 </script>
 
@@ -755,6 +892,13 @@ function optimizeResume(): void {
     background: rgba(255, 255, 255, 0.1);
     color: $color-text-primary;
   }
+  &.primary {
+    background: $color-accent-glow;
+    color: $color-accent;
+    &:hover {
+      background: rgba(212, 168, 83, 0.2);
+    }
+  }
 }
 
 .detail-content {
@@ -929,5 +1073,75 @@ function optimizeResume(): void {
   animation: slideUp 0.6s ease forwards;
   animation-delay: calc(var(--delay) * 0.1s);
   opacity: 0;
+}
+
+// 条目操作按钮
+.exp-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.item-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: $radius-sm;
+  transition: all $transition-fast;
+  opacity: 0.5;
+  &.edit {
+    color: $color-text-secondary;
+    &:hover {
+      opacity: 1;
+      background: rgba(255, 255, 255, 0.1);
+      color: $color-accent;
+    }
+  }
+  &.delete {
+    color: $color-text-secondary;
+    &:hover {
+      opacity: 1;
+      background: rgba(248, 113, 113, 0.1);
+      color: $color-error;
+    }
+  }
+}
+
+.experience-item:hover .item-btn {
+  opacity: 1;
+}
+
+// 空状态
+.empty-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-2xl;
+  text-align: center;
+}
+
+.empty-text {
+  font-size: $text-sm;
+  color: $color-text-tertiary;
+  margin-bottom: $spacing-lg;
+}
+
+.add-item-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-sm $spacing-lg;
+  font-size: $text-sm;
+  color: $color-accent;
+  background: $color-accent-glow;
+  border-radius: $radius-md;
+  transition: all $transition-fast;
+  &:hover {
+    background: rgba(212, 168, 83, 0.2);
+    transform: translateY(-2px);
+  }
 }
 </style>

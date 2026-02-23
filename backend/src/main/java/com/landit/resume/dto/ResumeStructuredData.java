@@ -1,5 +1,6 @@
 package com.landit.resume.dto;
 
+import com.landit.common.annotation.SchemaField;
 import com.landit.common.enums.Gender;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -66,31 +67,37 @@ public class ResumeStructuredData {
         /**
          * 姓名
          */
+        @SchemaField("姓名")
         private String name;
 
         /**
          * 性别
          */
+        @SchemaField(value = "性别", enumValues = {"男", "女", "未知"})
         private Gender gender;
 
         /**
          * 电话
          */
+        @SchemaField("电话")
         private String phone;
 
         /**
          * 邮箱
          */
+        @SchemaField("邮箱")
         private String email;
 
         /**
          * 求职意向/目标岗位
          */
+        @SchemaField("求职意向")
         private String targetPosition;
 
         /**
          * 个人简介/自我评价
          */
+        @SchemaField("个人简介")
         private String summary;
     }
 
@@ -105,21 +112,25 @@ public class ResumeStructuredData {
         /**
          * 学校
          */
+        @SchemaField("学校名称")
         private String school;
 
         /**
          * 学历
          */
+        @SchemaField("学历")
         private String degree;
 
         /**
          * 专业
          */
+        @SchemaField("专业")
         private String major;
 
         /**
          * 时间段
          */
+        @SchemaField("时间段")
         private String period;
     }
 
@@ -134,21 +145,25 @@ public class ResumeStructuredData {
         /**
          * 公司
          */
+        @SchemaField("公司名称")
         private String company;
 
         /**
          * 职位
          */
+        @SchemaField("职位")
         private String position;
 
         /**
          * 时间段
          */
+        @SchemaField("时间段")
         private String period;
 
         /**
          * 工作描述
          */
+        @SchemaField("工作描述")
         private String description;
     }
 
@@ -163,26 +178,31 @@ public class ResumeStructuredData {
         /**
          * 项目名称
          */
+        @SchemaField("项目名称")
         private String name;
 
         /**
          * 角色
          */
+        @SchemaField("项目角色")
         private String role;
 
         /**
          * 时间段
          */
+        @SchemaField("时间段")
         private String period;
 
         /**
          * 项目描述
          */
+        @SchemaField("项目描述")
         private String description;
 
         /**
          * 项目成果
          */
+        @SchemaField("项目成果")
         @Builder.Default
         private List<String> achievements = List.of();
     }
@@ -198,11 +218,13 @@ public class ResumeStructuredData {
         /**
          * 证书名称
          */
+        @SchemaField("证书名称")
         private String name;
 
         /**
          * 获得日期
          */
+        @SchemaField("获得日期")
         private String date;
     }
 }

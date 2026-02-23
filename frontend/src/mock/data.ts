@@ -68,35 +68,46 @@ export const resumeDetail: ResumeDetail = {
   sections: [
     {
       id: 'section_001',
-      type: 'basic',
+      type: 'BASIC_INFO',
       title: '基本信息',
       content: {
         name: 'Azir',
         phone: '138****8888',
         email: 'zhangshukun@example.com',
-        location: '北京市朝阳区',
-        age: 28,
-        workYears: 5
+        targetPosition: '高级前端工程师',
+        summary: '5年前端开发经验，专注于大型Web应用架构设计与性能优化'
       },
+      items: null,
       score: 100,
       suggestions: []
     },
     {
       id: 'section_002',
-      type: 'experience',
+      type: 'WORK',
       title: '工作经历',
-      content: [
+      content: null,
+      items: [
         {
-          company: '字节跳动',
-          position: '高级前端工程师',
-          period: '2022.03 - 至今',
-          description: '负责抖音创作者平台的前端架构设计与核心功能开发，主导了微前端架构的落地，性能优化提升40%。'
+          id: 'work_001',
+          title: '字节跳动',
+          content: {
+            company: '字节跳动',
+            position: '高级前端工程师',
+            period: '2022.03 - 至今',
+            description: '负责抖音创作者平台的前端架构设计与核心功能开发，主导了微前端架构的落地，性能优化提升40%。'
+          },
+          score: 95
         },
         {
-          company: '美团',
-          position: '前端工程师',
-          period: '2019.07 - 2022.02',
-          description: '参与美团外卖商家端管理系统开发，负责订单管理、数据看板等核心模块。'
+          id: 'work_002',
+          title: '美团',
+          content: {
+            company: '美团',
+            position: '前端工程师',
+            period: '2019.07 - 2022.02',
+            description: '参与美团外卖商家端管理系统开发，负责订单管理、数据看板等核心模块。'
+          },
+          score: 90
         }
       ],
       score: 95,
@@ -109,15 +120,21 @@ export const resumeDetail: ResumeDetail = {
     },
     {
       id: 'section_003',
-      type: 'project',
+      type: 'PROJECT',
       title: '项目经历',
-      content: [
+      content: null,
+      items: [
         {
-          name: '创作者数据分析平台',
-          role: '前端负责人',
-          period: '2023.01 - 2023.08',
-          description: '从0到1搭建创作者数据分析平台，支持百万级数据实时可视化展示。',
-          achievements: ['页面加载速度提升60%', '日活用户突破50万', '获得团队Q3最佳项目奖']
+          id: 'project_001',
+          title: '创作者数据分析平台',
+          content: {
+            name: '创作者数据分析平台',
+            role: '前端负责人',
+            period: '2023.01 - 2023.08',
+            description: '从0到1搭建创作者数据分析平台，支持百万级数据实时可视化展示。',
+            achievements: ['页面加载速度提升60%', '日活用户突破50万', '获得团队Q3最佳项目奖']
+          },
+          score: 88
         }
       ],
       score: 88,
@@ -130,9 +147,12 @@ export const resumeDetail: ResumeDetail = {
     },
     {
       id: 'section_004',
-      type: 'skill',
+      type: 'SKILLS',
       title: '专业技能',
-      content: ['精通 Vue.js / React 框架，熟悉源码实现', '熟练使用 TypeScript 进行大型项目开发', '具有丰富的性能优化和工程化经验', '熟悉 Node.js，能够开发服务端应用'],
+      content: {
+        skills: ['精通 Vue.js / React 框架，熟悉源码实现', '熟练使用 TypeScript 进行大型项目开发', '具有丰富的性能优化和工程化经验', '熟悉 Node.js，能够开发服务端应用']
+      },
+      items: null,
       score: 85,
       suggestions: [
         {

@@ -2,6 +2,7 @@ package com.landit.user.service;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.landit.common.enums.Gender;
+import com.landit.common.exception.BusinessException;
 import com.landit.user.dto.UserCreateRequest;
 import com.landit.user.dto.UserStatusResponse;
 import com.landit.user.dto.UserInitResponse;
@@ -54,7 +55,7 @@ public class UserService extends ServiceImpl<UserMapper, User> {
     public UserInitResponse createUser(UserCreateRequest request) {
         // 检查用户是否已存在
         if (isUserInitialized()) {
-            throw new RuntimeException("用户已存在，无法重复初始化");
+            throw new BusinessException("用户已存在，无法重复初始化");
         }
         // 创建用户
         User user = new User();
@@ -82,7 +83,7 @@ public class UserService extends ServiceImpl<UserMapper, User> {
     public User updateUserProfile(UserUpdateRequest request) {
         User user = getById(SINGLE_USER_ID);
         if (user == null) {
-            throw new RuntimeException("用户不存在");
+            throw BusinessException.notFound("用户不存在");
         }
         user.setName(request.getName());
         user.setGender(request.getGender());
@@ -98,7 +99,7 @@ public class UserService extends ServiceImpl<UserMapper, User> {
     public void updateUserAvatar(String avatarUrl) {
         User user = getById(SINGLE_USER_ID);
         if (user == null) {
-            throw new RuntimeException("用户不存在");
+            throw BusinessException.notFound("用户不存在");
         }
         user.setAvatar(avatarUrl);
         updateById(user);

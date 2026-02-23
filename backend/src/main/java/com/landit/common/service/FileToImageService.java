@@ -1,6 +1,7 @@
 package com.landit.common.service;
 
 import cn.hutool.core.util.StrUtil;
+import com.landit.common.exception.BusinessException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -18,7 +19,9 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 文件转图片服务
@@ -33,6 +36,10 @@ public class FileToImageService {
     private static final float PDF_DPI = 150;
     private static final String IMAGE_FORMAT = "PNG";
     private static final int MAX_IMAGE_WIDTH = 2000;
+    // 支持的图片扩展名
+    private static final Set<String> IMAGE_EXTENSIONS = Set.of(".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp");
+    // 支持的文档扩展名
+    private static final Set<String> DOCUMENT_EXTENSIONS = Set.of(".docx", ".doc");
 
     public List<String> convertToImages(MultipartFile file) {
         String filename = file.getOriginalFilename();
@@ -43,11 +50,11 @@ public class FileToImageService {
                 case "IMAGE" -> convertImageToBase64(file);
                 case "PDF" -> convertPdfToBase64(file);
                 case "WORD" -> convertWordFile(file);
-                default -> throw new IllegalArgumentException("不支持的文件类型: " + fileType);
+                default -> throw new BusinessException("不支持的文件类型: " + fileType);
             };
         } catch (Exception e) {
             log.error("文件转换失败: {}", filename, e);
-            throw new RuntimeException("文件转换失败: " + e.getMessage());
+            throw new BusinessException("文件转换失败: " + e.getMessage());
         }
     }
 
@@ -64,11 +71,11 @@ public class FileToImageService {
                 case "IMAGE" -> convertImageToMedia(file);
                 case "PDF" -> convertPdfToMedia(file);
                 case "WORD" -> convertWordToMedia(file);
-                default -> throw new IllegalArgumentException("不支持的文件类型: " + fileType);
+                default -> throw new BusinessException("不支持的文件类型: " + fileType);
             };
         } catch (Exception e) {
             log.error("文件转换失败: {}", filename, e);
-            throw new RuntimeException("文件转换失败: " + e.getMessage());
+            throw new BusinessException("文件转换失败: " + e.getMessage());
         }
     }
 
@@ -77,11 +84,9 @@ public class FileToImageService {
             return false;
         }
         String lowerName = filename.toLowerCase();
-        return lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg")
-                || lowerName.endsWith(".png") || lowerName.endsWith(".gif")
-                || lowerName.endsWith(".bmp") || lowerName.endsWith(".webp")
+        return hasExtension(lowerName, IMAGE_EXTENSIONS)
                 || lowerName.endsWith(".pdf")
-                || lowerName.endsWith(".docx") || lowerName.endsWith(".doc");
+                || hasExtension(lowerName, DOCUMENT_EXTENSIONS);
     }
 
     public String getFileType(String filename) {
@@ -89,18 +94,23 @@ public class FileToImageService {
             return "UNKNOWN";
         }
         String lowerName = filename.toLowerCase();
-        if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg")
-                || lowerName.endsWith(".png") || lowerName.endsWith(".gif")
-                || lowerName.endsWith(".bmp") || lowerName.endsWith(".webp")) {
+        if (hasExtension(lowerName, IMAGE_EXTENSIONS)) {
             return "IMAGE";
         }
         if (lowerName.endsWith(".pdf")) {
             return "PDF";
         }
-        if (lowerName.endsWith(".docx") || lowerName.endsWith(".doc")) {
+        if (hasExtension(lowerName, DOCUMENT_EXTENSIONS)) {
             return "WORD";
         }
         return "UNKNOWN";
+    }
+
+    /**
+     * 检查文件名是否具有指定的扩展名之一
+     */
+    private boolean hasExtension(String filename, Set<String> extensions) {
+        return extensions.stream().anyMatch(filename::endsWith);
     }
 
     /**
@@ -108,7 +118,7 @@ public class FileToImageService {
      */
     private List<String> convertImageToBase64(MultipartFile file) throws IOException {
         byte[] bytes = file.getBytes();
-        String base64 = java.util.Base64.getEncoder().encodeToString(bytes);
+        String base64 = Base64.getEncoder().encodeToString(bytes);
         String mimeType = getMimeType(file.getOriginalFilename());
         String dataUrl = "data:" + mimeType + ";base64," + base64;
         log.info("图片文件转换完成，大小: {} bytes", bytes.length);
@@ -138,7 +148,7 @@ public class FileToImageService {
         List<String> images = new ArrayList<>();
         List<byte[]> imageBytes = convertPdfToBytes(file);
         for (byte[] bytes : imageBytes) {
-            String base64 = java.util.Base64.getEncoder().encodeToString(bytes);
+            String base64 = Base64.getEncoder().encodeToString(bytes);
             String dataUrl = "data:image/png;base64," + base64;
             images.add(dataUrl);
         }
@@ -181,11 +191,9 @@ public class FileToImageService {
     }
 
     /**
-     * 处理 Word 文件
-     * 注意：Word 转图片较为复杂，此处使用简化方案
-     * 如需完整渲染，建议使用 documents4j + LibreOffice
+     * 处理 Word 文件（暂不支持）
      */
-    private List<String> convertWordFile(MultipartFile file) throws IOException {
+    private List<String> convertWordFile(MultipartFile file) {
         log.warn("Word 文件暂不支持直接转图片，建议上传 PDF 或图片格式");
         throw new UnsupportedOperationException(
                 "Word 文件暂不支持直接转换为图片。请将 Word 导出为 PDF 或截图后上传。");
@@ -194,7 +202,7 @@ public class FileToImageService {
     /**
      * 处理 Word 文件 - 转为 Media（暂不支持）
      */
-    private List<Media> convertWordToMedia(MultipartFile file) throws IOException {
+    private List<Media> convertWordToMedia(MultipartFile file) {
         log.warn("Word 文件暂不支持直接转图片，建议上传 PDF 或图片格式");
         throw new UnsupportedOperationException(
                 "Word 文件暂不支持直接转换为图片。请将 Word 导出为 PDF 或截图后上传。");

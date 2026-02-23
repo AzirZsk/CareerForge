@@ -159,6 +159,93 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
+  // 更新简历模块
+  async function updateResumeSection(
+    resumeId: string,
+    sectionId: string,
+    content: Record<string, unknown>
+  ): Promise<void> {
+    try {
+      const result = await resumeApi.updateSection(resumeId, sectionId, content)
+      currentResume.value = result
+    } catch (error) {
+      console.error('更新模块失败', error)
+      throw error
+    }
+  }
+
+  // 新增简历模块
+  async function addResumeSection(
+    resumeId: string,
+    data: { type: string; title: string; content: Record<string, unknown> }
+  ): Promise<void> {
+    try {
+      const result = await resumeApi.createSection(resumeId, data)
+      currentResume.value = result
+    } catch (error) {
+      console.error('新增模块失败', error)
+      throw error
+    }
+  }
+
+  // 删除简历模块
+  async function deleteResumeSection(resumeId: string, sectionId: string): Promise<void> {
+    try {
+      const result = await resumeApi.deleteSection(resumeId, sectionId)
+      currentResume.value = result
+    } catch (error) {
+      console.error('删除模块失败', error)
+      throw error
+    }
+  }
+
+  // 新增聚合类型条目
+  async function addResumeSectionItem(
+    resumeId: string,
+    parentSectionId: string,
+    content: Record<string, unknown>
+  ): Promise<void> {
+    try {
+      // 从当前简历中获取父模块的类型
+      const parentSection = currentResume.value.sections.find((s) => s.id === parentSectionId)
+      if (!parentSection) {
+        throw new Error('找不到父模块')
+      }
+      const type = parentSection.type
+      const result = await resumeApi.createSectionItem(resumeId, type, content)
+      currentResume.value = result
+    } catch (error) {
+      console.error('新增条目失败', error)
+      throw error
+    }
+  }
+
+  // 更新聚合类型条目
+  async function updateResumeSectionItem(
+    resumeId: string,
+    itemId: string,
+    content: Record<string, unknown>
+  ): Promise<void> {
+    try {
+      const result = await resumeApi.updateSection(resumeId, itemId, content)
+      currentResume.value = result
+    } catch (error) {
+      console.error('更新条目失败', error)
+      throw error
+    }
+  }
+
+  // 删除聚合类型条目
+  async function deleteResumeSectionItem(resumeId: string, itemId: string): Promise<void> {
+    try {
+      const result = await resumeApi.deleteSection(resumeId, itemId)
+      currentResume.value = result
+    } catch (error) {
+      console.error('删除条目失败', error)
+      throw error
+    }
+  }
+
   return {
     // 状态
     user,
@@ -188,6 +275,12 @@ export const useAppStore = defineStore('app', () => {
     checkUserExists,
     initUser,
     fetchPrimaryResume,
-    fetchResumeDetail
+    fetchResumeDetail,
+    updateResumeSection,
+    addResumeSection,
+    deleteResumeSection,
+    addResumeSectionItem,
+    updateResumeSectionItem,
+    deleteResumeSectionItem
   }
 })

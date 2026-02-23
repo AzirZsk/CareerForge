@@ -139,12 +139,24 @@ export type ResumeSectionContent =
   | CertificateContent
   | Record<string, unknown>
 
+// 简历模块聚合项（用于 PROJECT、WORK、EDUCATION、CERTIFICATE 类型）
+export interface ResumeSectionItem {
+  id: string
+  title: string
+  content: Record<string, unknown>
+  score: number | null
+}
+
 // 简历模块
+// 支持两种模式：
+// - 单条模式：使用 content 字段（BASIC_INFO、SKILLS）
+// - 聚合模式：使用 items 字段（PROJECT、WORK、EDUCATION、CERTIFICATE）
 export interface ResumeSection {
   id: string
   type: string
   title: string
-  content: ResumeSectionContent
+  content: ResumeSectionContent | null
+  items: ResumeSectionItem[] | null
   score: number
   suggestions: ResumeSuggestionItem[] | null
 }

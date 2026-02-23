@@ -1,5 +1,6 @@
 package com.landit.user.handler;
 
+import com.landit.common.exception.BusinessException;
 import com.landit.common.service.AIService;
 import com.landit.common.service.FileToImageService;
 import com.landit.resume.dto.ResumeParseResult;
@@ -82,14 +83,14 @@ public class UserHandler {
      */
     public ResumeImagesResponse parseResumeForInit(MultipartFile file) {
         if (userService.isUserInitialized()) {
-            throw new IllegalStateException(USER_ALREADY_EXISTS_MSG);
+            throw new BusinessException(USER_ALREADY_EXISTS_MSG);
         }
 
         validateFileType(file);
 
         List<String> images = fileToImageService.convertToImages(file);
         if (images.isEmpty()) {
-            throw new IllegalStateException(CONVERSION_FAILED_MSG);
+            throw new BusinessException(CONVERSION_FAILED_MSG);
         }
 
         log.info("简历文件转换为 {} 张图片", images.size());
@@ -107,7 +108,7 @@ public class UserHandler {
     public AvatarUploadResponse uploadAvatar(MultipartFile file) {
         User user = userService.getUserProfile();
         if (user == null) {
-            throw new IllegalStateException("用户不存在");
+            throw BusinessException.notFound("用户不存在");
         }
 
         Path uploadDir = ensureDirectoryExists(Paths.get(avatarUploadPath));
@@ -127,7 +128,7 @@ public class UserHandler {
 
     private void validateFileType(MultipartFile file) {
         if (!fileToImageService.isSupported(file.getContentType(), file.getOriginalFilename())) {
-            throw new IllegalArgumentException(UNSUPPORTED_FILE_TYPE_MSG);
+            throw new BusinessException(UNSUPPORTED_FILE_TYPE_MSG);
         }
     }
 
@@ -139,7 +140,7 @@ public class UserHandler {
             return path;
         } catch (IOException e) {
             log.error("创建上传目录失败: {}", path, e);
-            throw new RuntimeException("创建上传目录失败", e);
+            throw BusinessException.serverError("创建上传目录失败");
         }
     }
 
@@ -156,7 +157,7 @@ public class UserHandler {
             file.transferTo(path.toFile());
         } catch (IOException e) {
             log.error("保存文件失败: {}", path, e);
-            throw new RuntimeException("保存文件失败", e);
+            throw BusinessException.serverError("保存文件失败");
         }
     }
 

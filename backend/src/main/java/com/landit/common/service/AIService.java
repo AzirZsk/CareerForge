@@ -5,8 +5,9 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.landit.common.config.AIPromptProperties;
+import com.landit.common.exception.BusinessException;
 import com.landit.common.enums.Gender;
-import com.landit.common.util.JsonSchemaBuilder;
+import com.landit.common.schema.SectionSchemaRegistry;
 import com.landit.resume.dto.ResumeParseResult;
 import com.landit.resume.dto.ResumeStructuredData;
 import lombok.RequiredArgsConstructor;
@@ -19,10 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -42,6 +40,7 @@ public class AIService {
     private final FileToImageService fileToImageService;
     private final AIPromptProperties promptProperties;
     private final ObjectMapper objectMapper;
+    private final SectionSchemaRegistry schemaRegistry;
 
     /**
      * 从文件中解析简历信息
@@ -73,7 +72,7 @@ public class AIService {
                                 .jsonScheme(DashScopeResponseFormat.JsonSchemaConfig.builder()
                                         .name("ResumeParseResult")
                                         .strict(true)
-                                        .schema(buildResumeSchema())
+                                        .schema(schemaRegistry.buildResumeSchema())
                                         .build())
                                 .build())
                         .build())
@@ -112,7 +111,7 @@ public class AIService {
                     .build();
         } catch (Exception e) {
             log.error("解析简历JSON响应失败: {}", jsonResponse, e);
-            throw new RuntimeException("解析简历响应失败", e);
+            throw BusinessException.serverError("解析简历响应失败");
         }
     }
 
@@ -232,56 +231,6 @@ public class AIService {
      */
     private String getTextOrDefault(JsonNode node, String field, String defaultValue) {
         return node.has(field) ? node.get(field).asText() : defaultValue;
-    }
-
-    /**
-     * 构建简历解析的JSON Schema
-     */
-    private Map<String, Object> buildResumeSchema() {
-        return JsonSchemaBuilder.objectSchema(
-                JsonSchemaBuilder.props()
-                        .put("name", JsonSchemaBuilder.stringSchema("姓名"))
-                        .put("gender", JsonSchemaBuilder.enumSchema("性别", List.of("男", "女", "未知")))
-                        .put("markdownContent", JsonSchemaBuilder.stringSchema("markdown格式的简历完整内容"))
-                        .put("basicInfo", JsonSchemaBuilder.objectSchema(
-                                JsonSchemaBuilder.props()
-                                        .put("name", JsonSchemaBuilder.stringSchema("姓名"))
-                                        .put("gender", JsonSchemaBuilder.stringSchema("性别"))
-                                        .put("phone", JsonSchemaBuilder.stringSchema("电话"))
-                                        .put("email", JsonSchemaBuilder.stringSchema("邮箱"))
-                                        .put("targetPosition", JsonSchemaBuilder.stringSchema("求职意向"))
-                                        .put("summary", JsonSchemaBuilder.stringSchema("个人简介"))
-                        ))
-                        .put("education", JsonSchemaBuilder.arraySchema(JsonSchemaBuilder.objectSchema(
-                                JsonSchemaBuilder.props()
-                                        .put("school", JsonSchemaBuilder.stringSchema("学校名称"))
-                                        .put("degree", JsonSchemaBuilder.stringSchema("学历"))
-                                        .put("major", JsonSchemaBuilder.stringSchema("专业"))
-                                        .put("period", JsonSchemaBuilder.stringSchema("时间段"))
-                        )))
-                        .put("work", JsonSchemaBuilder.arraySchema(JsonSchemaBuilder.objectSchema(
-                                JsonSchemaBuilder.props()
-                                        .put("company", JsonSchemaBuilder.stringSchema("公司名称"))
-                                        .put("position", JsonSchemaBuilder.stringSchema("职位"))
-                                        .put("period", JsonSchemaBuilder.stringSchema("时间段"))
-                                        .put("description", JsonSchemaBuilder.stringSchema("工作描述"))
-                        )))
-                        .put("projects", JsonSchemaBuilder.arraySchema(JsonSchemaBuilder.objectSchema(
-                                JsonSchemaBuilder.props()
-                                        .put("name", JsonSchemaBuilder.stringSchema("项目名称"))
-                                        .put("role", JsonSchemaBuilder.stringSchema("项目角色"))
-                                        .put("period", JsonSchemaBuilder.stringSchema("时间段"))
-                                        .put("description", JsonSchemaBuilder.stringSchema("项目描述"))
-                                        .put("achievements", JsonSchemaBuilder.arraySchema(JsonSchemaBuilder.stringSchema("项目成果")))
-                        )))
-                        .put("skills", JsonSchemaBuilder.arraySchema(JsonSchemaBuilder.stringSchema("技能")))
-                        .put("certificates", JsonSchemaBuilder.arraySchema(JsonSchemaBuilder.objectSchema(
-                                JsonSchemaBuilder.props()
-                                        .put("name", JsonSchemaBuilder.stringSchema("证书名称"))
-                                        .put("date", JsonSchemaBuilder.stringSchema("获得日期"))
-                        ))),
-                List.of("name", "gender", "markdownContent")
-        );
     }
 
 }

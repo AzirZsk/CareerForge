@@ -2,6 +2,7 @@ package com.landit.resume.controller;
 
 import com.landit.common.enums.ResumeStatus;
 import com.landit.common.response.ApiResponse;
+import com.landit.resume.dto.AddSectionRequest;
 import com.landit.resume.dto.CreateResumeRequest;
 import com.landit.resume.dto.DeriveResumeRequest;
 import com.landit.resume.dto.OptimizeResumeRequest;
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 简历管理控制器
@@ -148,6 +150,33 @@ public class ResumeController {
     @PostMapping("/{id}/derive")
     public ApiResponse<Resume> deriveResume(@PathVariable String id, @Valid @RequestBody DeriveResumeRequest request) {
         return ApiResponse.success(resumeHandler.deriveResume(id, request));
+    }
+
+    // ==================== 模块级操作 ====================
+
+    @Operation(summary = "更新简历模块")
+    @PutMapping("/{id}/sections/{sectionId}")
+    public ApiResponse<ResumeDetailVO> updateSection(
+            @PathVariable String id,
+            @PathVariable String sectionId,
+            @RequestBody Map<String, Object> content) {
+        return ApiResponse.success(resumeHandler.updateResumeSection(id, sectionId, content));
+    }
+
+    @Operation(summary = "新增简历模块")
+    @PostMapping("/{id}/sections")
+    public ApiResponse<ResumeDetailVO> addSection(
+            @PathVariable String id,
+            @Valid @RequestBody AddSectionRequest request) {
+        return ApiResponse.success(resumeHandler.addResumeSection(id, request.getType(), request.getTitle(), request.getContent()));
+    }
+
+    @Operation(summary = "删除简历模块")
+    @DeleteMapping("/{id}/sections/{sectionId}")
+    public ApiResponse<ResumeDetailVO> deleteSection(
+            @PathVariable String id,
+            @PathVariable String sectionId) {
+        return ApiResponse.success(resumeHandler.deleteResumeSection(id, sectionId));
     }
 
 }

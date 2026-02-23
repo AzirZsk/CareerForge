@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.landit.common.enums.ResumeStatus;
 import com.landit.common.enums.ResumeType;
+import com.landit.common.enums.SectionType;
+import com.landit.common.exception.BusinessException;
 import com.landit.resume.convertor.ResumeConvertor;
 import com.landit.resume.dto.CreateResumeRequest;
 import com.landit.resume.dto.DeriveResumeRequest;
@@ -23,7 +25,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -87,7 +91,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
         // 查询简历主信息
         Resume resume = getById(id);
         if (resume == null) {
-            throw new RuntimeException("简历不存在");
+            throw BusinessException.notFound("简历不存在");
         }
 
         // 转换为VO（基础字段映射）
@@ -95,7 +99,8 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
 
         // 查询简历模块列表（非版本快照）
         List<ResumeSection> sections = getResumeSections(id);
-        vo.setSections(resumeConvertor.toSectionVOList(sections));
+        // 聚合sections：多条类型合并为items数组
+        vo.setSections(aggregateSections(sections));
 
         // 设置是否已完成分析
         vo.setAnalyzed(isResumeAnalyzed(resume));
@@ -104,6 +109,65 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
         calculateScores(vo, sections);
 
         return vo;
+    }
+
+    /**
+     * 聚合sections数据
+     * 对于可能有多条的类型（PROJECT、WORK、EDUCATION、CERTIFICATE）进行聚合
+     * 单条类型（BASIC_INFO、SKILLS）保持原有结构
+     *
+     * @param sections 原始sections列表
+     * @return 聚合后的VO列表
+     */
+    private List<ResumeDetailVO.ResumeSectionVO> aggregateSections(List<ResumeSection> sections) {
+        // 使用LinkedHashMap保持插入顺序
+        Map<String, List<ResumeSection>> groupedSections = new LinkedHashMap<>();
+        // 按类型分组
+        for (ResumeSection section : sections) {
+            groupedSections.computeIfAbsent(section.getType(), k -> new ArrayList<>()).add(section);
+        }
+        // 按原始顺序构建VO
+        return groupedSections.entrySet().stream()
+                .map(entry -> buildSectionVO(entry.getKey(), entry.getValue()))
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    /**
+     * 构建单个SectionVO
+     * 聚合类型使用items，单条类型使用content
+     */
+    private ResumeDetailVO.ResumeSectionVO buildSectionVO(String typeCode, List<ResumeSection> sections) {
+        ResumeSection first = sections.get(0);
+        SectionType sectionType = SectionType.fromCode(typeCode);
+        // 聚合类型：使用items数组
+        if (sectionType != null && sectionType.isAggregate()) {
+            List<ResumeDetailVO.ResumeSectionItemVO> items = sections.stream()
+                    .map(section -> ResumeDetailVO.ResumeSectionItemVO.builder()
+                            .id(section.getId())
+                            .title(section.getTitle())
+                            .content(section.getContent())
+                            .score(section.getScore())
+                            .build())
+                    .collect(java.util.stream.Collectors.toList());
+            return ResumeDetailVO.ResumeSectionVO.builder()
+                    .id(first.getId())
+                    .type(typeCode)
+                    .title(sectionType.getDescription())
+                    .score(first.getScore())
+                    .items(items)
+                    .suggestions(null)
+                    .build();
+        }
+        // 单条类型：保持原有结构
+        return ResumeDetailVO.ResumeSectionVO.builder()
+                .id(first.getId())
+                .type(typeCode)
+                .title(first.getTitle())
+                .content(first.getContent())
+                .score(first.getScore())
+                .items(null)
+                .suggestions(null)
+                .build();
     }
 
     /**
@@ -116,19 +180,17 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
             vo.setContentScore(0);
             return;
         }
-
         // 计算模块平均分作为综合评分
         double avgScore = sections.stream()
                 .filter(s -> s.getScore() != null && s.getScore() > 0)
                 .mapToInt(ResumeSection::getScore)
                 .average()
                 .orElse(0);
-        vo.setOverallScore((int) Math.round(avgScore));
-
+        int score = (int) Math.round(avgScore);
+        vo.setOverallScore(score);
         // TODO: 后续可根据实际算法计算格式规范、内容质量分数
-        // 暂时使用综合评分的近似值
-        vo.setFormatScore(Math.min(100, (int) (avgScore * 1.0)));
-        vo.setContentScore(Math.min(100, (int) (avgScore * 0.95)));
+        vo.setFormatScore(Math.min(100, score));
+        vo.setContentScore(Math.min(100, (int) (score * 0.95)));
     }
 
     /**
@@ -442,6 +504,67 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
         section.setTitle(title);
         section.setContent(content);
         resumeSectionMapper.insert(section);
+    }
+
+    // ==================== 模块级 CRUD 操作 ====================
+
+    /**
+     * 更新单个模块内容
+     *
+     * @param sectionId 模块ID
+     * @param content   新的内容
+     */
+    public void updateSection(String sectionId, Map<String, Object> content) {
+        ResumeSection section = resumeSectionMapper.selectById(sectionId);
+        if (section == null) {
+            throw BusinessException.notFound("模块不存在");
+        }
+        section.setContent(content);
+        resumeSectionMapper.updateById(section);
+    }
+
+    /**
+     * 新增简历模块
+     *
+     * @param resumeId 简历ID
+     * @param type     模块类型
+     * @param title    模块标题
+     * @param content  模块内容
+     * @return 创建的模块实体
+     */
+    public ResumeSection createSectionPublic(String resumeId, String type, String title, Map<String, Object> content) {
+        ResumeSection section = new ResumeSection();
+        section.setResumeId(resumeId);
+        section.setResumeVersionId(null);
+        section.setType(type);
+        section.setTitle(title);
+        section.setContent(content);
+        section.setScore(0);
+        resumeSectionMapper.insert(section);
+        return section;
+    }
+
+    /**
+     * 删除简历模块
+     *
+     * @param sectionId 模块ID
+     */
+    public void deleteSection(String sectionId) {
+        ResumeSection section = resumeSectionMapper.selectById(sectionId);
+        if (section == null) {
+            throw BusinessException.notFound("模块不存在");
+        }
+        resumeSectionMapper.deleteById(sectionId);
+    }
+
+    /**
+     * 根据ID获取模块实体
+     *
+     * @param sectionId 模块ID
+     * @return 模块实体
+     */
+    public ResumeSection getSectionById(String sectionId) {
+        return resumeSectionMapper.selectById(sectionId);
     }
 
 }

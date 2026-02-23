@@ -2,6 +2,7 @@ package com.landit.resume.handler;
 
 import com.landit.common.enums.ChangeType;
 import com.landit.common.enums.ResumeType;
+import com.landit.common.exception.BusinessException;
 import com.landit.common.service.AIService;
 import com.landit.common.service.FileToImageService;
 import com.landit.resume.convertor.ResumeConvertor;
@@ -23,6 +24,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 简历业务编排处理器
@@ -91,13 +95,13 @@ public class ResumeHandler {
         // 校验文件类型
         String filename = file.getOriginalFilename();
         if (!fileToImageService.isSupported(file.getContentType(), filename)) {
-            throw new RuntimeException("不支持的文件格式，请上传图片（jpg/png）、PDF 或 Word 文档");
+            throw new BusinessException("不支持的文件格式，请上传图片（jpg/png）、PDF 或 Word 文档");
         }
 
         // 将文件转换为图片
         List<String> imageDataUrls = fileToImageService.convertToImages(file);
         if (imageDataUrls.isEmpty()) {
-            throw new RuntimeException("文件转换失败，无法提取简历内容");
+            throw new BusinessException("文件转换失败，无法提取简历内容");
         }
 
         log.info("简历文件转换为 {} 张图片", imageDataUrls.size());
@@ -178,13 +182,13 @@ public class ResumeHandler {
         // 获取当前简历
         Resume resume = resumeService.getById(resumeId);
         if (resume == null) {
-            throw new RuntimeException("简历不存在");
+            throw BusinessException.notFound("简历不存在");
         }
 
         // 获取目标版本
         ResumeVersion targetVersionEntity = resumeService.getVersionEntity(resumeId, targetVersion);
         if (targetVersionEntity == null) {
-            throw new RuntimeException("目标版本不存在");
+            throw BusinessException.notFound("目标版本不存在");
         }
 
         // 创建当前版本快照
@@ -216,12 +220,12 @@ public class ResumeHandler {
         // 获取源简历
         Resume sourceResume = resumeService.getById(sourceResumeId);
         if (sourceResume == null) {
-            throw new RuntimeException("源简历不存在");
+            throw BusinessException.notFound("源简历不存在");
         }
 
         // 只有主简历才能派生
         if (sourceResume.getResumeType() != ResumeType.PRIMARY) {
-            throw new RuntimeException("只能基于主简历派生");
+            throw new BusinessException("只能基于主简历派生");
         }
 
         // 创建派生简历
@@ -257,6 +261,116 @@ public class ResumeHandler {
             newSection.setContent(section.getContent());
             newSection.setScore(section.getScore());
             resumeSectionMapper.insert(newSection);
+        }
+    }
+
+    // ==================== 模块级操作 ====================
+
+    /**
+     * 更新简历模块
+     * 涉及：更新模块内容 -> 重新计算简历评分
+     *
+     * @param resumeId  简历ID
+     * @param sectionId 模块ID
+     * @param content   新的模块内容
+     * @return 更新后的简历详情
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public ResumeDetailVO updateResumeSection(String resumeId, String sectionId, Map<String, Object> content) {
+        // 更新模块内容
+        resumeService.updateSection(sectionId, content);
+        // 重新计算简历评分
+        recalculateResumeScore(resumeId);
+        // 返回更新后的详情
+        return resumeService.getResumeDetail(resumeId);
+    }
+
+    /**
+     * 新增简历模块
+     * 涉及：创建模块 -> 重新计算完整度
+     *
+     * @param resumeId 简历ID
+     * @param type     模块类型
+     * @param title    模块标题
+     * @param content  模块内容
+     * @return 更新后的简历详情
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public ResumeDetailVO addResumeSection(String resumeId, String type, String title, Map<String, Object> content) {
+        // 创建模块
+        resumeService.createSectionPublic(resumeId, type, title, content);
+        // 重新计算简历完整度
+        recalculateResumeCompleteness(resumeId);
+        // 返回更新后的详情
+        return resumeService.getResumeDetail(resumeId);
+    }
+
+    /**
+     * 删除简历模块
+     * 涉及：删除模块 -> 重新计算完整度
+     *
+     * @param resumeId  简历ID
+     * @param sectionId 模块ID
+     * @return 更新后的简历详情
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public ResumeDetailVO deleteResumeSection(String resumeId, String sectionId) {
+        // 删除模块
+        resumeService.deleteSection(sectionId);
+        // 重新计算简历完整度
+        recalculateResumeCompleteness(resumeId);
+        // 返回更新后的详情
+        return resumeService.getResumeDetail(resumeId);
+    }
+
+    /**
+     * 重新计算简历评分
+     * 基于所有模块评分的平均值
+     */
+    private void recalculateResumeScore(String resumeId) {
+        List<ResumeSection> sections = resumeService.getResumeSections(resumeId);
+        int avgScore = 0;
+        if (!sections.isEmpty()) {
+            double sum = sections.stream()
+                    .filter(s -> s.getScore() != null && s.getScore() > 0)
+                    .mapToInt(ResumeSection::getScore)
+                    .average()
+                    .orElse(0);
+            avgScore = (int) Math.round(sum);
+        }
+        Resume resume = resumeService.getById(resumeId);
+        if (resume != null) {
+            resume.setScore(avgScore);
+            resumeService.updateById(resume);
+        }
+    }
+
+    /**
+     * 重新计算简历完整度
+     * 基于模块数量和类型
+     */
+    private void recalculateResumeCompleteness(String resumeId) {
+        List<ResumeSection> sections = resumeService.getResumeSections(resumeId);
+        // 模块类型对应的完整度分数
+        Map<String, Integer> typeScores = Map.of(
+                "BASIC_INFO", 40,
+                "EDUCATION", 20,
+                "WORK", 20,
+                "SKILLS", 10,
+                "PROJECT", 10
+        );
+        // 统计已有的模块类型
+        Set<String> existingTypes = sections.stream()
+                .map(ResumeSection::getType)
+                .collect(Collectors.toSet());
+        // 计算完整度分数
+        int completeness = existingTypes.stream()
+                .mapToInt(type -> typeScores.getOrDefault(type, 0))
+                .sum();
+        Resume resume = resumeService.getById(resumeId);
+        if (resume != null) {
+            resume.setCompleteness(completeness);
+            resumeService.updateById(resume);
         }
     }
 

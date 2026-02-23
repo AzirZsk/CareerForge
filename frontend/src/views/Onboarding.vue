@@ -139,11 +139,15 @@ async function uploadResume(file: File): Promise<void> {
 
 <style lang="scss" scoped>
 .onboarding-page {
-  min-height: 100vh;
+  position: fixed;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: $spacing-xl;
+  overflow: hidden;
+  background: $gradient-dark;
+  z-index: 100;
 }
 
 .onboarding-container {
