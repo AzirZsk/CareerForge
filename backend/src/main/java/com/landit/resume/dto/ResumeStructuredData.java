@@ -57,6 +57,12 @@ public class ResumeStructuredData {
     private List<Certificate> certificates = List.of();
 
     /**
+     * 开源贡献列表
+     */
+    @Builder.Default
+    private List<OpenSourceContribution> openSource = List.of();
+
+    /**
      * 基本信息DTO
      */
     @Data
@@ -226,5 +232,51 @@ public class ResumeStructuredData {
          */
         @SchemaField("获得日期")
         private String date;
+    }
+
+    /**
+     * 开源贡献DTO
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class OpenSourceContribution {
+        /**
+         * 项目名称
+         */
+        @SchemaField("项目名称")
+        private String projectName;
+
+        /**
+         * 项目地址（如 GitHub 链接）
+         */
+        @SchemaField("项目地址")
+        private String url;
+
+        /**
+         * 角色/贡献类型
+         */
+        @SchemaField("贡献角色")
+        private String role;
+
+        /**
+         * 时间段
+         */
+        @SchemaField("时间段")
+        private String period;
+
+        /**
+         * 贡献描述
+         */
+        @SchemaField("贡献描述")
+        private String description;
+
+        /**
+         * 贡献成果（如 PR 数量、star 数等）
+         */
+        @SchemaField("贡献成果")
+        @Builder.Default
+        private List<String> achievements = List.of();
     }
 }

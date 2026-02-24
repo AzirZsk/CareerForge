@@ -58,6 +58,14 @@ public final class JsonSchemaBuilder {
     }
 
     /**
+     * 创建对象类型 Schema（直接传入属性 Map）
+     * 用于动态构建 Schema 的场景
+     */
+    public static Map<String, Object> objectSchema(Map<String, Object> properties, List<String> required) {
+        return Map.of("type", "object", "properties", properties, "required", required);
+    }
+
+    /**
      * Schema 属性构建器
      */
     public static class SchemaPropsBuilder {

@@ -5,6 +5,7 @@ import com.landit.common.util.JsonSchemaBuilder;
 import com.landit.common.util.SchemaGenerator;
 import org.springframework.stereotype.Component;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -19,38 +20,50 @@ public class SectionSchemaRegistry {
 
     /**
      * 构建完整的简历解析 Schema
-     * 包含根级字段和各模块字段
+     * 动态遍历 SectionType 枚举，自动包含所有区块类型
      *
      * @return 完整的简历 JSON Schema
      */
     public Map<String, Object> buildResumeSchema() {
-        return JsonSchemaBuilder.objectSchema(
-                JsonSchemaBuilder.props()
-                        // 根级必填字段
-                        .put("name", JsonSchemaBuilder.stringSchema("姓名"))
-                        .put("gender", JsonSchemaBuilder.enumSchema("性别", List.of("男", "女", "未知")))
-                        .put("markdownContent", JsonSchemaBuilder.stringSchema("markdown格式的简历完整内容"))
-                        // 基本信息模块
-                        .put("basicInfo", buildBasicInfoSchema())
-                        // 教育经历模块
-                        .put("education", buildArraySchema(SectionType.EDUCATION))
-                        // 工作经历模块
-                        .put("work", buildArraySchema(SectionType.WORK))
-                        // 项目经历模块
-                        .put("projects", buildArraySchema(SectionType.PROJECT))
-                        // 技能模块（字符串数组）
-                        .put("skills", JsonSchemaBuilder.arraySchema(JsonSchemaBuilder.stringSchema("技能")))
-                        // 证书模块
-                        .put("certificates", buildArraySchema(SectionType.CERTIFICATE)),
-                List.of("name", "gender", "markdownContent")
-        );
+        Map<String, Object> props = new LinkedHashMap<>();
+
+        // 根级必填字段
+        props.put("name", JsonSchemaBuilder.stringSchema("姓名"));
+        props.put("gender", JsonSchemaBuilder.enumSchema("性别", List.of("男", "女", "未知")));
+        props.put("markdownContent", JsonSchemaBuilder.stringSchema("markdown格式的简历完整内容"));
+
+        // 动态遍历 SectionType 枚举构建各区块 Schema
+        for (SectionType type : SectionType.values()) {
+            String fieldName = type.getSchemaFieldName();
+            if (fieldName == null) {
+                continue; // 跳过不包含在 Schema 中的类型（如 RAW_TEXT）
+            }
+
+            if (type == SectionType.BASIC_INFO) {
+                // 基本信息是单个对象
+                props.put(fieldName, buildObjectSchema(type));
+            } else if (type.getSchemaClass() != null) {
+                // 有 schemaClass 的是对象数组
+                props.put(fieldName, buildArraySchema(type));
+            } else {
+                // 无 schemaClass 的是简单类型数组（如 SKILLS 是字符串数组）
+                props.put(fieldName, JsonSchemaBuilder.arraySchema(
+                        JsonSchemaBuilder.stringSchema(type.getDescription())));
+            }
+        }
+
+        return JsonSchemaBuilder.objectSchema(props, List.of("name", "gender", "markdownContent"));
     }
 
     /**
-     * 构建基本信息 Schema
+     * 构建单个对象的 Schema
      */
-    private Map<String, Object> buildBasicInfoSchema() {
-        return SchemaGenerator.fromClass(SectionType.BASIC_INFO.getSchemaClass());
+    private Map<String, Object> buildObjectSchema(SectionType sectionType) {
+        Class<?> schemaClass = sectionType.getSchemaClass();
+        if (schemaClass == null) {
+            return JsonSchemaBuilder.objectSchema(JsonSchemaBuilder.props());
+        }
+        return SchemaGenerator.fromClass(schemaClass);
     }
 
     /**

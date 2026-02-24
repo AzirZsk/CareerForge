@@ -4,14 +4,6 @@
 
 # Backend - 后端服务模块
 
-## 变更记录 (Changelog)
-
-| 时间 | 变更内容 |
-|------|---------|
-| 2026-02-19 21:53:42 | 初始化模块文档 |
-
----
-
 ## 模块职责
 
 后端服务模块负责提供所有业务 API 接口，包括：
@@ -109,8 +101,9 @@ mybatis-plus:
 | 表名 | 实体类 | 描述 |
 |------|--------|------|
 | t_user | User | 用户信息 |
-| t_resume | Resume | 简历 |
-| t_resume_section | ResumeSection | 简历模块 |
+| t_resume | Resume | 简历主表 |
+| t_resume_version | - | 简历历史版本（快照） |
+| t_resume_section | ResumeSection | 简历模块（区块） |
 | t_resume_suggestion | ResumeSuggestion | 简历优化建议 |
 | t_interview | Interview | 面试记录 |
 | t_interview_question | InterviewQuestion | 面试题库 |
@@ -143,6 +136,8 @@ public abstract class BaseEntity {
 
 | 枚举 | 值 | 描述 |
 |------|-----|------|
+| SectionType | BASIC_INFO, EDUCATION, WORK, PROJECT, SKILLS, CERTIFICATE, OPEN_SOURCE, RAW_TEXT | 简历区块类型 |
+| Gender | MALE, FEMALE, UNKNOWN | 性别 |
 | ResumeStatus | OPTIMIZED, DRAFT | 简历状态 |
 | InterviewType | TECHNICAL, BEHAVIORAL | 面试类型 |
 | InterviewStatus | IN_PROGRESS, COMPLETED | 面试状态 |
@@ -158,11 +153,14 @@ public abstract class BaseEntity {
 ### common - 公共模块
 - **路径**：`src/main/java/com/landit/common/`
 - **组件**：
+  - `annotation/` - @SchemaField（标记 DTO 字段的 Schema 元数据）
   - `config/` - MyBatisPlusConfig, SqliteConfig
   - `entity/` - BaseEntity
-  - `enums/` - 7个枚举类
+  - `enums/` - SectionType, Gender 等 9 个枚举类
   - `handler/` - MyMetaObjectHandler（自动填充）
   - `response/` - ApiResponse, PageResponse
+  - `schema/` - SectionSchemaRegistry（动态构建简历 JSON Schema）
+  - `util/` - JsonSchemaBuilder, SchemaGenerator
 
 ### user - 用户模块
 - **路径**：`src/main/java/com/landit/user/`
@@ -180,6 +178,11 @@ public abstract class BaseEntity {
   - AI 优化建议生成
   - PDF 导出
   - 主简历设置
+- **区块类型系统**：
+  - `SectionType` 枚举定义 7 种区块类型
+  - `ResumeStructuredData` 包含所有区块类型的内部类 DTO
+  - `SectionSchemaRegistry` 动态构建 JSON Schema 供 AI 解析使用
+  - 支持 AI 结构化解析上传的简历文件
 
 ### interview - 面试模块
 - **路径**：`src/main/java/com/landit/interview/`
@@ -217,16 +220,6 @@ public abstract class BaseEntity {
 
 ---
 
-## 测试与质量
-
-**当前状态**：未发现测试代码
-
-**测试目录建议**：
-- 单元测试：`src/test/java/com/landit/*/service/`
-- 集成测试：`src/test/java/com/landit/*/controller/`
-
----
-
 ## 常见问题 (FAQ)
 
 ### Q: 如何查看 SQL 日志？
@@ -234,6 +227,13 @@ A: `application.yml` 中已配置 `log-impl: org.apache.ibatis.logging.slf4j.Slf
 
 ### Q: 数据库文件在哪里？
 A: `backend/data/landit.db`（相对于 backend 目录）
+
+### Q: 如何添加新的简历区块类型？
+A:
+1. 在 `SectionType` 枚举中添加新类型
+2. 在 `ResumeStructuredData` 中创建对应的内部类 DTO
+3. 使用 `@SchemaField` 注解标记字段
+4. `SectionSchemaRegistry` 会自动包含新类型
 
 ### Q: 如何添加新的业务模块？
 A:
@@ -257,6 +257,14 @@ backend/
 │   ├── java/com/landit/
 │   │   ├── LanditApplication.java       # 应用入口
 │   │   ├── common/                      # 公共模块
+│   │   │   ├── annotation/              # @SchemaField 注解
+│   │   │   ├── config/                  # 配置类
+│   │   │   ├── entity/                  # 基础实体
+│   │   │   ├── enums/                   # 枚举定义
+│   │   │   ├── handler/                 # MyBatis 处理器
+│   │   │   ├── response/                # 统一响应
+│   │   │   ├── schema/                  # Schema 注册表
+│   │   │   └── util/                    # 工具类
 │   │   ├── user/                        # 用户模块
 │   │   ├── resume/                      # 简历模块
 │   │   ├── interview/                   # 面试模块
@@ -266,8 +274,5 @@ backend/
 │   └── resources/
 │       ├── application.yml              # 应用配置
 │       └── schema.sql                   # 数据库结构
-└── src/test/                            # 测试目录（待补充）
+└── src/test/                            # 测试目录
 ```
-
----
-*最后更新：2026-02-19 21:53:42*

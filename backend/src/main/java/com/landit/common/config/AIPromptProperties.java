@@ -64,7 +64,15 @@ public class AIPromptProperties {
                 - name: 证书/荣誉名称
                 - date: 获得日期
 
-                ### 7. 原始内容 (markdownContent)
+                ### 7. 开源贡献 (openSource) - 数组
+                - projectName: 项目名称
+                - url: 项目地址（如 GitHub 链接）
+                - role: 角色/贡献类型（如：核心贡献者、文档贡献者、Issue 贡献者等）
+                - period: 时间段
+                - description: 贡献描述
+                - achievements: 贡献成果（数组，如：提交 PR 数、修复 Bug 数等）
+
+                ### 8. 原始内容 (markdownContent)
                 将简历的全部内容原封不动地转换为Markdown格式
 
                 ## 注意事项

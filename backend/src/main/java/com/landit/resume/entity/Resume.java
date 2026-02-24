@@ -23,6 +23,11 @@ public class Resume extends BaseEntity {
 
     private String targetPosition;
 
+    /**
+     * 简历原文本（Markdown格式）
+     */
+    private String markdownContent;
+
     private ResumeType resumeType;
 
     private String sourceResumeId;

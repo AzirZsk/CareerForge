@@ -319,6 +319,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
         resume.setUserId(userId);
         resume.setName(parsedResume.getName() + "的简历");
         resume.setTargetPosition(targetPosition);
+        resume.setMarkdownContent(parsedResume.getRawText());
         resume.setResumeType(ResumeType.PRIMARY);
         resume.setVersion(1);
         resume.setStatus(ResumeStatus.DRAFT);

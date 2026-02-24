@@ -56,8 +56,8 @@ buildNumber.properties
 # Spring Boot
 *.pid
 
-# SQLite 数据库文件（根据需要调整）
-# backend/data/landit.db
+# SQLite 数据库文件
+backend/data/
 
 # ==================== 前端 (Vue/Node.js/Vite) ====================
 # 依赖目录

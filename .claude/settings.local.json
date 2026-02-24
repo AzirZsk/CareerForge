@@ -14,7 +14,12 @@
       "mcp__web-search-prime__webSearchPrime",
       "mcp__zread__search_doc",
       "WebSearch",
-      "Bash(java:*)"
+      "Bash(java:*)",
+      "Bash(sqlite3:*)",
+      "Bash(find:*)",
+      "Bash(git config:*)",
+      "Bash(git pull:*)",
+      "Bash(git rm:*)"
     ]
   }
 }

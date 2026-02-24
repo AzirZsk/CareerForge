@@ -128,6 +128,7 @@ public class AIService {
                 .projects(parseArrayNode(root.get("projects"), this::parseProject))
                 .skills(parseStringList(root.get("skills")))
                 .certificates(parseArrayNode(root.get("certificates"), this::parseCertificate))
+                .openSource(parseArrayNode(root.get("openSource"), this::parseOpenSource))
                 .build();
     }
 
@@ -192,6 +193,20 @@ public class AIService {
         return ResumeStructuredData.Certificate.builder()
                 .name(getTextOrEmpty(node, "name"))
                 .date(getTextOrEmpty(node, "date"))
+                .build();
+    }
+
+    /**
+     * 解析开源贡献
+     */
+    private ResumeStructuredData.OpenSourceContribution parseOpenSource(JsonNode node) {
+        return ResumeStructuredData.OpenSourceContribution.builder()
+                .projectName(getTextOrEmpty(node, "projectName"))
+                .url(getTextOrEmpty(node, "url"))
+                .role(getTextOrEmpty(node, "role"))
+                .period(getTextOrEmpty(node, "period"))
+                .description(getTextOrEmpty(node, "description"))
+                .achievements(parseStringList(node.get("achievements")))
                 .build();
     }
 

@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS t_resume (
     user_id VARCHAR(64) NOT NULL,            -- 所属用户ID
     name VARCHAR(200),                      -- 简历名称
     target_position VARCHAR(100),           -- 目标岗位
+    markdown_content TEXT,                  -- 简历原文本（Markdown格式）
     -- 简历类型与派生关系
     resume_type VARCHAR(20) DEFAULT 'PRIMARY',  -- 简历类型（PRIMARY-主简历 DERIVED-派生简历）
     source_resume_id VARCHAR(64),            -- 派生来源简历ID（为空表示主简历）
