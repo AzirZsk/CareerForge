@@ -3,6 +3,7 @@ package com.landit.resume.graph;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.landit.common.config.AIPromptProperties;
 import com.landit.common.util.JsonParseHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,41 +26,7 @@ import java.util.concurrent.CompletableFuture;
 public class GenerateSuggestionsNode implements AsyncNodeActionWithConfig {
 
     private final ChatClient.Builder chatClientBuilder;
-
-    private static final String GENERATE_SUGGESTIONS_PROMPT = """
-            你是一位资深简历优化专家。
-
-            ## 任务
-            基于以下诊断结果，生成具体的优化建议。
-
-            ## 诊断结果
-            %s
-
-            ## 简历内容
-            %s
-
-            请以JSON格式返回，格式如下：
-            {
-              "suggestions": [
-                {
-                  "id": "sug-1",
-                  "priority": "high",
-                  "category": "content",
-                  "section": "PROJECT",
-                  "title": "优化项目描述",
-                  "current": "当前内容描述...",
-                  "suggestion": "建议修改为...",
-                  "reason": "修改原因",
-                  "impact": "high"
-                }
-              ],
-              "quickWins": [
-                {"action": "添加量化数据", "example": "提升了30%的效率"}
-              ],
-              "priorityOrder": ["sug-1", "sug-2"],
-              "estimatedImprovement": "预计可提升15-20分"
-            }
-            """;
+    private final AIPromptProperties aiPromptProperties;
 
     @Override
     public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
@@ -69,7 +36,9 @@ public class GenerateSuggestionsNode implements AsyncNodeActionWithConfig {
         String resumeContent = state.value("resume_content").map(v -> (String) v).orElse("{}");
 
         ChatClient chatClient = chatClientBuilder.build();
-        String prompt = String.format(GENERATE_SUGGESTIONS_PROMPT, diagnosisResult, resumeContent);
+        String prompt = aiPromptProperties.getGraph().getGenerateSuggestions()
+                .replace("{diagnosisResult}", diagnosisResult)
+                .replace("{resumeContent}", resumeContent);
 
         String suggestionsResult = chatClient.prompt()
                 .user(prompt)

@@ -3,6 +3,7 @@ package com.landit.resume.graph;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.landit.common.config.AIPromptProperties;
 import com.landit.common.util.JsonParseHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,36 +26,7 @@ import java.util.concurrent.CompletableFuture;
 public class DiagnoseResumeNode implements AsyncNodeActionWithConfig {
 
     private final ChatClient.Builder chatClientBuilder;
-
-    private static final String DIAGNOSE_PROMPT = """
-            你是一位拥有15年经验的资深简历优化专家和职业规划师。
-
-            ## 任务
-            分析以下简历的质量，给出评分和改进建议。
-
-            ## 目标岗位
-            %s
-
-            ## 简历内容
-            %s
-
-            请以JSON格式返回诊断结果，格式如下：
-            {
-              "overallScore": 75,
-              "dimensions": {
-                "format": {"score": 80, "comment": "格式规范评价"},
-                "content": {"score": 70, "comment": "内容质量评价"},
-                "keywords": {"score": 75, "comment": "关键词匹配评价"},
-                "structure": {"score": 70, "comment": "结构逻辑评价"}
-              },
-              "issues": [
-                {"severity": "high", "type": "missing", "content": "缺少XX内容"},
-                {"severity": "medium", "type": "weak", "content": "XX描述不够具体"}
-              ],
-              "highlights": ["亮点1", "亮点2"],
-              "quickWins": ["快速改进项1", "快速改进项2"]
-            }
-            """;
+    private final AIPromptProperties aiPromptProperties;
 
     @Override
     public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
@@ -64,7 +36,9 @@ public class DiagnoseResumeNode implements AsyncNodeActionWithConfig {
         String targetPosition = state.value("target_position").map(v -> (String) v).orElse("未知岗位");
 
         ChatClient chatClient = chatClientBuilder.build();
-        String prompt = String.format(DIAGNOSE_PROMPT, targetPosition, resumeContent);
+        String prompt = aiPromptProperties.getGraph().getDiagnoseQuick()
+                .replace("{targetPosition}", targetPosition)
+                .replace("{resumeContent}", resumeContent);
 
         String diagnosisResult = chatClient.prompt()
                 .user(prompt)

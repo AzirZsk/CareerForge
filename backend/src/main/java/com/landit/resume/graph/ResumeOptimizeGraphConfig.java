@@ -12,6 +12,7 @@ import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import com.landit.common.config.AIPromptProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -29,12 +30,13 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
  * 简历优化工作流 Graph 配置
  *
  * 工作流步骤：
- * 1. 解析简历内容
- * 2. 诊断分析（快速/精准模式）
- * 3. 生成优化建议
- * 4. 模块内容优化（可选）
- * 5. 人工审核（可选）
- * 6. 保存版本
+ * 1. 诊断分析（快速/精准模式）
+ * 2. 生成优化建议
+ * 3. 模块内容优化（可选）
+ * 4. 人工审核（可选）
+ * 5. 保存版本
+ *
+ * 注：简历解析（modules/completeness）已在 Controller 层完成，无需单独节点
  *
  * @author Azir
  */
@@ -44,6 +46,7 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
 public class ResumeOptimizeGraphConfig {
 
     private final ChatClient.Builder chatClientBuilder;
+    private final AIPromptProperties aiPromptProperties;
 
     /**
      * 定义状态键策略
@@ -82,24 +85,31 @@ public class ResumeOptimizeGraphConfig {
 
     /**
      * 创建简历优化工作流 Graph
+     *
+     * 工作流步骤：
+     * 1. 诊断分析（快速/精准模式）
+     * 2. 生成优化建议
+     * 3. 模块内容优化（可选）
+     * 4. 人工审核（可选）
+     * 5. 保存版本
+     *
+     * 注：简历解析（modules/completeness）已在 Controller 层完成，无需单独节点
      */
     @Bean
     public CompiledGraph resumeOptimizeGraph(KeyStrategyFactory resumeOptimizeKeyStrategyFactory)
             throws GraphStateException {
 
-        // 创建节点（AsyncNodeActionWithConfig 实例可直接用于 addNode）
-        ParseResumeNode parseResumeNode = new ParseResumeNode();
-        DiagnoseResumeNode diagnoseNode = new DiagnoseResumeNode(chatClientBuilder);
-        DiagnosePreciseResumeNode diagnosePreciseNode = new DiagnosePreciseResumeNode(chatClientBuilder);
-        GenerateSuggestionsNode generateSuggestionsNode = new GenerateSuggestionsNode(chatClientBuilder);
-        OptimizeSectionNode optimizeSectionNode = new OptimizeSectionNode(chatClientBuilder);
+        // 创建节点
+        DiagnoseResumeNode diagnoseNode = new DiagnoseResumeNode(chatClientBuilder, aiPromptProperties);
+        DiagnosePreciseResumeNode diagnosePreciseNode = new DiagnosePreciseResumeNode(chatClientBuilder, aiPromptProperties);
+        GenerateSuggestionsNode generateSuggestionsNode = new GenerateSuggestionsNode(chatClientBuilder, aiPromptProperties);
+        OptimizeSectionNode optimizeSectionNode = new OptimizeSectionNode(chatClientBuilder, aiPromptProperties);
         HumanReviewNode humanReviewNode = new HumanReviewNode();
         SaveVersionNode saveVersionNode = new SaveVersionNode();
 
         // 构建工作流图
         StateGraph workflow = new StateGraph("resume_optimize", resumeOptimizeKeyStrategyFactory)
                 // 添加节点
-                .addNode("parse_resume", parseResumeNode)
                 .addNode("diagnose_quick", diagnoseNode)
                 .addNode("diagnose_precise", diagnosePreciseNode)
                 .addNode("generate_suggestions", generateSuggestionsNode)
@@ -107,9 +117,8 @@ public class ResumeOptimizeGraphConfig {
                 .addNode("human_review", humanReviewNode)
                 .addNode("save_version", saveVersionNode)
 
-                // 添加边
-                .addEdge(START, "parse_resume")
-                .addEdge("parse_resume", "diagnose_quick") // 默认走快速诊断
+                // 添加边：START 直接连接诊断节点
+                .addEdge(START, "diagnose_quick")
 
                 // 条件边：根据诊断模式选择分支
                 .addConditionalEdges("diagnose_quick",

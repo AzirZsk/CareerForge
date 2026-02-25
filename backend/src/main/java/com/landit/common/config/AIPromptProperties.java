@@ -20,6 +20,11 @@ public class AIPromptProperties {
      */
     private ResumePrompt resume = new ResumePrompt();
 
+    /**
+     * 简历优化工作流 Graph 节点提示词
+     */
+    private GraphPrompt graph = new GraphPrompt();
+
     @Data
     public static class ResumePrompt {
         /**
@@ -420,6 +425,179 @@ public class AIPromptProperties {
                 4. suggestions要针对JD具体要求
                 5. passProbability给出客观预估：高/中/低
                 6. 只返回JSON，不要返回其他内容""";
+    }
+
+    /**
+     * 简历优化工作流 Graph 节点提示词
+     */
+    @Data
+    public static class GraphPrompt {
+
+        /**
+         * 简历诊断（快速模式）提示词 - 用于 DiagnoseResumeNode
+         */
+        private String diagnoseQuick = """
+                你是一位拥有15年经验的资深简历优化专家和职业规划师。
+
+                ## 任务
+                分析以下简历的质量，给出评分和改进建议。
+
+                ## 目标岗位
+                {targetPosition}
+
+                ## 简历内容
+                {resumeContent}
+
+                请以JSON格式返回诊断结果，格式如下：
+                {
+                  "overallScore": 75,
+                  "dimensions": {
+                    "format": {"score": 80, "comment": "格式规范评价"},
+                    "content": {"score": 70, "comment": "内容质量评价"},
+                    "keywords": {"score": 75, "comment": "关键词匹配评价"},
+                    "structure": {"score": 70, "comment": "结构逻辑评价"}
+                  },
+                  "issues": [
+                    {"severity": "high", "type": "missing", "content": "缺少XX内容"},
+                    {"severity": "medium", "type": "weak", "content": "XX描述不够具体"}
+                  ],
+                  "highlights": ["亮点1", "亮点2"],
+                  "quickWins": ["快速改进项1", "快速改进项2"]
+                }
+                """;
+
+        /**
+         * 简历诊断（精准模式）提示词 - 用于 DiagnosePreciseResumeNode
+         */
+        private String diagnosePrecise = """
+                你是一位拥有15年经验的资深简历优化专家。
+
+                ## 任务
+                基于最新的市场岗位要求，分析简历与目标岗位的匹配度。
+
+                ## 目标岗位
+                {targetPosition}
+
+                ## 搜索结果（2025年该岗位技能要求）
+                {searchResults}
+
+                ## 简历内容
+                {resumeContent}
+
+                请以JSON格式返回诊断结果，格式如下：
+                {
+                  "overallScore": 75,
+                  "matchScore": 70,
+                  "dimensions": {
+                    "format": {"score": 80, "comment": "格式规范评价"},
+                    "content": {"score": 70, "comment": "内容质量评价"},
+                    "keywords": {"score": 75, "comment": "关键词匹配评价"},
+                    "structure": {"score": 70, "comment": "结构逻辑评价"}
+                  },
+                  "marketRequirements": {
+                    "required": ["技能1", "技能2"],
+                    "preferred": ["技能3", "技能4"],
+                    "trending": ["热门技能1"]
+                  },
+                  "skillMatch": {
+                    "matched": ["已匹配技能"],
+                    "missing": ["缺失技能"],
+                    "partial": ["部分匹配技能"]
+                  },
+                  "issues": [
+                    {"severity": "high", "type": "missing", "content": "缺少XX技能"}
+                  ],
+                  "suggestions": ["建议1", "建议2"]
+                }
+                """;
+
+        /**
+         * 生成优化建议提示词 - 用于 GenerateSuggestionsNode
+         */
+        private String generateSuggestions = """
+                你是一位资深简历优化专家。
+
+                ## 任务
+                基于以下诊断结果，生成具体的优化建议。
+
+                ## 诊断结果
+                {diagnosisResult}
+
+                ## 简历内容
+                {resumeContent}
+
+                请以JSON格式返回，格式如下：
+                {
+                  "suggestions": [
+                    {
+                      "id": "sug-1",
+                      "priority": "high",
+                      "category": "content",
+                      "section": "PROJECT",
+                      "title": "优化项目描述",
+                      "current": "当前内容描述...",
+                      "suggestion": "建议修改为...",
+                      "reason": "修改原因",
+                      "impact": "high"
+                    }
+                  ],
+                  "quickWins": [
+                    {"action": "添加量化数据", "example": "提升了30%的效率"}
+                  ],
+                  "priorityOrder": ["sug-1", "sug-2"],
+                  "estimatedImprovement": "预计可提升15-20分"
+                }
+                """;
+
+        /**
+         * 模块内容优化提示词 - 用于 OptimizeSectionNode
+         */
+        private String optimizeSection = """
+                你是一位专业的简历内容优化专家。
+
+                ## 任务
+                优化以下简历模块的内容。
+
+                ## 模块类型
+                {sectionType}
+
+                ## 目标岗位
+                {targetPosition}
+
+                ## 原始内容
+                {resumeContent}
+
+                ## 优化建议
+                {suggestions}
+
+                请以JSON格式返回，格式如下：
+                {
+                  "optimizedContent": {
+                    "sections": [
+                      {
+                        "id": "xxx",
+                        "type": "PROJECT",
+                        "title": "项目名称",
+                        "content": "优化后的内容",
+                        "score": 90
+                      }
+                    ]
+                  },
+                  "changes": [
+                    {
+                      "sectionId": "xxx",
+                      "sectionType": "PROJECT",
+                      "field": "description",
+                      "before": "原始内容",
+                      "after": "优化后内容",
+                      "reason": "优化原因"
+                    }
+                  ],
+                  "improvementScore": 15,
+                  "tips": ["补充提示1", "补充提示2"],
+                  "confidence": "high"
+                }
+                """;
     }
 
 }

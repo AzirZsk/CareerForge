@@ -3,6 +3,7 @@ package com.landit.resume.graph;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.landit.common.config.AIPromptProperties;
 import com.landit.common.util.JsonParseHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,53 +26,7 @@ import java.util.concurrent.CompletableFuture;
 public class OptimizeSectionNode implements AsyncNodeActionWithConfig {
 
     private final ChatClient.Builder chatClientBuilder;
-
-    private static final String OPTIMIZE_SECTION_PROMPT = """
-            你是一位专业的简历内容优化专家。
-
-            ## 任务
-            优化以下简历模块的内容。
-
-            ## 模块类型
-            %s
-
-            ## 目标岗位
-            %s
-
-            ## 原始内容
-            %s
-
-            ## 优化建议
-            %s
-
-            请以JSON格式返回，格式如下：
-            {
-              "optimizedContent": {
-                "sections": [
-                  {
-                    "id": "xxx",
-                    "type": "PROJECT",
-                    "title": "项目名称",
-                    "content": "优化后的内容",
-                    "score": 90
-                  }
-                ]
-              },
-              "changes": [
-                {
-                  "sectionId": "xxx",
-                  "sectionType": "PROJECT",
-                  "field": "description",
-                  "before": "原始内容",
-                  "after": "优化后内容",
-                  "reason": "优化原因"
-                }
-              ],
-              "improvementScore": 15,
-              "tips": ["补充提示1", "补充提示2"],
-              "confidence": "high"
-            }
-            """;
+    private final AIPromptProperties aiPromptProperties;
 
     @Override
     public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
@@ -85,7 +40,11 @@ public class OptimizeSectionNode implements AsyncNodeActionWithConfig {
         String sectionType = state.value("section_to_optimize").map(v -> (String) v).orElse("all");
 
         ChatClient chatClient = chatClientBuilder.build();
-        String prompt = String.format(OPTIMIZE_SECTION_PROMPT, sectionType, targetPosition, resumeContent, suggestions);
+        String prompt = aiPromptProperties.getGraph().getOptimizeSection()
+                .replace("{sectionType}", sectionType)
+                .replace("{targetPosition}", targetPosition)
+                .replace("{resumeContent}", resumeContent)
+                .replace("{suggestions}", suggestions);
 
         String optimizeResult = chatClient.prompt()
                 .user(prompt)
