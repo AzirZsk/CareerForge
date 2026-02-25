@@ -317,6 +317,16 @@
       @save="handleSave"
       @cancel="closeEditModal"
     />
+
+    <!-- 优化进度弹窗 -->
+    <OptimizeProgressModal
+      v-model:visible="showOptimizeModal"
+      :state="optimizeState"
+      :stage-config="stageConfig"
+      @cancel="handleCancelOptimize"
+      @toggle-expand="handleToggleExpand"
+      @complete="handleOptimizeComplete"
+    />
   </div>
 </template>
 
@@ -325,6 +335,9 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores'
 import EditSectionModal from '@/components/resume/EditSectionModal.vue'
+import OptimizeProgressModal from '@/components/resume/OptimizeProgressModal.vue'
+import { useResumeOptimize } from '@/composables/useResumeOptimize'
+import type { OptimizeStage } from '@/types/resume-optimize'
 import type {
   ResumeSection,
   ResumeSuggestionItem,
@@ -342,6 +355,16 @@ const isEditModalVisible = ref<boolean>(false)
 const isSaving = ref<boolean>(false)
 const editItemId = ref<string | null>(null)
 const isNewItem = ref<boolean>(false)
+
+// 优化相关状态
+const showOptimizeModal = ref<boolean>(false)
+const {
+  state: optimizeState,
+  stageConfig,
+  startOptimize,
+  cancelOptimize,
+  toggleStageExpanded
+} = useResumeOptimize()
 
 // 页面加载时获取简历详情
 onMounted(async () => {
@@ -458,7 +481,35 @@ function getFieldLabel(key: string): string {
 }
 
 function optimizeResume(): void {
-  console.log('AI优化简历')
+  if (!resumeId.value) {
+    return
+  }
+  showOptimizeModal.value = true
+
+  // 获取目标岗位
+  const targetPosition = store.currentResume.targetPosition || undefined
+
+  // 开始 SSE 优化
+  startOptimize(resumeId.value, {
+    mode: 'quick',
+    targetPosition
+  })
+}
+
+// 优化相关处理
+function handleCancelOptimize(): void {
+  cancelOptimize()
+}
+
+function handleToggleExpand(stage: OptimizeStage): void {
+  toggleStageExpanded(stage)
+}
+
+// 优化完成后刷新简历详情
+async function handleOptimizeComplete(): Promise<void> {
+  if (resumeId.value) {
+    await store.fetchResumeDetail(resumeId.value)
+  }
 }
 
 // ==================== 编辑功能 ====================
@@ -977,11 +1028,12 @@ async function deleteItem(itemId: string): Promise<void> {
 
 .exp-achievements {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: $spacing-xs;
 }
 
 .achievement-tag {
+  width: fit-content;
   padding: $spacing-xs $spacing-sm;
   background: $color-success-bg;
   color: $color-success;
