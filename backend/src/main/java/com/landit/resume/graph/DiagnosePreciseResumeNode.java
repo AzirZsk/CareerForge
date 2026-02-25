@@ -3,11 +3,14 @@ package com.landit.resume.graph;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.landit.common.config.AIPromptProperties;
 import com.landit.common.util.JsonParseHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+
+import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -42,10 +45,20 @@ public class DiagnosePreciseResumeNode implements AsyncNodeActionWithConfig {
                 .replace("{searchResults}", searchResults)
                 .replace("{resumeContent}", resumeContent);
 
-        String diagnosisResult = chatClient.prompt()
+        // 使用流式请求调用大模型，收集完整响应
+        Flux<String> streamResponse = chatClient.prompt()
                 .user(prompt)
-                .call()
+                .options(DashScopeChatOptions.builder()
+                        .multiModel(true)
+                        .incrementalOutput(true)
+                        .build())
+                .stream()
                 .content();
+
+        String diagnosisResult = streamResponse
+                .collectList()
+                .map(chunks -> String.join("", chunks))
+                .block();
 
         log.info("精准诊断完成");
 
