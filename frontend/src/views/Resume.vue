@@ -189,6 +189,14 @@
         </div>
       </section>
     </div>
+
+    <!-- 优化进度弹窗 -->
+    <OptimizeProgressModal
+      v-model:visible="showOptimizeModal"
+      :state="optimizeState"
+      @cancel="handleCancelOptimize"
+      @toggle-expand="handleToggleExpand"
+    />
   </div>
 </template>
 
@@ -197,6 +205,11 @@ import { ref, computed, onMounted } from 'vue'
 import { useAppStore } from '@/stores'
 import { useRouter } from 'vue-router'
 import type { Resume, ResumeStatus } from '@/types'
+import type { OptimizeStage } from '@/types/resume-optimize'
+
+// 导入优化相关
+import { useResumeOptimize } from '@/composables/useResumeOptimize'
+import OptimizeProgressModal from '@/components/resume/OptimizeProgressModal.vue'
 
 interface FilterItem {
   key: string
@@ -212,6 +225,16 @@ const filters: FilterItem[] = [
   { key: 'OPTIMIZED', label: '已优化' },
   { key: 'DRAFT', label: '草稿' }
 ]
+
+// 优化相关状态
+const showOptimizeModal = ref(false)
+const currentOptimizeResumeId = ref<string | null>(null)
+const {
+  state: optimizeState,
+  startOptimize,
+  cancelOptimize,
+  toggleStageExpanded
+} = useResumeOptimize()
 
 // 页面加载时获取主简历信息
 onMounted(async () => {
@@ -238,7 +261,17 @@ function viewResume(id: string): void {
 }
 
 function optimizeResume(id: string): void {
-  router.push(`/resume/${id}?action=optimize`)
+  currentOptimizeResumeId.value = id
+  showOptimizeModal.value = true
+
+  // 获取目标岗位
+  const targetPosition = store.primaryResume?.targetPosition || undefined
+
+  // 开始 SSE 优化
+  startOptimize(id, {
+    mode: 'quick',
+    targetPosition
+  })
 }
 
 function createNewResume(): void {
@@ -253,6 +286,15 @@ function setPrimary(id: string): void {
 function deleteResume(id: string): void {
   // TODO: 实现删除简历
   console.log('删除简历', id)
+}
+
+// 优化相关处理
+function handleCancelOptimize(): void {
+  cancelOptimize()
+}
+
+function handleToggleExpand(stage: OptimizeStage): void {
+  toggleStageExpanded(stage)
 }
 </script>
 

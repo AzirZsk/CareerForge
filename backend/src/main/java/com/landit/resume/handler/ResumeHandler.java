@@ -5,10 +5,18 @@ import com.landit.common.enums.ResumeType;
 import com.landit.common.exception.BusinessException;
 import com.landit.common.service.AIService;
 import com.landit.common.service.FileToImageService;
+import com.landit.common.service.SearchService;
+import com.landit.common.util.JsonParseHelper;
 import com.landit.resume.convertor.ResumeConvertor;
 import com.landit.resume.dto.DeriveResumeRequest;
+import com.landit.resume.dto.DiagnoseResumeRequest;
+import com.landit.resume.dto.DiagnoseResumeResponse;
+import com.landit.resume.dto.MatchJobRequest;
+import com.landit.resume.dto.MatchJobResponse;
 import com.landit.resume.dto.OptimizeResumeRequest;
 import com.landit.resume.dto.OptimizeResumeResponse;
+import com.landit.resume.dto.OptimizeSectionRequest;
+import com.landit.resume.dto.OptimizeSectionResponse;
 import com.landit.resume.dto.PrimaryResumeVO;
 import com.landit.resume.dto.ResumeDetailVO;
 import com.landit.resume.entity.Resume;
@@ -42,6 +50,7 @@ public class ResumeHandler {
     private final ResumeService resumeService;
     private final AIService aiService;
     private final FileToImageService fileToImageService;
+    private final SearchService searchService;
     private final ResumeVersionMapper resumeVersionMapper;
     private final ResumeSectionMapper resumeSectionMapper;
     private final ResumeConvertor resumeConvertor;
@@ -372,6 +381,95 @@ public class ResumeHandler {
             resume.setCompleteness(completeness);
             resumeService.updateById(resume);
         }
+    }
+
+    // ==================== 简历优化相关方法 ====================
+
+    /**
+     * 简历诊断
+     *
+     * @param id      简历ID
+     * @param request 诊断请求
+     * @return 诊断结果
+     */
+    public DiagnoseResumeResponse diagnoseResume(String id, DiagnoseResumeRequest request) {
+        // 获取简历详情
+        ResumeDetailVO resumeDetail = resumeService.getResumeDetail(id);
+        if (resumeDetail == null) {
+            throw new BusinessException("简历不存在");
+        }
+
+        // 将简历内容转为JSON字符串
+        String resumeContent = toJsonString(resumeDetail);
+
+        // 根据模式选择诊断方式
+        if (request.isPreciseMode()) {
+            // 精准模式：先搜索，再诊断
+            String searchQuery = request.getTargetPosition() + " 技能要求 岗位职责 2025";
+            String searchResults = searchService.search(searchQuery);
+            return aiService.diagnoseResumePrecise(resumeContent, request.getTargetPosition(), searchResults);
+        } else {
+            // 快速模式：直接诊断
+            return aiService.diagnoseResume(resumeContent, request.getTargetPosition());
+        }
+    }
+
+    /**
+     * 优化简历模块
+     *
+     * @param id      简历ID
+     * @param request 优化请求
+     * @return 优化结果
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public OptimizeSectionResponse optimizeSection(String id, OptimizeSectionRequest request) {
+        // 获取简历详情
+        ResumeDetailVO resumeDetail = resumeService.getResumeDetail(id);
+        if (resumeDetail == null) {
+            throw new BusinessException("简历不存在");
+        }
+
+        // 调用AI优化
+        OptimizeSectionResponse response = aiService.optimizeSection(
+                request.getSectionType(),
+                request.getOriginalContent(),
+                request.getTargetPosition()
+        );
+
+        log.info("模块优化完成: resumeId={}, sectionType={}, confidence={}",
+                id, request.getSectionType(), response.getConfidence());
+
+        return response;
+    }
+
+    /**
+     * 岗位JD匹配分析
+     *
+     * @param id      简历ID
+     * @param request 匹配请求
+     * @return 匹配结果
+     */
+    public MatchJobResponse matchJob(String id, MatchJobRequest request) {
+        // 获取简历详情
+        ResumeDetailVO resumeDetail = resumeService.getResumeDetail(id);
+        if (resumeDetail == null) {
+            throw new BusinessException("简历不存在");
+        }
+
+        // 将简历内容转为JSON字符串
+        String resumeContent = toJsonString(resumeDetail);
+
+        // 调用AI匹配分析
+        return aiService.matchJobDescription(resumeContent, request.getJobDescription());
+    }
+
+    // ==================== 私有辅助方法 ====================
+
+    /**
+     * 对象转JSON字符串
+     */
+    private String toJsonString(Object obj) {
+        return JsonParseHelper.toJsonString(obj);
     }
 
 }

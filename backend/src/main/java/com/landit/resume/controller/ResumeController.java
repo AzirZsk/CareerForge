@@ -5,8 +5,14 @@ import com.landit.common.response.ApiResponse;
 import com.landit.resume.dto.AddSectionRequest;
 import com.landit.resume.dto.CreateResumeRequest;
 import com.landit.resume.dto.DeriveResumeRequest;
+import com.landit.resume.dto.DiagnoseResumeRequest;
+import com.landit.resume.dto.DiagnoseResumeResponse;
+import com.landit.resume.dto.MatchJobRequest;
+import com.landit.resume.dto.MatchJobResponse;
 import com.landit.resume.dto.OptimizeResumeRequest;
 import com.landit.resume.dto.OptimizeResumeResponse;
+import com.landit.resume.dto.OptimizeSectionRequest;
+import com.landit.resume.dto.OptimizeSectionResponse;
 import com.landit.resume.dto.PrimaryResumeVO;
 import com.landit.resume.dto.ResumeDetailVO;
 import com.landit.resume.dto.ResumeSuggestionVO;
@@ -102,6 +108,32 @@ public class ResumeController {
     public ApiResponse<Void> setPrimaryResume(@PathVariable String id) {
         resumeService.setPrimaryResume(id);
         return ApiResponse.success();
+    }
+
+    // ==================== 简历优化相关API ====================
+
+    @Operation(summary = "简历诊断", description = "分析简历质量，给出评分和改进建议。preciseMode=true时联网搜索最新岗位要求")
+    @PostMapping("/{id}/diagnose")
+    public ApiResponse<DiagnoseResumeResponse> diagnoseResume(
+            @PathVariable String id,
+            @Valid @RequestBody DiagnoseResumeRequest request) {
+        return ApiResponse.success(resumeHandler.diagnoseResume(id, request));
+    }
+
+    @Operation(summary = "优化简历模块", description = "AI优化简历的指定模块内容")
+    @PostMapping("/{id}/optimize-section")
+    public ApiResponse<OptimizeSectionResponse> optimizeSection(
+            @PathVariable String id,
+            @Valid @RequestBody OptimizeSectionRequest request) {
+        return ApiResponse.success(resumeHandler.optimizeSection(id, request));
+    }
+
+    @Operation(summary = "岗位JD匹配", description = "分析简历与具体岗位JD的匹配程度")
+    @PostMapping("/{id}/match-job")
+    public ApiResponse<MatchJobResponse> matchJob(
+            @PathVariable String id,
+            @Valid @RequestBody MatchJobRequest request) {
+        return ApiResponse.success(resumeHandler.matchJob(id, request));
     }
 
     @Operation(summary = "获取优化建议")
