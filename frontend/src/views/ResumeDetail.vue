@@ -323,8 +323,8 @@
       v-model:visible="showOptimizeModal"
       :state="optimizeState"
       :stage-config="stageConfig"
-      @cancel="handleCancelOptimize"
-      @toggle-expand="handleToggleExpand"
+      @cancel="cancelOptimize"
+      @toggle-expand="toggleStageExpanded"
       @complete="handleOptimizeComplete"
     />
   </div>
@@ -337,7 +337,6 @@ import { useAppStore } from '@/stores'
 import EditSectionModal from '@/components/resume/EditSectionModal.vue'
 import OptimizeProgressModal from '@/components/resume/OptimizeProgressModal.vue'
 import { useResumeOptimize } from '@/composables/useResumeOptimize'
-import type { OptimizeStage } from '@/types/resume-optimize'
 import type {
   ResumeSection,
   ResumeSuggestionItem,
@@ -494,15 +493,6 @@ function optimizeResume(): void {
     mode: 'quick',
     targetPosition
   })
-}
-
-// 优化相关处理
-function handleCancelOptimize(): void {
-  cancelOptimize()
-}
-
-function handleToggleExpand(stage: OptimizeStage): void {
-  toggleStageExpanded(stage)
 }
 
 // 优化完成后刷新简历详情
