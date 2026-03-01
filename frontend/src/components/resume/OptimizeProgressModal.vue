@@ -95,30 +95,12 @@
                   {{ item.expanded ? '收起' : '展开' }}
                 </button>
               </div>
-              
+
               <!-- 展开的数据区域 -->
               <Transition name="expand">
                 <div v-if="item.expanded && item.data" class="stage-data">
-                  <!-- 解析简历数据 -->
-                  <div v-if="item.stage === 'parse_resume'" class="data-content">
-                    <div class="data-row">
-                      <span class="data-label">模块数量</span>
-                      <span class="data-value">{{ item.data.moduleCount }}</span>
-                    </div>
-                    <div class="data-row">
-                      <span class="data-label">完整度</span>
-                      <span class="data-value">{{ item.data.completeness }}%</span>
-                    </div>
-                    <div class="modules-list" v-if="item.data.modules?.length">
-                      <div class="modules-title">解析到的模块：</div>
-                      <div class="module-tag" v-for="mod in item.data.modules" :key="mod.id">
-                        {{ mod.title }} ({{ mod.score }}分)
-                      </div>
-                    </div>
-                  </div>
-                  
                   <!-- 诊断数据 -->
-                  <div v-else-if="item.stage === 'diagnose_quick' || item.stage === 'diagnose_precise'" class="data-content">
+                  <div v-if="item.stage === 'diagnose_quick' || item.stage === 'diagnose_precise'" class="data-content">
                     <div class="score-display">
                       <div class="score-ring" :style="{ '--score': item.data.overallScore }">
                         <span>{{ item.data.overallScore }}</span>
@@ -272,7 +254,6 @@ const headerTitle = computed(() => {
 // 排序后的阶段历史
 const sortedStageHistory = computed(() => {
   const order: OptimizeStage[] = [
-    'parse_resume',
     'diagnose_quick',
     'generate_suggestions',
     'optimize_section',

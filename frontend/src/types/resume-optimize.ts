@@ -11,7 +11,6 @@ export type OptimizeEventType = 'start' | 'progress' | 'complete' | 'error'
 /** 优化阶段 */
 export type OptimizeStage =
   | 'start'
-  | 'parse_resume'
   | 'diagnose_quick'
   | 'diagnose_precise'
   | 'generate_suggestions'
@@ -215,14 +214,13 @@ export interface StageConfigItem {
 /** 阶段配置映射 */
 export const STAGE_CONFIG: Record<OptimizeStage, StageConfigItem> = {
   'start': { label: '开始优化', order: 0 },
-  'parse_resume': { label: '解析简历', order: 1 },
-  'diagnose_quick': { label: '快速诊断', order: 2 },
-  'diagnose_precise': { label: '精准诊断', order: 3 },
-  'generate_suggestions': { label: '生成建议', order: 4 },
-  'optimize_section': { label: '内容优化', order: 5 },
-  'human_review': { label: '人工审核', order: 6 },
-  'save_version': { label: '保存版本', order: 7 },
-  'end': { label: '完成', order: 8 }
+  'diagnose_quick': { label: '快速诊断', order: 1 },
+  'diagnose_precise': { label: '精准诊断', order: 2 },
+  'generate_suggestions': { label: '生成建议', order: 3 },
+  'optimize_section': { label: '内容优化', order: 4 },
+  'human_review': { label: '人工审核', order: 5 },
+  'save_version': { label: '保存版本', order: 6 },
+  'end': { label: '完成', order: 7 }
 }
 
 /** 维度标签映射 */
