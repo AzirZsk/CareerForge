@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
+
 /**
  * 简历优化工作流业务处理器
  * 负责处理工作流的业务编排逻辑
@@ -104,7 +106,7 @@ public class ResumeOptimizeGraphHandler {
 
         // 根据模式执行不同的优化流程
         Map<String, Object> result;
-        if ("precise".equals(mode)) {
+        if (MODE_PRECISE.equals(mode)) {
             result = graphService.executePreciseOptimize(
                     id, resumeContent, position,
                     request != null ? request.getSearchResults() : "",
@@ -114,7 +116,7 @@ public class ResumeOptimizeGraphHandler {
             result = graphService.executeQuickOptimize(id, resumeContent, position, threadId);
         }
 
-        result.put("thread_id", threadId);
+        result.put(STATE_THREAD_ID, threadId);
         return result;
     }
 
@@ -160,11 +162,11 @@ public class ResumeOptimizeGraphHandler {
     private Map<String, Object> buildInitialState(String resumeId, String resumeContent,
                                                    String position, String mode) {
         Map<String, Object> initialState = new HashMap<>();
-        initialState.put("resume_id", resumeId);
-        initialState.put("resume_content", resumeContent);
-        initialState.put("target_position", position);
-        initialState.put("diagnosis_mode", mode);
-        initialState.put("messages", new ArrayList<String>());
+        initialState.put(STATE_RESUME_ID, resumeId);
+        initialState.put(STATE_RESUME_CONTENT, resumeContent);
+        initialState.put(STATE_TARGET_POSITION, position);
+        initialState.put(STATE_DIAGNOSIS_MODE, mode);
+        initialState.put(STATE_MESSAGES, new ArrayList<String>());
         return initialState;
     }
 
@@ -174,7 +176,7 @@ public class ResumeOptimizeGraphHandler {
     private String resolveTargetPosition(String targetPosition, ResumeDetailVO resumeDetail) {
         String position = targetPosition != null ? targetPosition : resumeDetail.getTargetPosition();
         if (position == null || position.isEmpty()) {
-            position = "未知岗位";
+            position = DEFAULT_TARGET_POSITION;
         }
         return position;
     }
@@ -183,7 +185,7 @@ public class ResumeOptimizeGraphHandler {
      * 解析优化模式
      */
     private String resolveMode(OptimizeGraphRequest request) {
-        return request != null && request.getMode() != null ? request.getMode() : "quick";
+        return request != null && request.getMode() != null ? request.getMode() : MODE_QUICK;
     }
 
     /**

@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
+
 /**
  * 简历诊断节点（精准模式）
  * 基于搜索结果进行精准诊断，使用 JSON Schema 约束输出格式
@@ -35,9 +37,9 @@ public class DiagnosePreciseResumeNode implements AsyncNodeActionWithConfig {
     public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
         log.info("=== 开始简历诊断（精准模式）===");
 
-        String resumeContent = state.value("resume_content").map(v -> (String) v).orElse("{}");
-        String targetPosition = state.value("target_position").map(v -> (String) v).orElse("未知岗位");
-        String searchResults = state.value("search_results").map(v -> (String) v).orElse("暂无搜索结果");
+        String resumeContent = state.value(STATE_RESUME_CONTENT).map(v -> (String) v).orElse(DEFAULT_EMPTY_JSON);
+        String targetPosition = state.value(STATE_TARGET_POSITION).map(v -> (String) v).orElse(DEFAULT_TARGET_POSITION);
+        String searchResults = state.value(STATE_SEARCH_RESULTS).map(v -> (String) v).orElse(DEFAULT_SEARCH_RESULTS);
 
         String prompt = aiPromptProperties.getGraph().getDiagnosePrecise()
                 .replace("{targetPosition}", targetPosition)
@@ -62,7 +64,7 @@ public class DiagnosePreciseResumeNode implements AsyncNodeActionWithConfig {
 
         // 构建节点输出数据（用于 SSE）
         Map<String, Object> nodeOutput = JsonParseHelper.buildNodeOutput(
-                "diagnose_precise",
+                NODE_DIAGNOSE_PRECISE,
                 50,
                 "精准诊断完成（基于市场数据分析）",
                 response
@@ -75,16 +77,16 @@ public class DiagnosePreciseResumeNode implements AsyncNodeActionWithConfig {
         }
 
         return CompletableFuture.completedFuture(Map.of(
-                "diagnosis_result", diagnosisResult,
-                "messages", messages,
-                "current_step", "diagnose_precise",
-                "node_output", nodeOutput,
-                "overall_score", response.getOverallScore(),
-                "match_score", matchScore,
-                "dimensions", response.getDimensionScores(),
-                "market_requirements", response.getPreciseAnalysis() != null ? response.getPreciseAnalysis().getMarketRequirements() : null,
-                "skill_match", response.getPreciseAnalysis() != null ? response.getPreciseAnalysis().getMatchAnalysis() : null,
-                "issues", response.getWeaknesses()
+                STATE_DIAGNOSIS_RESULT, diagnosisResult,
+                STATE_MESSAGES, messages,
+                STATE_CURRENT_STEP, NODE_DIAGNOSE_PRECISE,
+                STATE_NODE_OUTPUT, nodeOutput,
+                STATE_OVERALL_SCORE, response.getOverallScore(),
+                STATE_MATCH_SCORE, matchScore,
+                STATE_DIMENSIONS, response.getDimensionScores(),
+                STATE_MARKET_REQUIREMENTS, response.getPreciseAnalysis() != null ? response.getPreciseAnalysis().getMarketRequirements() : null,
+                STATE_SKILL_MATCH, response.getPreciseAnalysis() != null ? response.getPreciseAnalysis().getMatchAnalysis() : null,
+                STATE_ISSUES, response.getWeaknesses()
         ));
     }
 

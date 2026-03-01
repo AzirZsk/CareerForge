@@ -5,6 +5,8 @@ import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
+import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
@@ -20,11 +22,11 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
-import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
-import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
+import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
 
 /**
  * 简历优化工作流 Graph 配置
@@ -57,28 +59,28 @@ public class ResumeOptimizeGraphConfig {
         return () -> {
             HashMap<String, KeyStrategy> strategies = new HashMap<>();
             // 简历相关状态
-            strategies.put("resume_id", new ReplaceStrategy());
-            strategies.put("resume_content", new ReplaceStrategy());
-            strategies.put("target_position", new ReplaceStrategy());
+            strategies.put(STATE_RESUME_ID, new ReplaceStrategy());
+            strategies.put(STATE_RESUME_CONTENT, new ReplaceStrategy());
+            strategies.put(STATE_TARGET_POSITION, new ReplaceStrategy());
 
             // 诊断相关状态
-            strategies.put("diagnosis_mode", new ReplaceStrategy()); // quick / precise
-            strategies.put("search_results", new ReplaceStrategy());
-            strategies.put("diagnosis_result", new ReplaceStrategy());
+            strategies.put(STATE_DIAGNOSIS_MODE, new ReplaceStrategy());
+            strategies.put(STATE_SEARCH_RESULTS, new ReplaceStrategy());
+            strategies.put(STATE_DIAGNOSIS_RESULT, new ReplaceStrategy());
 
             // 优化相关状态
-            strategies.put("suggestions", new ReplaceStrategy());
-            strategies.put("selected_suggestions", new AppendStrategy());
-            strategies.put("optimized_sections", new ReplaceStrategy());
+            strategies.put(STATE_SUGGESTIONS, new ReplaceStrategy());
+            strategies.put(STATE_SELECTED_SUGGESTIONS, new AppendStrategy());
+            strategies.put(STATE_OPTIMIZED_SECTIONS, new ReplaceStrategy());
 
             // 流程控制
-            strategies.put("current_step", new ReplaceStrategy());
-            strategies.put("next_node", new ReplaceStrategy());
-            strategies.put("needs_review", new ReplaceStrategy());
-            strategies.put("approved", new ReplaceStrategy());
+            strategies.put(STATE_CURRENT_STEP, new ReplaceStrategy());
+            strategies.put(STATE_NEXT_NODE, new ReplaceStrategy());
+            strategies.put(STATE_NEEDS_REVIEW, new ReplaceStrategy());
+            strategies.put(STATE_APPROVED, new ReplaceStrategy());
 
             // 消息日志
-            strategies.put("messages", new AppendStrategy());
+            strategies.put(STATE_MESSAGES, new AppendStrategy());
 
             return strategies;
         };
@@ -109,51 +111,51 @@ public class ResumeOptimizeGraphConfig {
         SaveVersionNode saveVersionNode = new SaveVersionNode();
 
         // 构建工作流图
-        StateGraph workflow = new StateGraph("resume_optimize", resumeOptimizeKeyStrategyFactory)
+        StateGraph workflow = new StateGraph(GRAPH_RESUME_OPTIMIZE, resumeOptimizeKeyStrategyFactory)
                 // 添加节点
-                .addNode("diagnose_quick", diagnoseNode)
-                .addNode("diagnose_precise", diagnosePreciseNode)
-                .addNode("generate_suggestions", generateSuggestionsNode)
-                .addNode("optimize_section", optimizeSectionNode)
-                .addNode("human_review", humanReviewNode)
-                .addNode("save_version", saveVersionNode)
+                .addNode(NODE_DIAGNOSE_QUICK, diagnoseNode)
+                .addNode(NODE_DIAGNOSE_PRECISE, diagnosePreciseNode)
+                .addNode(NODE_GENERATE_SUGGESTIONS, generateSuggestionsNode)
+                .addNode(NODE_OPTIMIZE_SECTION, optimizeSectionNode)
+                .addNode(NODE_HUMAN_REVIEW, humanReviewNode)
+                .addNode(NODE_SAVE_VERSION, saveVersionNode)
 
                 // 添加边：START 直接连接诊断节点
-                .addEdge(START, "diagnose_quick")
+                .addEdge(START, NODE_DIAGNOSE_QUICK)
 
                 // 条件边：根据诊断模式选择分支
-                .addConditionalEdges("diagnose_quick",
+                .addConditionalEdges(NODE_DIAGNOSE_QUICK,
                         (AsyncCommandAction) (state, config) -> {
-                            String mode = state.value("diagnosis_mode").map(m -> (String) m).orElse("quick");
-                            if ("precise".equals(mode)) {
-                                return CompletableFuture.completedFuture(new Command("diagnose_precise", Map.of()));
+                            String mode = state.value(STATE_DIAGNOSIS_MODE).map(m -> (String) m).orElse(MODE_QUICK);
+                            if (MODE_PRECISE.equals(mode)) {
+                                return CompletableFuture.completedFuture(new Command(NODE_DIAGNOSE_PRECISE, Map.of()));
                             }
-                            return CompletableFuture.completedFuture(new Command("generate_suggestions", Map.of()));
+                            return CompletableFuture.completedFuture(new Command(NODE_GENERATE_SUGGESTIONS, Map.of()));
                         },
                         Map.of(
-                                "diagnose_precise", "diagnose_precise",
-                                "generate_suggestions", "generate_suggestions"
+                                NODE_DIAGNOSE_PRECISE, NODE_DIAGNOSE_PRECISE,
+                                NODE_GENERATE_SUGGESTIONS, NODE_GENERATE_SUGGESTIONS
                         ))
 
-                .addEdge("diagnose_precise", "generate_suggestions")
-                .addEdge("generate_suggestions", "optimize_section")
+                .addEdge(NODE_DIAGNOSE_PRECISE, NODE_GENERATE_SUGGESTIONS)
+                .addEdge(NODE_GENERATE_SUGGESTIONS, NODE_OPTIMIZE_SECTION)
 
                 // 条件边：根据是否需要人工审核
-                .addConditionalEdges("optimize_section",
+                .addConditionalEdges(NODE_OPTIMIZE_SECTION,
                         (AsyncCommandAction) (state, config) -> {
-                            Boolean needsReview = state.value("needs_review").map(n -> (Boolean) n).orElse(false);
+                            Boolean needsReview = state.value(STATE_NEEDS_REVIEW).map(n -> (Boolean) n).orElse(false);
                             if (needsReview) {
-                                return CompletableFuture.completedFuture(new Command("human_review", Map.of()));
+                                return CompletableFuture.completedFuture(new Command(NODE_HUMAN_REVIEW, Map.of()));
                             }
-                            return CompletableFuture.completedFuture(new Command("save_version", Map.of()));
+                            return CompletableFuture.completedFuture(new Command(NODE_SAVE_VERSION, Map.of()));
                         },
                         Map.of(
-                                "human_review", "human_review",
-                                "save_version", "save_version"
+                                NODE_HUMAN_REVIEW, NODE_HUMAN_REVIEW,
+                                NODE_SAVE_VERSION, NODE_SAVE_VERSION
                         ))
 
-                .addEdge("human_review", "save_version")
-                .addEdge("save_version", END);
+                .addEdge(NODE_HUMAN_REVIEW, NODE_SAVE_VERSION)
+                .addEdge(NODE_SAVE_VERSION, END);
 
         // 配置持久化和中断点
         MemorySaver memory = new MemorySaver();
@@ -161,7 +163,7 @@ public class ResumeOptimizeGraphConfig {
                 .saverConfig(SaverConfig.builder()
                         .register(memory)
                         .build())
-                .interruptBefore("human_review") // 人工审核前中断
+                .interruptBefore(NODE_HUMAN_REVIEW)
                 .build();
 
         return workflow.compile(compileConfig);

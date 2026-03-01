@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
+
 /**
  * 模块内容优化节点
  * 对选定的简历模块进行 AI 优化，使用 JSON Schema 约束输出格式
@@ -36,12 +38,12 @@ public class OptimizeSectionNode implements AsyncNodeActionWithConfig {
     public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
         log.info("=== 模块内容优化 ===");
 
-        String resumeContent = state.value("resume_content").map(v -> (String) v).orElse("{}");
-        String targetPosition = state.value("target_position").map(v -> (String) v).orElse("未知岗位");
-        String suggestions = state.value("suggestions").map(v -> (String) v).orElse("[]");
+        String resumeContent = state.value(STATE_RESUME_CONTENT).map(v -> (String) v).orElse(DEFAULT_EMPTY_JSON);
+        String targetPosition = state.value(STATE_TARGET_POSITION).map(v -> (String) v).orElse(DEFAULT_TARGET_POSITION);
+        String suggestions = state.value(STATE_SUGGESTIONS).map(v -> (String) v).orElse(DEFAULT_EMPTY_ARRAY);
 
         // 获取用户选择的要优化的模块（默认优化全部）
-        String sectionType = state.value("section_to_optimize").map(v -> (String) v).orElse("all");
+        String sectionType = state.value(STATE_SECTION_TO_OPTIMIZE).map(v -> (String) v).orElse("all");
 
         String prompt = aiPromptProperties.getGraph().getOptimizeSection()
                 .replace("{sectionType}", sectionType)
@@ -75,7 +77,7 @@ public class OptimizeSectionNode implements AsyncNodeActionWithConfig {
 
         // 构建节点输出数据（用于 SSE）
         Map<String, Object> nodeOutput = JsonParseHelper.buildNodeOutput(
-                "optimize_section",
+                NODE_OPTIMIZE_SECTION,
                 80,
                 "内容优化完成，共 " + changeCount + " 处变更",
                 Map.of(
@@ -89,13 +91,13 @@ public class OptimizeSectionNode implements AsyncNodeActionWithConfig {
         );
 
         return CompletableFuture.completedFuture(Map.of(
-                "optimized_sections", optimizeResult,
-                "needs_review", needsReview,
-                "messages", messages,
-                "current_step", "optimize_section",
-                "node_output", nodeOutput,
-                "changes", changes,
-                "improvement_score", response.getImprovementScore()
+                STATE_OPTIMIZED_SECTIONS, optimizeResult,
+                STATE_NEEDS_REVIEW, needsReview,
+                STATE_MESSAGES, messages,
+                STATE_CURRENT_STEP, NODE_OPTIMIZE_SECTION,
+                STATE_NODE_OUTPUT, nodeOutput,
+                STATE_CHANGES, changes,
+                STATE_IMPROVEMENT_SCORE, response.getImprovementScore()
         ));
     }
 }

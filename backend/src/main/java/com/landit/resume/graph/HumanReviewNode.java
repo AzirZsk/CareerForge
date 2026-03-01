@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
+
 /**
  * 人工审核节点
  * 等待人工审核优化后的简历内容
@@ -26,11 +28,11 @@ public class HumanReviewNode implements AsyncNodeActionWithConfig {
     public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
         log.info("=== 人工审核 ===");
 
-        String optimizedSections = state.value("optimized_sections").map(v -> (String) v).orElse("{}");
-        String suggestions = state.value("suggestions").map(v -> (String) v).orElse("[]");
+        String optimizedSections = state.value(STATE_OPTIMIZED_SECTIONS).map(v -> (String) v).orElse(DEFAULT_EMPTY_JSON);
+        String suggestions = state.value(STATE_SUGGESTIONS).map(v -> (String) v).orElse(DEFAULT_EMPTY_ARRAY);
 
         // 检查是否已审核通过
-        Boolean approved = state.value("approved").map(v -> (Boolean) v).orElse(false);
+        Boolean approved = state.value(STATE_APPROVED).map(v -> (Boolean) v).orElse(false);
 
         if (!approved) {
             log.info("等待人工审核...");
@@ -39,19 +41,19 @@ public class HumanReviewNode implements AsyncNodeActionWithConfig {
 
             // 构建节点输出数据（用于 SSE）
             Map<String, Object> nodeOutput = new HashMap<>();
-            nodeOutput.put("node", "human_review");
-            nodeOutput.put("progress", 90);
-            nodeOutput.put("message", "等待人工审核确认");
-            nodeOutput.put("data", Map.of(
-                    "status", "waiting_for_review",
+            nodeOutput.put(OUTPUT_NODE, NODE_HUMAN_REVIEW);
+            nodeOutput.put(OUTPUT_PROGRESS, 90);
+            nodeOutput.put(OUTPUT_MESSAGE, "等待人工审核确认");
+            nodeOutput.put(OUTPUT_DATA, Map.of(
+                    STATE_STATUS, STATUS_WAITING_FOR_REVIEW,
                     "optimizedContent", optimizedSections
             ));
 
             return CompletableFuture.completedFuture(Map.of(
-                    "status", "waiting_for_review",
-                    "messages", messages,
-                    "current_step", "human_review",
-                    "node_output", nodeOutput
+                    STATE_STATUS, STATUS_WAITING_FOR_REVIEW,
+                    STATE_MESSAGES, messages,
+                    STATE_CURRENT_STEP, NODE_HUMAN_REVIEW,
+                    STATE_NODE_OUTPUT, nodeOutput
             ));
         }
 
@@ -61,16 +63,16 @@ public class HumanReviewNode implements AsyncNodeActionWithConfig {
 
         // 构建节点输出数据（用于 SSE）
         Map<String, Object> nodeOutput = new HashMap<>();
-        nodeOutput.put("node", "human_review");
-        nodeOutput.put("progress", 90);
-        nodeOutput.put("message", "人工审核已通过");
-        nodeOutput.put("data", Map.of("status", "approved"));
+        nodeOutput.put(OUTPUT_NODE, NODE_HUMAN_REVIEW);
+        nodeOutput.put(OUTPUT_PROGRESS, 90);
+        nodeOutput.put(OUTPUT_MESSAGE, "人工审核已通过");
+        nodeOutput.put(OUTPUT_DATA, Map.of(STATE_STATUS, STATUS_APPROVED));
 
         return CompletableFuture.completedFuture(Map.of(
-                "status", "approved",
-                "messages", messages,
-                "current_step", "human_review",
-                "node_output", nodeOutput
+                STATE_STATUS, STATUS_APPROVED,
+                STATE_MESSAGES, messages,
+                STATE_CURRENT_STEP, NODE_HUMAN_REVIEW,
+                STATE_NODE_OUTPUT, nodeOutput
         ));
     }
 }

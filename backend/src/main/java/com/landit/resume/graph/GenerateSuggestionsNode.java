@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
+
 /**
  * 生成优化建议节点
  * 基于诊断结果生成具体的优化建议，使用 JSON Schema 约束输出格式
@@ -34,8 +36,8 @@ public class GenerateSuggestionsNode implements AsyncNodeActionWithConfig {
     public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
         log.info("=== 生成优化建议 ===");
 
-        String diagnosisResult = state.value("diagnosis_result").map(v -> (String) v).orElse("{}");
-        String resumeContent = state.value("resume_content").map(v -> (String) v).orElse("{}");
+        String diagnosisResult = state.value(STATE_DIAGNOSIS_RESULT).map(v -> (String) v).orElse(DEFAULT_EMPTY_JSON);
+        String resumeContent = state.value(STATE_RESUME_CONTENT).map(v -> (String) v).orElse(DEFAULT_EMPTY_JSON);
 
         String prompt = aiPromptProperties.getGraph().getGenerateSuggestions()
                 .replace("{diagnosisResult}", diagnosisResult)
@@ -66,7 +68,7 @@ public class GenerateSuggestionsNode implements AsyncNodeActionWithConfig {
 
         // 构建节点输出数据（用于 SSE）
         Map<String, Object> nodeOutput = JsonParseHelper.buildNodeOutput(
-                "generate_suggestions",
+                NODE_GENERATE_SUGGESTIONS,
                 65,
                 "已生成 " + suggestionCount + " 条优化建议",
                 Map.of(
@@ -78,12 +80,12 @@ public class GenerateSuggestionsNode implements AsyncNodeActionWithConfig {
         );
 
         return CompletableFuture.completedFuture(Map.of(
-                "suggestions", suggestionsResult,
-                "messages", messages,
-                "current_step", "generate_suggestions",
-                "node_output", nodeOutput,
-                "suggestion_list", suggestions,
-                "quick_wins", response.getQuickWins()
+                STATE_SUGGESTIONS, suggestionsResult,
+                STATE_MESSAGES, messages,
+                STATE_CURRENT_STEP, NODE_GENERATE_SUGGESTIONS,
+                STATE_NODE_OUTPUT, nodeOutput,
+                STATE_SUGGESTION_LIST, suggestions,
+                STATE_QUICK_WINS, response.getQuickWins()
         ));
     }
 }

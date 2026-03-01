@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
+
 /**
  * 简历诊断节点（快速模式）
  * 调用 AI 分析简历质量，使用 JSON Schema 约束输出格式
@@ -35,8 +37,8 @@ public class DiagnoseResumeNode implements AsyncNodeActionWithConfig {
     public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
         log.info("=== 开始简历诊断（快速模式）===");
 
-        String resumeContent = state.value("resume_content").map(v -> (String) v).orElse("{}");
-        String targetPosition = state.value("target_position").map(v -> (String) v).orElse("未知岗位");
+        String resumeContent = state.value(STATE_RESUME_CONTENT).map(v -> (String) v).orElse(DEFAULT_EMPTY_JSON);
+        String targetPosition = state.value(STATE_TARGET_POSITION).map(v -> (String) v).orElse(DEFAULT_TARGET_POSITION);
 
         String prompt = aiPromptProperties.getGraph().getDiagnoseQuick()
                 .replace("{targetPosition}", targetPosition)
@@ -60,22 +62,22 @@ public class DiagnoseResumeNode implements AsyncNodeActionWithConfig {
 
         // 构建节点输出数据（用于 SSE）
         Map<String, Object> nodeOutput = JsonParseHelper.buildNodeOutput(
-                "diagnose_quick",
+                NODE_DIAGNOSE_QUICK,
                 35,
                 "简历诊断完成",
                 response
         );
 
         return CompletableFuture.completedFuture(Map.of(
-                "diagnosis_result", diagnosisResult,
-                "messages", messages,
-                "current_step", "diagnose_quick",
-                "node_output", nodeOutput,
-                "overall_score", response.getOverallScore(),
-                "dimensions", response.getDimensionScores(),
-                "issues", response.getWeaknesses(),
-                "highlights", response.getStrengths(),
-                "quick_wins", response.getQuickWins()
+                STATE_DIAGNOSIS_RESULT, diagnosisResult,
+                STATE_MESSAGES, messages,
+                STATE_CURRENT_STEP, NODE_DIAGNOSE_QUICK,
+                STATE_NODE_OUTPUT, nodeOutput,
+                STATE_OVERALL_SCORE, response.getOverallScore(),
+                STATE_DIMENSIONS, response.getDimensionScores(),
+                STATE_ISSUES, response.getWeaknesses(),
+                STATE_HIGHLIGHTS, response.getStrengths(),
+                STATE_QUICK_WINS, response.getQuickWins()
         ));
     }
 }

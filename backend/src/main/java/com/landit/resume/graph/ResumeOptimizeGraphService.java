@@ -14,6 +14,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
+
 /**
  * 简历优化工作流服务
  * 提供简历优化工作流的执行和管理
@@ -45,11 +47,11 @@ public class ResumeOptimizeGraphService {
         log.info("执行简历优化工作流（快速模式）: resumeId={}", resumeId);
 
         Map<String, Object> initialState = new HashMap<>();
-        initialState.put("resume_id", resumeId);
-        initialState.put("resume_content", resumeContent);
-        initialState.put("target_position", targetPosition);
-        initialState.put("diagnosis_mode", "quick");
-        initialState.put("messages", new ArrayList<String>());
+        initialState.put(STATE_RESUME_ID, resumeId);
+        initialState.put(STATE_RESUME_CONTENT, resumeContent);
+        initialState.put(STATE_TARGET_POSITION, targetPosition);
+        initialState.put(STATE_DIAGNOSIS_MODE, MODE_QUICK);
+        initialState.put(STATE_MESSAGES, new ArrayList<String>());
 
         RunnableConfig config = RunnableConfig.builder()
                 .threadId(threadId)
@@ -62,7 +64,7 @@ public class ResumeOptimizeGraphService {
         Map<String, Object> finalResult = new HashMap<>();
         stream.doOnNext(output -> {
             log.info("节点输出: {}", output.node());
-            finalResult.put("last_node", output.node());
+            finalResult.put(STATE_LAST_NODE, output.node());
         }).blockLast();
 
         // 获取最终状态
@@ -93,12 +95,12 @@ public class ResumeOptimizeGraphService {
         log.info("执行简历优化工作流（精准模式）: resumeId={}", resumeId);
 
         Map<String, Object> initialState = new HashMap<>();
-        initialState.put("resume_id", resumeId);
-        initialState.put("resume_content", resumeContent);
-        initialState.put("target_position", targetPosition);
-        initialState.put("diagnosis_mode", "precise");
-        initialState.put("search_results", searchResults);
-        initialState.put("messages", new ArrayList<String>());
+        initialState.put(STATE_RESUME_ID, resumeId);
+        initialState.put(STATE_RESUME_CONTENT, resumeContent);
+        initialState.put(STATE_TARGET_POSITION, targetPosition);
+        initialState.put(STATE_DIAGNOSIS_MODE, MODE_PRECISE);
+        initialState.put(STATE_SEARCH_RESULTS, searchResults);
+        initialState.put(STATE_MESSAGES, new ArrayList<String>());
 
         RunnableConfig config = RunnableConfig.builder()
                 .threadId(threadId)
@@ -109,7 +111,7 @@ public class ResumeOptimizeGraphService {
         Map<String, Object> finalResult = new HashMap<>();
         stream.doOnNext(output -> {
             log.info("节点输出: {}", output.node());
-            finalResult.put("last_node", output.node());
+            finalResult.put(STATE_LAST_NODE, output.node());
         }).blockLast();
 
         StateSnapshot finalState = resumeOptimizeGraph.getState(config);
@@ -227,7 +229,7 @@ public class ResumeOptimizeGraphService {
         Map<String, Object> finalResult = new HashMap<>();
         stream.doOnNext(output -> {
             log.info("节点输出: {}", output.node());
-            finalResult.put("last_node", output.node());
+            finalResult.put(STATE_LAST_NODE, output.node());
         }).blockLast();
 
         StateSnapshot finalState = resumeOptimizeGraph.getState(config);
@@ -252,7 +254,7 @@ public class ResumeOptimizeGraphService {
         log.info("提交人工审核结果: threadId={}, approved={}", threadId, approved);
 
         Map<String, Object> updates = new HashMap<>();
-        updates.put("approved", approved);
+        updates.put(STATE_APPROVED, approved);
         if (modifications != null) {
             updates.putAll(modifications);
         }
@@ -269,8 +271,8 @@ public class ResumeOptimizeGraphService {
      */
     @SuppressWarnings("unchecked")
     private void extractNodeOutput(String threadId, Map<String, Object> stateData) {
-        if (stateData.containsKey("node_output")) {
-            Map<String, Object> nodeOutput = (Map<String, Object>) stateData.get("node_output");
+        if (stateData.containsKey(STATE_NODE_OUTPUT)) {
+            Map<String, Object> nodeOutput = (Map<String, Object>) stateData.get(STATE_NODE_OUTPUT);
             if (nodeOutput != null) {
                 nodeOutputStore.put(threadId, new HashMap<>(nodeOutput));
             }
