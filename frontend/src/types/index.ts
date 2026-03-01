@@ -149,8 +149,8 @@ export interface ResumeSectionItem {
 
 // 简历模块
 // 支持两种模式：
-// - 单条模式：使用 content 字段（BASIC_INFO、SKILLS）
-// - 聚合模式：使用 items 字段（PROJECT、WORK、EDUCATION、CERTIFICATE）
+// - 单条模式：使用 content 字段（BASIC_INFO）
+// - 聚合模式：使用 items 字段（PROJECT、WORK、EDUCATION、CERTIFICATE、SKILLS）
 export interface ResumeSection {
   id: string
   type: string

@@ -5,8 +5,6 @@ import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.StateGraph;
-import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
-import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
@@ -22,10 +20,11 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
+import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
+import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
  * 简历优化工作流 Graph 配置
@@ -127,9 +126,9 @@ public class ResumeOptimizeGraphConfig {
                         (AsyncCommandAction) (state, config) -> {
                             String mode = state.value("diagnosis_mode").map(m -> (String) m).orElse("quick");
                             if ("precise".equals(mode)) {
-                                return CompletableFuture.completedFuture(new Command("diagnose_precise", null));
+                                return CompletableFuture.completedFuture(new Command("diagnose_precise", Map.of()));
                             }
-                            return CompletableFuture.completedFuture(new Command("generate_suggestions", null));
+                            return CompletableFuture.completedFuture(new Command("generate_suggestions", Map.of()));
                         },
                         Map.of(
                                 "diagnose_precise", "diagnose_precise",
@@ -144,9 +143,9 @@ public class ResumeOptimizeGraphConfig {
                         (AsyncCommandAction) (state, config) -> {
                             Boolean needsReview = state.value("needs_review").map(n -> (Boolean) n).orElse(false);
                             if (needsReview) {
-                                return CompletableFuture.completedFuture(new Command("human_review", null));
+                                return CompletableFuture.completedFuture(new Command("human_review", Map.of()));
                             }
-                            return CompletableFuture.completedFuture(new Command("save_version", null));
+                            return CompletableFuture.completedFuture(new Command("save_version", Map.of()));
                         },
                         Map.of(
                                 "human_review", "human_review",

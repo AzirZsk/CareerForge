@@ -396,13 +396,14 @@ const basicContent = computed<BasicInfoContent | null>(() => {
   return currentSectionDetail.value.content as BasicInfoContent
 })
 
-// 技能（SKILLS）- 单条类型，后端返回 { skills: string[] }
+// 技能（SKILLS）- 聚合类型，数据在 items[0].content.skills
 const skillContent = computed<string[]>(() => {
   if (currentSectionDetail.value?.type !== 'SKILLS') {
     return []
   }
-  const content = currentSectionDetail.value.content as SkillsContent
-  return content.skills ?? []
+  const firstItem = currentSectionDetail.value.items?.[0]
+  const content = firstItem?.content as SkillsContent | null | undefined
+  return content?.skills ?? []
 })
 
 const sectionSuggestions = computed<ResumeSuggestionItem[]>(() => {
@@ -438,8 +439,9 @@ function getSectionPreview(section: ResumeSection): string {
     return content.name ?? '基本信息'
   }
   if (section.type === 'SKILLS') {
-    const content = section.content as SkillsContent
-    return `${content.skills?.length ?? 0} 项技能`
+    const firstItem = section.items?.[0]
+    const content = firstItem?.content as SkillsContent | undefined
+    return `${content?.skills?.length ?? 0} 项技能`
   }
   return section.title ?? ''
 }
