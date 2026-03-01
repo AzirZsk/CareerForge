@@ -6,6 +6,7 @@ import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
@@ -112,13 +113,13 @@ public class ResumeOptimizeGraphConfig {
 
         // 构建工作流图
         StateGraph workflow = new StateGraph(GRAPH_RESUME_OPTIMIZE, resumeOptimizeKeyStrategyFactory)
-                // 添加节点
-                .addNode(NODE_DIAGNOSE_QUICK, diagnoseNode)
-                .addNode(NODE_DIAGNOSE_PRECISE, diagnosePreciseNode)
-                .addNode(NODE_GENERATE_SUGGESTIONS, generateSuggestionsNode)
-                .addNode(NODE_OPTIMIZE_SECTION, optimizeSectionNode)
-                .addNode(NODE_HUMAN_REVIEW, humanReviewNode)
-                .addNode(NODE_SAVE_VERSION, saveVersionNode)
+                // 添加节点（使用 AsyncNodeAction.node_async 包装）
+                .addNode(NODE_DIAGNOSE_QUICK, AsyncNodeAction.node_async(diagnoseNode))
+                .addNode(NODE_DIAGNOSE_PRECISE, AsyncNodeAction.node_async(diagnosePreciseNode))
+                .addNode(NODE_GENERATE_SUGGESTIONS, AsyncNodeAction.node_async(generateSuggestionsNode))
+                .addNode(NODE_OPTIMIZE_SECTION, AsyncNodeAction.node_async(optimizeSectionNode))
+                .addNode(NODE_HUMAN_REVIEW, AsyncNodeAction.node_async(humanReviewNode))
+                .addNode(NODE_SAVE_VERSION, AsyncNodeAction.node_async(saveVersionNode))
 
                 // 添加边：START 直接连接诊断节点
                 .addEdge(START, NODE_DIAGNOSE_QUICK)

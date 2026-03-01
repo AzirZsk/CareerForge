@@ -1,8 +1,7 @@
 package com.landit.resume.graph;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.landit.common.config.AIPromptProperties;
 import com.landit.common.schema.GraphSchemaRegistry;
 import com.landit.common.util.ChatClientHelper;
@@ -14,7 +13,6 @@ import org.springframework.ai.chat.client.ChatClient;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
 
@@ -26,14 +24,14 @@ import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
  */
 @Slf4j
 @RequiredArgsConstructor
-public class GenerateSuggestionsNode implements AsyncNodeActionWithConfig {
+public class GenerateSuggestionsNode implements NodeAction {
 
     private final ChatClient.Builder chatClientBuilder;
     private final AIPromptProperties aiPromptProperties;
     private final GraphSchemaRegistry graphSchemaRegistry;
 
     @Override
-    public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
+    public Map<String, Object> apply(OverAllState state) {
         log.info("=== 生成优化建议 ===");
 
         String diagnosisResult = state.value(STATE_DIAGNOSIS_RESULT).map(v -> (String) v).orElse(DEFAULT_EMPTY_JSON);
@@ -79,13 +77,13 @@ public class GenerateSuggestionsNode implements AsyncNodeActionWithConfig {
                 )
         );
 
-        return CompletableFuture.completedFuture(Map.of(
+        return Map.of(
                 STATE_SUGGESTIONS, suggestionsResult,
                 STATE_MESSAGES, messages,
                 STATE_CURRENT_STEP, NODE_GENERATE_SUGGESTIONS,
                 STATE_NODE_OUTPUT, nodeOutput,
                 STATE_SUGGESTION_LIST, suggestions,
                 STATE_QUICK_WINS, response.getQuickWins()
-        ));
+        );
     }
 }

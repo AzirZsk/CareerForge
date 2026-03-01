@@ -1,15 +1,13 @@
 package com.landit.resume.graph;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.action.NodeAction;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
 
@@ -20,10 +18,10 @@ import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
  * @author Azir
  */
 @Slf4j
-public class SaveVersionNode implements AsyncNodeActionWithConfig {
+public class SaveVersionNode implements NodeAction {
 
     @Override
-    public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
+    public Map<String, Object> apply(OverAllState state) {
         log.info("=== 保存版本 ===");
 
         String resumeId = state.value(STATE_RESUME_ID).map(v -> (String) v).orElse("");
@@ -60,13 +58,13 @@ public class SaveVersionNode implements AsyncNodeActionWithConfig {
                 "improvementScore", improvementScore
         ));
 
-        return CompletableFuture.completedFuture(Map.of(
+        return Map.of(
                 STATE_STATUS, STATUS_COMPLETED,
                 STATE_MESSAGES, messages,
                 STATE_CURRENT_STEP, NODE_SAVE_VERSION,
                 STATE_NODE_OUTPUT, nodeOutput,
                 STATE_VERSION_ID, versionId,
                 STATE_VERSION_NAME, versionName
-        ));
+        );
     }
 }

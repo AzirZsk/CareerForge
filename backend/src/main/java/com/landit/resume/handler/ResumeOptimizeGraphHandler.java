@@ -64,15 +64,24 @@ public class ResumeOptimizeGraphHandler {
         Map<String, Object> initialState = buildInitialState(id, resumeContent, position, mode);
 
         // 发送开始事件（包含模块数据）+ 工作流流 + 完成事件
+        log.info("[SSE诊断] 创建Flux流: threadId={}", threadId);
         return Flux.concat(
-                Flux.just(OptimizeProgressEvent.startWithModules(id, threadId, position, mode, parseResult)),
+                Flux.just(OptimizeProgressEvent.startWithModules(id, threadId, position, mode, parseResult))
+                        .doOnSubscribe(s -> log.info("[SSE诊断] 开始事件被订阅"))
+                        .doOnNext(e -> log.info("[SSE诊断] 开始事件发射: event={}, nodeId={}", e.getEvent(), e.getNodeId())),
                 graphService.streamOptimize(initialState, threadId)
                         .map(output -> {
+                            log.info("[SSE诊断] Graph节点完成: node={}", output.node());
                             Map<String, Object> nodeOutput = graphService.getNodeOutput(threadId);
                             return OptimizeProgressEvent.fromNodeOutput(output.node(), threadId, nodeOutput);
-                        }),
+                        })
+                        .doOnNext(e -> log.info("[SSE诊断] 节点事件发射: event={}, nodeId={}", e.getEvent(), e.getNodeId())),
                 Flux.just(OptimizeProgressEvent.complete(threadId))
-        ).onErrorResume(e -> {
+                        .doOnNext(e -> log.info("[SSE诊断] 完成事件发射: event={}, nodeId={}", e.getEvent(), e.getNodeId()))
+        )
+        .doOnSubscribe(s -> log.info("[SSE诊断] 整个Flux被订阅"))
+        .doOnComplete(() -> log.info("[SSE诊断] Flux流完成"))
+        .onErrorResume(e -> {
             log.error("工作流执行失败", e);
             return Flux.just(OptimizeProgressEvent.error(e.getMessage(), threadId));
         });

@@ -1,8 +1,7 @@
 package com.landit.resume.graph;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.landit.common.config.AIPromptProperties;
 import com.landit.common.schema.GraphSchemaRegistry;
 import com.landit.common.util.ChatClientHelper;
@@ -13,10 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
 
@@ -28,14 +25,14 @@ import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
  */
 @Slf4j
 @RequiredArgsConstructor
-public class OptimizeSectionNode implements AsyncNodeActionWithConfig {
+public class OptimizeSectionNode implements NodeAction {
 
     private final ChatClient.Builder chatClientBuilder;
     private final AIPromptProperties aiPromptProperties;
     private final GraphSchemaRegistry graphSchemaRegistry;
 
     @Override
-    public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
+    public Map<String, Object> apply(OverAllState state) {
         log.info("=== 模块内容优化 ===");
 
         String resumeContent = state.value(STATE_RESUME_CONTENT).map(v -> (String) v).orElse(DEFAULT_EMPTY_JSON);
@@ -90,7 +87,7 @@ public class OptimizeSectionNode implements AsyncNodeActionWithConfig {
                 )
         );
 
-        return CompletableFuture.completedFuture(Map.of(
+        return Map.of(
                 STATE_OPTIMIZED_SECTIONS, optimizeResult,
                 STATE_NEEDS_REVIEW, needsReview,
                 STATE_MESSAGES, messages,
@@ -98,6 +95,6 @@ public class OptimizeSectionNode implements AsyncNodeActionWithConfig {
                 STATE_NODE_OUTPUT, nodeOutput,
                 STATE_CHANGES, changes,
                 STATE_IMPROVEMENT_SCORE, response.getImprovementScore()
-        ));
+        );
     }
 }

@@ -1,8 +1,7 @@
 package com.landit.resume.graph;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.landit.common.config.AIPromptProperties;
 import com.landit.common.schema.GraphSchemaRegistry;
 import com.landit.common.util.ChatClientHelper;
@@ -15,7 +14,6 @@ import org.springframework.ai.chat.client.ChatClient;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
 
@@ -27,14 +25,14 @@ import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
  */
 @Slf4j
 @RequiredArgsConstructor
-public class DiagnosePreciseResumeNode implements AsyncNodeActionWithConfig {
+public class DiagnosePreciseResumeNode implements NodeAction {
 
     private final ChatClient.Builder chatClientBuilder;
     private final AIPromptProperties aiPromptProperties;
     private final GraphSchemaRegistry graphSchemaRegistry;
 
     @Override
-    public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
+    public Map<String, Object> apply(OverAllState state) {
         log.info("=== 开始简历诊断（精准模式）===");
 
         String resumeContent = state.value(STATE_RESUME_CONTENT).map(v -> (String) v).orElse(DEFAULT_EMPTY_JSON);
@@ -76,7 +74,7 @@ public class DiagnosePreciseResumeNode implements AsyncNodeActionWithConfig {
             matchScore = calculateMatchScore(response.getPreciseAnalysis());
         }
 
-        return CompletableFuture.completedFuture(Map.of(
+        return Map.of(
                 STATE_DIAGNOSIS_RESULT, diagnosisResult,
                 STATE_MESSAGES, messages,
                 STATE_CURRENT_STEP, NODE_DIAGNOSE_PRECISE,
@@ -87,7 +85,7 @@ public class DiagnosePreciseResumeNode implements AsyncNodeActionWithConfig {
                 STATE_MARKET_REQUIREMENTS, response.getPreciseAnalysis() != null ? response.getPreciseAnalysis().getMarketRequirements() : null,
                 STATE_SKILL_MATCH, response.getPreciseAnalysis() != null ? response.getPreciseAnalysis().getMatchAnalysis() : null,
                 STATE_ISSUES, response.getWeaknesses()
-        ));
+        );
     }
 
     /**

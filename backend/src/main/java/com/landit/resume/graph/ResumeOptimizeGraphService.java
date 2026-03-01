@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -132,12 +133,15 @@ public class ResumeOptimizeGraphService {
      * @return 流式输出
      */
     public Flux<NodeOutput> streamOptimize(Map<String, Object> initialState, String threadId) {
+        log.info("[SSE诊断-Graph] 创建Graph流: threadId={}", threadId);
         RunnableConfig config = RunnableConfig.builder()
                 .threadId(threadId)
                 .build();
 
-        return resumeOptimizeGraph.stream(initialState, config)
+        return resumeOptimizeGraph.stream(initialState)
+                .doOnSubscribe(s -> log.info("[SSE诊断-Graph] Graph流被订阅: threadId={}", threadId))
                 .doOnNext(output -> {
+                    log.info("[SSE诊断-Graph] Graph节点输出: node={}, thread={}", output.node(), Thread.currentThread().getName());
                     // 更新状态存储
                     StateSnapshot state = resumeOptimizeGraph.getState(config);
                     if (state != null && state.state() != null) {

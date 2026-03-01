@@ -1,15 +1,13 @@
 package com.landit.resume.graph;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.action.NodeAction;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
 
@@ -22,10 +20,10 @@ import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
  * @author Azir
  */
 @Slf4j
-public class HumanReviewNode implements AsyncNodeActionWithConfig {
+public class HumanReviewNode implements NodeAction {
 
     @Override
-    public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
+    public Map<String, Object> apply(OverAllState state) {
         log.info("=== 人工审核 ===");
 
         String optimizedSections = state.value(STATE_OPTIMIZED_SECTIONS).map(v -> (String) v).orElse(DEFAULT_EMPTY_JSON);
@@ -49,12 +47,12 @@ public class HumanReviewNode implements AsyncNodeActionWithConfig {
                     "optimizedContent", optimizedSections
             ));
 
-            return CompletableFuture.completedFuture(Map.of(
+            return Map.of(
                     STATE_STATUS, STATUS_WAITING_FOR_REVIEW,
                     STATE_MESSAGES, messages,
                     STATE_CURRENT_STEP, NODE_HUMAN_REVIEW,
                     STATE_NODE_OUTPUT, nodeOutput
-            ));
+            );
         }
 
         log.info("人工审核通过");
@@ -68,11 +66,11 @@ public class HumanReviewNode implements AsyncNodeActionWithConfig {
         nodeOutput.put(OUTPUT_MESSAGE, "人工审核已通过");
         nodeOutput.put(OUTPUT_DATA, Map.of(STATE_STATUS, STATUS_APPROVED));
 
-        return CompletableFuture.completedFuture(Map.of(
+        return Map.of(
                 STATE_STATUS, STATUS_APPROVED,
                 STATE_MESSAGES, messages,
                 STATE_CURRENT_STEP, NODE_HUMAN_REVIEW,
                 STATE_NODE_OUTPUT, nodeOutput
-        ));
+        );
     }
 }
