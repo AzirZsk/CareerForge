@@ -4,6 +4,7 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.landit.common.config.AIPromptProperties;
+import com.landit.common.schema.GraphSchemaRegistry;
 import com.landit.common.util.ChatClientHelper;
 import com.landit.common.util.JsonParseHelper;
 import lombok.RequiredArgsConstructor;
@@ -11,14 +12,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
  * 生成优化建议节点
- * 基于诊断结果生成具体的优化建议
+ * 基于诊断结果生成具体的优化建议，使用 JSON Schema 约束输出格式
  *
  * @author Azir
  */
@@ -28,6 +28,7 @@ public class GenerateSuggestionsNode implements AsyncNodeActionWithConfig {
 
     private final ChatClient.Builder chatClientBuilder;
     private final AIPromptProperties aiPromptProperties;
+    private final GraphSchemaRegistry graphSchemaRegistry;
 
     @Override
     public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
@@ -36,37 +37,45 @@ public class GenerateSuggestionsNode implements AsyncNodeActionWithConfig {
         String diagnosisResult = state.value("diagnosis_result").map(v -> (String) v).orElse("{}");
         String resumeContent = state.value("resume_content").map(v -> (String) v).orElse("{}");
 
-        ChatClient chatClient = chatClientBuilder.build();
         String prompt = aiPromptProperties.getGraph().getGenerateSuggestions()
                 .replace("{diagnosisResult}", diagnosisResult)
                 .replace("{resumeContent}", resumeContent);
 
-        // 使用流式请求调用大模型，收集完整响应
-        String suggestionsResult = ChatClientHelper.callStreamAndCollect(chatClient, prompt);
+        // 使用 JSON Schema 约束调用大模型
+        String suggestionsResult = ChatClientHelper.callStreamAndCollectWithSchema(
+                chatClientBuilder,
+                prompt,
+                graphSchemaRegistry.buildSuggestionsSchema(),
+                "SuggestionsResponse"
+        );
 
         log.info("优化建议生成完成");
 
-        // 解析建议结果
-        Map<String, Object> parsedResult = parseSuggestionsResult(suggestionsResult);
+        // 解析建议结果为实体
+        GraphSchemaRegistry.SuggestionsResponse response = JsonParseHelper.parseToEntity(
+                suggestionsResult,
+                GraphSchemaRegistry.SuggestionsResponse.class
+        );
 
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> suggestions = (List<Map<String, Object>>) parsedResult.getOrDefault("suggestions", new ArrayList<>());
+        List<?> suggestions = response.getSuggestions() != null ? response.getSuggestions() : List.of();
+        int suggestionCount = suggestions.size();
 
         List<String> messages = new ArrayList<>();
         messages.add("生成优化建议完成");
-        messages.add("共生成 " + suggestions.size() + " 条建议");
+        messages.add("共生成 " + suggestionCount + " 条建议");
 
         // 构建节点输出数据（用于 SSE）
-        Map<String, Object> nodeOutput = new HashMap<>();
-        nodeOutput.put("node", "generate_suggestions");
-        nodeOutput.put("progress", 65);
-        nodeOutput.put("message", "已生成 " + suggestions.size() + " 条优化建议");
-        nodeOutput.put("data", Map.of(
-                "suggestions", suggestions,
-                "quickWins", parsedResult.get("quickWins"),
-                "estimatedImprovement", parsedResult.get("estimatedImprovement"),
-                "totalSuggestions", suggestions.size()
-        ));
+        Map<String, Object> nodeOutput = JsonParseHelper.buildNodeOutput(
+                "generate_suggestions",
+                65,
+                "已生成 " + suggestionCount + " 条优化建议",
+                Map.of(
+                        "suggestions", suggestions,
+                        "quickWins", response.getQuickWins(),
+                        "estimatedImprovement", response.getEstimatedImprovement(),
+                        "totalSuggestions", suggestionCount
+                )
+        );
 
         return CompletableFuture.completedFuture(Map.of(
                 "suggestions", suggestionsResult,
@@ -74,15 +83,7 @@ public class GenerateSuggestionsNode implements AsyncNodeActionWithConfig {
                 "current_step", "generate_suggestions",
                 "node_output", nodeOutput,
                 "suggestion_list", suggestions,
-                "quick_wins", parsedResult.get("quickWins")
+                "quick_wins", response.getQuickWins()
         ));
-    }
-
-    private Map<String, Object> parseSuggestionsResult(String result) {
-        Map<String, Object> parsed = JsonParseHelper.parseToMap(result);
-        if (parsed.isEmpty()) {
-            return JsonParseHelper.getDefaultSuggestionsResult();
-        }
-        return parsed;
     }
 }

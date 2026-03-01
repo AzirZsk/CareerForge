@@ -13,6 +13,7 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.landit.common.config.AIPromptProperties;
+import com.landit.common.schema.GraphSchemaRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -47,6 +48,7 @@ public class ResumeOptimizeGraphConfig {
 
     private final ChatClient.Builder chatClientBuilder;
     private final AIPromptProperties aiPromptProperties;
+    private final GraphSchemaRegistry graphSchemaRegistry;
 
     /**
      * 定义状态键策略
@@ -99,11 +101,11 @@ public class ResumeOptimizeGraphConfig {
     public CompiledGraph resumeOptimizeGraph(KeyStrategyFactory resumeOptimizeKeyStrategyFactory)
             throws GraphStateException {
 
-        // 创建节点
-        DiagnoseResumeNode diagnoseNode = new DiagnoseResumeNode(chatClientBuilder, aiPromptProperties);
-        DiagnosePreciseResumeNode diagnosePreciseNode = new DiagnosePreciseResumeNode(chatClientBuilder, aiPromptProperties);
-        GenerateSuggestionsNode generateSuggestionsNode = new GenerateSuggestionsNode(chatClientBuilder, aiPromptProperties);
-        OptimizeSectionNode optimizeSectionNode = new OptimizeSectionNode(chatClientBuilder, aiPromptProperties);
+        // 创建节点（注入 GraphSchemaRegistry）
+        DiagnoseResumeNode diagnoseNode = new DiagnoseResumeNode(chatClientBuilder, aiPromptProperties, graphSchemaRegistry);
+        DiagnosePreciseResumeNode diagnosePreciseNode = new DiagnosePreciseResumeNode(chatClientBuilder, aiPromptProperties, graphSchemaRegistry);
+        GenerateSuggestionsNode generateSuggestionsNode = new GenerateSuggestionsNode(chatClientBuilder, aiPromptProperties, graphSchemaRegistry);
+        OptimizeSectionNode optimizeSectionNode = new OptimizeSectionNode(chatClientBuilder, aiPromptProperties, graphSchemaRegistry);
         HumanReviewNode humanReviewNode = new HumanReviewNode();
         SaveVersionNode saveVersionNode = new SaveVersionNode();
 

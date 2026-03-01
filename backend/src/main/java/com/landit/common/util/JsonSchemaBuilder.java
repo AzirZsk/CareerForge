@@ -30,6 +30,13 @@ public final class JsonSchemaBuilder {
     }
 
     /**
+     * 创建整数类型 Schema
+     */
+    public static Map<String, Object> integerSchema(String description) {
+        return Map.of("type", "integer", "description", description);
+    }
+
+    /**
      * 创建枚举类型 Schema
      */
     public static Map<String, Object> enumSchema(String description, List<String> values) {
@@ -63,6 +70,14 @@ public final class JsonSchemaBuilder {
      */
     public static Map<String, Object> objectSchema(Map<String, Object> properties, List<String> required) {
         return Map.of("type", "object", "properties", properties, "required", required);
+    }
+
+    /**
+     * 创建通用对象类型 Schema（仅含描述，允许任意属性）
+     * 用于 Map<String, Object> 等动态结构
+     */
+    public static Map<String, Object> objectSchema(String description) {
+        return Map.of("type", "object", "description", description);
     }
 
     /**

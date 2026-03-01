@@ -75,9 +75,17 @@ public final class SchemaGenerator {
         if (String.class.equals(fieldType)) {
             return JsonSchemaBuilder.stringSchema(description);
         }
+        // 处理整数类型
+        if (Integer.class.equals(fieldType) || int.class.equals(fieldType)) {
+            return JsonSchemaBuilder.integerSchema(description);
+        }
         // 处理 List 类型
         if (List.class.equals(fieldType)) {
             return generateListSchema(field, description);
+        }
+        // 处理 Map 类型（动态对象结构）
+        if (Map.class.equals(fieldType)) {
+            return JsonSchemaBuilder.objectSchema(description);
         }
         // 处理嵌套对象类型
         if (isNestedObject(fieldType)) {

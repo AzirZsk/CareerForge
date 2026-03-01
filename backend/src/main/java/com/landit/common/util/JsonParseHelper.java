@@ -43,6 +43,24 @@ public final class JsonParseHelper {
     }
 
     /**
+     * 将 JSON 字符串解析为指定类型的实体
+     *
+     * @param json  JSON 字符串
+     * @param clazz 目标类型
+     * @return 解析后的实体对象
+     * @throws IllegalArgumentException 解析失败时抛出
+     */
+    public static <T> T parseToEntity(String json, Class<T> clazz) {
+        try {
+            String cleanJson = extractJson(json);
+            return OBJECT_MAPPER.readValue(cleanJson, clazz);
+        } catch (Exception e) {
+            log.error("解析JSON到实体失败: targetClass={}, json={}", clazz.getSimpleName(), json, e);
+            throw new IllegalArgumentException("解析JSON失败: " + clazz.getSimpleName(), e);
+        }
+    }
+
+    /**
      * 将 JSON 字符串解析为 Map
      *
      * @param json JSON 字符串
@@ -97,62 +115,15 @@ public final class JsonParseHelper {
     }
 
     /**
-     * 获取默认的诊断结果结构
-     *
-     * @return 包含默认值的诊断结果 Map
-     */
-    public static Map<String, Object> getDefaultDiagnosisResult() {
-        Map<String, Object> result = new HashMap<>();
-        result.put("overallScore", 0);
-        result.put("matchScore", 0);
-        result.put("dimensions", new HashMap<>());
-        result.put("issues", new ArrayList<>());
-        result.put("highlights", new ArrayList<>());
-        result.put("quickWins", new ArrayList<>());
-        result.put("marketRequirements", new HashMap<>());
-        result.put("skillMatch", new HashMap<>());
-        return result;
-    }
-
-    /**
-     * 获取默认的建议结果结构
-     *
-     * @return 包含默认值的建议结果 Map
-     */
-    public static Map<String, Object> getDefaultSuggestionsResult() {
-        Map<String, Object> result = new HashMap<>();
-        result.put("suggestions", new ArrayList<>());
-        result.put("quickWins", new ArrayList<>());
-        result.put("priorityOrder", new ArrayList<>());
-        result.put("estimatedImprovement", "无法估算");
-        return result;
-    }
-
-    /**
-     * 获取默认的优化结果结构
-     *
-     * @return 包含默认值的优化结果 Map
-     */
-    public static Map<String, Object> getDefaultOptimizeResult() {
-        Map<String, Object> result = new HashMap<>();
-        result.put("optimizedContent", new HashMap<>());
-        result.put("changes", new ArrayList<>());
-        result.put("improvementScore", 0);
-        result.put("tips", new ArrayList<>());
-        result.put("confidence", "low");
-        return result;
-    }
-
-    /**
      * 构建节点输出数据（用于 SSE）
      *
-     * @param node    节点名称
+     * @param node     节点名称
      * @param progress 进度百分比
      * @param message  进度消息
      * @param data     节点数据
      * @return 节点输出 Map
      */
-    public static Map<String, Object> buildNodeOutput(String node, int progress, String message, Map<String, Object> data) {
+    public static Map<String, Object> buildNodeOutput(String node, int progress, String message, Object data) {
         Map<String, Object> nodeOutput = new HashMap<>();
         nodeOutput.put("node", node);
         nodeOutput.put("progress", progress);
