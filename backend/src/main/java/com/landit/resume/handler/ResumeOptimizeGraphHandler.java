@@ -5,10 +5,15 @@ import com.landit.resume.dto.OptimizeGraphRequest;
 import com.landit.resume.dto.OptimizeProgressEvent;
 import com.landit.resume.dto.ResumeDetailVO;
 import com.landit.resume.graph.ResumeOptimizeGraphService;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.publisher.Flux;
+
+import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -85,6 +90,58 @@ public class ResumeOptimizeGraphHandler {
             log.error("工作流执行失败", e);
             return Flux.just(OptimizeProgressEvent.error(e.getMessage(), threadId));
         });
+    }
+
+    /**
+     * 流式执行简历优化工作流（使用SseEmitter）
+     * 将Flux转换为SseEmitter以确保在Tomcat容器上实时推送事件
+     *
+     * @param id             简历ID
+     * @param mode           优化模式（quick/precise）
+     * @param targetPosition 目标岗位（可选）
+     * @param response       HTTP响应（用于设置响应头）
+     * @return SSE事件发射器
+     */
+    public SseEmitter streamOptimizeWithSse(String id, String mode, String targetPosition,
+                                              HttpServletResponse response) {
+        log.info("开始SSE流式简历优化: resumeId={}, mode={}", id, mode);
+
+        // 设置响应头禁用缓冲
+        response.setHeader("X-Accel-Buffering", "no");
+        response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("Connection", "keep-alive");
+        response.setContentType(MediaType.TEXT_EVENT_STREAM_VALUE);
+
+        // 获取Flux流
+        Flux<OptimizeProgressEvent> flux = streamOptimize(id, mode, targetPosition);
+
+        // 创建超时时间为5分钟的SseEmitter
+        SseEmitter emitter = new SseEmitter(300000L);
+
+        // 订阅Flux并实时发送事件（使用JSON序列化）
+        flux.subscribe(
+                event -> {
+                    try {
+                        emitter.send(SseEmitter.event()
+                                .name("message")
+                                .data(event, MediaType.APPLICATION_JSON));
+                        log.info("[SSE] 发送事件: event={}, nodeId={}", event.getEvent(), event.getNodeId());
+                    } catch (IOException e) {
+                        log.error("[SSE] 发送失败", e);
+                        emitter.completeWithError(e);
+                    }
+                },
+                error -> {
+                    log.error("[SSE] 流异常", error);
+                    emitter.completeWithError(error);
+                },
+                () -> {
+                    log.info("[SSE] 流完成");
+                    emitter.complete();
+                }
+        );
+
+        return emitter;
     }
 
     /**
