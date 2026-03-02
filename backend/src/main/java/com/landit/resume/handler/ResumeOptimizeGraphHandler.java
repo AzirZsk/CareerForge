@@ -1,5 +1,7 @@
 package com.landit.resume.handler;
 
+import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.landit.common.util.JsonParseHelper;
 import com.landit.resume.dto.OptimizeGraphRequest;
 import com.landit.resume.dto.OptimizeProgressEvent;
@@ -61,6 +63,7 @@ public class ResumeOptimizeGraphHandler {
         return Flux.concat(
                 Flux.just(OptimizeProgressEvent.startWithModules(id, threadId, position, mode, parseResult)),
                 graphService.streamOptimize(initialState, threadId)
+                        .filter(output -> !isInterruptionOutput(output))  // 过滤掉中断事件
                         .map(output -> OptimizeProgressEvent.fromNodeOutput(
                                 output.node(), threadId, graphService.getNodeOutput(threadId))),
                 Flux.just(OptimizeProgressEvent.complete(threadId))
@@ -249,6 +252,19 @@ public class ResumeOptimizeGraphHandler {
      */
     private String resolveMode(OptimizeGraphRequest request) {
         return (request != null && request.getMode() != null) ? request.getMode() : MODE_QUICK;
+    }
+
+    /**
+     * 判断节点输出是否是中断事件
+     * 当Graph执行到配置了interruptBefore的节点时，会发出一个中断元数据输出
+     * 这类输出不应该转换为进度事件发送给前端
+     *
+     * @param output 节点输出
+     * @return true表示是中断事件，应该被过滤
+     */
+    private boolean isInterruptionOutput(NodeOutput output) {
+        // 判断是否是中断元数据类型
+        return output instanceof InterruptionMetadata;
     }
 
     /**
