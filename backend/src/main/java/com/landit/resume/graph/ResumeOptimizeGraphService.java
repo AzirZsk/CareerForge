@@ -4,11 +4,11 @@ import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
+import com.landit.resume.dto.ResumeDetailVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
-import reactor.core.scheduler.Schedulers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,19 +37,19 @@ public class ResumeOptimizeGraphService {
     /**
      * 执行简历优化工作流（快速模式）
      *
-     * @param resumeId       简历ID
-     * @param resumeContent  简历内容
+     * @param resumeId      简历ID
+     * @param resumeDetail  简历详情
      * @param targetPosition 目标岗位
-     * @param threadId       会话线程ID
+     * @param threadId      会话线程ID
      * @return 工作流执行结果
      */
-    public Map<String, Object> executeQuickOptimize(String resumeId, String resumeContent,
+    public Map<String, Object> executeQuickOptimize(String resumeId, ResumeDetailVO resumeDetail,
                                                      String targetPosition, String threadId) {
         log.info("执行简历优化工作流（快速模式）: resumeId={}", resumeId);
 
         Map<String, Object> initialState = new HashMap<>();
         initialState.put(STATE_RESUME_ID, resumeId);
-        initialState.put(STATE_RESUME_CONTENT, resumeContent);
+        initialState.put(STATE_RESUME_CONTENT, resumeDetail);
         initialState.put(STATE_TARGET_POSITION, targetPosition);
         initialState.put(STATE_DIAGNOSIS_MODE, MODE_QUICK);
         initialState.put(STATE_MESSAGES, new ArrayList<String>());
@@ -83,21 +83,21 @@ public class ResumeOptimizeGraphService {
     /**
      * 执行简历优化工作流（精准模式）
      *
-     * @param resumeId       简历ID
-     * @param resumeContent  简历内容
+     * @param resumeId      简历ID
+     * @param resumeDetail  简历详情
      * @param targetPosition 目标岗位
      * @param searchResults  搜索结果
-     * @param threadId       会话线程ID
+     * @param threadId      会话线程ID
      * @return 工作流执行结果
      */
-    public Map<String, Object> executePreciseOptimize(String resumeId, String resumeContent,
+    public Map<String, Object> executePreciseOptimize(String resumeId, ResumeDetailVO resumeDetail,
                                                        String targetPosition, String searchResults,
                                                        String threadId) {
         log.info("执行简历优化工作流（精准模式）: resumeId={}", resumeId);
 
         Map<String, Object> initialState = new HashMap<>();
         initialState.put(STATE_RESUME_ID, resumeId);
-        initialState.put(STATE_RESUME_CONTENT, resumeContent);
+        initialState.put(STATE_RESUME_CONTENT, resumeDetail);
         initialState.put(STATE_TARGET_POSITION, targetPosition);
         initialState.put(STATE_DIAGNOSIS_MODE, MODE_PRECISE);
         initialState.put(STATE_SEARCH_RESULTS, searchResults);

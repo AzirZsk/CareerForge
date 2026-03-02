@@ -133,6 +133,40 @@ export interface ChangeItem {
   reason: string
 }
 
+/** 简历区块类型 */
+export type ResumeSectionType =
+  | 'BASIC_INFO'
+  | 'EDUCATION'
+  | 'WORK'
+  | 'PROJECT'
+  | 'SKILLS'
+  | 'CERTIFICATE'
+  | 'OPEN_SOURCE'
+
+/** 简历区块 */
+export interface ResumeSection {
+  id: string
+  type: ResumeSectionType
+  title: string
+  content: Record<string, any> | null
+  items: ResumeSectionItem[] | null
+  score: number
+  suggestions: string[] | null
+  /** 优化后新增的字段 */
+  awards?: string
+  description?: string
+  achievements?: string
+}
+
+/** 简历区块子项 */
+export interface ResumeSectionItem {
+  id: string
+  title: string
+  content: Record<string, any>
+  score: number
+  achievements?: string
+}
+
 /** 内容优化数据 */
 export interface OptimizeSectionData {
   changes: ChangeItem[]
@@ -141,13 +175,17 @@ export interface OptimizeSectionData {
   confidence: 'high' | 'medium' | 'low'
   needsReview: boolean
   changeCount: number
-  /** 优化前的原始简历 */
+  /** 优化前的原始简历（旧格式，兼容） */
   beforeResume?: any
   /** 优化后的内容（包含 description 和 highlights） */
   optimizedContent?: {
     description: string
     highlights: string[]
   }
+  /** 优化前的区块数据（新格式） */
+  beforeSection?: ResumeSection[]
+  /** 优化后的区块数据（新格式） */
+  afterSection?: ResumeSection[]
 }
 
 /** 保存版本数据 */

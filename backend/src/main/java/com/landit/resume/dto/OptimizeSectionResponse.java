@@ -7,10 +7,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
-import java.util.Map;
 
 /**
- * 模块内容优化响应DTO
+ * 简历内容优化响应DTO
  *
  * @author Azir
  */
@@ -19,12 +18,6 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class OptimizeSectionResponse {
-
-    /**
-     * 优化后的内容
-     */
-    @SchemaField(value = "优化后的模块内容")
-    private Map<String, Object> optimizedContent;
 
     /**
      * 变更记录
@@ -37,12 +30,6 @@ public class OptimizeSectionResponse {
      */
     @SchemaField(value = "优化相关的补充提示")
     private List<String> tips;
-
-    /**
-     * 置信度：high/medium/low
-     */
-    @SchemaField(value = "优化置信度", enumValues = {"high", "medium", "low"})
-    private String confidence;
 
     /**
      * 预估提升分数

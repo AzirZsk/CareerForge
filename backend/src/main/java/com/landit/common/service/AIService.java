@@ -11,7 +11,6 @@ import com.landit.common.schema.SectionSchemaRegistry;
 import com.landit.common.util.JsonParseHelper;
 import com.landit.resume.dto.DiagnoseResumeResponse;
 import com.landit.resume.dto.MatchJobResponse;
-import com.landit.resume.dto.OptimizeSectionResponse;
 import com.landit.resume.dto.ResumeParseResult;
 import com.landit.resume.dto.ResumeStructuredData;
 import lombok.RequiredArgsConstructor;
@@ -304,30 +303,6 @@ public class AIService {
     }
 
     /**
-     * 模块内容优化
-     *
-     * @param sectionType     模块类型
-     * @param originalContent 原始内容
-     * @param targetPosition  目标岗位
-     * @return 优化结果
-     */
-    public OptimizeSectionResponse optimizeSection(String sectionType, Map<String, Object> originalContent, String targetPosition) {
-        log.info("开始模块优化: sectionType={}, targetPosition={}", sectionType, targetPosition);
-
-        String promptTemplate = promptProperties.getResume().getOptimizeSection();
-        String prompt = promptTemplate
-                .replace("{sectionType}", sectionType)
-                .replace("{targetPosition}", targetPosition)
-                .replace("{originalContent}", toJsonString(originalContent));
-
-        String jsonResponse = callAIWithJsonResponse(prompt);
-        OptimizeSectionResponse response = parseOptimizeSectionResponse(jsonResponse);
-
-        log.info("模块优化完成: confidence={}", response.getConfidence());
-        return response;
-    }
-
-    /**
      * 岗位JD匹配分析
      *
      * @param resumeContent  简历内容（JSON格式）
@@ -386,19 +361,6 @@ public class AIService {
         } catch (Exception e) {
             log.error("解析诊断响应失败: {}", jsonResponse, e);
             throw new RuntimeException("解析诊断响应失败", e);
-        }
-    }
-
-    /**
-     * 解析模块优化响应
-     */
-    private OptimizeSectionResponse parseOptimizeSectionResponse(String jsonResponse) {
-        try {
-            String cleanJson = JsonParseHelper.cleanJsonResponse(jsonResponse);
-            return objectMapper.readValue(cleanJson, OptimizeSectionResponse.class);
-        } catch (Exception e) {
-            log.error("解析模块优化响应失败: {}", jsonResponse, e);
-            throw new RuntimeException("解析模块优化响应失败", e);
         }
     }
 

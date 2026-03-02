@@ -673,21 +673,18 @@ public class AIPromptProperties {
                 """;
 
         /**
-         * 模块内容优化提示词 - 用于 OptimizeSectionNode
+         * 简历内容优化提示词 - 用于 OptimizeSectionNode
          */
         private String optimizeSection = """
                 你是一位专业的简历内容优化专家。
 
                 ## 任务
-                优化以下简历模块的内容。
-
-                ## 模块类型
-                {sectionType}
+                根据优化建议，对整份简历进行内容优化。
 
                 ## 目标岗位
                 {targetPosition}
 
-                ## 原始内容
+                ## 原始简历内容
                 {resumeContent}
 
                 ## 优化建议
@@ -719,10 +716,6 @@ public class AIPromptProperties {
                 ## 输出格式（严格JSON）
 
                 {
-                  "optimizedContent": {
-                    "description": "优化后的完整模块内容",
-                    "highlights": ["关键亮点1", "关键亮点2"]
-                  },
                   "changes": [
                     {
                       "type": "modified",
@@ -740,18 +733,15 @@ public class AIPromptProperties {
                     }
                   ],
                   "improvementScore": 15,
-                  "tips": ["建议补充团队规模信息", "可强调技术选型理由"],
-                  "confidence": "high"
+                  "tips": ["建议补充团队规模信息", "可强调技术选型理由"]
                 }
 
                 ## 要求
-                1. optimizedContent包含优化后的完整内容
-                2. changes记录所有变更，type可选值：added（新增）、modified（修改）、removed（删除）
-                3. 不编造数据，保持真实性
-                4. tips列出需要用户补充的信息
-                5. confidence如实反映：high/medium/low
-                6. improvementScore填写预估提升分数（整数，0-30）
-                7. 只返回JSON，不要返回其他内容
+                1. changes记录所有变更，type可选值：added（新增）、modified（修改）、removed（删除）
+                2. 不编造数据，保持真实性
+                3. tips列出需要用户补充的信息
+                4. improvementScore填写预估提升分数（整数，0-30）
+                5. 只返回JSON，不要返回其他内容
                 """;
     }
 

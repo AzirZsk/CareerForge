@@ -52,8 +52,7 @@ public final class JsonParseHelper {
      */
     public static <T> T parseToEntity(String json, Class<T> clazz) {
         try {
-            String cleanJson = extractJson(json);
-            return OBJECT_MAPPER.readValue(cleanJson, clazz);
+            return OBJECT_MAPPER.readValue(json, clazz);
         } catch (Exception e) {
             log.error("解析JSON到实体失败: targetClass={}, json={}", clazz.getSimpleName(), json, e);
             throw new IllegalArgumentException("解析JSON失败: " + clazz.getSimpleName(), e);

@@ -143,14 +143,9 @@ public final class ResumeOptimizeGraphConstants {
     public static final String STATE_SUGGESTION_LIST = "suggestion_list";
 
     /**
-     * 优化后的模块内容（JSON格式）
+     * 优化后的简历内容（JSON格式）
      */
     public static final String STATE_OPTIMIZED_SECTIONS = "optimized_sections";
-
-    /**
-     * 要优化的模块类型
-     */
-    public static final String STATE_SECTION_TO_OPTIMIZE = "section_to_optimize";
 
     /**
      * 变更列表

@@ -7,6 +7,7 @@ import com.landit.common.schema.GraphSchemaRegistry;
 import com.landit.common.util.ChatClientHelper;
 import com.landit.common.util.JsonParseHelper;
 import com.landit.resume.dto.DiagnoseResumeResponse;
+import com.landit.resume.dto.ResumeDetailVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -35,12 +36,15 @@ public class DiagnoseResumeNode implements NodeAction {
     public Map<String, Object> apply(OverAllState state) {
         log.info("=== 开始简历诊断（快速模式）===");
 
-        String resumeContent = state.value(STATE_RESUME_CONTENT).map(v -> (String) v).orElse(DEFAULT_EMPTY_JSON);
+        ResumeDetailVO resumeDetail = state.value(STATE_RESUME_CONTENT)
+                .map(v -> (ResumeDetailVO) v)
+                .orElse(null);
+        String resumeContentJson = resumeDetail != null ? JsonParseHelper.toJsonString(resumeDetail) : DEFAULT_EMPTY_JSON;
         String targetPosition = state.value(STATE_TARGET_POSITION).map(v -> (String) v).orElse(DEFAULT_TARGET_POSITION);
 
         String prompt = aiPromptProperties.getGraph().getDiagnoseQuick()
                 .replace("{targetPosition}", targetPosition)
-                .replace("{resumeContent}", resumeContent);
+                .replace("{resumeContent}", resumeContentJson);
 
         // 使用 JSON Schema 约束调用大模型
         String diagnosisResult = ChatClientHelper.callStreamAndCollectWithSchema(

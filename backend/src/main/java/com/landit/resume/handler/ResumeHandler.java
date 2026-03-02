@@ -15,8 +15,6 @@ import com.landit.resume.dto.MatchJobRequest;
 import com.landit.resume.dto.MatchJobResponse;
 import com.landit.resume.dto.OptimizeResumeRequest;
 import com.landit.resume.dto.OptimizeResumeResponse;
-import com.landit.resume.dto.OptimizeSectionRequest;
-import com.landit.resume.dto.OptimizeSectionResponse;
 import com.landit.resume.dto.PrimaryResumeVO;
 import com.landit.resume.dto.ResumeDetailVO;
 import com.landit.resume.entity.Resume;
@@ -412,34 +410,6 @@ public class ResumeHandler {
             // 快速模式：直接诊断
             return aiService.diagnoseResume(resumeContent, request.getTargetPosition());
         }
-    }
-
-    /**
-     * 优化简历模块
-     *
-     * @param id      简历ID
-     * @param request 优化请求
-     * @return 优化结果
-     */
-    @Transactional(rollbackFor = Exception.class)
-    public OptimizeSectionResponse optimizeSection(String id, OptimizeSectionRequest request) {
-        // 获取简历详情
-        ResumeDetailVO resumeDetail = resumeService.getResumeDetail(id);
-        if (resumeDetail == null) {
-            throw new BusinessException("简历不存在");
-        }
-
-        // 调用AI优化
-        OptimizeSectionResponse response = aiService.optimizeSection(
-                request.getSectionType(),
-                request.getOriginalContent(),
-                request.getTargetPosition()
-        );
-
-        log.info("模块优化完成: resumeId={}, sectionType={}, confidence={}",
-                id, request.getSectionType(), response.getConfidence());
-
-        return response;
     }
 
     /**

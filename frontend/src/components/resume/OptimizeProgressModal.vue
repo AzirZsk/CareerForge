@@ -65,7 +65,11 @@
                 completed: item.completed
               }"
             >
-              <div class="stage-main">
+              <div
+                class="stage-main"
+                :class="{ clickable: item.completed && item.data }"
+                @click="item.completed && item.data && toggleExpand(item.stage)"
+              >
                 <div class="stage-left">
                   <div class="stage-indicator">
                     <svg v-if="item.completed" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -76,24 +80,22 @@
                   </div>
                   <span class="stage-label">{{ getStageLabel(item.stage) }}</span>
                 </div>
-                <button 
-                  v-if="item.completed && item.data" 
-                  class="expand-btn"
-                  @click="toggleExpand(item.stage)"
+                <div
+                  v-if="item.completed && item.data"
+                  class="expand-indicator"
                 >
-                  <svg 
-                    width="16" 
-                    height="16" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
                     stroke-width="2"
                     :class="{ rotated: item.expanded }"
                   >
                     <polyline points="6 9 12 15 18 9"/>
                   </svg>
-                  {{ item.expanded ? '收起' : '展开' }}
-                </button>
+                </div>
               </div>
 
               <!-- 展开的数据区域 -->
@@ -215,9 +217,12 @@
                     <!-- 简历对比视图 -->
                     <div v-else-if="comparisonView === 'comparison'" class="comparison-view">
                       <ResumeComparison
-                        v-if="item.data.beforeResume"
-                        :before-resume="item.data.beforeResume"
+                        v-if="item.data.beforeSection?.length || item.data.beforeResume"
+                        :before-section="item.data.beforeSection"
+                        :after-section="item.data.afterSection"
                         :changes="item.data.changes || []"
+                        :improvement-score="item.data.improvementScore"
+                        :before-resume="item.data.beforeResume"
                       />
                       <div v-else class="no-comparison-data">
                         <p>暂无对比数据</p>
@@ -394,18 +399,21 @@ function getWeaknessSeverity(weakness: string | { severity?: string }): string {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding: $spacing-lg;
 }
 
 .modal-container {
-  width: 640px;
-  max-height: 80vh;
-  background: $color-bg-secondary;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  background: $color-bg-primary;
   border-radius: $radius-xl;
   border: 1px solid rgba(255, 255, 255, 0.08);
   overflow: hidden;
@@ -532,6 +540,9 @@ function getWeaknessSeverity(weakness: string | { severity?: string }): string {
   flex: 1;
   overflow-y: auto;
   padding: 0 $spacing-lg $spacing-lg;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
 }
 
 .stage-item {
@@ -556,6 +567,19 @@ function getWeaknessSeverity(weakness: string | { severity?: string }): string {
   display: flex;
   justify-content: space-between;
   align-items: center;
+
+  &.clickable {
+    cursor: pointer;
+
+    &:hover {
+      .stage-label {
+        color: $color-text-primary;
+      }
+      .expand-indicator {
+        color: $color-accent;
+      }
+    }
+  }
 }
 
 .stage-left {
@@ -594,24 +618,18 @@ function getWeaknessSeverity(weakness: string | { severity?: string }): string {
   color: $color-text-secondary;
 }
 
-.expand-btn {
+.expand-indicator {
   display: flex;
   align-items: center;
-  gap: $spacing-xs;
-  font-size: $text-xs;
   color: $color-text-tertiary;
   transition: color $transition-fast;
-  
+
   svg {
     transition: transform $transition-fast;
-    
+
     &.rotated {
       transform: rotate(180deg);
     }
-  }
-  
-  &:hover {
-    color: $color-accent;
   }
 }
 
