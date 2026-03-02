@@ -50,35 +50,30 @@ export interface ParseResumeData {
   completeness: number
 }
 
-/** 维度评分 */
-export interface DimensionScore {
-  score: number
-  comment: string
-}
-
-/** 维度分数集合 */
+/** 维度分数集合（后端直接返回数字） */
 export interface DimensionScores {
-  format?: DimensionScore
-  content?: DimensionScore
-  keywords?: DimensionScore
-  structure?: DimensionScore
-  [key: string]: DimensionScore | undefined
+  content?: number
+  structure?: number
+  matching?: number
+  competitiveness?: number
+  [key: string]: number | undefined
 }
 
-/** 问题项 */
-export interface IssueItem {
-  severity: 'high' | 'medium' | 'low'
-  type: string
+/** 劣势项 */
+export interface WeaknessItem {
+  severity?: 'high' | 'medium' | 'low'
   content: string
 }
 
-/** 诊断数据 */
+/** 诊断数据（适配后端实际返回结构） */
 export interface DiagnoseData {
   overallScore: number
-  dimensions: DimensionScores
-  issues: IssueItem[]
-  highlights: string[]
+  dimensionScores: DimensionScores
+  suggestions?: SuggestionItem[]
+  strengths: string[]
+  weaknesses: string[] | WeaknessItem[]
   quickWins: string[]
+  preciseAnalysis?: any
 }
 
 /** 市场要求 */
@@ -108,17 +103,15 @@ export interface QuickWinItem {
   example: string
 }
 
-/** 优化建议项 */
+/** 优化建议项（适配后端实际返回结构） */
 export interface SuggestionItem {
-  id: string
   priority: 'high' | 'medium' | 'low'
   category: string
-  section: string
+  position: string  // 后端使用 position 而非 section
   title: string
   current: string
   suggestion: string
-  reason: string
-  impact: 'high' | 'medium' | 'low'
+  impact: string
 }
 
 /** 生成建议数据 */
@@ -228,7 +221,9 @@ export const DIMENSION_LABELS: Record<string, string> = {
   'format': '格式规范',
   'content': '内容质量',
   'keywords': '关键词',
-  'structure': '结构逻辑'
+  'structure': '结构规范',
+  'matching': '岗位匹配',
+  'competitiveness': '竞争力'
 }
 
 /** 获取阶段标签 */

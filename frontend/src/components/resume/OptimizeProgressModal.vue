@@ -107,27 +107,35 @@
                       </div>
                       <span class="score-label">综合评分</span>
                     </div>
-                    <div class="dimensions-grid" v-if="item.data.dimensions">
-                      <div class="dimension-item" v-for="(dim, key) in item.data.dimensions" :key="key">
+                    <div class="dimensions-grid" v-if="item.data.dimensionScores">
+                      <div class="dimension-item" v-for="(dim, key) in item.data.dimensionScores" :key="key">
                         <span class="dim-name">{{ getDimensionLabel(String(key)) }}</span>
-                        <span class="dim-score">{{ dim.score }}</span>
+                        <span class="dim-score">{{ dim }}</span>
                       </div>
                     </div>
-                    <div class="issues-section" v-if="item.data.issues?.length">
-                      <div class="issues-title">问题 ({{ item.data.issues.length }})</div>
-                      <div 
-                        class="issue-item" 
-                        v-for="(issue, idx) in item.data.issues.slice(0, 3)" 
+                    <div class="issues-section" v-if="item.data.weaknesses?.length">
+                      <div class="issues-title">待改进 ({{ item.data.weaknesses.length }})</div>
+                      <div
+                        class="issue-item"
+                        v-for="(weakness, idx) in getWeaknessesArray(item.data.weaknesses).slice(0, 3)"
                         :key="idx"
-                        :class="issue.severity"
+                        :class="typeof weakness === 'string' ? 'medium' : weakness.severity"
                       >
-                        <span class="issue-severity">{{ issue.severity === 'high' ? '⚠️' : issue.severity === 'medium' ? '💡' : '✨' }}</span>
-                        {{ issue.content }}
+                        <span class="issue-severity">
+                          {{ getSeverityIcon(typeof weakness === 'string' ? 'medium' : weakness.severity) }}
+                        </span>
+                        {{ typeof weakness === 'string' ? weakness : weakness.content }}
                       </div>
                     </div>
-                    <div class="highlights-section" v-if="item.data.highlights?.length">
+                    <div class="highlights-section" v-if="item.data.strengths?.length">
                       <div class="highlights-title">亮点</div>
-                      <div class="highlight-tag" v-for="(h, idx) in item.data.highlights" :key="idx">{{ h }}</div>
+                      <div class="highlight-tag" v-for="(h, idx) in item.data.strengths" :key="idx">{{ h }}</div>
+                    </div>
+                    <div class="quickwins-section" v-if="item.data.quickWins?.length">
+                      <div class="quickwins-title">快速改进建议</div>
+                      <div class="quickwin-item" v-for="(quickWin, idx) in item.data.quickWins.slice(0, 3)" :key="idx">
+                        ✓ {{ quickWin }}
+                      </div>
                     </div>
                   </div>
                   
@@ -138,12 +146,21 @@
                       <span class="suggestions-improvement">{{ item.data.estimatedImprovement }}</span>
                     </div>
                     <div class="suggestions-list" v-if="item.data.suggestions?.length">
-                      <div class="suggestion-item" v-for="sug in item.data.suggestions.slice(0, 3)" :key="sug.id">
+                      <div class="suggestion-item" v-for="(sug, idx) in item.data.suggestions.slice(0, 3)" :key="idx">
                         <div class="sug-header">
                           <span class="sug-priority" :class="sug.priority">{{ sug.priority }}</span>
                           <span class="sug-title">{{ sug.title }}</span>
                         </div>
-                        <div class="sug-section">模块: {{ sug.section }}</div>
+                        <div class="sug-section">位置: {{ sug.position || sug.category }}</div>
+                        <div class="sug-current" v-if="sug.current">当前: {{ sug.current }}</div>
+                        <div class="sug-suggestion">{{ sug.suggestion }}</div>
+                        <div class="sug-impact" v-if="sug.impact">影响: {{ sug.impact }}</div>
+                      </div>
+                    </div>
+                    <div class="quickwins-section" v-if="item.data.quickWins?.length">
+                      <div class="quickwins-title">快速改进项</div>
+                      <div class="quickwin-item" v-for="(quickWin, idx) in item.data.quickWins.slice(0, 3)" :key="idx">
+                        ✓ {{ quickWin.action || quickWin }}
                       </div>
                     </div>
                   </div>
@@ -151,19 +168,29 @@
                   <!-- 内容优化数据 -->
                   <div v-else-if="item.stage === 'optimize_section'" class="data-content">
                     <div class="changes-summary">
-                      <span class="changes-count">{{ item.data.changeCount }} 处变更</span>
-                      <span class="changes-improvement">预计提升 {{ item.data.improvementScore }} 分</span>
+                      <span class="changes-count">{{ item.data.changeCount || item.data.changes?.length || 0 }} 处变更</span>
+                      <span class="changes-improvement" v-if="item.data.improvementScore">预计提升 {{ item.data.improvementScore }} 分</span>
                     </div>
-                    <div class="confidence-badge" :class="item.data.confidence">
+                    <div class="confidence-badge" :class="item.data.confidence || 'medium'" v-if="item.data.confidence">
                       置信度: {{ item.data.confidence }}
                     </div>
                     <div class="changes-list" v-if="item.data.changes?.length">
                       <div class="change-item" v-for="(change, idx) in item.data.changes.slice(0, 2)" :key="idx">
                         <div class="change-header">
-                          <span class="change-section">{{ change.sectionTitle }}</span>
+                          <span class="change-type" :class="change.type">{{ change.type || 'modified' }}</span>
                           <span class="change-field">{{ change.field }}</span>
                         </div>
-                        <div class="change-reason">{{ change.reason }}</div>
+                        <div class="change-content" v-if="change.before || change.after">
+                          <div class="change-before" v-if="change.before">前: {{ change.before }}</div>
+                          <div class="change-after" v-if="change.after">后: {{ change.after }}</div>
+                        </div>
+                        <div class="change-reason" v-if="change.reason">{{ change.reason }}</div>
+                      </div>
+                    </div>
+                    <div class="tips-section" v-if="item.data.tips?.length">
+                      <div class="tips-title">优化提示</div>
+                      <div class="tip-item" v-for="(tip, idx) in item.data.tips.slice(0, 3)" :key="idx">
+                        • {{ tip }}
                       </div>
                     </div>
                   </div>
@@ -295,6 +322,26 @@ function handleBackgroundRun() {
 
 function toggleExpand(stage: OptimizeStage) {
   emit('toggleExpand', stage)
+}
+
+/**
+ * 获取弱点数组（兼容字符串数组和对象数组）
+ */
+function getWeaknessesArray(weaknesses: string[] | any[]): any[] {
+  if (!weaknesses) return []
+  return weaknesses
+}
+
+/**
+ * 获取严重性图标
+ */
+function getSeverityIcon(severity: string): string {
+  switch (severity) {
+    case 'high': return '⚠️'
+    case 'medium': return '💡'
+    case 'low': return '✨'
+    default: return '•'
+  }
 }
 </script>
 
@@ -681,6 +728,28 @@ function toggleExpand(stage: OptimizeStage) {
   font-size: $text-xs;
 }
 
+.quickwins-section {
+  margin-top: $spacing-sm;
+}
+
+.quickwins-title {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+  margin-bottom: $spacing-xs;
+}
+
+.quickwin-item {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-xs;
+  padding: $spacing-xs;
+  font-size: $text-xs;
+  color: $color-text-secondary;
+  background: rgba(251, 191, 36, 0.05);
+  border-radius: $radius-sm;
+  margin-bottom: 4px;
+}
+
 // 建议数据样式
 .suggestions-summary {
   display: flex;
@@ -741,6 +810,29 @@ function toggleExpand(stage: OptimizeStage) {
 .sug-section {
   font-size: $text-xs;
   color: $color-text-tertiary;
+  margin-bottom: 4px;
+}
+
+.sug-current {
+  font-size: $text-xs;
+  color: $color-error;
+  margin-bottom: 4px;
+  padding-left: $spacing-sm;
+}
+
+.sug-suggestion {
+  font-size: $text-xs;
+  color: $color-text-primary;
+  margin-bottom: 4px;
+  padding-left: $spacing-sm;
+  line-height: 1.4;
+}
+
+.sug-impact {
+  font-size: $text-xs;
+  color: $color-success;
+  padding-left: $spacing-sm;
+  font-style: italic;
 }
 
 // 变更数据样式
@@ -795,10 +887,24 @@ function toggleExpand(stage: OptimizeStage) {
   margin-bottom: 4px;
 }
 
-.change-section {
-  font-size: $text-sm;
-  color: $color-text-primary;
-  font-weight: $weight-medium;
+.change-type {
+  padding: 2px 6px;
+  border-radius: $radius-sm;
+  font-size: 10px;
+  text-transform: uppercase;
+
+  &.modified {
+    background: rgba(96, 165, 250, 0.15);
+    color: $color-info;
+  }
+  &.added {
+    background: rgba(52, 211, 153, 0.15);
+    color: $color-success;
+  }
+  &.deleted {
+    background: rgba(248, 113, 113, 0.15);
+    color: $color-error;
+  }
 }
 
 .change-field {
@@ -806,9 +912,51 @@ function toggleExpand(stage: OptimizeStage) {
   color: $color-accent;
 }
 
+.change-content {
+  margin-bottom: 4px;
+}
+
+.change-before,
+.change-after {
+  font-size: $text-xs;
+  padding: $spacing-xs;
+  border-radius: $radius-sm;
+  margin-bottom: 2px;
+}
+
+.change-before {
+  color: $color-error;
+  background: rgba(248, 113, 113, 0.05);
+}
+
+.change-after {
+  color: $color-success;
+  background: rgba(52, 211, 153, 0.05);
+}
+
 .change-reason {
   font-size: $text-xs;
   color: $color-text-tertiary;
+  font-style: italic;
+}
+
+.tips-section {
+  margin-top: $spacing-sm;
+  padding-top: $spacing-sm;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tips-title {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+  margin-bottom: $spacing-xs;
+}
+
+.tip-item {
+  font-size: $text-xs;
+  color: $color-text-secondary;
+  padding: $spacing-xs;
+  line-height: 1.4;
 }
 
 // 版本数据样式
