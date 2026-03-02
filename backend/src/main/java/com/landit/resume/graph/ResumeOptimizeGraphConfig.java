@@ -48,7 +48,7 @@ import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
 @RequiredArgsConstructor
 public class ResumeOptimizeGraphConfig {
 
-    private final ChatClient.Builder chatClientBuilder;
+    private final ChatClient chatClient;
     private final AIPromptProperties aiPromptProperties;
     private final GraphSchemaRegistry graphSchemaRegistry;
 
@@ -102,11 +102,11 @@ public class ResumeOptimizeGraphConfig {
     public CompiledGraph resumeOptimizeGraph(KeyStrategyFactory resumeOptimizeKeyStrategyFactory)
             throws GraphStateException {
 
-        // 创建节点（注入 GraphSchemaRegistry）
-        DiagnoseResumeNode diagnoseNode = new DiagnoseResumeNode(chatClientBuilder, aiPromptProperties, graphSchemaRegistry);
-        DiagnosePreciseResumeNode diagnosePreciseNode = new DiagnosePreciseResumeNode(chatClientBuilder, aiPromptProperties, graphSchemaRegistry);
-        GenerateSuggestionsNode generateSuggestionsNode = new GenerateSuggestionsNode(chatClientBuilder, aiPromptProperties, graphSchemaRegistry);
-        OptimizeSectionNode optimizeSectionNode = new OptimizeSectionNode(chatClientBuilder, aiPromptProperties, graphSchemaRegistry);
+        // 创建节点（注入已配置的 ChatClient Bean）
+        DiagnoseResumeNode diagnoseNode = new DiagnoseResumeNode(chatClient, aiPromptProperties, graphSchemaRegistry);
+        DiagnosePreciseResumeNode diagnosePreciseNode = new DiagnosePreciseResumeNode(chatClient, aiPromptProperties, graphSchemaRegistry);
+        GenerateSuggestionsNode generateSuggestionsNode = new GenerateSuggestionsNode(chatClient, aiPromptProperties, graphSchemaRegistry);
+        OptimizeSectionNode optimizeSectionNode = new OptimizeSectionNode(chatClient, aiPromptProperties, graphSchemaRegistry);
         HumanReviewNode humanReviewNode = new HumanReviewNode();
         SaveVersionNode saveVersionNode = new SaveVersionNode();
 

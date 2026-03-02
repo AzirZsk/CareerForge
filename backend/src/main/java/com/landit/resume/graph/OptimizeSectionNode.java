@@ -27,7 +27,7 @@ import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
 @RequiredArgsConstructor
 public class OptimizeSectionNode implements NodeAction {
 
-    private final ChatClient.Builder chatClientBuilder;
+    private final ChatClient chatClient;
     private final AIPromptProperties aiPromptProperties;
     private final GraphSchemaRegistry graphSchemaRegistry;
 
@@ -75,7 +75,7 @@ public class OptimizeSectionNode implements NodeAction {
 
     private String callAI(String prompt) {
         return ChatClientHelper.callStreamAndCollectWithSchema(
-                chatClientBuilder,
+                chatClient,
                 prompt,
                 graphSchemaRegistry.buildOptimizeSectionSchema(),
                 "OptimizeSectionResponse"

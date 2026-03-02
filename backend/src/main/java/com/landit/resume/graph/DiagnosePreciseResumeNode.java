@@ -27,7 +27,7 @@ import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
 @RequiredArgsConstructor
 public class DiagnosePreciseResumeNode implements NodeAction {
 
-    private final ChatClient.Builder chatClientBuilder;
+    private final ChatClient chatClient;
     private final AIPromptProperties aiPromptProperties;
     private final GraphSchemaRegistry graphSchemaRegistry;
 
@@ -46,7 +46,7 @@ public class DiagnosePreciseResumeNode implements NodeAction {
 
         // 使用 JSON Schema 约束调用大模型
         String diagnosisResult = ChatClientHelper.callStreamAndCollectWithSchema(
-                chatClientBuilder,
+                chatClient,
                 prompt,
                 graphSchemaRegistry.buildDiagnosisSchema(),
                 "DiagnoseResumeResponse"
