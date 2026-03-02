@@ -68,10 +68,6 @@ public class OptimizeSectionNode implements NodeAction {
         messages.add("模块内容优化完成");
         messages.add("共优化 " + changeCount + " 处");
 
-        // 根据优化结果的置信度决定是否需要人工审核
-        String confidence = response.getConfidence() != null ? response.getConfidence() : "medium";
-        boolean needsReview = !"high".equals(confidence);
-
         // 构建节点输出数据（用于 SSE）
         Map<String, Object> nodeOutput = JsonParseHelper.buildNodeOutput(
                 NODE_OPTIMIZE_SECTION,
@@ -81,15 +77,12 @@ public class OptimizeSectionNode implements NodeAction {
                         "changes", changes,
                         "improvementScore", response.getImprovementScore(),
                         "tips", response.getTips(),
-                        "confidence", confidence,
-                        "needsReview", needsReview,
                         "changeCount", changeCount
                 )
         );
 
         return Map.of(
                 STATE_OPTIMIZED_SECTIONS, optimizeResult,
-                STATE_NEEDS_REVIEW, needsReview,
                 STATE_MESSAGES, messages,
                 STATE_CURRENT_STEP, NODE_OPTIMIZE_SECTION,
                 STATE_NODE_OUTPUT, nodeOutput,

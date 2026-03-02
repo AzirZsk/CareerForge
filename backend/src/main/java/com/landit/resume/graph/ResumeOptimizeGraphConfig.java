@@ -35,8 +35,8 @@ import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
  * 工作流步骤：
  * 1. 诊断分析（快速/精准模式）
  * 2. 生成优化建议
- * 3. 模块内容优化（可选）
- * 4. 人工审核（可选）
+ * 3. 模块内容优化
+ * 4. 人工审核
  * 5. 保存版本
  *
  * 注：简历解析（modules/completeness）已在 Controller 层完成，无需单独节点
@@ -77,7 +77,6 @@ public class ResumeOptimizeGraphConfig {
             // 流程控制
             strategies.put(STATE_CURRENT_STEP, new ReplaceStrategy());
             strategies.put(STATE_NEXT_NODE, new ReplaceStrategy());
-            strategies.put(STATE_NEEDS_REVIEW, new ReplaceStrategy());
             strategies.put(STATE_APPROVED, new ReplaceStrategy());
 
             // 消息日志
@@ -93,8 +92,8 @@ public class ResumeOptimizeGraphConfig {
      * 工作流步骤：
      * 1. 诊断分析（快速/精准模式）
      * 2. 生成优化建议
-     * 3. 模块内容优化（可选）
-     * 4. 人工审核（可选）
+     * 3. 模块内容优化
+     * 4. 人工审核
      * 5. 保存版本
      *
      * 注：简历解析（modules/completeness）已在 Controller 层完成，无需单独节点
@@ -140,21 +139,7 @@ public class ResumeOptimizeGraphConfig {
 
                 .addEdge(NODE_DIAGNOSE_PRECISE, NODE_GENERATE_SUGGESTIONS)
                 .addEdge(NODE_GENERATE_SUGGESTIONS, NODE_OPTIMIZE_SECTION)
-
-                // 条件边：根据是否需要人工审核
-                .addConditionalEdges(NODE_OPTIMIZE_SECTION,
-                        (AsyncCommandAction) (state, config) -> {
-                            Boolean needsReview = state.value(STATE_NEEDS_REVIEW).map(n -> (Boolean) n).orElse(false);
-                            if (needsReview) {
-                                return CompletableFuture.completedFuture(new Command(NODE_HUMAN_REVIEW, Map.of()));
-                            }
-                            return CompletableFuture.completedFuture(new Command(NODE_SAVE_VERSION, Map.of()));
-                        },
-                        Map.of(
-                                NODE_HUMAN_REVIEW, NODE_HUMAN_REVIEW,
-                                NODE_SAVE_VERSION, NODE_SAVE_VERSION
-                        ))
-
+                .addEdge(NODE_OPTIMIZE_SECTION, NODE_HUMAN_REVIEW)
                 .addEdge(NODE_HUMAN_REVIEW, NODE_SAVE_VERSION)
                 .addEdge(NODE_SAVE_VERSION, END);
 

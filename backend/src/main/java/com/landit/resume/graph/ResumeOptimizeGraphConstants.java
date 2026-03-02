@@ -175,11 +175,6 @@ public final class ResumeOptimizeGraphConstants {
     public static final String STATE_NEXT_NODE = "next_node";
 
     /**
-     * 是否需要人工审核
-     */
-    public static final String STATE_NEEDS_REVIEW = "needs_review";
-
-    /**
      * 是否已审核通过
      */
     public static final String STATE_APPROVED = "approved";
