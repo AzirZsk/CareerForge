@@ -18,8 +18,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.publisher.Flux;
+import jakarta.servlet.http.HttpServletResponse;
 
+import java.io.IOException;
 import java.util.Map;
 
 /**
@@ -48,14 +51,60 @@ public class ResumeOptimizeGraphController {
      * - 建议阶段：优化建议列表、快速改进项
      * - 优化阶段：变更详情、优化前后对比
      * - 保存阶段：版本信息、分数提升
+     *
+     * 使用 SseEmitter 确保在 Tomcat 容器上也能实时推送事件（不被缓冲）
      */
     @Operation(summary = "流式执行简历优化", description = "从数据库读取简历，实时返回优化进度和详细数据（SSE）")
     @GetMapping(value = "/{id}/optimize/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<OptimizeProgressEvent> streamOptimize(
+    public SseEmitter streamOptimize(
             @PathVariable String id,
             @RequestParam(required = false, defaultValue = "quick") String mode,
-            @RequestParam(required = false) String targetPosition) {
-        return graphHandler.streamOptimize(id, mode, targetPosition);
+            @RequestParam(required = false) String targetPosition,
+            HttpServletResponse response) {
+        // 设置响应头禁用缓冲
+        response.setHeader("X-Accel-Buffering", "no");
+        response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("Connection", "keep-alive");
+        response.setContentType(MediaType.TEXT_EVENT_STREAM_VALUE);
+
+        return createSseEmitter(graphHandler.streamOptimize(id, mode, targetPosition));
+    }
+
+    /**
+     * 将 Flux 转换为 SseEmitter
+     * 使用 SseEmitter 而不是直接返回 Flux，可以避免在 Tomcat 容器上的缓冲问题
+     *
+     * @param flux 响应式流
+     * @return SseEmitter 实时推送事件
+     */
+    private SseEmitter createSseEmitter(Flux<OptimizeProgressEvent> flux) {
+        // 创建超时时间为5分钟的SseEmitter
+        SseEmitter emitter = new SseEmitter(300000L);
+
+        // 订阅Flux并实时发送事件（使用JSON序列化）
+        flux.subscribe(
+                event -> {
+                    try {
+                        emitter.send(SseEmitter.event()
+                                .name("message")
+                                .data(event, MediaType.APPLICATION_JSON));
+                        log.info("[SSE] 发送事件: event={}, nodeId={}", event.getEvent(), event.getNodeId());
+                    } catch (IOException e) {
+                        log.error("[SSE] 发送失败", e);
+                        emitter.completeWithError(e);
+                    }
+                },
+                error -> {
+                    log.error("[SSE] 流异常", error);
+                    emitter.completeWithError(error);
+                },
+                () -> {
+                    log.info("[SSE] 流完成");
+                    emitter.complete();
+                }
+        );
+
+        return emitter;
     }
 
     /**

@@ -138,7 +138,7 @@ public class ResumeOptimizeGraphService {
                 .threadId(threadId)
                 .build();
 
-        return resumeOptimizeGraph.stream(initialState)
+        return resumeOptimizeGraph.stream(initialState, config)
                 .doOnSubscribe(s -> log.info("[SSE诊断-Graph] Graph流被订阅: threadId={}", threadId))
                 .doOnNext(output -> {
                     log.info("[SSE诊断-Graph] Graph节点输出: node={}, thread={}", output.node(), Thread.currentThread().getName());
