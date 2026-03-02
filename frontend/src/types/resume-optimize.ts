@@ -141,6 +141,13 @@ export interface OptimizeSectionData {
   confidence: 'high' | 'medium' | 'low'
   needsReview: boolean
   changeCount: number
+  /** 优化前的原始简历 */
+  beforeResume?: any
+  /** 优化后的内容（包含 description 和 highlights） */
+  optimizedContent?: {
+    description: string
+    highlights: string[]
+  }
 }
 
 /** 保存版本数据 */

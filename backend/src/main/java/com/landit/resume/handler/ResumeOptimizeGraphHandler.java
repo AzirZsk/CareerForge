@@ -63,7 +63,7 @@ public class ResumeOptimizeGraphHandler {
         return Flux.concat(
                 Flux.just(OptimizeProgressEvent.startWithModules(id, threadId, position, mode, parseResult)),
                 graphService.streamOptimize(initialState, threadId)
-                        .filter(output -> !isInterruptionOutput(output))  // 过滤掉中断事件
+                        .filter(output -> !isInterruptionOutput(output))
                         .map(output -> OptimizeProgressEvent.fromNodeOutput(
                                 output.node(), threadId, graphService.getNodeOutput(threadId))),
                 Flux.just(OptimizeProgressEvent.complete(threadId))
@@ -263,7 +263,6 @@ public class ResumeOptimizeGraphHandler {
      * @return true表示是中断事件，应该被过滤
      */
     private boolean isInterruptionOutput(NodeOutput output) {
-        // 判断是否是中断元数据类型
         return output instanceof InterruptionMetadata;
     }
 

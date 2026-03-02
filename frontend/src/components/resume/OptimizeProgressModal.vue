@@ -117,14 +117,14 @@
                       <div class="issues-title">待改进 ({{ item.data.weaknesses.length }})</div>
                       <div
                         class="issue-item"
-                        v-for="(weakness, idx) in getWeaknessesArray(item.data.weaknesses).slice(0, 3)"
+                        v-for="(weakness, idx) in item.data.weaknesses.slice(0, 3)"
                         :key="idx"
-                        :class="typeof weakness === 'string' ? 'medium' : weakness.severity"
+                        :class="getWeaknessSeverity(weakness)"
                       >
                         <span class="issue-severity">
-                          {{ getSeverityIcon(typeof weakness === 'string' ? 'medium' : weakness.severity) }}
+                          {{ getSeverityIcon(getWeaknessSeverity(weakness)) }}
                         </span>
-                        {{ typeof weakness === 'string' ? weakness : weakness.content }}
+                        {{ getWeaknessContent(weakness) }}
                       </div>
                     </div>
                     <div class="highlights-section" v-if="item.data.strengths?.length">
@@ -167,30 +167,61 @@
                   
                   <!-- 内容优化数据 -->
                   <div v-else-if="item.stage === 'optimize_section'" class="data-content">
-                    <div class="changes-summary">
-                      <span class="changes-count">{{ item.data.changeCount || item.data.changes?.length || 0 }} 处变更</span>
-                      <span class="changes-improvement" v-if="item.data.improvementScore">预计提升 {{ item.data.improvementScore }} 分</span>
+                    <!-- 对比视图切换 -->
+                    <div class="comparison-toggle">
+                      <button
+                        :class="['toggle-btn', comparisonView === 'changes' ? 'active' : '']"
+                        @click="comparisonView = 'changes'"
+                      >
+                        变更详情
+                      </button>
+                      <button
+                        :class="['toggle-btn', comparisonView === 'comparison' ? 'active' : '']"
+                        @click="comparisonView = 'comparison'"
+                      >
+                        简历对比
+                      </button>
                     </div>
-                    <div class="confidence-badge" :class="item.data.confidence || 'medium'" v-if="item.data.confidence">
-                      置信度: {{ item.data.confidence }}
-                    </div>
-                    <div class="changes-list" v-if="item.data.changes?.length">
-                      <div class="change-item" v-for="(change, idx) in item.data.changes.slice(0, 2)" :key="idx">
-                        <div class="change-header">
-                          <span class="change-type" :class="change.type">{{ change.type || 'modified' }}</span>
-                          <span class="change-field">{{ change.field }}</span>
+
+                    <!-- 变更详情视图 -->
+                    <div v-if="comparisonView === 'changes'" class="changes-view">
+                      <div class="changes-summary">
+                        <span class="changes-count">{{ item.data.changeCount || item.data.changes?.length || 0 }} 处变更</span>
+                        <span class="changes-improvement" v-if="item.data.improvementScore">预计提升 {{ item.data.improvementScore }} 分</span>
+                      </div>
+                      <div class="confidence-badge" :class="item.data.confidence || 'medium'" v-if="item.data.confidence">
+                        置信度: {{ item.data.confidence }}
+                      </div>
+                      <div class="changes-list" v-if="item.data.changes?.length">
+                        <div class="change-item" v-for="(change, idx) in item.data.changes.slice(0, 2)" :key="idx">
+                          <div class="change-header">
+                            <span class="change-type" :class="change.type">{{ change.type || 'modified' }}</span>
+                            <span class="change-field">{{ change.field }}</span>
+                          </div>
+                          <div class="change-content" v-if="change.before || change.after">
+                            <div class="change-before" v-if="change.before">前: {{ change.before }}</div>
+                            <div class="change-after" v-if="change.after">后: {{ change.after }}</div>
+                          </div>
+                          <div class="change-reason" v-if="change.reason">{{ change.reason }}</div>
                         </div>
-                        <div class="change-content" v-if="change.before || change.after">
-                          <div class="change-before" v-if="change.before">前: {{ change.before }}</div>
-                          <div class="change-after" v-if="change.after">后: {{ change.after }}</div>
+                      </div>
+                      <div class="tips-section" v-if="item.data.tips?.length">
+                        <div class="tips-title">优化提示</div>
+                        <div class="tip-item" v-for="(tip, idx) in item.data.tips.slice(0, 3)" :key="idx">
+                          • {{ tip }}
                         </div>
-                        <div class="change-reason" v-if="change.reason">{{ change.reason }}</div>
                       </div>
                     </div>
-                    <div class="tips-section" v-if="item.data.tips?.length">
-                      <div class="tips-title">优化提示</div>
-                      <div class="tip-item" v-for="(tip, idx) in item.data.tips.slice(0, 3)" :key="idx">
-                        • {{ tip }}
+
+                    <!-- 简历对比视图 -->
+                    <div v-else-if="comparisonView === 'comparison'" class="comparison-view">
+                      <ResumeComparison
+                        v-if="item.data.beforeResume"
+                        :before-resume="item.data.beforeResume"
+                        :changes="item.data.changes || []"
+                      />
+                      <div v-else class="no-comparison-data">
+                        <p>暂无对比数据</p>
                       </div>
                     </div>
                   </div>
@@ -247,9 +278,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { OptimizeState, OptimizeStage } from '@/types/resume-optimize'
 import { getStageLabel, getDimensionLabel } from '@/types/resume-optimize'
+import ResumeComparison from './ResumeComparison.vue'
 
 const props = defineProps<{
   visible: boolean
@@ -324,24 +356,26 @@ function toggleExpand(stage: OptimizeStage) {
   emit('toggleExpand', stage)
 }
 
-/**
- * 获取弱点数组（兼容字符串数组和对象数组）
- */
-function getWeaknessesArray(weaknesses: string[] | any[]): any[] {
-  if (!weaknesses) return []
-  return weaknesses
+// 对比视图状态（简化：单阶段视图，因为同时只展示一个阶段）
+const comparisonView = ref<'changes' | 'comparison'>('changes')
+
+// 严重性图标映射
+const SEVERITY_ICONS: Record<string, string> = {
+  high: '⚠️',
+  medium: '💡',
+  low: '✨'
 }
 
-/**
- * 获取严重性图标
- */
 function getSeverityIcon(severity: string): string {
-  switch (severity) {
-    case 'high': return '⚠️'
-    case 'medium': return '💡'
-    case 'low': return '✨'
-    default: return '•'
-  }
+  return SEVERITY_ICONS[severity] || '•'
+}
+
+function getWeaknessContent(weakness: string | { content: string }): string {
+  return typeof weakness === 'string' ? weakness : weakness.content
+}
+
+function getWeaknessSeverity(weakness: string | { severity?: string }): string {
+  return typeof weakness === 'string' ? 'medium' : (weakness.severity || 'medium')
 }
 </script>
 
@@ -835,11 +869,51 @@ function getSeverityIcon(severity: string): string {
   font-style: italic;
 }
 
+// 对比视图切换按钮
+.comparison-toggle {
+  display: flex;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+}
+
+.toggle-btn {
+  padding: $spacing-xs $spacing-md;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: $radius-sm;
+  font-size: $text-sm;
+  color: $color-text-secondary;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: $color-text-primary;
+  }
+
+  &.active {
+    background: $gradient-gold;
+    color: $color-bg-deep;
+    border-color: transparent;
+  }
+}
+
 // 变更数据样式
 .changes-summary {
   display: flex;
   justify-content: space-between;
   margin-bottom: $spacing-sm;
+}
+
+.changes-view,
+.comparison-view {
+  margin-top: $spacing-md;
+}
+
+.no-comparison-data {
+  padding: $spacing-xl;
+  text-align: center;
+  color: $color-text-tertiary;
 }
 
 .changes-count {

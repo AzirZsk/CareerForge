@@ -71,16 +71,16 @@ public class OptimizeSectionResponse {
         private String field;
 
         /**
-         * 修改前
+         * 修改前（支持字符串、数组、对象等多种类型）
          */
         @SchemaField(value = "修改前的内容")
-        private String before;
+        private Object before;
 
         /**
-         * 修改后
+         * 修改后（支持字符串、数组、对象等多种类型）
          */
         @SchemaField(value = "修改后的内容")
-        private String after;
+        private Object after;
 
         /**
          * 修改原因

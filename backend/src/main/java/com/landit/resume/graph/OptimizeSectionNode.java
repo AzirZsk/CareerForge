@@ -35,41 +35,57 @@ public class OptimizeSectionNode implements NodeAction {
     public Map<String, Object> apply(OverAllState state) {
         log.info("=== 模块内容优化 ===");
 
-        String resumeContent = state.value(STATE_RESUME_CONTENT).map(v -> (String) v).orElse(DEFAULT_EMPTY_JSON);
-        String targetPosition = state.value(STATE_TARGET_POSITION).map(v -> (String) v).orElse(DEFAULT_TARGET_POSITION);
-        String suggestions = state.value(STATE_SUGGESTIONS).map(v -> (String) v).orElse(DEFAULT_EMPTY_ARRAY);
+        String resumeContent = getStateValue(state, STATE_RESUME_CONTENT, DEFAULT_EMPTY_JSON);
+        String targetPosition = getStateValue(state, STATE_TARGET_POSITION, DEFAULT_TARGET_POSITION);
+        String suggestions = getStateValue(state, STATE_SUGGESTIONS, DEFAULT_EMPTY_ARRAY);
+        String sectionType = getStateValue(state, STATE_SECTION_TO_OPTIMIZE, "all");
 
-        // 获取用户选择的要优化的模块（默认优化全部）
-        String sectionType = state.value(STATE_SECTION_TO_OPTIMIZE).map(v -> (String) v).orElse("all");
+        String prompt = buildPrompt(sectionType, targetPosition, resumeContent, suggestions);
+        String optimizeResult = callAI(prompt);
 
-        String prompt = aiPromptProperties.getGraph().getOptimizeSection()
+        log.info("模块优化完成");
+
+        OptimizeSectionResponse response = JsonParseHelper.parseToEntity(optimizeResult, OptimizeSectionResponse.class);
+        List<?> changes = response.getChanges() != null ? response.getChanges() : List.of();
+        int changeCount = changes.size();
+
+        Map<String, Object> nodeOutput = buildNodeOutput(response, changes, changeCount, resumeContent);
+
+        return Map.of(
+                STATE_OPTIMIZED_SECTIONS, optimizeResult,
+                STATE_MESSAGES, List.of("模块内容优化完成", "共优化 " + changeCount + " 处"),
+                STATE_CURRENT_STEP, NODE_OPTIMIZE_SECTION,
+                STATE_NODE_OUTPUT, nodeOutput,
+                STATE_CHANGES, changes,
+                STATE_IMPROVEMENT_SCORE, response.getImprovementScore()
+        );
+    }
+
+    private String getStateValue(OverAllState state, String key, String defaultValue) {
+        return state.value(key).map(v -> (String) v).orElse(defaultValue);
+    }
+
+    private String buildPrompt(String sectionType, String targetPosition, String resumeContent, String suggestions) {
+        return aiPromptProperties.getGraph().getOptimizeSection()
                 .replace("{sectionType}", sectionType)
                 .replace("{targetPosition}", targetPosition)
                 .replace("{resumeContent}", resumeContent)
                 .replace("{suggestions}", suggestions);
+    }
 
-        // 使用 JSON Schema 约束调用大模型
-        String optimizeResult = ChatClientHelper.callStreamAndCollectWithSchema(
+    private String callAI(String prompt) {
+        return ChatClientHelper.callStreamAndCollectWithSchema(
                 chatClientBuilder,
                 prompt,
                 graphSchemaRegistry.buildOptimizeSectionSchema(),
                 "OptimizeSectionResponse"
         );
+    }
 
-        log.info("模块优化完成");
+    private Map<String, Object> buildNodeOutput(OptimizeSectionResponse response, List<?> changes, int changeCount, String resumeContent) {
+        Map<String, Object> beforeResume = JsonParseHelper.parseToMap(resumeContent);
 
-        // 解析优化结果为实体
-        OptimizeSectionResponse response = JsonParseHelper.parseToEntity(optimizeResult, OptimizeSectionResponse.class);
-
-        List<?> changes = response.getChanges() != null ? response.getChanges() : List.of();
-        int changeCount = changes.size();
-
-        List<String> messages = new ArrayList<>();
-        messages.add("模块内容优化完成");
-        messages.add("共优化 " + changeCount + " 处");
-
-        // 构建节点输出数据（用于 SSE）
-        Map<String, Object> nodeOutput = JsonParseHelper.buildNodeOutput(
+        return JsonParseHelper.buildNodeOutput(
                 NODE_OPTIMIZE_SECTION,
                 80,
                 "内容优化完成，共 " + changeCount + " 处变更",
@@ -77,17 +93,10 @@ public class OptimizeSectionNode implements NodeAction {
                         "changes", changes,
                         "improvementScore", response.getImprovementScore(),
                         "tips", response.getTips(),
-                        "changeCount", changeCount
+                        "changeCount", changeCount,
+                        "beforeResume", beforeResume,
+                        "optimizedContent", response.getOptimizedContent()
                 )
-        );
-
-        return Map.of(
-                STATE_OPTIMIZED_SECTIONS, optimizeResult,
-                STATE_MESSAGES, messages,
-                STATE_CURRENT_STEP, NODE_OPTIMIZE_SECTION,
-                STATE_NODE_OUTPUT, nodeOutput,
-                STATE_CHANGES, changes,
-                STATE_IMPROVEMENT_SCORE, response.getImprovementScore()
         );
     }
 }
