@@ -6,7 +6,7 @@
 <template>
   <Teleport to="body">
     <Transition name="modal">
-      <div v-if="visible" class="modal-overlay" @click.self="handleOverlayClick">
+      <div v-if="visible" class="modal-overlay">
         <div class="modal-container">
           <!-- 头部 -->
           <div class="modal-header">
@@ -117,7 +117,7 @@
                       <div class="issues-title">待改进 ({{ item.data.weaknesses.length }})</div>
                       <div
                         class="issue-item"
-                        v-for="(weakness, idx) in item.data.weaknesses.slice(0, 3)"
+                        v-for="(weakness, idx) in item.data.weaknesses"
                         :key="idx"
                         :class="getWeaknessSeverity(weakness)"
                       >
@@ -133,7 +133,7 @@
                     </div>
                     <div class="quickwins-section" v-if="item.data.quickWins?.length">
                       <div class="quickwins-title">快速改进建议</div>
-                      <div class="quickwin-item" v-for="(quickWin, idx) in item.data.quickWins.slice(0, 3)" :key="idx">
+                      <div class="quickwin-item" v-for="(quickWin, idx) in item.data.quickWins" :key="idx">
                         ✓ {{ quickWin }}
                       </div>
                     </div>
@@ -143,10 +143,9 @@
                   <div v-else-if="item.stage === 'generate_suggestions'" class="data-content">
                     <div class="suggestions-summary">
                       <span class="suggestions-count">{{ item.data.totalSuggestions }} 条建议</span>
-                      <span class="suggestions-improvement">{{ item.data.estimatedImprovement }}</span>
                     </div>
                     <div class="suggestions-list" v-if="item.data.suggestions?.length">
-                      <div class="suggestion-item" v-for="(sug, idx) in item.data.suggestions.slice(0, 3)" :key="idx">
+                      <div class="suggestion-item" v-for="(sug, idx) in item.data.suggestions" :key="idx">
                         <div class="sug-header">
                           <span class="sug-priority" :class="sug.priority">{{ sug.priority }}</span>
                           <span class="sug-title">{{ sug.title }}</span>
@@ -159,7 +158,7 @@
                     </div>
                     <div class="quickwins-section" v-if="item.data.quickWins?.length">
                       <div class="quickwins-title">快速改进项</div>
-                      <div class="quickwin-item" v-for="(quickWin, idx) in item.data.quickWins.slice(0, 3)" :key="idx">
+                      <div class="quickwin-item" v-for="(quickWin, idx) in item.data.quickWins" :key="idx">
                         ✓ {{ quickWin.action || quickWin }}
                       </div>
                     </div>
@@ -193,10 +192,10 @@
                         置信度: {{ item.data.confidence }}
                       </div>
                       <div class="changes-list" v-if="item.data.changes?.length">
-                        <div class="change-item" v-for="(change, idx) in item.data.changes.slice(0, 2)" :key="idx">
+                        <div class="change-item" v-for="(change, idx) in item.data.changes" :key="idx">
                           <div class="change-header">
-                            <span class="change-type" :class="change.type">{{ change.type || 'modified' }}</span>
-                            <span class="change-field">{{ change.field }}</span>
+                            <span class="change-type" :class="change.type">{{ change.typeLabel || change.type || '修改' }}</span>
+                            <span class="change-field">{{ change.fieldLabel || change.field }}</span>
                           </div>
                           <div class="change-content" v-if="change.before || change.after">
                             <div class="change-before" v-if="change.before">前: {{ change.before }}</div>
@@ -207,7 +206,7 @@
                       </div>
                       <div class="tips-section" v-if="item.data.tips?.length">
                         <div class="tips-title">优化提示</div>
-                        <div class="tip-item" v-for="(tip, idx) in item.data.tips.slice(0, 3)" :key="idx">
+                        <div class="tip-item" v-for="(tip, idx) in item.data.tips" :key="idx">
                           • {{ tip }}
                         </div>
                       </div>
@@ -253,14 +252,20 @@
           
           <!-- 底部操作 -->
           <div class="modal-footer">
-            <template v-if="state.isOptimizing">
-              <button class="footer-btn secondary" @click="handleBackgroundRun">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
-                  <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
-                </svg>
-                后台运行
+            <template v-if="state.hasError">
+              <button class="footer-btn secondary" @click="handleClose">
+                关闭
               </button>
+              <button class="footer-btn primary" @click="handleRetry">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="23 4 23 10 17 10"/>
+                  <polyline points="1 20 1 14 7 14"/>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                </svg>
+                重试
+              </button>
+            </template>
+            <template v-else-if="state.isOptimizing">
               <button class="footer-btn danger" @click="handleCancel">
                 取消优化
               </button>
@@ -278,7 +283,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useScrollLock } from '@vueuse/core'
 import type { OptimizeState, OptimizeStage } from '@/types/resume-optimize'
 import { getStageLabel, getDimensionLabel } from '@/types/resume-optimize'
 import ResumeComparison from './ResumeComparison.vue'
@@ -288,10 +294,23 @@ const props = defineProps<{
   state: OptimizeState
 }>()
 
+// 锁定背景滚动，防止滚动穿透
+const isScrollLocked = useScrollLock(document.body)
+
+// 监听弹窗显示状态，同步锁定/解锁背景滚动
+watch(
+  () => props.visible,
+  (visible) => {
+    isScrollLocked.value = visible
+  },
+  { immediate: true }
+)
+
 const emit = defineEmits<{
   'update:visible': [value: boolean]
   'cancel': []
-  'background': []
+  'retry': []
+  'complete': []
   'toggleExpand': [stage: OptimizeStage]
 }>()
 
@@ -332,12 +351,6 @@ const sortedStageHistory = computed(() => {
   })
 })
 
-function handleOverlayClick() {
-  if (!props.state.isOptimizing) {
-    handleClose()
-  }
-}
-
 function handleClose() {
   emit('update:visible', false)
 }
@@ -346,10 +359,8 @@ function handleCancel() {
   emit('cancel')
 }
 
-function handleBackgroundRun() {
-  emit('background')
-  // 后台运行：关闭弹窗但不断开连接
-  emit('update:visible', false)
+function handleRetry() {
+  emit('retry')
 }
 
 function toggleExpand(stage: OptimizeStage) {
@@ -392,7 +403,7 @@ function getWeaknessSeverity(weakness: string | { severity?: string }): string {
 }
 
 .modal-container {
-  width: 520px;
+  width: 640px;
   max-height: 80vh;
   background: $color-bg-secondary;
   border-radius: $radius-xl;

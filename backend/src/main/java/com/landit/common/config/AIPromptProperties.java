@@ -726,7 +726,7 @@ public class AIPromptProperties {
                   "changes": [
                     {
                       "type": "modified",
-                      "field": "description",
+                      "field": "字段路径，如：basicInfo.name, education[0].school, work[0].description",
                       "before": "原始内容",
                       "after": "优化后内容",
                       "reason": "补充量化数据，提升说服力"

@@ -124,10 +124,10 @@ export interface GenerateSuggestionsData {
 
 /** 变更项 */
 export interface ChangeItem {
-  sectionId: string
-  sectionType: string
-  sectionTitle: string
+  type: 'added' | 'modified' | 'removed'
+  typeLabel: string
   field: string
+  fieldLabel: string
   before: string
   after: string
   reason: string

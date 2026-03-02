@@ -7,6 +7,7 @@ import com.landit.common.schema.GraphSchemaRegistry;
 import com.landit.common.util.ChatClientHelper;
 import com.landit.common.util.JsonParseHelper;
 import com.landit.resume.dto.OptimizeSectionResponse;
+import com.landit.resume.util.ChangeFieldTranslator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -46,6 +47,15 @@ public class OptimizeSectionNode implements NodeAction {
         log.info("模块优化完成");
 
         OptimizeSectionResponse response = JsonParseHelper.parseToEntity(optimizeResult, OptimizeSectionResponse.class);
+
+        // 为每个变更添加翻译字段
+        if (response.getChanges() != null) {
+            for (OptimizeSectionResponse.Change change : response.getChanges()) {
+                change.setTypeLabel(ChangeFieldTranslator.translateType(change.getType()));
+                change.setFieldLabel(ChangeFieldTranslator.translateField(change.getField()));
+            }
+        }
+
         List<?> changes = response.getChanges() != null ? response.getChanges() : List.of();
         int changeCount = changes.size();
 

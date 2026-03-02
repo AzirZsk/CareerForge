@@ -65,10 +65,21 @@ public class OptimizeSectionResponse {
         private String type;
 
         /**
-         * 字段路径
+         * 变更类型中文翻译
          */
-        @SchemaField(value = "变更字段的路径")
+        private String typeLabel;
+
+        /**
+         * 字段路径
+         * 示例：basicInfo.name, education[0].school, work[0].description
+         */
+        @SchemaField(value = "变更字段的路径，如 basicInfo.name 或 education[0].school")
         private String field;
+
+        /**
+         * 字段路径中文翻译
+         */
+        private String fieldLabel;
 
         /**
          * 修改前（支持字符串、数组、对象等多种类型）

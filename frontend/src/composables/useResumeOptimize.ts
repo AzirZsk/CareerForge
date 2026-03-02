@@ -231,6 +231,24 @@ export function useResumeOptimize() {
   }
 
   /**
+   * 重试优化
+   */
+  function retryOptimize() {
+    if (!state.resumeId) {
+      console.error('[SSE] 无法重试：缺少 resumeId')
+      return
+    }
+
+    // 保存当前信息
+    const resumeId = state.resumeId
+    const mode = state.mode
+    const targetPosition = state.targetPosition
+
+    // 重新开始优化
+    startOptimize(resumeId, { mode, targetPosition })
+  }
+
+  /**
    * 关闭连接
    */
   function closeConnection() {
@@ -274,6 +292,7 @@ export function useResumeOptimize() {
     stageConfig,
     startOptimize,
     cancelOptimize,
+    retryOptimize,
     resetState,
     toggleStageExpanded
   }

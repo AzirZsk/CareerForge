@@ -322,8 +322,8 @@
     <OptimizeProgressModal
       v-model:visible="showOptimizeModal"
       :state="optimizeState"
-      :stage-config="stageConfig"
       @cancel="cancelOptimize"
+      @retry="retryOptimize"
       @toggle-expand="toggleStageExpanded"
       @complete="handleOptimizeComplete"
     />
@@ -362,6 +362,7 @@ const {
   stageConfig,
   startOptimize,
   cancelOptimize,
+  retryOptimize,
   toggleStageExpanded
 } = useResumeOptimize()
 
