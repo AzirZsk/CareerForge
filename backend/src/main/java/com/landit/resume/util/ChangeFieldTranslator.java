@@ -27,7 +27,7 @@ public class ChangeFieldTranslator {
             "basicInfo", "基本信息",
             "education", "教育经历",
             "work", "工作经历",
-            "projects", "项目经验",
+            "project", "项目经历",
             "skills", "专业技能",
             "certificates", "证书荣誉",
             "openSource", "开源贡献"
@@ -172,7 +172,7 @@ public class ChangeFieldTranslator {
             case "basicInfo" -> BASIC_INFO_FIELDS.getOrDefault(fieldName, fieldName);
             case "education" -> EDUCATION_FIELDS.getOrDefault(fieldName, fieldName);
             case "work" -> WORK_FIELDS.getOrDefault(fieldName, fieldName);
-            case "projects" -> PROJECT_FIELDS.getOrDefault(fieldName, fieldName);
+            case "project" -> PROJECT_FIELDS.getOrDefault(fieldName, fieldName);
             case "certificates" -> CERTIFICATE_FIELDS.getOrDefault(fieldName, fieldName);
             case "openSource" -> OPEN_SOURCE_FIELDS.getOrDefault(fieldName, fieldName);
             default -> fieldName;
