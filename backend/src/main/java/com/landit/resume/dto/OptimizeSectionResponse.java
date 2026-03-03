@@ -1,5 +1,6 @@
 package com.landit.resume.dto;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.landit.common.annotation.SchemaField;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

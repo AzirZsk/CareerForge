@@ -20,6 +20,7 @@ import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
 /**
  * 生成优化建议节点
  * 基于诊断结果生成具体的优化建议，使用 JSON Schema 约束输出格式
+ * 使用拆分提示词方式调用以利用前缀缓存优化
  *
  * @author Azir
  */
@@ -29,7 +30,6 @@ public class GenerateSuggestionsNode implements NodeAction {
 
     private final ChatClient chatClient;
     private final AIPromptProperties aiPromptProperties;
-    private final GraphSchemaRegistry graphSchemaRegistry;
 
     @Override
     public Map<String, Object> apply(OverAllState state) {
@@ -41,25 +41,21 @@ public class GenerateSuggestionsNode implements NodeAction {
                 .orElse(null);
         String resumeContentJson = resumeDetail != null ? JsonParseHelper.toJsonString(resumeDetail) : DEFAULT_EMPTY_JSON;
 
-        String prompt = aiPromptProperties.getGraph().getGenerateSuggestions()
-                .replace("{diagnosisResult}", diagnosisResult)
-                .replace("{resumeContent}", resumeContentJson);
-
-        // 使用 JSON Schema 约束调用大模型
-        String suggestionsResult = ChatClientHelper.callStreamAndCollectWithSchema(
-                chatClient,
-                prompt,
-                graphSchemaRegistry.buildSuggestionsSchema(),
-                "SuggestionsResponse"
+        // 使用拆分提示词调用（前缀缓存优化）
+        AIPromptProperties.PromptConfig promptConfig = aiPromptProperties.getGraph().getGenerateSuggestionsConfig();
+        String systemPrompt = promptConfig.getSystemPrompt();
+        String userPrompt = ChatClientHelper.renderTemplate(
+                promptConfig.getUserPromptTemplate(),
+                Map.of("diagnosisResult", diagnosisResult, "resumeContent", resumeContentJson)
         );
+
+        // 调用 AI 并自动解析（带重试）
+        GraphSchemaRegistry.SuggestionsResponse response = ChatClientHelper.callAndParse(
+                chatClient, systemPrompt, userPrompt, GraphSchemaRegistry.SuggestionsResponse.class
+        );
+        String suggestionsResult = JsonParseHelper.toJsonString(response);
 
         log.info("优化建议生成完成");
-
-        // 解析建议结果为实体
-        GraphSchemaRegistry.SuggestionsResponse response = JsonParseHelper.parseToEntity(
-                suggestionsResult,
-                GraphSchemaRegistry.SuggestionsResponse.class
-        );
 
         List<?> suggestions = response.getSuggestions() != null ? response.getSuggestions() : List.of();
         int suggestionCount = suggestions.size();

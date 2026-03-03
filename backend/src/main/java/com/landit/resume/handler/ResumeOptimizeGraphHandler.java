@@ -124,7 +124,7 @@ public class ResumeOptimizeGraphHandler {
         try {
             emitter.send(SseEmitter.event()
                     .name("message")
-                    .data(event, MediaType.APPLICATION_JSON));
+                    .data(event));
             log.info("[SSE] 发送事件: event={}, nodeId={}", event.getEvent(), event.getNodeId());
         } catch (IOException e) {
             log.error("[SSE] 发送失败", e);

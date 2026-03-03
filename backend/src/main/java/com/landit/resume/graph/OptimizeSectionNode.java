@@ -3,7 +3,6 @@ package com.landit.resume.graph;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.landit.common.config.AIPromptProperties;
-import com.landit.common.schema.GraphSchemaRegistry;
 import com.landit.common.util.ChatClientHelper;
 import com.landit.common.util.JsonParseHelper;
 import com.landit.resume.dto.OptimizeSectionResponse;
@@ -21,6 +20,7 @@ import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
 /**
  * 简历内容优化节点
  * 对整份简历进行 AI 优化，使用 JSON Schema 约束输出格式
+ * 使用拆分提示词方式调用以利用前缀缓存优化
  *
  * @author Azir
  */
@@ -30,7 +30,6 @@ public class OptimizeSectionNode implements NodeAction {
 
     private final ChatClient chatClient;
     private final AIPromptProperties aiPromptProperties;
-    private final GraphSchemaRegistry graphSchemaRegistry;
 
     @Override
     public Map<String, Object> apply(OverAllState state) {
@@ -44,12 +43,20 @@ public class OptimizeSectionNode implements NodeAction {
         // beforeSection: 原始简历的 sections 内容
         List<ResumeDetailVO.ResumeSectionVO> beforeSection = resumeDetail.getSections();
 
-        String prompt = buildPrompt(targetPosition, resumeContentJson, suggestions);
-        String optimizeResult = callAI(prompt);
+        // 使用拆分提示词调用（前缀缓存优化）
+        AIPromptProperties.PromptConfig promptConfig = aiPromptProperties.getGraph().getOptimizeSectionConfig();
+        String systemPrompt = promptConfig.getSystemPrompt();
+        String userPrompt = ChatClientHelper.renderTemplate(
+                promptConfig.getUserPromptTemplate(),
+                Map.of("targetPosition", targetPosition, "resumeContent", resumeContentJson, "suggestions", suggestions)
+        );
+
+        OptimizeSectionResponse response = ChatClientHelper.callAndParse(
+                chatClient, systemPrompt, userPrompt, OptimizeSectionResponse.class
+        );
+        String optimizeResult = JsonParseHelper.toJsonString(response);
 
         log.info("简历内容优化完成");
-
-        OptimizeSectionResponse response = JsonParseHelper.parseToEntity(optimizeResult, OptimizeSectionResponse.class);
 
         // 为每个变更添加翻译字段
         if (response.getChanges() != null) {
@@ -74,22 +81,6 @@ public class OptimizeSectionNode implements NodeAction {
                 STATE_NODE_OUTPUT, nodeOutput,
                 STATE_CHANGES, changes,
                 STATE_IMPROVEMENT_SCORE, response.getImprovementScore()
-        );
-    }
-
-    private String buildPrompt(String targetPosition, String resumeContent, String suggestions) {
-        return aiPromptProperties.getGraph().getOptimizeSection()
-                .replace("{targetPosition}", targetPosition)
-                .replace("{resumeContent}", resumeContent)
-                .replace("{suggestions}", suggestions);
-    }
-
-    private String callAI(String prompt) {
-        return ChatClientHelper.callStreamAndCollectWithSchema(
-                chatClient,
-                prompt,
-                graphSchemaRegistry.buildOptimizeSectionSchema(),
-                "OptimizeSectionResponse"
         );
     }
 

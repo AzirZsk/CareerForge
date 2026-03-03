@@ -46,11 +46,6 @@ public final class ResumeOptimizeGraphConstants {
      */
     public static final String NODE_HUMAN_REVIEW = "human_review";
 
-    /**
-     * 保存版本节点
-     */
-    public static final String NODE_SAVE_VERSION = "save_version";
-
     // ==================== 状态键 - 简历相关 ====================
 
     /**

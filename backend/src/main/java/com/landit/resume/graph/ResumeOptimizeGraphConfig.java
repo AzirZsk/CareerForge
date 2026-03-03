@@ -4,6 +4,7 @@ import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
+import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
@@ -11,10 +12,12 @@ import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
+import com.alibaba.cloud.ai.graph.serializer.std.SpringAIStateSerializer;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.landit.common.config.AIPromptProperties;
-import com.landit.common.schema.GraphSchemaRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -37,7 +40,6 @@ import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
  * 2. 生成优化建议
  * 3. 模块内容优化
  * 4. 人工审核
- * 5. 保存版本
  *
  * 注：简历解析（modules/completeness）已在 Controller 层完成，无需单独节点
  *
@@ -50,7 +52,6 @@ public class ResumeOptimizeGraphConfig {
 
     private final ChatClient chatClient;
     private final AIPromptProperties aiPromptProperties;
-    private final GraphSchemaRegistry graphSchemaRegistry;
 
     /**
      * 定义状态键策略
@@ -94,7 +95,6 @@ public class ResumeOptimizeGraphConfig {
      * 2. 生成优化建议
      * 3. 模块内容优化
      * 4. 人工审核
-     * 5. 保存版本
      *
      * 注：简历解析（modules/completeness）已在 Controller 层完成，无需单独节点
      */
@@ -103,12 +103,11 @@ public class ResumeOptimizeGraphConfig {
             throws GraphStateException {
 
         // 创建节点（注入已配置的 ChatClient Bean）
-        DiagnoseResumeNode diagnoseNode = new DiagnoseResumeNode(chatClient, aiPromptProperties, graphSchemaRegistry);
-        DiagnosePreciseResumeNode diagnosePreciseNode = new DiagnosePreciseResumeNode(chatClient, aiPromptProperties, graphSchemaRegistry);
-        GenerateSuggestionsNode generateSuggestionsNode = new GenerateSuggestionsNode(chatClient, aiPromptProperties, graphSchemaRegistry);
-        OptimizeSectionNode optimizeSectionNode = new OptimizeSectionNode(chatClient, aiPromptProperties, graphSchemaRegistry);
+        DiagnoseResumeNode diagnoseNode = new DiagnoseResumeNode(chatClient, aiPromptProperties);
+        DiagnosePreciseResumeNode diagnosePreciseNode = new DiagnosePreciseResumeNode(chatClient, aiPromptProperties);
+        GenerateSuggestionsNode generateSuggestionsNode = new GenerateSuggestionsNode(chatClient, aiPromptProperties);
+        OptimizeSectionNode optimizeSectionNode = new OptimizeSectionNode(chatClient, aiPromptProperties);
         HumanReviewNode humanReviewNode = new HumanReviewNode();
-        SaveVersionNode saveVersionNode = new SaveVersionNode();
 
         // 构建工作流图
         StateGraph workflow = new StateGraph(GRAPH_RESUME_OPTIMIZE, resumeOptimizeKeyStrategyFactory)
@@ -118,7 +117,6 @@ public class ResumeOptimizeGraphConfig {
                 .addNode(NODE_GENERATE_SUGGESTIONS, AsyncNodeAction.node_async(generateSuggestionsNode))
                 .addNode(NODE_OPTIMIZE_SECTION, AsyncNodeAction.node_async(optimizeSectionNode))
                 .addNode(NODE_HUMAN_REVIEW, AsyncNodeAction.node_async(humanReviewNode))
-                .addNode(NODE_SAVE_VERSION, AsyncNodeAction.node_async(saveVersionNode))
 
                 // 添加边：START 直接连接诊断节点
                 .addEdge(START, NODE_DIAGNOSE_QUICK)
@@ -140,8 +138,7 @@ public class ResumeOptimizeGraphConfig {
                 .addEdge(NODE_DIAGNOSE_PRECISE, NODE_GENERATE_SUGGESTIONS)
                 .addEdge(NODE_GENERATE_SUGGESTIONS, NODE_OPTIMIZE_SECTION)
                 .addEdge(NODE_OPTIMIZE_SECTION, NODE_HUMAN_REVIEW)
-                .addEdge(NODE_HUMAN_REVIEW, NODE_SAVE_VERSION)
-                .addEdge(NODE_SAVE_VERSION, END);
+                .addEdge(NODE_HUMAN_REVIEW, END);
 
         // 配置持久化和中断点
         MemorySaver memory = new MemorySaver();

@@ -3,7 +3,6 @@ package com.landit.resume.graph;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.landit.common.config.AIPromptProperties;
-import com.landit.common.schema.GraphSchemaRegistry;
 import com.landit.common.util.ChatClientHelper;
 import com.landit.common.util.JsonParseHelper;
 import com.landit.resume.dto.DiagnoseResumeResponse;
@@ -21,6 +20,7 @@ import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
 /**
  * 简历诊断节点（快速模式）
  * 调用 AI 分析简历质量，使用 JSON Schema 约束输出格式
+ * 使用拆分提示词方式调用以利用前缀缓存优化
  *
  * @author Azir
  */
@@ -30,7 +30,6 @@ public class DiagnoseResumeNode implements NodeAction {
 
     private final ChatClient chatClient;
     private final AIPromptProperties aiPromptProperties;
-    private final GraphSchemaRegistry graphSchemaRegistry;
 
     @Override
     public Map<String, Object> apply(OverAllState state) {
@@ -42,22 +41,21 @@ public class DiagnoseResumeNode implements NodeAction {
         String resumeContentJson = resumeDetail != null ? JsonParseHelper.toJsonString(resumeDetail) : DEFAULT_EMPTY_JSON;
         String targetPosition = state.value(STATE_TARGET_POSITION).map(v -> (String) v).orElse(DEFAULT_TARGET_POSITION);
 
-        String prompt = aiPromptProperties.getGraph().getDiagnoseQuick()
-                .replace("{targetPosition}", targetPosition)
-                .replace("{resumeContent}", resumeContentJson);
-
-        // 使用 JSON Schema 约束调用大模型
-        String diagnosisResult = ChatClientHelper.callStreamAndCollectWithSchema(
-                chatClient,
-                prompt,
-                graphSchemaRegistry.buildDiagnosisSchema(),
-                "DiagnoseResumeResponse"
+        // 使用拆分提示词调用（前缀缓存优化）
+        AIPromptProperties.PromptConfig promptConfig = aiPromptProperties.getGraph().getDiagnoseQuickConfig();
+        String systemPrompt = promptConfig.getSystemPrompt();
+        String userPrompt = ChatClientHelper.renderTemplate(
+                promptConfig.getUserPromptTemplate(),
+                Map.of("targetPosition", targetPosition, "resumeContent", resumeContentJson)
         );
 
-        log.info("诊断完成");
+        // 调用 AI 并自动解析（带重试）
+        DiagnoseResumeResponse response = ChatClientHelper.callAndParse(
+                chatClient, systemPrompt, userPrompt, DiagnoseResumeResponse.class
+        );
+        String diagnosisResult = JsonParseHelper.toJsonString(response);
 
-        // 解析诊断结果为实体
-        DiagnoseResumeResponse response = JsonParseHelper.parseToEntity(diagnosisResult, DiagnoseResumeResponse.class);
+        log.info("诊断完成");
 
         List<String> messages = new ArrayList<>();
         messages.add("完成简历诊断（快速模式）");
