@@ -37,7 +37,7 @@ public class OptimizeSectionNode implements NodeAction {
         log.info("=== 简历内容优化 ===");
 
         ResumeDetailVO resumeDetail = (ResumeDetailVO) state.value(STATE_RESUME_CONTENT).orElse(null);
-        String resumeContentJson = JsonParseHelper.toJsonString(resumeDetail);
+        String resumeContentJson = JsonParseHelper.toJsonString(resumeDetail.getSections());
         String targetPosition = state.value(STATE_TARGET_POSITION).map(v -> (String) v).orElse(DEFAULT_TARGET_POSITION);
         String suggestions = state.value(STATE_SUGGESTIONS).map(v -> (String) v).orElse(DEFAULT_EMPTY_ARRAY);
 
