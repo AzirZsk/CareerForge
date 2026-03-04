@@ -4,19 +4,13 @@ import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
-import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
-import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
-import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
-import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
-import com.alibaba.cloud.ai.graph.serializer.std.SpringAIStateSerializer;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.landit.common.config.AIPromptProperties;
 import com.landit.resume.service.ResumeService;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +21,6 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -37,7 +30,7 @@ import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
  * 简历优化工作流 Graph 配置
  *
  * 工作流步骤：
- * 1. 诊断分析（快速/精准模式）
+ * 1. 诊断分析
  * 2. 生成优化建议
  * 3. 模块内容优化
  *
@@ -62,13 +55,10 @@ public class ResumeOptimizeGraphConfig {
         return () -> {
             HashMap<String, KeyStrategy> strategies = new HashMap<>();
             // 简历相关状态
-            strategies.put(STATE_RESUME_ID, new ReplaceStrategy());
             strategies.put(STATE_RESUME_CONTENT, new ReplaceStrategy());
-            strategies.put(STATE_TARGET_POSITION, new ReplaceStrategy());
 
             // 诊断相关状态
             strategies.put(STATE_DIAGNOSIS_MODE, new ReplaceStrategy());
-            strategies.put(STATE_SEARCH_RESULTS, new ReplaceStrategy());
             strategies.put(STATE_DIAGNOSIS_RESULT, new ReplaceStrategy());
 
             // 优化相关状态
@@ -91,7 +81,7 @@ public class ResumeOptimizeGraphConfig {
      * 创建简历优化工作流 Graph
      *
      * 工作流步骤：
-     * 1. 诊断分析（快速/精准模式）
+     * 1. 诊断分析
      * 2. 生成优化建议
      * 3. 模块内容优化
      *
@@ -103,7 +93,6 @@ public class ResumeOptimizeGraphConfig {
 
         // 创建节点（注入已配置的 ChatClient Bean）
         DiagnoseResumeNode diagnoseNode = new DiagnoseResumeNode(chatClient, aiPromptProperties, resumeService);
-        DiagnosePreciseResumeNode diagnosePreciseNode = new DiagnosePreciseResumeNode(chatClient, aiPromptProperties, resumeService);
         GenerateSuggestionsNode generateSuggestionsNode = new GenerateSuggestionsNode(chatClient, aiPromptProperties);
         OptimizeSectionNode optimizeSectionNode = new OptimizeSectionNode(chatClient, aiPromptProperties);
 
@@ -111,28 +100,12 @@ public class ResumeOptimizeGraphConfig {
         StateGraph workflow = new StateGraph(GRAPH_RESUME_OPTIMIZE, resumeOptimizeKeyStrategyFactory)
                 // 添加节点（使用 AsyncNodeAction.node_async 包装）
                 .addNode(NODE_DIAGNOSE_QUICK, AsyncNodeAction.node_async(diagnoseNode))
-                .addNode(NODE_DIAGNOSE_PRECISE, AsyncNodeAction.node_async(diagnosePreciseNode))
                 .addNode(NODE_GENERATE_SUGGESTIONS, AsyncNodeAction.node_async(generateSuggestionsNode))
                 .addNode(NODE_OPTIMIZE_SECTION, AsyncNodeAction.node_async(optimizeSectionNode))
 
-                // 添加边：START 直接连接诊断节点
+                // 添加边：START -> 诊断 -> 生成建议 -> 优化 -> END
                 .addEdge(START, NODE_DIAGNOSE_QUICK)
-
-                // 条件边：根据诊断模式选择分支
-                .addConditionalEdges(NODE_DIAGNOSE_QUICK,
-                        (AsyncCommandAction) (state, config) -> {
-                            String mode = state.value(STATE_DIAGNOSIS_MODE).map(m -> (String) m).orElse(MODE_QUICK);
-                            if (MODE_PRECISE.equals(mode)) {
-                                return CompletableFuture.completedFuture(new Command(NODE_DIAGNOSE_PRECISE, Map.of()));
-                            }
-                            return CompletableFuture.completedFuture(new Command(NODE_GENERATE_SUGGESTIONS, Map.of()));
-                        },
-                        Map.of(
-                                NODE_DIAGNOSE_PRECISE, NODE_DIAGNOSE_PRECISE,
-                                NODE_GENERATE_SUGGESTIONS, NODE_GENERATE_SUGGESTIONS
-                        ))
-
-                .addEdge(NODE_DIAGNOSE_PRECISE, NODE_GENERATE_SUGGESTIONS)
+                .addEdge(NODE_DIAGNOSE_QUICK, NODE_GENERATE_SUGGESTIONS)
                 .addEdge(NODE_GENERATE_SUGGESTIONS, NODE_OPTIMIZE_SECTION)
                 .addEdge(NODE_OPTIMIZE_SECTION, END);
 

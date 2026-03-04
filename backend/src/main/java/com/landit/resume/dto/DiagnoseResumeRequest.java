@@ -17,9 +17,4 @@ public class DiagnoseResumeRequest {
     @NotBlank(message = "目标岗位不能为空")
     private String targetPosition;
 
-    /**
-     * 是否启用精准模式（联网搜索）
-     */
-    private boolean preciseMode = false;
-
 }

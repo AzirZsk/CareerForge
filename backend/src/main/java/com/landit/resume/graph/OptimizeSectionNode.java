@@ -41,7 +41,9 @@ public class OptimizeSectionNode implements NodeAction {
 
         ResumeDetailVO resumeDetail = (ResumeDetailVO) state.value(STATE_RESUME_CONTENT).orElse(null);
         String resumeContentJson = JsonParseHelper.toJsonString(resumeDetail.getSections());
-        String targetPosition = state.value(STATE_TARGET_POSITION).map(v -> (String) v).orElse(DEFAULT_TARGET_POSITION);
+        String targetPosition = resumeDetail.getTargetPosition() != null
+                ? resumeDetail.getTargetPosition()
+                : DEFAULT_TARGET_POSITION;
         String suggestions = state.value(STATE_SUGGESTIONS).map(v -> (String) v).orElse(DEFAULT_EMPTY_ARRAY);
 
         // beforeSection: 原始简历的 sections 内容

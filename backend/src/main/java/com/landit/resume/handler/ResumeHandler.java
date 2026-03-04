@@ -5,7 +5,6 @@ import com.landit.common.enums.ResumeType;
 import com.landit.common.exception.BusinessException;
 import com.landit.common.service.AIService;
 import com.landit.common.service.FileToImageService;
-import com.landit.common.service.SearchService;
 import com.landit.common.util.JsonParseHelper;
 import com.landit.resume.convertor.ResumeConvertor;
 import com.landit.resume.dto.DeriveResumeRequest;
@@ -48,7 +47,6 @@ public class ResumeHandler {
     private final ResumeService resumeService;
     private final AIService aiService;
     private final FileToImageService fileToImageService;
-    private final SearchService searchService;
     private final ResumeVersionMapper resumeVersionMapper;
     private final ResumeSectionMapper resumeSectionMapper;
     private final ResumeConvertor resumeConvertor;
@@ -400,16 +398,8 @@ public class ResumeHandler {
         // 将简历内容转为JSON字符串
         String resumeContent = toJsonString(resumeDetail);
 
-        // 根据模式选择诊断方式
-        if (request.isPreciseMode()) {
-            // 精准模式：先搜索，再诊断
-            String searchQuery = request.getTargetPosition() + " 技能要求 岗位职责 2025";
-            String searchResults = searchService.search(searchQuery);
-            return aiService.diagnoseResumePrecise(resumeContent, request.getTargetPosition(), searchResults);
-        } else {
-            // 快速模式：直接诊断
-            return aiService.diagnoseResume(resumeContent, request.getTargetPosition());
-        }
+        // 直接诊断
+        return aiService.diagnoseResume(resumeContent, request.getTargetPosition());
     }
 
     /**

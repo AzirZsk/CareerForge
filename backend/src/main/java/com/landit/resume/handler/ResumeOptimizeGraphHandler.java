@@ -103,7 +103,7 @@ public class ResumeOptimizeGraphHandler {
 
         String position = resolveTargetPosition(targetPosition, resumeDetail);
         Map<String, Object> parseResult = extractResumeModules(resumeDetail);
-        Map<String, Object> initialState = buildInitialState(id, resumeDetail, position, mode);
+        Map<String, Object> initialState = buildInitialState(resumeDetail, mode);
 
         return Flux.concat(
                 Flux.just(OptimizeProgressEvent.startWithModules(id, threadId, position, mode, parseResult)),
@@ -194,12 +194,9 @@ public class ResumeOptimizeGraphHandler {
     /**
      * 构建工作流初始状态
      */
-    private Map<String, Object> buildInitialState(String resumeId, ResumeDetailVO resumeDetail,
-                                                   String position, String mode) {
+    private Map<String, Object> buildInitialState(ResumeDetailVO resumeDetail, String mode) {
         Map<String, Object> state = new HashMap<>();
-        state.put(STATE_RESUME_ID, resumeId);
         state.put(STATE_RESUME_CONTENT, resumeDetail);
-        state.put(STATE_TARGET_POSITION, position);
         state.put(STATE_DIAGNOSIS_MODE, mode);
         state.put(STATE_MESSAGES, new ArrayList<String>());
         return state;

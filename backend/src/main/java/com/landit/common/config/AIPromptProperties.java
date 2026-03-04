@@ -165,57 +165,6 @@ public class AIPromptProperties {
                 7. 只返回JSON，不要返回其他内容""";
 
         /**
-         * 简历诊断（精准模式）提示词
-         */
-        private String diagnosePrecise = """
-                你是一位拥有15年经验的资深简历优化专家。
-
-                ## 任务
-                基于最新的市场岗位要求，分析简历与目标岗位的匹配度。
-
-                ## 目标岗位
-                {targetPosition}
-
-                ## 搜索结果（2025年该岗位技能要求）
-                {searchResults}
-
-                ## 简历内容
-                {resumeContent}
-
-                ---
-
-                ## 分析任务
-
-                ### 第一步：提取岗位要求
-                从搜索结果中提取：
-                - coreSkills：核心必备技能
-                - bonusSkills：加分技能
-                - commonKeywords：高频关键词
-
-                ### 第二步：匹配分析
-                对比简历内容：
-                - matched：已覆盖
-                - missing：缺失
-                - partialMatch：部分匹配
-
-                ### 第三步：计算匹配分数
-                - 核心技能匹配：每项+10分
-                - 部分匹配：每项+5分
-                - 缺失核心：每项-8分
-                - 加分项覆盖：每项+3分
-
-                ---
-
-                ## 输出格式（严格JSON，单行压缩格式）
-                {"overallScore":72,"dimensionScores":{"content":68,"structure":80,"matching":70,"competitiveness":75},"suggestions":[{"priority":"high","category":"skills","title":"补充Redis经验","current":"技能列表中未提及Redis","suggestion":"Redis是核心要求，建议在技能模块补充","impact":"搜索结果显示85%的招聘要求提及Redis"}],"strengths":["教育背景对口"],"weaknesses":["缺少核心技能"],"quickWins":["技能模块补充Redis、微服务关键词"],"preciseAnalysis":{"marketRequirements":{"coreSkills":["Java","Spring Boot","MySQL","Redis","微服务"],"bonusSkills":["Kubernetes","Elasticsearch"],"commonKeywords":["高并发","分布式","性能优化"]},"matchAnalysis":{"matched":["Java","Spring Boot","MySQL"],"missing":["Redis","微服务"],"partialMatch":["分布式（有基础但未强调）"]},"matchDetails":{"Java":{"status":"matched","evidence":"技能列表中标注精通","suggestion":""},"Redis":{"status":"missing","evidence":"","suggestion":"建议补充，这是该岗位高频要求"}},"marketInsight":"当前该岗位对微服务和中间件经验要求较高"}}
-
-                ## 要求
-                1. marketRequirements基于搜索结果提取
-                2. matchScore客观反映真实匹配程度
-                3. 引用搜索结果中的具体数据
-                4. 只返回JSON，不要返回其他内容""";
-
-        /**
          * 模块内容优化提示词
          */
         private String optimizeSection = """
@@ -340,11 +289,6 @@ public class AIPromptProperties {
         private PromptConfig diagnoseQuickConfig = new PromptConfig();
 
         /**
-         * 简历诊断（精准模式）拆分提示词配置
-         */
-        private PromptConfig diagnosePreciseConfig = new PromptConfig();
-
-        /**
          * 生成优化建议拆分提示词配置
          */
         private PromptConfig generateSuggestionsConfig = new PromptConfig();
@@ -459,96 +403,8 @@ public class AIPromptProperties {
                     ## 目标岗位
                     {targetPosition}
 
-                    ## 简历内容
-                    {resumeContent}
-                    """);
-        }
-
-        /**
-         * 获取简历诊断（精准模式）拆分提示词
-         */
-        public PromptConfig getDiagnosePreciseConfig() {
-            return ensurePromptConfig(diagnosePreciseConfig,
-                    // systemPrompt
-                    """
-                    你是一位拥有15年经验的资深简历诊断专家，擅长结合市场数据进行精准分析。
-
-                    ## 你的核心能力
-                    - 能从搜索结果中精准提取岗位核心技能和关键词
-                    - 深谙技能匹配分析，能给出基于数据的具体建议
-                    - 能洞察市场趋势，提供有价值的求职方向指导
-
-                    ## 任务
-                    基于最新的市场岗位要求，分析简历与目标岗位的匹配度。你需要：
-                    1. 从搜索结果中提取市场要求的技能和关键词
-                    2. 对比简历内容，识别匹配和缺失项
-                    3. 给出基于数据的具体优化建议
-
-                    ---
-
-                    ## 技能提取标准
-
-                    | 技能类型 | 判断标准 | 示例 |
-                    |----------|----------|------|
-                    | coreSkills | JD中标注"必须/精通/熟悉" + 出现频率>70% | 搜索结果8/10条JD提到Redis → Redis是核心技能 |
-                    | bonusSkills | JD中标注"优先/加分/了解" + 出现频率30%-70% | 搜索结果5/10条JD提到Kubernetes → Kubernetes是加分技能 |
-                    | commonKeywords | 与岗位职责相关 + 出现频率>50% | "高并发"、"分布式"、"性能优化" |
-
-                    ---
-
-                    ## 匹配分析示例
-
-                    搜索结果核心技能：Java, Spring Boot, MySQL, Redis, 微服务
-                    简历技能：Java, Spring Boot, MySQL, Docker
-
-                    | 技能 | status | evidence | suggestion |
-                    |------|--------|----------|------------|
-                    | Java | matched | 技能列表标注5年经验 | （无需建议） |
-                    | Spring Boot | matched | 项目经历中多次使用 | （无需建议） |
-                    | Redis | missing | 简历未提及 | 搜索显示90%岗位要求，建议补充 |
-                    | 微服务 | partialMatch | 有分布式经验但未明确微服务 | 可强调Spring Cloud经验 |
-                    | Docker | matched | 技能列表有 | 这是加分项，非核心要求 |
-
-                    **marketInsight示例**：
-                    "当前该岗位对微服务和中间件经验要求较高，90%的岗位要求Redis经验，建议重点补充分布式系统相关项目经历。"
-
-                    ---
-
-                    ## 边界条件处理
-
-                    | 情况 | 处理方式 |
-                    |------|----------|
-                    | 搜索结果为空或无效 | 回退到快速诊断模式，不生成preciseAnalysis |
-                    | 简历技能与搜索结果完全不匹配 | matching给低分，建议重新评估求职方向 |
-                    | 搜索结果与目标岗位不相关 | 提示用户确认目标岗位是否正确 |
-
-                    ---
-
-                    ## 输出格式（严格JSON，单行压缩格式）
-                    {"overallScore":72,"dimensionScores":{"content":68,"structure":80,"matching":70,"competitiveness":75},"suggestions":[{"priority":"high","category":"skills","title":"补充Redis经验","current":"技能列表中未提及Redis","suggestion":"Redis是核心要求，建议在技能模块补充","impact":"搜索结果显示85%的招聘要求提及Redis"}],"strengths":["教育背景对口"],"weaknesses":["缺少核心技能Redis"],"quickWins":["技能模块补充Redis、微服务关键词"],"preciseAnalysis":{"marketRequirements":{"coreSkills":["Java","Spring Boot","MySQL","Redis","微服务"],"bonusSkills":["Kubernetes","Elasticsearch"],"commonKeywords":["高并发","分布式","性能优化"]},"matchAnalysis":{"matched":["Java","Spring Boot","MySQL"],"missing":["Redis","微服务"],"partialMatch":["分布式（有基础但未强调）"]},"matchDetails":{"Java":{"status":"matched","evidence":"技能列表中标注精通","suggestion":""},"Redis":{"status":"missing","evidence":"","suggestion":"建议补充，这是该岗位高频要求"}},"marketInsight":"当前该岗位对微服务和中间件经验要求较高"}}
-
-                    ---
-
-                    ## 质量检查清单
-
-                    在输出前，请逐项确认：
-                    1. marketRequirements基于搜索结果提取，非凭空臆测
-                    2. matched/missing判断有明确的evidence支撑
-                    3. partialMatch使用谨慎，仅用于"有基础但未强调"的情况
-                    4. suggestions引用了具体的搜索数据（如"85%岗位要求"）
-                    5. marketInsight简洁有力，不超过3句话
-                    6. 只返回JSON，不要返回其他内容
-                    """,
-                    // userPromptTemplate
-                    """
-                    ## 目标岗位
-                    {targetPosition}
-
-                    ## 搜索结果（2025年该岗位技能要求）
-                    {searchResults}
-
-                    ## 简历内容
-                    {resumeContent}
+                    ## 简历markdown内容
+                    {resumeMarkdown}
                     """);
         }
 

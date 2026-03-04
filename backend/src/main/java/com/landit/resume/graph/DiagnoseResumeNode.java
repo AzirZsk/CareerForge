@@ -15,6 +15,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
 
@@ -37,19 +38,18 @@ public class DiagnoseResumeNode implements NodeAction {
     public Map<String, Object> apply(OverAllState state) {
         log.info("=== 开始简历诊断（快速模式）===");
 
-        String resumeId = state.value(STATE_RESUME_ID).map(v -> (String) v).orElse(null);
-        ResumeDetailVO resumeDetail = state.value(STATE_RESUME_CONTENT)
-                .map(v -> (ResumeDetailVO) v)
-                .orElse(null);
-        String resumeContentJson = resumeDetail != null ? JsonParseHelper.toJsonString(resumeDetail) : DEFAULT_EMPTY_JSON;
-        String targetPosition = state.value(STATE_TARGET_POSITION).map(v -> (String) v).orElse(DEFAULT_TARGET_POSITION);
+        ResumeDetailVO resumeDetail = (ResumeDetailVO) state.value(STATE_RESUME_CONTENT).orElse(null);
+        Objects.requireNonNull(resumeDetail);
+        String targetPosition = resumeDetail.getTargetPosition() != null
+                ? resumeDetail.getTargetPosition()
+                : DEFAULT_TARGET_POSITION;
 
         // 使用拆分提示词调用（前缀缓存优化）
         AIPromptProperties.PromptConfig promptConfig = aiPromptProperties.getGraph().getDiagnoseQuickConfig();
         String systemPrompt = promptConfig.getSystemPrompt();
         String userPrompt = ChatClientHelper.renderTemplate(
                 promptConfig.getUserPromptTemplate(),
-                Map.of("targetPosition", targetPosition, "resumeContent", resumeContentJson)
+                Map.of("targetPosition", targetPosition, "resumeMarkdown", resumeDetail.getMarkdownContent())
         );
 
         // 调用 AI 并自动解析（带重试）
@@ -61,6 +61,7 @@ public class DiagnoseResumeNode implements NodeAction {
         log.info("诊断完成");
 
         // 诊断完成后立即保存评分到数据库
+        String resumeId = resumeDetail.getId();
         if (resumeId != null) {
             try {
                 resumeService.updateDiagnosisScores(resumeId, response.getOverallScore(), response.getDimensionScores());

@@ -279,30 +279,6 @@ public class AIService {
     }
 
     /**
-     * 简历诊断（精准模式，带搜索）
-     *
-     * @param resumeContent   简历内容（JSON格式）
-     * @param targetPosition  目标岗位
-     * @param searchResults   搜索结果
-     * @return 诊断结果
-     */
-    public DiagnoseResumeResponse diagnoseResumePrecise(String resumeContent, String targetPosition, String searchResults) {
-        log.info("开始简历诊断（精准模式）: targetPosition={}", targetPosition);
-
-        String promptTemplate = promptProperties.getResume().getDiagnosePrecise();
-        String prompt = promptTemplate
-                .replace("{targetPosition}", targetPosition)
-                .replace("{resumeContent}", resumeContent)
-                .replace("{searchResults}", searchResults);
-
-        String jsonResponse = callAIWithJsonResponse(prompt);
-        DiagnoseResumeResponse response = parseDiagnoseResponse(jsonResponse);
-
-        log.info("简历诊断完成: overallScore={}", response.getOverallScore());
-        return response;
-    }
-
-    /**
      * 岗位JD匹配分析
      *
      * @param resumeContent  简历内容（JSON格式）

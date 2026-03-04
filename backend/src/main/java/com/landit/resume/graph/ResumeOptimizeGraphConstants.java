@@ -27,11 +27,6 @@ public final class ResumeOptimizeGraphConstants {
     public static final String NODE_DIAGNOSE_QUICK = "diagnose_quick";
 
     /**
-     * 精准诊断节点
-     */
-    public static final String NODE_DIAGNOSE_PRECISE = "diagnose_precise";
-
-    /**
      * 生成优化建议节点
      */
     public static final String NODE_GENERATE_SUGGESTIONS = "generate_suggestions";
@@ -44,19 +39,9 @@ public final class ResumeOptimizeGraphConstants {
     // ==================== 状态键 - 简历相关 ====================
 
     /**
-     * 简历ID
-     */
-    public static final String STATE_RESUME_ID = "resume_id";
-
-    /**
      * 简历内容（JSON格式）
      */
     public static final String STATE_RESUME_CONTENT = "resume_content";
-
-    /**
-     * 目标岗位
-     */
-    public static final String STATE_TARGET_POSITION = "target_position";
 
     // ==================== 状态键 - 诊断相关 ====================
 
@@ -64,11 +49,6 @@ public final class ResumeOptimizeGraphConstants {
      * 诊断模式（quick/precise）
      */
     public static final String STATE_DIAGNOSIS_MODE = "diagnosis_mode";
-
-    /**
-     * 搜索结果（精准模式使用）
-     */
-    public static final String STATE_SEARCH_RESULTS = "search_results";
 
     /**
      * 诊断结果（JSON格式）
@@ -99,21 +79,6 @@ public final class ResumeOptimizeGraphConstants {
      * 快速改进建议
      */
     public static final String STATE_QUICK_WINS = "quick_wins";
-
-    /**
-     * 匹配分数（精准模式）
-     */
-    public static final String STATE_MATCH_SCORE = "match_score";
-
-    /**
-     * 市场需求（精准模式）
-     */
-    public static final String STATE_MARKET_REQUIREMENTS = "market_requirements";
-
-    /**
-     * 技能匹配（精准模式）
-     */
-    public static final String STATE_SKILL_MATCH = "skill_match";
 
     // ==================== 状态键 - 优化相关 ====================
 
@@ -200,22 +165,12 @@ public final class ResumeOptimizeGraphConstants {
      */
     public static final String MODE_QUICK = "quick";
 
-    /**
-     * 精准模式
-     */
-    public static final String MODE_PRECISE = "precise";
-
     // ==================== 默认值 ====================
 
     /**
      * 默认目标岗位
      */
     public static final String DEFAULT_TARGET_POSITION = "未知岗位";
-
-    /**
-     * 默认搜索结果
-     */
-    public static final String DEFAULT_SEARCH_RESULTS = "暂无搜索结果";
 
     /**
      * 默认空JSON对象
