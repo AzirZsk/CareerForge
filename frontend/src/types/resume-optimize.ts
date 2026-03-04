@@ -16,7 +16,6 @@ export type OptimizeStage =
   | 'generate_suggestions'
   | 'optimize_section'
   | 'human_review'
-  | 'save_version'
   | 'end'
 
 /** SSE 进度事件 */
@@ -141,6 +140,10 @@ export interface ChangeItem {
   before: ChangeValue | null
   after: ChangeValue | null
   reason: string
+  /** 优化前的值（新格式：直接为 string 或 string[]） */
+  beforeValue: string | string[] | null
+  /** 优化后的值（新格式：直接为 string 或 string[]） */
+  afterValue: string | string[] | null
 }
 
 /** 获取实际值（辅助函数） */
@@ -210,18 +213,6 @@ export interface OptimizeSectionData {
   afterSection?: ResumeSection[]
 }
 
-/** 保存版本数据 */
-export interface SaveVersionData {
-  status: 'completed'
-  resumeId: string
-  versionId: string
-  versionName: string
-  originalScore: number
-  newScore: number
-  improvementScore: number
-  optimizedAt: string
-}
-
 // ==================== 优化状态 ====================
 
 /** 优化模式 */
@@ -279,8 +270,7 @@ export const STAGE_CONFIG: Record<OptimizeStage, StageConfigItem> = {
   'generate_suggestions': { label: '生成建议', order: 3 },
   'optimize_section': { label: '内容优化', order: 4 },
   'human_review': { label: '人工审核', order: 5 },
-  'save_version': { label: '保存版本', order: 6 },
-  'end': { label: '完成', order: 7 }
+  'end': { label: '完成', order: 6 }
 }
 
 /** 维度标签映射 */

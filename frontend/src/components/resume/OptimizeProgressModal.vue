@@ -154,7 +154,7 @@
                         </div>
                         <div class="sug-section">位置: {{ sug.position || sug.category }}</div>
                         <div class="sug-current" v-if="sug.current">当前: {{ sug.current }}</div>
-                        <div class="sug-suggestion">{{ sug.suggestion }}</div>
+                        <div class="sug-suggestion">建议：{{ sug.suggestion }}</div>
                         <div class="sug-impact" v-if="sug.impact">影响: {{ sug.impact }}</div>
                       </div>
                     </div>
@@ -199,9 +199,27 @@
                             <span class="change-type" :class="change.type">{{ change.typeLabel || change.type || '修改' }}</span>
                             <span class="change-field">{{ change.fieldLabel || change.field }}</span>
                           </div>
-                          <div class="change-content" v-if="change.before || change.after">
-                            <div class="change-before" v-if="change.before">前: {{ formatChangeValue(change.before) }}</div>
-                            <div class="change-after" v-if="change.after">后: {{ formatChangeValue(change.after) }}</div>
+                          <div class="change-content" v-if="change.beforeValue !== null || change.afterValue !== null">
+                            <!-- 优化前 -->
+                            <div class="change-before" v-if="change.beforeValue !== null">
+                              <span class="change-label">前:</span>
+                              <!-- 数组类型使用列表展示 -->
+                              <ol v-if="isArray(change.beforeValue)" class="change-value-list">
+                                <li v-for="(val, vIdx) in change.beforeValue" :key="vIdx">{{ val }}</li>
+                              </ol>
+                              <!-- 字符串类型直接展示 -->
+                              <pre v-else class="change-value-text">{{ change.beforeValue }}</pre>
+                            </div>
+                            <!-- 优化后 -->
+                            <div class="change-after" v-if="change.afterValue !== null">
+                              <span class="change-label">后:</span>
+                              <!-- 数组类型使用列表展示 -->
+                              <ol v-if="isArray(change.afterValue)" class="change-value-list">
+                                <li v-for="(val, vIdx) in change.afterValue" :key="vIdx">{{ val }}</li>
+                              </ol>
+                              <!-- 字符串类型直接展示 -->
+                              <pre v-else class="change-value-text">{{ change.afterValue }}</pre>
+                            </div>
                           </div>
                           <div class="change-reason" v-if="change.reason">{{ change.reason }}</div>
                         </div>
@@ -227,22 +245,6 @@
                       <div v-else class="no-comparison-data">
                         <p>暂无对比数据</p>
                       </div>
-                    </div>
-                  </div>
-                  
-                  <!-- 保存版本数据 -->
-                  <div v-else-if="item.stage === 'save_version'" class="data-content">
-                    <div class="version-info">
-                      <div class="version-name">{{ item.data.versionName }}</div>
-                      <div class="score-comparison">
-                        <span class="old-score">{{ item.data.originalScore }}</span>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <line x1="5" y1="12" x2="19" y2="12"/>
-                          <polyline points="12 5 19 12 12 19"/>
-                        </svg>
-                        <span class="new-score">{{ item.data.newScore }}</span>
-                      </div>
-                      <div class="improvement-badge">+{{ item.data.improvementScore }} 分</div>
                     </div>
                   </div>
                   
@@ -291,7 +293,7 @@
 import { computed, ref, watch } from 'vue'
 import { useScrollLock } from '@vueuse/core'
 import type { OptimizeState, OptimizeStage } from '@/types/resume-optimize'
-import { getStageLabel, getDimensionLabel, formatChangeValue } from '@/types/resume-optimize'
+import { getStageLabel, getDimensionLabel } from '@/types/resume-optimize'
 import ResumeComparison from './ResumeComparison.vue'
 
 const props = defineProps<{
@@ -339,8 +341,7 @@ const sortedStageHistory = computed(() => {
   const order: OptimizeStage[] = [
     'diagnose_quick',
     'generate_suggestions',
-    'optimize_section',
-    'save_version'
+    'optimize_section'
   ]
 
   return order.map(stage => {
@@ -392,6 +393,11 @@ function getWeaknessContent(weakness: string | { content: string }): string {
 
 function getWeaknessSeverity(weakness: string | { severity?: string }): string {
   return typeof weakness === 'string' ? 'medium' : (weakness.severity || 'medium')
+}
+
+// 判断是否为数组
+function isArray(value: unknown): value is string[] {
+  return Array.isArray(value)
 }
 </script>
 
@@ -1019,12 +1025,19 @@ function getWeaknessSeverity(weakness: string | { severity?: string }): string {
   margin-bottom: 4px;
 }
 
+.change-label {
+  font-size: $text-xs;
+  font-weight: $weight-medium;
+  margin-right: $spacing-xs;
+  opacity: 0.7;
+}
+
 .change-before,
 .change-after {
   font-size: $text-xs;
   padding: $spacing-xs;
   border-radius: $radius-sm;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
 
 .change-before {
@@ -1035,6 +1048,36 @@ function getWeaknessSeverity(weakness: string | { severity?: string }): string {
 .change-after {
   color: $color-success;
   background: rgba(52, 211, 153, 0.05);
+}
+
+// 值列表样式（使用数字序号）
+.change-value-list {
+  padding: 0 0 0 $spacing-lg;
+  list-style: decimal;
+
+  li {
+    padding: 2px 0;
+    font-size: $text-xs;
+    line-height: 1.5;
+
+    &::marker {
+      color: inherit;
+      opacity: 0.6;
+    }
+  }
+}
+
+// 值文本样式（保留换行）
+.change-value-text {
+  margin: $spacing-xs 0 0 0;
+  padding: $spacing-xs;
+  font-size: $text-xs;
+  font-family: inherit;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: $radius-sm;
 }
 
 .change-reason {
@@ -1060,51 +1103,6 @@ function getWeaknessSeverity(weakness: string | { severity?: string }): string {
   color: $color-text-secondary;
   padding: $spacing-xs;
   line-height: 1.4;
-}
-
-// 版本数据样式
-.version-info {
-  text-align: center;
-}
-
-.version-name {
-  font-size: $text-sm;
-  color: $color-text-secondary;
-  margin-bottom: $spacing-sm;
-}
-
-.score-comparison {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: $spacing-md;
-  margin-bottom: $spacing-sm;
-  
-  svg {
-    color: $color-success;
-  }
-}
-
-.old-score {
-  font-size: $text-xl;
-  color: $color-text-tertiary;
-  text-decoration: line-through;
-}
-
-.new-score {
-  font-size: $text-3xl;
-  font-weight: $weight-bold;
-  color: $color-success;
-}
-
-.improvement-badge {
-  display: inline-block;
-  padding: 4px 12px;
-  background: rgba(52, 211, 153, 0.15);
-  color: $color-success;
-  border-radius: $radius-full;
-  font-size: $text-sm;
-  font-weight: $weight-medium;
 }
 
 // JSON 显示

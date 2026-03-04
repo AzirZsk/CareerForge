@@ -1015,6 +1015,8 @@ async function deleteItem(itemId: string): Promise<void> {
   flex: 1;
   font-size: $text-sm;
   color: $color-text-primary;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .experience-item {
@@ -1058,6 +1060,8 @@ async function deleteItem(itemId: string): Promise<void> {
   color: $color-text-secondary;
   line-height: $leading-relaxed;
   margin-bottom: $spacing-sm;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .exp-achievements {

@@ -36,7 +36,7 @@ mybatis-plus:
       column-format: "\"%s\""  # SQLite 字段名加引号防止关键字冲突
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+#    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
     jdbc-type-for-null: NULL  # SQLite 处理 NULL 值
 
 springdoc:
@@ -54,3 +54,4 @@ logging:
           chat:
             client:
               advisor: debug
+    com.landit.**.mapper: info

@@ -1,25 +1,18 @@
 package com.landit.resume.controller;
 
-import com.landit.common.response.ApiResponse;
-import com.landit.resume.dto.OptimizeGraphRequest;
-import com.landit.resume.graph.ResumeOptimizeGraphService;
 import com.landit.resume.handler.ResumeOptimizeGraphHandler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import jakarta.servlet.http.HttpServletResponse;
-
-import java.util.Map;
 
 /**
  * 简历优化工作流控制器
@@ -35,7 +28,6 @@ import java.util.Map;
 public class ResumeOptimizeGraphController {
 
     private final ResumeOptimizeGraphHandler graphHandler;
-    private final ResumeOptimizeGraphService graphService;
 
     /**
      * SSE 流式执行简历优化工作流
@@ -58,27 +50,6 @@ public class ResumeOptimizeGraphController {
             @RequestParam(required = false) String targetPosition,
             HttpServletResponse response) {
         return graphHandler.streamOptimizeWithSse(id, mode, targetPosition, response);
-    }
-
-    /**
-     * 执行简历优化工作流（同步）
-     */
-    @Operation(summary = "执行简历优化", description = "同步执行，返回完整结果")
-    @PostMapping("/{id}/optimize")
-    public ApiResponse<Map<String, Object>> executeOptimize(
-            @PathVariable String id,
-            @RequestBody(required = false) OptimizeGraphRequest request) {
-        Map<String, Object> result = graphHandler.executeOptimize(id, request);
-        return ApiResponse.success(result);
-    }
-
-    /**
-     * 获取工作流状态
-     */
-    @Operation(summary = "获取工作流状态")
-    @GetMapping("/workflow/state")
-    public ApiResponse<Map<String, Object>> getWorkflowState(@RequestParam String threadId) {
-        return ApiResponse.success(graphService.getState(threadId));
     }
 
 }

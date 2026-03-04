@@ -7,6 +7,7 @@ import com.landit.common.util.ChatClientHelper;
 import com.landit.common.util.JsonParseHelper;
 import com.landit.resume.dto.DiagnoseResumeResponse;
 import com.landit.resume.dto.ResumeDetailVO;
+import com.landit.resume.service.ResumeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -30,11 +31,13 @@ public class DiagnoseResumeNode implements NodeAction {
 
     private final ChatClient chatClient;
     private final AIPromptProperties aiPromptProperties;
+    private final ResumeService resumeService;
 
     @Override
     public Map<String, Object> apply(OverAllState state) {
         log.info("=== 开始简历诊断（快速模式）===");
 
+        String resumeId = state.value(STATE_RESUME_ID).map(v -> (String) v).orElse(null);
         ResumeDetailVO resumeDetail = state.value(STATE_RESUME_CONTENT)
                 .map(v -> (ResumeDetailVO) v)
                 .orElse(null);
@@ -56,6 +59,16 @@ public class DiagnoseResumeNode implements NodeAction {
         String diagnosisResult = JsonParseHelper.toJsonString(response);
 
         log.info("诊断完成");
+
+        // 诊断完成后立即保存评分到数据库
+        if (resumeId != null) {
+            try {
+                resumeService.updateDiagnosisScores(resumeId, response.getOverallScore(), response.getDimensionScores());
+                log.info("诊断评分已保存: resumeId={}, overallScore={}", resumeId, response.getOverallScore());
+            } catch (Exception e) {
+                log.error("保存诊断评分失败: resumeId={}", resumeId, e);
+            }
+        }
 
         List<String> messages = new ArrayList<>();
         messages.add("完成简历诊断（快速模式）");
