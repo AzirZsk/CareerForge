@@ -122,15 +122,37 @@ export interface GenerateSuggestionsData {
   totalSuggestions: number
 }
 
+/** 值类型 */
+export type ChangeValueType = 'string' | 'string_array'
+
+/** 变更值容器 */
+export interface ChangeValue {
+  stringValue?: string
+  arrayValue?: string[]
+}
+
 /** 变更项 */
 export interface ChangeItem {
   type: 'added' | 'modified' | 'removed'
   typeLabel: string
   field: string
   fieldLabel: string
-  before: string
-  after: string
+  valueType: ChangeValueType
+  before: ChangeValue | null
+  after: ChangeValue | null
   reason: string
+}
+
+/** 获取实际值（辅助函数） */
+export function getChangeActualValue(v: ChangeValue | null): string | string[] | null {
+  if (!v) return null
+  return v.arrayValue?.length ? v.arrayValue : v.stringValue ?? null
+}
+
+/** 格式化显示（辅助函数） */
+export function formatChangeValue(v: ChangeValue | null): string {
+  if (!v) return '-'
+  return v.arrayValue?.length ? v.arrayValue.join(', ') : v.stringValue ?? '-'
 }
 
 /** 简历区块类型 */

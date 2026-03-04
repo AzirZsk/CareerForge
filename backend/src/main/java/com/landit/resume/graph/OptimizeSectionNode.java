@@ -122,7 +122,7 @@ public class OptimizeSectionNode implements NodeAction {
         for (OptimizeSectionResponse.Change change : changes) {
             String field = change.getField();
             String type = change.getType();
-            Object value = change.getAfter();
+            Object value = change.getAfterValue();
 
             try {
                 applyChangeToSections(sectionsList, field, type, value);

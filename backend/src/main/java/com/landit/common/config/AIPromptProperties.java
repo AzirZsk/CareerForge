@@ -774,17 +774,27 @@ public class AIPromptProperties {
                       "changes": [
                         {
                           "type": "modified",
-                          "field": "字段路径，如：basicInfo.name, education[0].school, work[0].description",
-                          "before": "原始内容",
-                          "after": "优化后内容",
+                          "field": "work[0].description",
+                          "valueType": "string",
+                          "before": { "stringValue": "负责后端开发" },
+                          "after": { "stringValue": "主导核心API开发，支撑日均50万请求，可用性99.9%" },
                           "reason": "补充量化数据，提升说服力"
                         },
                         {
+                          "type": "modified",
+                          "field": "projects[0].achievements",
+                          "valueType": "string_array",
+                          "before": { "arrayValue": ["完成用户模块"] },
+                          "after": { "arrayValue": ["完成用户模块设计", "支撑10万+日活", "接口响应时间优化80%"] },
+                          "reason": "量化项目成果"
+                        },
+                        {
                           "type": "added",
-                          "field": "achievements[0]",
-                          "before": "",
-                          "after": "新增的成果描述",
-                          "reason": "添加关键业绩"
+                          "field": "skills[5]",
+                          "valueType": "string",
+                          "before": null,
+                          "after": { "stringValue": "微服务架构（Spring Cloud）" },
+                          "reason": "补充目标岗位核心技能"
                         }
                       ],
                       "improvementScore": 15,
@@ -793,10 +803,13 @@ public class AIPromptProperties {
 
                     ## 要求
                     1. changes记录所有变更，type可选值：added（新增）、modified（修改）、removed（删除）
-                    2. 不编造数据，保持真实性
-                    3. tips列出需要用户补充的信息
-                    4. improvementScore填写预估提升分数（整数，0-30）
-                    5. 只返回JSON，不要返回其他内容
+                    2. valueType可选值：string（字符串类型）、string_array（字符串数组类型）
+                    3. 当valueType为string时，before/after使用 { "stringValue": "内容" } 格式
+                    4. 当valueType为string_array时，before/after使用 { "arrayValue": ["内容1", "内容2"] } 格式
+                    5. 不编造数据，保持真实性
+                    6. tips列出需要用户补充的信息
+                    7. improvementScore填写预估提升分数（整数，0-30）
+                    8. 只返回JSON，不要返回其他内容
                     """,
                     // userPromptTemplate
                     """

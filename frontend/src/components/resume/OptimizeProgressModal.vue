@@ -200,8 +200,8 @@
                             <span class="change-field">{{ change.fieldLabel || change.field }}</span>
                           </div>
                           <div class="change-content" v-if="change.before || change.after">
-                            <div class="change-before" v-if="change.before">前: {{ change.before }}</div>
-                            <div class="change-after" v-if="change.after">后: {{ change.after }}</div>
+                            <div class="change-before" v-if="change.before">前: {{ formatChangeValue(change.before) }}</div>
+                            <div class="change-after" v-if="change.after">后: {{ formatChangeValue(change.after) }}</div>
                           </div>
                           <div class="change-reason" v-if="change.reason">{{ change.reason }}</div>
                         </div>
@@ -291,7 +291,7 @@
 import { computed, ref, watch } from 'vue'
 import { useScrollLock } from '@vueuse/core'
 import type { OptimizeState, OptimizeStage } from '@/types/resume-optimize'
-import { getStageLabel, getDimensionLabel } from '@/types/resume-optimize'
+import { getStageLabel, getDimensionLabel, formatChangeValue } from '@/types/resume-optimize'
 import ResumeComparison from './ResumeComparison.vue'
 
 const props = defineProps<{
