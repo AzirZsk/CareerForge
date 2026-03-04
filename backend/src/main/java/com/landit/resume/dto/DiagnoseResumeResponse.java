@@ -63,6 +63,14 @@ public class DiagnoseResumeResponse {
     private PreciseAnalysis preciseAnalysis;
 
     /**
+     * 各模块评分
+     * Key: 模块ID（对应简历中的 sectionId）
+     * Value: 评分 (0-100)
+     */
+    @SchemaField(value = "各模块评分详情")
+    private Map<String, Integer> sectionScores;
+
+    /**
      * 维度评分
      */
     @Data

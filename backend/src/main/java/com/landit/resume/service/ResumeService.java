@@ -600,4 +600,24 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
                 dimensionScores != null ? dimensionScores.getCompetitiveness() : 0);
     }
 
+    /**
+     * 批量更新简历模块评分
+     *
+     * @param resumeId      简历ID
+     * @param sectionScores 模块评分 Map<sectionId, score>
+     */
+    public void updateSectionScores(String resumeId, Map<String, Integer> sectionScores) {
+        if (sectionScores == null || sectionScores.isEmpty()) {
+            return;
+        }
+
+        for (Map.Entry<String, Integer> entry : sectionScores.entrySet()) {
+            ResumeSection section = resumeSectionMapper.selectById(entry.getKey());
+            if (section != null && section.getResumeId().equals(resumeId)) {
+                section.setScore(entry.getValue());
+                resumeSectionMapper.updateById(section);
+            }
+        }
+        log.info("模块评分已更新: resumeId={}, count={}", resumeId, sectionScores.size());
+    }
 }

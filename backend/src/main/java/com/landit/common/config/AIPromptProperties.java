@@ -384,7 +384,24 @@ public class AIPromptProperties {
                     ---
 
                     ## 输出格式（严格JSON，单行压缩格式）
-                    {"overallScore":72,"dimensionScores":{"content":68,"structure":80,"matching":70,"competitiveness":75},"suggestions":[{"priority":"high","category":"work","position":"XX公司-XX职位","title":"工作成果需要量化","current":"负责后端系统开发和维护","suggestion":"补充成果数据：主导核心接口优化，响应时间从500ms降至80ms","impact":"量化数据让HR快速评估你的实际贡献"}],"strengths":["教育背景对口","项目经历完整"],"weaknesses":["缺少量化数据","技能描述不够具体"],"quickWins":["在工作经历中加入2-3个量化成果","技能模块补充岗位核心关键词","项目描述补充技术选型和性能指标"]}
+                    {"overallScore":72,"dimensionScores":{"content":68,"structure":80,"matching":70,"competitiveness":75},"sectionScores":{"SECTION_ID_1":85,"SECTION_ID_2":60},"suggestions":[{"priority":"high","category":"work","position":"XX公司-XX职位","title":"工作成果需要量化","current":"负责后端系统开发和维护","suggestion":"补充成果数据：主导核心接口优化，响应时间从500ms降至80ms","impact":"量化数据让HR快速评估你的实际贡献"}],"strengths":["教育背景对口","项目经历完整"],"weaknesses":["缺少量化数据","技能描述不够具体"],"quickWins":["在工作经历中加入2-3个量化成果","技能模块补充岗位核心关键词","项目描述补充技术选型和性能指标"]}
+
+                    ---
+
+                    ## 訡块评分说明
+
+                    `sectionScores` 是各模块的评分，Key 为简历内容中的 `## SECTION:xxx` 标记的模块ID，例如：
+                    - `## SECTION:abc123` → 该模块评分为85分
+                    - `## SECTION:def456` → 该模块评分为60分
+
+                    评分维度：
+                    - `BASIC_INFO`: 信息完整度、联系方式有效性（0-100）
+                    - `EDUCATION`: 教育背景相关性、学历含金量（0-100）
+                    - `WORK`: 工作经历含金量、量化程度、与岗位匹配度（0-100）
+                    - `PROJECT`: 项目质量、技术深度、成果量化（0-100）
+                    - `SKILLS`: 技能覆盖度、与岗位匹配度（0-100）
+                    - `CERTIFICATE`: 证书含金量、相关性（0-100）
+                    - `OPEN_SOURCE`: 贡献质量、影响力（0-100）
 
                     ---
 
@@ -396,15 +413,16 @@ public class AIPromptProperties {
                     3. suggestions的priority与问题严重程度匹配（high≤3条）
                     4. strengths和weaknesses各有2-4条，且与评分一致
                     5. quickWins是3-5个可快速执行的改进项
-                    6. 只返回JSON，不要返回其他内容
+                    6. sectionScores必须包含简历中所有 `## SECTION:xxx` 标记的模块
+                    7. 只返回JSON，不要返回其他内容
                     """,
                     // userPromptTemplate
                     """
                     ## 目标岗位
                     {targetPosition}
 
-                    ## 简历markdown内容
-                    {resumeMarkdown}
+                    ## 简历内容（包含模块ID标记）
+                    {resumeContent}
                     """);
         }
 
