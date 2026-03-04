@@ -9,6 +9,7 @@ import com.landit.common.exception.BusinessException;
 import com.landit.resume.convertor.ResumeConvertor;
 import com.landit.resume.dto.CreateResumeRequest;
 import com.landit.resume.dto.DeriveResumeRequest;
+import com.landit.resume.dto.DiagnoseResumeResponse;
 import com.landit.resume.dto.ResumeParseResult;
 import com.landit.resume.dto.ResumeStructuredData;
 import com.landit.resume.dto.ResumeDetailVO;
@@ -105,8 +106,8 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
         // 设置是否已完成分析
         vo.setAnalyzed(isResumeAnalyzed(resume));
 
-        // 计算评分（基于模块评分的平均值）
-        calculateScores(vo, sections);
+        // 设置评分默认值
+        setDefaultScoresIfNeeded(vo);
 
         return vo;
     }
@@ -171,26 +172,22 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
     }
 
     /**
-     * 计算简历各项评分
+     * 设置评分默认值（如果数据库中为空）
+     * 评分数据从数据库中读取，此方法确保空值被设置为默认值0
      */
-    private void calculateScores(ResumeDetailVO vo, List<ResumeSection> sections) {
-        if (sections.isEmpty()) {
-            vo.setOverallScore(0);
-            vo.setFormatScore(0);
-            vo.setContentScore(0);
-            return;
-        }
-        // 计算模块平均分作为综合评分
-        double avgScore = sections.stream()
-                .filter(s -> s.getScore() != null && s.getScore() > 0)
-                .mapToInt(ResumeSection::getScore)
-                .average()
-                .orElse(0);
-        int score = (int) Math.round(avgScore);
-        vo.setOverallScore(score);
-        // TODO: 后续可根据实际算法计算格式规范、内容质量分数
-        vo.setFormatScore(Math.min(100, score));
-        vo.setContentScore(Math.min(100, (int) (score * 0.95)));
+    private void setDefaultScoresIfNeeded(ResumeDetailVO vo) {
+        vo.setOverallScore(defaultZeroIfNull(vo.getOverallScore()));
+        vo.setContentScore(defaultZeroIfNull(vo.getContentScore()));
+        vo.setStructureScore(defaultZeroIfNull(vo.getStructureScore()));
+        vo.setMatchingScore(defaultZeroIfNull(vo.getMatchingScore()));
+        vo.setCompetitivenessScore(defaultZeroIfNull(vo.getCompetitivenessScore()));
+    }
+
+    /**
+     * 如果值为null则返回0
+     */
+    private Integer defaultZeroIfNull(Integer value) {
+        return value != null ? value : 0;
     }
 
     /**
@@ -566,6 +563,41 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
      */
     public ResumeSection getSectionById(String sectionId) {
         return resumeSectionMapper.selectById(sectionId);
+    }
+
+    /**
+     * 更新简历诊断评分
+     *
+     * @param resumeId        简历ID
+     * @param overallScore    综合评分
+     * @param dimensionScores 维度评分
+     */
+    public void updateDiagnosisScores(String resumeId, Integer overallScore,
+                                       DiagnoseResumeResponse.DimensionScores dimensionScores) {
+        Resume resume = getById(resumeId);
+        if (resume == null) {
+            log.warn("简历不存在，无法更新诊断评分: resumeId={}", resumeId);
+            return;
+        }
+
+        resume.setOverallScore(overallScore);
+        if (dimensionScores != null) {
+            resume.setContentScore(dimensionScores.getContent());
+            resume.setStructureScore(dimensionScores.getStructure());
+            resume.setMatchingScore(dimensionScores.getMatching());
+            resume.setCompetitivenessScore(dimensionScores.getCompetitiveness());
+        }
+
+        // 同时更新 score 字段（兼容旧逻辑）
+        resume.setScore(overallScore);
+
+        updateById(resume);
+        log.info("简历诊断评分已更新: resumeId={}, overallScore={}, content={}, structure={}, matching={}, competitiveness={}",
+                resumeId, overallScore,
+                dimensionScores != null ? dimensionScores.getContent() : 0,
+                dimensionScores != null ? dimensionScores.getStructure() : 0,
+                dimensionScores != null ? dimensionScores.getMatching() : 0,
+                dimensionScores != null ? dimensionScores.getCompetitiveness() : 0);
     }
 
 }

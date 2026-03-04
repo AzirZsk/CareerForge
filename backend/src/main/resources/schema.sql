@@ -41,6 +41,15 @@ CREATE TABLE IF NOT EXISTS t_resume (
 );
 
 -- ----------------------------------------------------------------------------
+-- 简历诊断评分字段扩展
+-- ----------------------------------------------------------------------------
+ALTER TABLE t_resume ADD COLUMN overall_score INTEGER DEFAULT 0;
+ALTER TABLE t_resume ADD COLUMN content_score INTEGER DEFAULT 0;
+ALTER TABLE t_resume ADD COLUMN structure_score INTEGER DEFAULT 0;
+ALTER TABLE t_resume ADD COLUMN matching_score INTEGER DEFAULT 0;
+ALTER TABLE t_resume ADD COLUMN competitiveness_score INTEGER DEFAULT 0;
+
+-- ----------------------------------------------------------------------------
 -- 简历历史版本表
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS t_resume_version (

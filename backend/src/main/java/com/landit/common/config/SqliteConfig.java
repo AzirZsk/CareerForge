@@ -41,10 +41,52 @@ public class SqliteConfig implements CommandLineRunner {
                 log.info("数据库表结构初始化完成");
             } else {
                 log.info("数据库表已存在，跳过初始化");
+                // 检查并添加新字段（数据库迁移）
+                migrateResumeScoreColumns();
             }
         } catch (Exception e) {
             log.error("数据库初始化失败: {}", e.getMessage(), e);
             System.exit(0);
+        }
+    }
+
+    /**
+     * 迁移简历评分字段（批量检查并添加）
+     * 优化：单次 PRAGMA 调用检查所有列
+     */
+    private void migrateResumeScoreColumns() {
+        try (Connection conn = dataSource.getConnection();
+             Statement stmt = conn.createStatement()) {
+
+            // 单次 PRAGMA 调用获取所有现有列
+            ResultSet rs = stmt.executeQuery("PRAGMA table_info(t_resume)");
+            java.util.Set<String> existingColumns = new java.util.HashSet<>();
+            while (rs.next()) {
+                existingColumns.add(rs.getString("name").toLowerCase());
+            }
+            rs.close();
+
+            // 定义需要添加的列
+            String[][] columnsToAdd = {
+                    {"overall_score", "INTEGER DEFAULT 0"},
+                    {"content_score", "INTEGER DEFAULT 0"},
+                    {"structure_score", "INTEGER DEFAULT 0"},
+                    {"matching_score", "INTEGER DEFAULT 0"},
+                    {"competitiveness_score", "INTEGER DEFAULT 0"}
+            };
+
+            // 批量添加缺失的列
+            for (String[] column : columnsToAdd) {
+                String columnName = column[0];
+                String columnDef = column[1];
+                if (!existingColumns.contains(columnName.toLowerCase())) {
+                    String sql = "ALTER TABLE t_resume ADD COLUMN " + columnName + " " + columnDef;
+                    stmt.execute(sql);
+                    log.info("成功添加字段: t_resume.{}", columnName);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("迁移简历评分字段时出错: {}", e.getMessage());
         }
     }
 

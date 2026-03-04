@@ -2,7 +2,6 @@ package com.landit.resume.controller;
 
 import com.landit.common.response.ApiResponse;
 import com.landit.resume.dto.OptimizeGraphRequest;
-import com.landit.resume.dto.ReviewGraphRequest;
 import com.landit.resume.graph.ResumeOptimizeGraphService;
 import com.landit.resume.handler.ResumeOptimizeGraphHandler;
 import io.swagger.v3.oas.annotations.Operation;
@@ -80,30 +79,6 @@ public class ResumeOptimizeGraphController {
     @GetMapping("/workflow/state")
     public ApiResponse<Map<String, Object>> getWorkflowState(@RequestParam String threadId) {
         return ApiResponse.success(graphService.getState(threadId));
-    }
-
-    /**
-     * 提交人工审核结果
-     */
-    @Operation(summary = "提交人工审核")
-    @PostMapping("/workflow/review")
-    public ApiResponse<Map<String, Object>> submitReview(@RequestBody ReviewGraphRequest request) {
-        Map<String, Object> result = graphService.submitReview(
-                request.getThreadId(),
-                request.isApproved(),
-                request.getModifications()
-        );
-        return ApiResponse.success(result);
-    }
-
-    /**
-     * 恢复工作流执行
-     */
-    @Operation(summary = "恢复工作流")
-    @PostMapping("/workflow/resume")
-    public ApiResponse<Map<String, Object>> resumeWorkflow(@RequestParam String threadId) {
-        Map<String, Object> result = graphService.resumeOptimize(threadId);
-        return ApiResponse.success(result);
     }
 
 }

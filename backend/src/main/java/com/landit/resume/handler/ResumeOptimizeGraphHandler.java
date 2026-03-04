@@ -3,10 +3,12 @@ package com.landit.resume.handler;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.landit.common.util.JsonParseHelper;
+import com.landit.resume.dto.DiagnoseResumeResponse;
 import com.landit.resume.dto.OptimizeGraphRequest;
 import com.landit.resume.dto.OptimizeProgressEvent;
 import com.landit.resume.dto.ResumeDetailVO;
 import com.landit.resume.graph.ResumeOptimizeGraphService;
+import com.landit.resume.service.ResumeService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +40,7 @@ public class ResumeOptimizeGraphHandler {
 
     private final ResumeOptimizeGraphService graphService;
     private final ResumeHandler resumeHandler;
+    private final ResumeService resumeService;
 
     /**
      * 流式执行简历优化工作流
@@ -48,31 +51,7 @@ public class ResumeOptimizeGraphHandler {
      * @return SSE 事件流
      */
     public Flux<OptimizeProgressEvent> streamOptimize(String id, String mode, String targetPosition) {
-        log.info("开始流式简历优化: resumeId={}, mode={}", id, mode);
-
-        ResumeDetailVO resumeDetail = resumeHandler.getResumeDetail(id);
-        if (resumeDetail == null) {
-            return Flux.just(OptimizeProgressEvent.error("简历不存在", null));
-        }
-
-        String threadId = UUID.randomUUID().toString();
-        String position = resolveTargetPosition(targetPosition, resumeDetail);
-        Map<String, Object> parseResult = extractResumeModules(resumeDetail);
-        Map<String, Object> initialState = buildInitialState(id, resumeDetail, position, mode);
-
-        return Flux.concat(
-                Flux.just(OptimizeProgressEvent.startWithModules(id, threadId, position, mode, parseResult)),
-                graphService.streamOptimize(initialState, threadId)
-                        .filter(output -> !isInterruptionOutput(output))
-                        .map(output -> OptimizeProgressEvent.fromNodeOutput(
-                                output.node(), threadId, graphService.getNodeOutput(threadId))),
-                Flux.just(OptimizeProgressEvent.complete(threadId))
-        )
-        .onErrorResume(e -> {
-            log.error("工作流执行失败", e);
-            return Flux.just(OptimizeProgressEvent.error(e.getMessage(), threadId));
-        })
-        .subscribeOn(Schedulers.boundedElastic());
+        return streamOptimizeWithThreadId(id, mode, targetPosition, UUID.randomUUID().toString());
     }
 
     /**
@@ -91,8 +70,9 @@ public class ResumeOptimizeGraphHandler {
 
         configureSseResponse(response);
         SseEmitter emitter = new SseEmitter(300000L);
+        String threadId = UUID.randomUUID().toString();
 
-        streamOptimize(id, mode, targetPosition).subscribe(
+        streamOptimizeWithThreadId(id, mode, targetPosition, threadId).subscribe(
                 event -> sendSseEvent(emitter, event),
                 error -> {
                     log.error("[SSE] 流异常", error);
@@ -100,11 +80,50 @@ public class ResumeOptimizeGraphHandler {
                 },
                 () -> {
                     log.info("[SSE] 流完成");
+                    // 流完成后保存诊断评分
+                    saveDiagnosisScores(id, threadId);
                     emitter.complete();
                 }
         );
 
         return emitter;
+    }
+
+    /**
+     * 流式执行简历优化工作流（带指定threadId）
+     *
+     * @param id             简历ID
+     * @param mode           优化模式（quick/precise）
+     * @param targetPosition 目标岗位（可选）
+     * @param threadId       会话线程ID
+     * @return SSE 事件流
+     */
+    private Flux<OptimizeProgressEvent> streamOptimizeWithThreadId(String id, String mode,
+                                                                    String targetPosition, String threadId) {
+        log.info("开始流式简历优化: resumeId={}, mode={}, threadId={}", id, mode, threadId);
+
+        ResumeDetailVO resumeDetail = resumeHandler.getResumeDetail(id);
+        if (resumeDetail == null) {
+            return Flux.just(OptimizeProgressEvent.error("简历不存在", null));
+        }
+
+        String position = resolveTargetPosition(targetPosition, resumeDetail);
+        Map<String, Object> parseResult = extractResumeModules(resumeDetail);
+        Map<String, Object> initialState = buildInitialState(id, resumeDetail, position, mode);
+
+        return Flux.concat(
+                Flux.just(OptimizeProgressEvent.startWithModules(id, threadId, position, mode, parseResult)),
+                graphService.streamOptimize(initialState, threadId)
+                        .filter(output -> !isInterruptionOutput(output))
+                        .map(output -> OptimizeProgressEvent.fromNodeOutput(
+                                output.node(), threadId, graphService.getNodeOutput(threadId))),
+                Flux.just(OptimizeProgressEvent.complete(threadId))
+        )
+        .onErrorResume(e -> {
+            log.error("工作流执行失败", e);
+            return Flux.just(OptimizeProgressEvent.error(e.getMessage(), threadId));
+        })
+        .subscribeOn(Schedulers.boundedElastic());
     }
 
     /**
@@ -264,5 +283,53 @@ public class ResumeOptimizeGraphHandler {
      */
     private boolean isInterruptionOutput(NodeOutput output) {
         return output instanceof InterruptionMetadata;
+    }
+
+    /**
+     * 保存诊断评分到数据库
+     *
+     * @param resumeId 简历ID
+     * @param threadId 会话线程ID
+     */
+    @SuppressWarnings("unchecked")
+    private void saveDiagnosisScores(String resumeId, String threadId) {
+        try {
+            // 从 graphService 获取最新的诊断状态
+            Map<String, Object> state = graphService.getState(threadId);
+            if (state == null || state.isEmpty()) {
+                log.warn("[SSE] 无法获取工作流状态，跳过保存评分: resumeId={}, threadId={}", resumeId, threadId);
+                return;
+            }
+
+            // 提取评分数据
+            Integer overallScore = (Integer) state.get(STATE_OVERALL_SCORE);
+            Object dimensionsObj = state.get(STATE_DIMENSIONS);
+
+            if (overallScore == null) {
+                log.warn("[SSE] 未找到综合评分，跳过保存: resumeId={}, threadId={}", resumeId, threadId);
+                return;
+            }
+
+            // 转换维度评分
+            DiagnoseResumeResponse.DimensionScores dimensionScores = null;
+            if (dimensionsObj instanceof Map) {
+                Map<String, Object> dimensionsMap = (Map<String, Object>) dimensionsObj;
+                dimensionScores = DiagnoseResumeResponse.DimensionScores.builder()
+                        .content((Integer) dimensionsMap.get("content"))
+                        .structure((Integer) dimensionsMap.get("structure"))
+                        .matching((Integer) dimensionsMap.get("matching"))
+                        .competitiveness((Integer) dimensionsMap.get("competitiveness"))
+                        .build();
+            } else if (dimensionsObj instanceof DiagnoseResumeResponse.DimensionScores) {
+                dimensionScores = (DiagnoseResumeResponse.DimensionScores) dimensionsObj;
+            }
+
+            // 保存评分
+            resumeService.updateDiagnosisScores(resumeId, overallScore, dimensionScores);
+            log.info("[SSE] 诊断评分保存成功: resumeId={}, threadId={}", resumeId, threadId);
+
+        } catch (Exception e) {
+            log.error("[SSE] 保存诊断评分失败: resumeId={}, threadId={}, error={}", resumeId, threadId, e.getMessage(), e);
+        }
     }
 }

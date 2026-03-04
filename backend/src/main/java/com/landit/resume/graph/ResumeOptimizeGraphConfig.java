@@ -39,7 +39,6 @@ import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
  * 1. 诊断分析（快速/精准模式）
  * 2. 生成优化建议
  * 3. 模块内容优化
- * 4. 人工审核
  *
  * 注：简历解析（modules/completeness）已在 Controller 层完成，无需单独节点
  *
@@ -78,7 +77,6 @@ public class ResumeOptimizeGraphConfig {
             // 流程控制
             strategies.put(STATE_CURRENT_STEP, new ReplaceStrategy());
             strategies.put(STATE_NEXT_NODE, new ReplaceStrategy());
-            strategies.put(STATE_APPROVED, new ReplaceStrategy());
 
             // 消息日志
             strategies.put(STATE_MESSAGES, new AppendStrategy());
@@ -94,7 +92,6 @@ public class ResumeOptimizeGraphConfig {
      * 1. 诊断分析（快速/精准模式）
      * 2. 生成优化建议
      * 3. 模块内容优化
-     * 4. 人工审核
      *
      * 注：简历解析（modules/completeness）已在 Controller 层完成，无需单独节点
      */
@@ -107,7 +104,6 @@ public class ResumeOptimizeGraphConfig {
         DiagnosePreciseResumeNode diagnosePreciseNode = new DiagnosePreciseResumeNode(chatClient, aiPromptProperties);
         GenerateSuggestionsNode generateSuggestionsNode = new GenerateSuggestionsNode(chatClient, aiPromptProperties);
         OptimizeSectionNode optimizeSectionNode = new OptimizeSectionNode(chatClient, aiPromptProperties);
-        HumanReviewNode humanReviewNode = new HumanReviewNode();
 
         // 构建工作流图
         StateGraph workflow = new StateGraph(GRAPH_RESUME_OPTIMIZE, resumeOptimizeKeyStrategyFactory)
@@ -116,7 +112,6 @@ public class ResumeOptimizeGraphConfig {
                 .addNode(NODE_DIAGNOSE_PRECISE, AsyncNodeAction.node_async(diagnosePreciseNode))
                 .addNode(NODE_GENERATE_SUGGESTIONS, AsyncNodeAction.node_async(generateSuggestionsNode))
                 .addNode(NODE_OPTIMIZE_SECTION, AsyncNodeAction.node_async(optimizeSectionNode))
-                .addNode(NODE_HUMAN_REVIEW, AsyncNodeAction.node_async(humanReviewNode))
 
                 // 添加边：START 直接连接诊断节点
                 .addEdge(START, NODE_DIAGNOSE_QUICK)
@@ -137,16 +132,14 @@ public class ResumeOptimizeGraphConfig {
 
                 .addEdge(NODE_DIAGNOSE_PRECISE, NODE_GENERATE_SUGGESTIONS)
                 .addEdge(NODE_GENERATE_SUGGESTIONS, NODE_OPTIMIZE_SECTION)
-                .addEdge(NODE_OPTIMIZE_SECTION, NODE_HUMAN_REVIEW)
-                .addEdge(NODE_HUMAN_REVIEW, END);
+                .addEdge(NODE_OPTIMIZE_SECTION, END);
 
-        // 配置持久化和中断点
+        // 配置持久化
         MemorySaver memory = new MemorySaver();
         CompileConfig compileConfig = CompileConfig.builder()
                 .saverConfig(SaverConfig.builder()
                         .register(memory)
                         .build())
-                .interruptBefore(NODE_HUMAN_REVIEW)
                 .build();
 
         return workflow.compile(compileConfig);

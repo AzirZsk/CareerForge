@@ -44,9 +44,11 @@ public interface ResumeConvertor {
      * Resume -> ResumeDetailVO（基础映射，不含sections）
      */
     @Mapping(target = "sections", ignore = true)
-    @Mapping(target = "overallScore", source = "score")
-    @Mapping(target = "formatScore", constant = "0")
-    @Mapping(target = "contentScore", constant = "0")
+    @Mapping(target = "overallScore", source = "overallScore")
+    @Mapping(target = "contentScore", source = "contentScore")
+    @Mapping(target = "structureScore", source = "structureScore")
+    @Mapping(target = "matchingScore", source = "matchingScore")
+    @Mapping(target = "competitivenessScore", source = "competitivenessScore")
     @Mapping(target = "analyzed", constant = "false")
     ResumeDetailVO toDetailVO(Resume resume);
 

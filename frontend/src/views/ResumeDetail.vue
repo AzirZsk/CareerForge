@@ -31,7 +31,7 @@
               </div>
               <div class="score-labels">
                 <span class="score-title">综合评分</span>
-                <span class="score-detail">格式规范 {{ store.currentResume.analyzed ? store.currentResume.formatScore + '%' : '~' }}</span>
+                <span class="score-detail">结构规范 {{ store.currentResume.analyzed ? store.currentResume.structureScore + '%' : '~' }}</span>
               </div>
             </div>
           </div>
@@ -58,22 +58,6 @@
       <section class="metrics-section animate-in" style="--delay: 2">
         <div class="metric-card">
           <div class="metric-header">
-            <span class="metric-icon format">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="3" y1="9" x2="21" y2="9"></line>
-                <line x1="9" y1="21" x2="9" y2="9"></line>
-              </svg>
-            </span>
-            <span class="metric-title">格式规范</span>
-          </div>
-          <div class="metric-value">{{ store.currentResume.analyzed ? store.currentResume.formatScore : '~' }}</div>
-          <div class="metric-bar">
-            <div class="metric-fill" :style="{ width: store.currentResume.analyzed ? store.currentResume.formatScore + '%' : '0%' }"></div>
-          </div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-header">
             <span class="metric-icon content">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -87,6 +71,51 @@
           <div class="metric-value">{{ store.currentResume.analyzed ? store.currentResume.contentScore : '~' }}</div>
           <div class="metric-bar">
             <div class="metric-fill" :style="{ width: store.currentResume.analyzed ? store.currentResume.contentScore + '%' : '0%' }"></div>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-icon structure">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="3" y1="9" x2="21" y2="9"></line>
+                <line x1="9" y1="21" x2="9" y2="9"></line>
+              </svg>
+            </span>
+            <span class="metric-title">结构规范</span>
+          </div>
+          <div class="metric-value">{{ store.currentResume.analyzed ? store.currentResume.structureScore : '~' }}</div>
+          <div class="metric-bar">
+            <div class="metric-fill" :style="{ width: store.currentResume.analyzed ? store.currentResume.structureScore + '%' : '0%' }"></div>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-icon matching">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </span>
+            <span class="metric-title">岗位匹配</span>
+          </div>
+          <div class="metric-value">{{ store.currentResume.analyzed ? store.currentResume.matchingScore : '~' }}</div>
+          <div class="metric-bar">
+            <div class="metric-fill" :style="{ width: store.currentResume.analyzed ? store.currentResume.matchingScore + '%' : '0%' }"></div>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-icon competitiveness">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+            </span>
+            <span class="metric-title">竞争力</span>
+          </div>
+          <div class="metric-value">{{ store.currentResume.analyzed ? store.currentResume.competitivenessScore : '~' }}</div>
+          <div class="metric-bar">
+            <div class="metric-fill" :style="{ width: store.currentResume.analyzed ? store.currentResume.competitivenessScore + '%' : '0%' }"></div>
           </div>
         </div>
       </section>
@@ -727,7 +756,7 @@ async function deleteItem(itemId: string): Promise<void> {
 // 指标区域
 .metrics-section {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: $spacing-lg;
 }
 
@@ -763,6 +792,18 @@ async function deleteItem(itemId: string): Promise<void> {
   &.content {
     background: rgba(212, 168, 83, 0.15);
     color: $color-accent;
+  }
+  &.structure {
+    background: rgba(52, 211, 153, 0.15);
+    color: #34d399;
+  }
+  &.matching {
+    background: rgba(96, 165, 250, 0.15);
+    color: #60a5fa;
+  }
+  &.competitiveness {
+    background: rgba(167, 139, 250, 0.15);
+    color: #a78bfa;
   }
 }
 

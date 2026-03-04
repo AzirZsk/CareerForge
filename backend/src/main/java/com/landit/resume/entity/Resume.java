@@ -42,4 +42,29 @@ public class Resume extends BaseEntity {
 
     private Boolean isPrimary;
 
+    /**
+     * 诊断综合评分 (0-100)
+     */
+    private Integer overallScore;
+
+    /**
+     * 内容质量评分 (0-100)
+     */
+    private Integer contentScore;
+
+    /**
+     * 结构规范评分 (0-100)
+     */
+    private Integer structureScore;
+
+    /**
+     * 岗位匹配评分 (0-100)
+     */
+    private Integer matchingScore;
+
+    /**
+     * 竞争力评分 (0-100)
+     */
+    private Integer competitivenessScore;
+
 }

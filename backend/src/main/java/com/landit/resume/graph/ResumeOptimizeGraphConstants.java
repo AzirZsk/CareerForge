@@ -41,11 +41,6 @@ public final class ResumeOptimizeGraphConstants {
      */
     public static final String NODE_OPTIMIZE_SECTION = "optimize_section";
 
-    /**
-     * 人工审核节点
-     */
-    public static final String NODE_HUMAN_REVIEW = "human_review";
-
     // ==================== 状态键 - 简历相关 ====================
 
     /**
@@ -164,16 +159,6 @@ public final class ResumeOptimizeGraphConstants {
      */
     public static final String STATE_NEXT_NODE = "next_node";
 
-    /**
-     * 是否已审核通过
-     */
-    public static final String STATE_APPROVED = "approved";
-
-    /**
-     * 状态
-     */
-    public static final String STATE_STATUS = "status";
-
     // ==================== 状态键 - 消息与输出 ====================
 
     /**
@@ -264,20 +249,4 @@ public final class ResumeOptimizeGraphConstants {
      */
     public static final String OUTPUT_DATA = "data";
 
-    // ==================== 状态值 ====================
-
-    /**
-     * 状态 - 已完成
-     */
-    public static final String STATUS_COMPLETED = "completed";
-
-    /**
-     * 状态 - 等待审核
-     */
-    public static final String STATUS_WAITING_FOR_REVIEW = "waiting_for_review";
-
-    /**
-     * 状态 - 已通过
-     */
-    public static final String STATUS_APPROVED = "approved";
 }

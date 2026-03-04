@@ -168,8 +168,10 @@ export interface ResumeDetail {
   targetPosition: string
   sections: ResumeSection[]
   overallScore: number
-  formatScore: number
   contentScore: number
+  structureScore: number
+  matchingScore: number
+  competitivenessScore: number
   analyzed: boolean
 }
 
