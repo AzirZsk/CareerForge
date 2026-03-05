@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
 
@@ -117,100 +116,12 @@ public class DiagnoseResumeNode implements NodeAction {
 
         for (ResumeDetailVO.ResumeSectionVO section : sections) {
             sb.append("## SECTION:").append(section.getId()).append("\n");
-            sb.append("### ").append(section.getTitle() != null ? section.getTitle() : "").append("\n\n");
-
-            // 添加内容描述
-            Object content = section.getContent();
-            if (content instanceof Map) {
-                Map<String, Object> contentMap = (Map<String, Object>) content;
-                sb.append("- 类型: ").append(section.getType()).append("\n");
-                for (Map.Entry<String, Object> entry : contentMap.entrySet()) {
-                    Object value = entry.getValue();
-                    if (value instanceof String) {
-                        sb.append(value.toString());
-                    } else if (value instanceof Number) {
-                        sb.append(value.toString());
-                    } else if (value instanceof Boolean) {
-                        sb.append(value.toString());
-                    } else if (value instanceof List) {
-                        sb.append(formatListValue((List<?>) value));
-                    } else if (value instanceof Map) {
-                        sb.append(formatMapValue((Map<String, Object>) value));
-                    } else {
-                        sb.append(String.valueOf(value));
-                    }
-                }
-            } else if (content instanceof List) {
-                List<?> items = (List<?>) content;
-                sb.append("- 项目数量: ").append(items.size()).append("\n");
-                for (Object item : items) {
-                    if (item instanceof Map) {
-                        sb.append("  ").append(formatMapValue((Map<String, Object>) item)).append("\n");
-                    } else if (item instanceof String) {
-                        sb.append("  ").append(item).append("\n");
-                    } else if (item instanceof List) {
-                        sb.append("  - ").append(formatListValue((List<?>) item)).append("\n");
-                    }
-                }
-            }
-            sb.append("\n\n");
+            sb.append("### ").append(section.getTitle() != null ? section.getTitle() : "").append("\n");
+            sb.append("类型: ").append(section.getType()).append("\n");
+            sb.append("```json\n");
+            sb.append(JsonParseHelper.toJsonString(section.getContent())).append("\n");
+            sb.append("```\n\n");
         }
-        return sb.toString();
-    }
-
-    /**
-     * 格式化 Map 值为字符串
-     */
-    private String formatMapValue(Map<String, Object> map) {
-        if (map == null || map.isEmpty()) {
-            return "{}";
-        }
-        StringBuilder sb = new StringBuilder("{");
-        for (Map.Entry<String, Object> entry : map.entrySet()) {
-            sb.append(entry.getKey()).append(": ");
-            Object value = entry.getValue();
-            if (value instanceof String) {
-                sb.append(value.toString());
-            } else if (value instanceof Number) {
-                sb.append(value.toString());
-            } else if (value instanceof Boolean) {
-                sb.append(value.toString());
-            } else if (value instanceof List) {
-                sb.append(formatListValue((List<?>) value));
-            } else if (value instanceof Map) {
-                sb.append(formatMapValue((Map<String, Object>) value));
-            } else {
-                sb.append(String.valueOf(value));
-            }
-        }
-        sb.append("}");
-        return sb.toString();
-    }
-
-    /**
-     * 格式化 List 值为字符串
-     */
-    private String formatListValue(List<?> list) {
-        if (list == null || list.isEmpty()) {
-            return "[]";
-        }
-        StringBuilder sb = new StringBuilder("[");
-        for (Object item : list) {
-            if (item instanceof String) {
-                sb.append(item.toString());
-            } else if (item instanceof Number) {
-                sb.append(item.toString());
-            } else if (item instanceof Boolean) {
-                sb.append(item.toString());
-            } else if (item instanceof Map) {
-                sb.append(formatMapValue((Map<String, Object>) item));
-            } else if (item instanceof List) {
-                sb.append(formatListValue((List<?>) item));
-            } else {
-                sb.append(String.valueOf(item));
-            }
-        }
-        sb.append("]");
         return sb.toString();
     }
 }
