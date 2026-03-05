@@ -119,12 +119,7 @@ public class DiagnoseResumeNode implements NodeAction {
         }
 
         for (ResumeDetailVO.ResumeSectionVO section : sections) {
-            sb.append("## SECTION:").append(section.getId()).append("\n");
-            sb.append("### ").append(section.getTitle() != null ? section.getTitle() : "").append("\n");
-            sb.append("类型: ").append(section.getType()).append("\n");
-            sb.append("```json\n");
-            sb.append(JsonParseHelper.toJsonString(section.getContent())).append("\n");
-            sb.append("```\n\n");
+            sb.append(JsonParseHelper.toJsonString(section)).append("\n\n");
         }
         return sb.toString();
     }
