@@ -46,11 +46,15 @@ public class DiagnoseResumeNode implements NodeAction {
         // 使用拆分提示词调用（前缀缓存优化）
         AIPromptProperties.PromptConfig promptConfig = aiPromptProperties.getGraph().getDiagnoseQuickConfig();
         String systemPrompt = promptConfig.getSystemPrompt();
-        // 构建结构化的简历内容（包含 sectionId）
-        String structuredResumeContent = buildStructuredResumeContent(resumeDetail);
+        // 获取简历 Markdown 文本
+        String resumeMarkdown = resumeDetail.getMarkdownContent() != null
+                ? resumeDetail.getMarkdownContent()
+                : "";
+        // 构建结构化的模块内容（包含 sectionId）
+        String resumeSections = buildStructuredResumeContent(resumeDetail);
         String userPrompt = ChatClientHelper.renderTemplate(
                 promptConfig.getUserPromptTemplate(),
-                Map.of("targetPosition", targetPosition, "resumeContent", structuredResumeContent)
+                Map.of("targetPosition", targetPosition, "resumeMarkdown", resumeMarkdown, "resumeSections", resumeSections)
         );
 
         // 调用 AI 并自动解析（带重试）

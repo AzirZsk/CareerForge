@@ -388,9 +388,9 @@ public class AIPromptProperties {
 
                     ---
 
-                    ## 訡块评分说明
+                    ## 模块评分说明
 
-                    `sectionScores` 是各模块的评分，Key 为简历内容中的 `## SECTION:xxx` 标记的模块ID，例如：
+                    `sectionScores` 是各模块的评分，Key 为简历模块中的 `## SECTION:xxx` 标记的模块ID，例如：
                     - `## SECTION:abc123` → 该模块评分为85分
                     - `## SECTION:def456` → 该模块评分为60分
 
@@ -421,8 +421,11 @@ public class AIPromptProperties {
                     ## 目标岗位
                     {targetPosition}
 
-                    ## 简历内容（包含模块ID标记）
-                    {resumeContent}
+                    ## 简历 Markdown 文本
+                    {resumeMarkdown}
+
+                    ## 简历模块
+                    {resumeSections}
                     """);
         }
 
