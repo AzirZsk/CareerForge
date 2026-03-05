@@ -118,11 +118,13 @@ public class AIPromptProperties {
                 ## 任务
                 分析以下简历的质量，给出评分和改进建议。
 
-                ## 目标岗位
+                <target_position>
                 {targetPosition}
+                </target_position>
 
-                ## 简历内容
+                <resume_content>
                 {resumeContent}
+                </resume_content>
 
                 ---
 
@@ -173,14 +175,17 @@ public class AIPromptProperties {
                 ## 任务
                 优化以下简历模块的内容，使其更专业、更有说服力。
 
-                ## 模块类型
+                <section_type>
                 {sectionType}
+                </section_type>
 
-                ## 目标岗位
+                <target_position>
                 {targetPosition}
+                </target_position>
 
-                ## 原始内容
+                <original_content>
                 {originalContent}
+                </original_content>
 
                 ---
 
@@ -234,11 +239,13 @@ public class AIPromptProperties {
                 ## 任务
                 分析简历与具体岗位JD的匹配程度，找出差距并给出优化方向。
 
-                ## 目标岗位JD
+                <job_description>
                 {jobDescription}
+                </job_description>
 
-                ## 简历内容
+                <resume_content>
                 {resumeContent}
+                </resume_content>
 
                 ---
 
@@ -418,14 +425,17 @@ public class AIPromptProperties {
                     """,
                     // userPromptTemplate
                     """
-                    ## 目标岗位
+                    <target_position>
                     {targetPosition}
+                    </target_position>
 
-                    ## 简历 Markdown 文本
+                    <resume_markdown>
                     {resumeMarkdown}
+                    </resume_markdown>
 
-                    ## 简历模块
+                    <resume_sections>
                     {resumeSections}
+                    </resume_sections>
                     """);
         }
 
@@ -516,11 +526,13 @@ public class AIPromptProperties {
                     """,
                     // userPromptTemplate
                     """
-                    ## 诊断结果
+                    <diagnosis_result>
                     {diagnosisResult}
+                    </diagnosis_result>
 
-                    ## 简历内容
+                    <resume_content>
                     {resumeContent}
+                    </resume_content>
                     """);
         }
 
@@ -639,14 +651,17 @@ public class AIPromptProperties {
                     """,
                     // userPromptTemplate
                     """
-                    ## 目标岗位
+                    <target_position>
                     {targetPosition}
+                    </target_position>
 
-                    ## 原始简历内容
+                    <resume_content>
                     {resumeContent}
+                    </resume_content>
 
-                    ## 优化建议
+                    <suggestions>
                     {suggestions}
+                    </suggestions>
                     """);
         }
 
