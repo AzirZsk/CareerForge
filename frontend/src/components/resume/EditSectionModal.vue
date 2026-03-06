@@ -48,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import BasicInfoForm from './forms/BasicInfoForm.vue'
 import SkillsForm from './forms/SkillsForm.vue'
 import ExperienceForm from './forms/ExperienceForm.vue'
@@ -81,7 +81,7 @@ const sectionType = computed(() => props.section?.type ?? '')
 
 // 是否为聚合类型
 const isAggregate = computed(() => {
-  return ['EDUCATION', 'WORK', 'PROJECT', 'CERTIFICATE'].includes(sectionType.value)
+  return ['EDUCATION', 'WORK', 'PROJECT', 'CERTIFICATE', 'OPEN_SOURCE'].includes(sectionType.value)
 })
 
 // 弹窗标题
@@ -92,7 +92,8 @@ const modalTitle = computed(() => {
     EDUCATION: '教育经历',
     WORK: '工作经历',
     PROJECT: '项目经历',
-    CERTIFICATE: '证书/荣誉'
+    CERTIFICATE: '证书/荣誉',
+    OPEN_SOURCE: '开源贡献'
   }
   const baseTitle = baseTitles[sectionType.value] || '模块'
   if (isAggregate.value) {
@@ -103,6 +104,24 @@ const modalTitle = computed(() => {
 
 // 表单数据（深拷贝）
 const formData = ref<Record<string, unknown>>({})
+
+// 锁定背景滚动
+watch(
+  () => props.visible,
+  (visible) => {
+    if (visible) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+  },
+  { immediate: true }
+)
+
+// 组件销毁时确保恢复滚动
+onUnmounted(() => {
+  document.body.style.overflow = ''
+})
 
 // 监听 section/itemId 变化，深拷贝数据到表单
 watch(

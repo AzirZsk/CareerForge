@@ -78,7 +78,7 @@ export interface ResumeSuggestionItem {
 }
 
 // 简历模块类型枚举
-export type SectionType = 'BASIC_INFO' | 'EDUCATION' | 'WORK' | 'PROJECT' | 'SKILLS' | 'CERTIFICATE'
+export type SectionType = 'BASIC_INFO' | 'EDUCATION' | 'WORK' | 'PROJECT' | 'SKILLS' | 'CERTIFICATE' | 'OPEN_SOURCE'
 
 // 基本信息（后端实际字段）
 export interface BasicInfoContent {
@@ -147,6 +147,16 @@ export interface CertificateContent {
   issuer?: string
   credentialId?: string
   url?: string
+}
+
+// 开源贡献内容
+export interface OpenSourceContribution {
+  projectName: string
+  url: string
+  role?: string
+  period?: string
+  description?: string
+  achievements?: string[]
 }
 
 // 简历模块内容类型（支持后端单个对象和 mock 数组格式）

@@ -309,6 +309,43 @@
                   </div>
                 </div>
               </template>
+              <!-- 开源贡献列表 -->
+              <template v-else-if="currentSectionDetail?.type === 'OPEN_SOURCE'">
+                <div class="experience-item" v-for="item in currentSectionDetail.items" :key="item.id">
+                  <div class="exp-header">
+                    <h4 class="exp-title">
+                      {{ item.content.projectName }}
+                      <a v-if="item.content.url" :href="item.content.url" target="_blank" class="exp-link" title="访问项目">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                          <polyline points="15 3 21 3 21 9"></polyline>
+                          <line x1="10" y1="14" x2="21" y2="3"></line>
+                        </svg>
+                      </a>
+                    </h4>
+                    <div class="exp-actions">
+                      <span class="exp-period" v-if="item.content.period">{{ item.content.period }}</span>
+                      <button class="item-btn edit" @click="openEditItemModal(item.id)" title="编辑">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                      </button>
+                      <button class="item-btn delete" @click="deleteItem(item.id)" title="删除">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <polyline points="3 6 5 6 21 6"></polyline>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  <p class="exp-position" v-if="item.content.role">{{ item.content.role }}</p>
+                  <p class="exp-desc" v-if="item.content.description">{{ item.content.description }}</p>
+                  <div v-if="(item.content.achievements as string[])?.length" class="exp-achievements">
+                    <span v-for="a in (item.content.achievements as string[])" :key="a" class="achievement-tag">{{ a }}</span>
+                  </div>
+                </div>
+              </template>
             </div>
             <!-- 聚合类型无数据提示 -->
             <div class="empty-block" v-else-if="isAggregateSection && !currentSectionDetail?.items?.length">
@@ -418,7 +455,7 @@ const currentSectionDetail = computed<ResumeSection | undefined>(() => {
 // 判断当前模块是否为聚合类型
 const isAggregateSection = computed<boolean>(() => {
   const type = currentSectionDetail.value?.type
-  return ['EDUCATION', 'WORK', 'PROJECT', 'CERTIFICATE'].includes(type ?? '')
+  return ['EDUCATION', 'WORK', 'PROJECT', 'CERTIFICATE', 'OPEN_SOURCE'].includes(type ?? '')
 })
 
 // 基本信息（BASIC_INFO）- 单条类型
@@ -454,7 +491,8 @@ const sectionIcons: Record<string, string> = {
   WORK: '💼',
   PROJECT: '🎯',
   SKILLS: '⚡',
-  CERTIFICATE: '🏆'
+  CERTIFICATE: '🏆',
+  OPEN_SOURCE: '🌐'
 }
 
 function getSectionIcon(type: string): string {
@@ -464,6 +502,9 @@ function getSectionIcon(type: string): string {
 function getSectionPreview(section: ResumeSection): string {
   // 聚合类型（有items）
   if (section.items?.length) {
+    if (section.type === 'OPEN_SOURCE') {
+      return `${section.items.length} 个项目`
+    }
     return `${section.items.length} 条记录`
   }
   // 单条类型（有content）
@@ -1045,6 +1086,19 @@ async function deleteItem(itemId: string): Promise<void> {
   font-size: $text-base;
   font-weight: $weight-medium;
   color: $color-text-primary;
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.exp-link {
+  display: inline-flex;
+  align-items: center;
+  color: $color-text-tertiary;
+  transition: color $transition-fast;
+  &:hover {
+    color: $color-accent;
+  }
 }
 
 .exp-period {

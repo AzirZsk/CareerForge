@@ -186,6 +186,89 @@
         />
       </div>
     </template>
+
+    <!-- 开源贡献 -->
+    <template v-else-if="sectionType === 'OPEN_SOURCE'">
+      <div class="form-group">
+        <label class="form-label required">项目名称</label>
+        <input
+          v-model="localData.projectName"
+          type="text"
+          class="form-input"
+          placeholder="请输入开源项目名称"
+        />
+      </div>
+      <div class="form-group">
+        <label class="form-label">项目链接</label>
+        <input
+          v-model="localData.url"
+          type="text"
+          class="form-input"
+          placeholder="例如：https://github.com/xxx/xxx"
+        />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">角色</label>
+          <input
+            v-model="localData.role"
+            type="text"
+            class="form-input"
+            placeholder="例如：核心贡献者、维护者"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label">时间段</label>
+          <input
+            v-model="localData.period"
+            type="text"
+            class="form-input"
+            placeholder="例如：2023.01 - 至今"
+          />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">项目描述</label>
+        <textarea
+          v-model="localData.description"
+          class="form-textarea"
+          rows="4"
+          placeholder="请描述项目内容和你贡献的内容"
+        ></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">主要成果</label>
+        <div class="achievements-input">
+          <div class="achievement-list">
+            <div
+              v-for="(_achievement, index) in localAchievements"
+              :key="index"
+              class="achievement-item"
+            >
+              <input
+                v-model="localAchievements[index]"
+                type="text"
+                class="form-input"
+                placeholder="请输入成果描述"
+              />
+              <button class="remove-btn" @click="removeAchievement(index)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <button class="add-achievement-btn" @click="addAchievement">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            添加成果
+          </button>
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -234,8 +317,8 @@ watch(
   [localData, localAchievements],
   () => {
     const data: Record<string, unknown> = { ...localData.value }
-    // 如果是项目经历，同步成果数组
-    if (props.sectionType === 'PROJECT') {
+    // 如果是项目经历或开源贡献，同步成果数组
+    if (props.sectionType === 'PROJECT' || props.sectionType === 'OPEN_SOURCE') {
       data.achievements = localAchievements.value.filter((a) => a.trim())
     }
     emit('update:modelValue', data)
@@ -289,6 +372,7 @@ function removeAchievement(index: number): void {
 .form-textarea {
   padding: $spacing-sm $spacing-md;
   font-size: $text-sm;
+  font-family: $font-body;
   color: $color-text-primary;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.1);
