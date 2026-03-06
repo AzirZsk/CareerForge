@@ -392,9 +392,14 @@ public class AIPromptProperties {
 
                     ## 模块评分说明
 
-                    `sectionScores` 是各模块的评分，Key 为简历模块 JSON 中的 `id` 字段值（雪花ID），例如：
-                    - `{"id": "1872345678901234567", "type": "WORK", ...}` → 该模块评分 Key 为 `"1872345678901234567"`，评分为85分
-                    - `{"id": "1872345678901234568", "type": "PROJECT", ...}` → 该模块评分 Key 为 `"1872345678901234568"`，评分为60分
+                    `sectionScores` 是各模块的评分，Key 为简历模块 JSON 中的 `id` 字段值（简短标识符），例如：
+                    - `{"id": "work_1", "type": "WORK", ...}` → 该模块评分 Key 为 `"work_1"`，评分为85分
+                    - `{"id": "project_1", "type": "PROJECT", ...}` → 该模块评分 Key 为 `"project_1"`，评分为60分
+                    - `{"id": "work_1_1", ...}` （聚合类型中的子项）→ 评分 Key 为 `"work_1_1"`
+
+                    简短标识符格式：`{type}_{index}` 或 `{type}_{index}_{itemIndex}`
+                    - 区块级别：`work_1`, `project_2`, `skills_1`
+                    - 聚合子项：`work_1_1`, `work_1_2`（表示第一个工作经历的第1、2个子项）
 
                     评分维度（按 type 字段区分）：
                     - `BASIC_INFO`: 信息完整度、联系方式有效性（0-100）
@@ -415,7 +420,7 @@ public class AIPromptProperties {
                     3. suggestions的priority与问题严重程度匹配（high≤3条）
                     4. strengths和weaknesses各有2-4条，且与评分一致
                     5. quickWins是3-5个可快速执行的改进项
-                    6. sectionScores 必须包含 <resume_sections> 中所有区块的 id
+                    6. sectionScores 必须包含 <resume_sections> 中所有区块的 id（使用简短标识符，如 work_1, project_1）
                     7. 只返回JSON，不要返回其他内容
 
                     ---
@@ -458,7 +463,7 @@ public class AIPromptProperties {
                     ---
 
                     ## 输出格式示例（严格JSON，单行压缩格式）
-                    {"overallScore":72,"dimensionScores":{"content":68,"structure":80,"matching":70,"competitiveness":75},"sectionScores":{"1872345678901234567":85,"1872345678901234568":60},"suggestions":[{"priority":"high","category":"work","position":"XX公司-XX职位","title":"工作成果需要量化","current":"负责后端系统开发和维护","suggestion":"补充成果数据：主导核心接口优化，响应时间从500ms降至80ms","impact":"量化数据让HR快速评估你的实际贡献"}],"strengths":["教育背景对口","项目经历完整"],"weaknesses":["缺少量化数据","技能描述不够具体"],"quickWins":["在工作经历中加入2-3个量化成果","技能模块补充岗位核心关键词","项目描述补充技术选型和性能指标"]}
+                    {"overallScore":72,"dimensionScores":{"content":68,"structure":80,"matching":70,"competitiveness":75},"sectionScores":{"work_1":85,"project_1":60,"work_1_1":75},"suggestions":[{"priority":"high","category":"work","position":"XX公司-XX职位","title":"工作成果需要量化","current":"负责后端系统开发和维护","suggestion":"补充成果数据：主导核心接口优化，响应时间从500ms降至80ms","impact":"量化数据让HR快速评估你的实际贡献"}],"strengths":["教育背景对口","项目经历完整"],"weaknesses":["缺少量化数据","技能描述不够具体"],"quickWins":["在工作经历中加入2-3个量化成果","技能模块补充岗位核心关键词","项目描述补充技术选型和性能指标"]}
                     """,
                     // userPromptTemplate
                     """
