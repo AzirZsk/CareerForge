@@ -420,7 +420,44 @@ public class AIPromptProperties {
 
                     ---
 
-                    ## 输出格式（严格JSON，单行压缩格式）
+                    ## 输出字段说明
+
+                    ### 根级字段
+
+                    | 字段 | 类型 | 必填 | 说明 |
+                    |------|------|------|------|
+                    | overallScore | integer | 是 | 总体评分（0-100），四个维度的综合评分 |
+                    | dimensionScores | object | 是 | 各维度评分详情 |
+                    | sectionScores | object | 是 | 各模块评分，Key为模块JSON的id字段值 |
+                    | suggestions | array | 是 | 优化建议列表（8-10条） |
+                    | strengths | array | 是 | 简历优势列表（2-4条） |
+                    | weaknesses | array | 是 | 简历劣势列表（2-4条） |
+                    | quickWins | array | 是 | 快速改进建议（3-5条） |
+
+                    ### dimensionScores 字段
+
+                    | 字段 | 类型 | 说明 |
+                    |------|------|------|
+                    | content | integer | 内容质量评分（0-100） |
+                    | structure | integer | 结构规范评分（0-100） |
+                    | matching | integer | 岗位匹配评分（0-100） |
+                    | competitiveness | integer | 竞争力评分（0-100） |
+
+                    ### suggestions 数组元素
+
+                    | 字段 | 类型 | 必填 | 说明 |
+                    |------|------|------|------|
+                    | priority | string | 是 | 优先级：high/medium/low（high≤3条） |
+                    | category | string | 是 | 分类：work/project/skills/education/summary/other |
+                    | position | string | 否 | 建议对应的简历位置标识 |
+                    | title | string | 是 | 建议标题 |
+                    | current | string | 是 | 当前问题的具体描述（与原文一致） |
+                    | suggestion | string | 是 | 具体改进建议 |
+                    | impact | string | 是 | 改进后的预期影响 |
+
+                    ---
+
+                    ## 输出格式示例（严格JSON，单行压缩格式）
                     {"overallScore":72,"dimensionScores":{"content":68,"structure":80,"matching":70,"competitiveness":75},"sectionScores":{"1872345678901234567":85,"1872345678901234568":60},"suggestions":[{"priority":"high","category":"work","position":"XX公司-XX职位","title":"工作成果需要量化","current":"负责后端系统开发和维护","suggestion":"补充成果数据：主导核心接口优化，响应时间从500ms降至80ms","impact":"量化数据让HR快速评估你的实际贡献"}],"strengths":["教育背景对口","项目经历完整"],"weaknesses":["缺少量化数据","技能描述不够具体"],"quickWins":["在工作经历中加入2-3个量化成果","技能模块补充岗位核心关键词","项目描述补充技术选型和性能指标"]}
                     """,
                     // userPromptTemplate
@@ -507,7 +544,31 @@ public class AIPromptProperties {
 
                     ---
 
-                    ## 输出格式（严格JSON，单行压缩格式）
+                    ## 输出字段说明
+
+                    ### 根级字段
+
+                    | 字段 | 类型 | 必填 | 说明 |
+                    |------|------|------|------|
+                    | suggestions | array | 是 | 优化建议列表（6-10条） |
+                    | quickWins | array | 是 | 快速改进建议（3-5条纯字符串） |
+                    | estimatedImprovement | integer | 是 | 预估提升分数（0-30分） |
+
+                    ### suggestions 数组元素
+
+                    | 字段 | 类型 | 必填 | 说明 |
+                    |------|------|------|------|
+                    | priority | string | 是 | 优先级：high/medium/low（high≤3条） |
+                    | category | string | 是 | 分类：work/project/skills/education/summary/other |
+                    | position | string | 否 | 建议对应的简历位置标识 |
+                    | title | string | 是 | 建议标题 |
+                    | current | string | 是 | 当前问题的具体描述（与原文完全一致） |
+                    | suggestion | string | 是 | 具体优化文本（非抽象建议） |
+                    | impact | string | 是 | 对求职的实际价值，站在HR视角说明 |
+
+                    ---
+
+                    ## 输出格式示例（严格JSON，单行压缩格式）
                     {"suggestions":[{"priority":"high","category":"project","position":"XX项目","title":"补充量化成果数据","current":"负责后端系统开发，提升了性能","suggestion":"主导核心API优化，响应时间从500ms降至80ms，QPS提升300%","impact":"量化数据让HR快速评估你的实际贡献，提高简历竞争力"},{"priority":"high","category":"work","position":"XX公司-后端开发","title":"强化技术栈描述","current":"使用Java开发","suggestion":"基于Spring Boot + MyBatis Plus构建微服务架构，支持日均50万请求","impact":"技术栈具体化展示你的专业深度"}],"quickWins":["在所有项目经历末尾补充1-2个关键性能指标","技能模块添加目标岗位的核心关键词","将'负责'改为'主导'等强动词"],"estimatedImprovement":15}
 
                     ---
@@ -632,7 +693,37 @@ public class AIPromptProperties {
 
                     ---
 
-                    ## 输出格式（严格JSON，单行压缩格式）
+                    ## 输出字段说明
+
+                    ### 根级字段
+
+                    | 字段 | 类型 | 必填 | 说明 |
+                    |------|------|------|------|
+                    | changes | array | 是 | 变更记录列表 |
+                    | improvementScore | integer | 是 | 预估提升分数（0-30分） |
+                    | tips | array | 是 | 需要用户补充的信息提示 |
+
+                    ### changes 数组元素
+
+                    | 字段 | 类型 | 必填 | 说明 |
+                    |------|------|------|------|
+                    | type | string | 是 | 变更类型：added/modified/removed |
+                    | field | string | 是 | 字段路径，如 work[0].description |
+                    | valueType | string | 是 | 值类型：string 或 string_array |
+                    | before | object | 否 | 修改前的值（ChangeValue对象） |
+                    | after | object | 是 | 修改后的值（ChangeValue对象） |
+                    | reason | string | 是 | 修改原因说明 |
+
+                    ### ChangeValue 对象
+
+                    | 字段 | 类型 | 说明 |
+                    |------|------|------|
+                    | stringValue | string | 字符串值（当valueType=string时使用） |
+                    | arrayValue | array | 字符串数组（当valueType=string_array时使用） |
+
+                    ---
+
+                    ## 输出格式示例（严格JSON，单行压缩格式）
                     {"changes":[{"type":"modified","field":"work[0].description","valueType":"string","before":{"stringValue":"负责后端开发"},"after":{"stringValue":"主导核心API开发，支撑日均50万请求，可用性99.9%"},"reason":"使用强动词+补充量化数据"},{"type":"modified","field":"project[0].achievements","valueType":"string_array","before":{"arrayValue":["完成用户模块"]},"after":{"arrayValue":["完成用户模块设计","支撑XX万日活","接口响应时间优化80%"]},"reason":"量化项目成果，XX需用户补充具体数值"},{"type":"added","field":"skills[5]","valueType":"string","before":null,"after":{"stringValue":"微服务架构（Spring Cloud）"},"reason":"补充目标岗位核心技能"}],"improvementScore":15,"tips":["建议补充用户模块的具体日活数据","可强调团队规模信息"]}
 
                     ---
