@@ -63,7 +63,6 @@ public class UserHandler {
 
         UserCreateRequest createRequest = UserCreateRequest.builder()
                 .name(parsedResume.getName())
-                .gender(parsedResume.getGender())
                 .build();
 
         UserInitResponse response = userService.createUser(createRequest);

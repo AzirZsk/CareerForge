@@ -19,7 +19,7 @@ public enum SectionType {
     EDUCATION("EDUCATION", "教育经历", true, ResumeStructuredData.EducationExperience.class, "education"),
     WORK("WORK", "工作经历", true, ResumeStructuredData.WorkExperience.class, "work"),
     PROJECT("PROJECT", "项目经历", true, ResumeStructuredData.ProjectExperience.class, "projects"),
-    SKILLS("SKILLS", "专业技能", true, null, "skills"),
+    SKILLS("SKILLS", "专业技能", true, ResumeStructuredData.Skill.class, "skills"),
     CERTIFICATE("CERTIFICATE", "证书荣誉", true, ResumeStructuredData.Certificate.class, "certificates"),
     OPEN_SOURCE("OPEN_SOURCE", "开源贡献", true, ResumeStructuredData.OpenSourceContribution.class, "openSource"),
     RAW_TEXT("RAW_TEXT", "原始文本", false, null, null);

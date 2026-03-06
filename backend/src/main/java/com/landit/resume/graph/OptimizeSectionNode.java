@@ -218,7 +218,7 @@ public class OptimizeSectionNode implements NodeAction {
 
     /**
      * 应用变更到 SKILLS 类型（特殊处理）
-     * SKILLS 结构：items[0].content.skills = ["Java", "Python"]
+     * SKILLS 结构：items[0].content.skills = [{name, description, level, category}]
      */
     @SuppressWarnings("unchecked")
     private void applyChangeToSkills(Map<String, Object> section,
@@ -239,7 +239,7 @@ public class OptimizeSectionNode implements NodeAction {
             firstItem.put("content", content);
         }
 
-        List<String> skillsList = (List<String>) content.get("skills");
+        List<Map<String, Object>> skillsList = (List<Map<String, Object>>) content.get("skills");
         if (skillsList == null) {
             skillsList = new ArrayList<>();
             content.put("skills", skillsList);
@@ -248,11 +248,21 @@ public class OptimizeSectionNode implements NodeAction {
         int index = pathInfo.getArrayIndex();
 
         if ("added".equals(type)) {
-            skillsList.add((String) value);
+            if (value instanceof Map) {
+                skillsList.add((Map<String, Object>) value);
+            } else if (value instanceof String) {
+                // 兼容旧格式字符串
+                Map<String, Object> skillMap = new LinkedHashMap<>();
+                skillMap.put("name", value);
+                skillMap.put("description", "");
+                skillMap.put("level", "");
+                skillMap.put("category", "");
+                skillsList.add(skillMap);
+            }
         } else if ("removed".equals(type) && index >= 0 && index < skillsList.size()) {
             skillsList.remove(index);
-        } else if (index >= 0 && index < skillsList.size()) {
-            skillsList.set(index, (String) value);
+        } else if (index >= 0 && index < skillsList.size() && value instanceof Map) {
+            skillsList.set(index, (Map<String, Object>) value);
         }
     }
 

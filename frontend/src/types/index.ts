@@ -88,6 +88,10 @@ export interface BasicInfoContent {
   email?: string
   targetPosition?: string
   summary?: string
+  location?: string
+  linkedin?: string
+  github?: string
+  website?: string
 }
 
 // 教育经历内容
@@ -96,6 +100,9 @@ export interface EducationContent {
   major?: string
   degree?: string
   period?: string
+  gpa?: string
+  courses?: string[]
+  honors?: string[]
 }
 
 // 工作经历内容
@@ -104,6 +111,9 @@ export interface WorkExperience {
   position?: string
   period?: string
   description?: string
+  location?: string
+  achievements?: string[]
+  technologies?: string[]
 }
 
 // 项目经历内容
@@ -113,17 +123,30 @@ export interface ProjectExperience {
   period?: string
   description?: string
   achievements?: string[]
+  technologies?: string[]
+  url?: string
 }
 
-// 技能内容（后端返回 { skills: string[] }）
+// 技能内容
+export interface Skill {
+  name: string
+  description?: string
+  level?: string
+  category?: string
+}
+
+// 技能模块内容
 export interface SkillsContent {
-  skills: string[]
+  skills: Skill[]
 }
 
 // 证书内容
 export interface CertificateContent {
   name: string
   date?: string
+  issuer?: string
+  credentialId?: string
+  url?: string
 }
 
 // 简历模块内容类型（支持后端单个对象和 mock 数组格式）

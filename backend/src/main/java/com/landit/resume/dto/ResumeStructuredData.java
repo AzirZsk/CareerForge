@@ -48,7 +48,7 @@ public class ResumeStructuredData {
      * 技能列表
      */
     @Builder.Default
-    private List<String> skills = List.of();
+    private List<Skill> skills = List.of();
 
     /**
      * 证书/荣誉列表
@@ -105,6 +105,30 @@ public class ResumeStructuredData {
          */
         @SchemaField("个人简介")
         private String summary;
+
+        /**
+         * 所在地（城市）
+         */
+        @SchemaField("所在地")
+        private String location;
+
+        /**
+         * LinkedIn 主页
+         */
+        @SchemaField("LinkedIn")
+        private String linkedin;
+
+        /**
+         * GitHub 主页
+         */
+        @SchemaField("GitHub")
+        private String github;
+
+        /**
+         * 个人网站
+         */
+        @SchemaField("个人网站")
+        private String website;
     }
 
     /**
@@ -138,6 +162,26 @@ public class ResumeStructuredData {
          */
         @SchemaField("时间段")
         private String period;
+
+        /**
+         * 绩点（如 3.8/4.0）
+         */
+        @SchemaField("绩点")
+        private String gpa;
+
+        /**
+         * 主修课程
+         */
+        @SchemaField("主修课程")
+        @Builder.Default
+        private List<String> courses = List.of();
+
+        /**
+         * 校内荣誉
+         */
+        @SchemaField("校内荣誉")
+        @Builder.Default
+        private List<String> honors = List.of();
     }
 
     /**
@@ -171,6 +215,26 @@ public class ResumeStructuredData {
          */
         @SchemaField("工作描述")
         private String description;
+
+        /**
+         * 工作地点
+         */
+        @SchemaField("工作地点")
+        private String location;
+
+        /**
+         * 工作成果
+         */
+        @SchemaField("工作成果")
+        @Builder.Default
+        private List<String> achievements = List.of();
+
+        /**
+         * 使用技术栈
+         */
+        @SchemaField("技术栈")
+        @Builder.Default
+        private List<String> technologies = List.of();
     }
 
     /**
@@ -211,6 +275,19 @@ public class ResumeStructuredData {
         @SchemaField("项目成果")
         @Builder.Default
         private List<String> achievements = List.of();
+
+        /**
+         * 技术栈
+         */
+        @SchemaField("技术栈")
+        @Builder.Default
+        private List<String> technologies = List.of();
+
+        /**
+         * 项目链接
+         */
+        @SchemaField("项目链接")
+        private String url;
     }
 
     /**
@@ -232,6 +309,24 @@ public class ResumeStructuredData {
          */
         @SchemaField("获得日期")
         private String date;
+
+        /**
+         * 颁发机构
+         */
+        @SchemaField("颁发机构")
+        private String issuer;
+
+        /**
+         * 证书编号
+         */
+        @SchemaField("证书编号")
+        private String credentialId;
+
+        /**
+         * 证书链接
+         */
+        @SchemaField("证书链接")
+        private String url;
     }
 
     /**
@@ -278,5 +373,38 @@ public class ResumeStructuredData {
         @SchemaField("贡献成果")
         @Builder.Default
         private List<String> achievements = List.of();
+    }
+
+    /**
+     * 技能DTO
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Skill {
+        /**
+         * 技能名称
+         */
+        @SchemaField("技能名称")
+        private String name;
+
+        /**
+         * 技能描述（关键经验、应用场景等）
+         */
+        @SchemaField("技能描述")
+        private String description;
+
+        /**
+         * 熟练度
+         */
+        @SchemaField(value = "熟练度", enumValues = {"了解", "熟悉", "熟练", "精通"})
+        private String level;
+
+        /**
+         * 技能分类（编程语言、框架、工具、软技能等）
+         */
+        @SchemaField("技能分类")
+        private String category;
     }
 }

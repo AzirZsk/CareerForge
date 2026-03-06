@@ -379,50 +379,6 @@ public class ResumeHandler {
         }
     }
 
-    // ==================== 简历优化相关方法 ====================
-
-    /**
-     * 简历诊断
-     *
-     * @param id      简历ID
-     * @param request 诊断请求
-     * @return 诊断结果
-     */
-    public DiagnoseResumeResponse diagnoseResume(String id, DiagnoseResumeRequest request) {
-        // 获取简历详情
-        ResumeDetailVO resumeDetail = resumeService.getResumeDetail(id);
-        if (resumeDetail == null) {
-            throw new BusinessException("简历不存在");
-        }
-
-        // 将简历内容转为JSON字符串
-        String resumeContent = toJsonString(resumeDetail);
-
-        // 直接诊断
-        return aiService.diagnoseResume(resumeContent, request.getTargetPosition());
-    }
-
-    /**
-     * 岗位JD匹配分析
-     *
-     * @param id      简历ID
-     * @param request 匹配请求
-     * @return 匹配结果
-     */
-    public MatchJobResponse matchJob(String id, MatchJobRequest request) {
-        // 获取简历详情
-        ResumeDetailVO resumeDetail = resumeService.getResumeDetail(id);
-        if (resumeDetail == null) {
-            throw new BusinessException("简历不存在");
-        }
-
-        // 将简历内容转为JSON字符串
-        String resumeContent = toJsonString(resumeDetail);
-
-        // 调用AI匹配分析
-        return aiService.matchJobDescription(resumeContent, request.getJobDescription());
-    }
-
     // ==================== 私有辅助方法 ====================
 
     /**

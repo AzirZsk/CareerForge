@@ -199,7 +199,10 @@
             <!-- 技能（单条） -->
             <div class="content-block" v-else-if="currentSectionDetail?.type === 'SKILLS'">
               <ul class="skill-list">
-                <li v-for="(skill, idx) in skillContent" :key="idx">{{ skill }}</li>
+                <li v-for="(skill, idx) in skillContent" :key="idx">
+                  <span class="skill-name">{{ skill.name }}</span>
+                  <span v-if="skill.level" class="skill-level">{{ skill.level }}</span>
+                </li>
               </ul>
             </div>
             <!-- 聚合类型（教育、工作、项目、证书） -->
@@ -370,7 +373,8 @@ import type {
   ResumeSection,
   ResumeSuggestionItem,
   BasicInfoContent,
-  SkillsContent
+  SkillsContent,
+  Skill
 } from '@/types'
 
 const store = useAppStore()
@@ -388,7 +392,6 @@ const isNewItem = ref<boolean>(false)
 const showOptimizeModal = ref<boolean>(false)
 const {
   state: optimizeState,
-  stageConfig,
   startOptimize,
   cancelOptimize,
   retryOptimize,
@@ -427,7 +430,7 @@ const basicContent = computed<BasicInfoContent | null>(() => {
 })
 
 // 技能（SKILLS）- 聚合类型，数据在 items[0].content.skills
-const skillContent = computed<string[]>(() => {
+const skillContent = computed<Skill[]>(() => {
   if (currentSectionDetail.value?.type !== 'SKILLS') {
     return []
   }

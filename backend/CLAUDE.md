@@ -8,6 +8,7 @@
 
 | 日期 | 版本 | 变更内容 |
 |------|------|----------|
+| 2026-03-06 | 1.2.0 | 从 DashScope Starter 迁移到 OpenAI Starter |
 | 2026-03-03 | 1.1.0 | 更新工作流文档、补充 AI 配置详情、完善 API 清单 |
 | 2026-02-19 | 1.0.0 | 初始版本 |
 
@@ -41,10 +42,13 @@ mvn spring-boot:run
 ### 环境变量
 ```bash
 # 必需：AI 功能 API Key
-export DASHSCOPE_API_KEY=your_api_key
+export OPENAI_API_KEY=your_api_key
 
-# 可选：AI 模型选择（默认 qwen3.5-plus）
-export AI_MODEL=qwen3.5-plus
+# 可选：OpenAI API 基础 URL（默认 https://api.openai.com）
+export OPENAI_BASE_URL=https://api.openai.com
+
+# 可选：AI 模型选择（默认 gpt-4o）
+export AI_MODEL=gpt-4o
 ```
 
 ### 访问地址
@@ -92,7 +96,7 @@ ApiResponse<T> {
 | hutool-all | 5.8.34 | 工具库 |
 | springdoc-openapi-starter-webmvc-ui | 2.8.4 | API 文档 |
 | spring-ai-alibaba-agent-framework | 1.1.2.0 | 工作流引擎 |
-| spring-ai-alibaba-starter-dashscope | 1.1.2.1 | AI 大模型 |
+| spring-ai-openai-spring-boot-starter | - | AI 大模型（OpenAI 协议） |
 | pdfbox | 3.0.4 | PDF 处理 |
 | poi-ooxml | 5.3.0 | Word 处理 |
 
@@ -108,11 +112,12 @@ spring:
     driver-class-name: org.sqlite.JDBC
     url: jdbc:sqlite:./data/landit.db
   ai:
-    dashscope:
-      api-key: ${DASHSCOPE_API_KEY:}
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
       chat:
         options:
-          model: ${AI_MODEL:qwen3.5-plus}
+          model: ${AI_MODEL:gpt-4o}
           temperature: 0.7
 
 mybatis-plus:
@@ -349,7 +354,7 @@ A: `application.yml` 中已配置 `log-impl: org.apache.ibatis.logging.slf4j.Slf
 A: `backend/data/landit.db`（相对于 backend 目录）
 
 ### Q: 如何配置 AI API Key？
-A: 设置环境变量 `DASHSCOPE_API_KEY`，或在 `application.yml` 中配置 `spring.ai.dashscope.api-key`
+A: 设置环境变量 `OPENAI_API_KEY`，或在 `application.yml` 中配置 `spring.ai.openai.api-key`
 
 ### Q: 如何添加新的简历区块类型？
 A:

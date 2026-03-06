@@ -23,11 +23,6 @@ public class ResumeParseResult {
     private String name;
 
     /**
-     * 性别（兼容旧逻辑）
-     */
-    private Gender gender;
-
-    /**
      * 原始 Markdown 文本
      */
     private String rawText;

@@ -53,235 +53,130 @@ public class AIPromptProperties {
          * 从图片/文件解析简历的提示词
          */
         private String parse = """
-                你是一个专业的简历解析专家。请仔细分析图片中的简历内容，提取以下结构化信息：
+                你是一位拥有10年经验的资深简历解析专家，曾处理过50000+份各类格式简历，能够精准提取结构化信息。
 
-                ## 需要提取的信息
-
-                ### 1. 基本信息 (basicInfo)
-                - name: 姓名
-                - gender: 性别（男/女/未知）
-                - phone: 联系电话
-                - email: 邮箱地址
-                - targetPosition: 求职意向/目标岗位
-                - summary: 个人简介/自我评价
-
-                ### 2. 教育经历 (education) - 数组
-                - school: 学校名称
-                - degree: 学历（本科/硕士/博士/大专/高中等）
-                - major: 专业
-                - period: 时间段（如：2020.09-2024.06）
-
-                ### 3. 工作经历 (work) - 数组
-                - company: 公司名称
-                - position: 职位
-                - period: 时间段
-                - description: 工作描述/主要职责
-
-                ### 4. 项目经验 (projects) - 数组
-                - name: 项目名称
-                - role: 在项目中的角色
-                - period: 时间段
-                - description: 项目描述
-                - achievements: 项目成果/亮点（数组）
-
-                ### 5. 技能 (skills) - 字符串数组
-                列出简历中提到的所有专业技能，如编程语言、框架、工具等
-
-                ### 6. 证书/荣誉 (certificates) - 数组
-                - name: 证书/荣誉名称
-                - date: 获得日期
-
-                ### 7. 开源贡献 (openSource) - 数组
-                - projectName: 项目名称
-                - url: 项目地址（如 GitHub 链接）
-                - role: 角色/贡献类型（如：核心贡献者、文档贡献者、Issue 贡献者等）
-                - period: 时间段
-                - description: 贡献描述
-                - achievements: 贡献成果（数组，如：提交 PR 数、修复 Bug 数等）
-
-                ### 8. 原始内容 (markdownContent)
-                将简历的全部内容原封不动地转换为Markdown格式
-
-                ## 注意事项
-                - 如果某个字段在简历中未找到，设为空字符串或空数组
-                - 日期格式尽量保持原样
-                - 保持简历原有的层级结构和排版顺序
-                - markdownContent 必须包含简历中的所有文字信息
-                - 只返回JSON，不要返回其他内容""";
-
-        /**
-         * 简历诊断提示词
-         */
-        private String diagnose = """
-                你是一位拥有15年经验的资深简历优化专家和职业规划师。
-
-                ## 任务
-                分析以下简历的质量，给出评分和改进建议。
-
-                <target_position>
-                {targetPosition}
-                </target_position>
-
-                <resume_content>
-                {resumeContent}
-                </resume_content>
+                ## 核心能力
+                - 精准识别各类简历模板和排版格式
+                - 智能处理跨行、分栏、表格等复杂布局
+                - 准确区分相似字段（如：职位 vs 角色，公司 vs 项目）
+                - 保持原始信息的完整性
 
                 ---
 
-                ## 评估维度
+                ## 输出字段规范
 
-                ### 1. 内容质量（40分）
-                - 量化程度：成果是否有数据支撑？
-                - STAR法则：经历是否包含情境、任务、行动、结果？
-                - 动词强度：强动词（主导/构建）> 弱动词（参与/负责）
-                - 信息完整：职责+成果是否都有？
+                ### 1. basicInfo（基本信息）- 单对象
+                | 字段 | 类型 | 必填 | 说明 |
+                |------|------|------|------|
+                | name | string | 是 | 姓名，未找到则为空字符串 |
+                | gender | string | 是 | 性别：男/女/未知 |
+                | phone | string | 是 | 联系电话，保持原格式 |
+                | email | string | 是 | 邮箱地址 |
+                | targetPosition | string | 是 | 求职意向/目标岗位 |
+                | summary | string | 是 | 个人简介/自我评价 |
+                | location | string | 是 | 所在地（城市） |
+                | linkedin | string | 是 | LinkedIn 主页链接 |
+                | github | string | 是 | GitHub 主页链接 |
+                | website | string | 是 | 个人网站链接 |
 
-                ### 2. 结构规范（20分）
-                - 模块完整：基本信息、教育、工作、项目、技能
-                - 重点前置：最相关经历放前面
-                - 篇幅合理：1-2页
+                ### 2. education（教育经历）- 数组
+                | 字段 | 类型 | 说明 |
+                |------|------|------|
+                | school | string | 学校名称 |
+                | degree | string | 学历：本科/硕士/博士/大专/高中/中专/其他 |
+                | major | string | 专业名称 |
+                | period | string | 时间段，格式：YYYY.MM-YYYY.MM |
+                | gpa | string | 绩点（如 3.8/4.0） |
+                | courses | array | 主修课程列表 |
+                | honors | array | 校内荣誉列表 |
 
-                ### 3. 岗位匹配（30分）
-                基于【{targetPosition}】的通用行业标准：
-                - 核心技能是否覆盖
-                - 关键词是否出现
-                - 经历相关性
+                ### 3. work（工作经历）- 数组
+                | 字段 | 类型 | 说明 |
+                |------|------|------|
+                | company | string | 公司名称 |
+                | position | string | 职位名称 |
+                | period | string | 时间段 |
+                | description | string | 工作描述，多行内容用换行符连接 |
+                | location | string | 工作地点（城市） |
+                | achievements | array | 工作成果列表 |
+                | technologies | array | 使用的技术栈 |
 
-                ### 4. 竞争力（10分）
-                - 亮点是否突出
-                - 差异化优势
-                - 整体专业印象
+                ### 4. projects（项目经验）- 数组
+                | 字段 | 类型 | 说明 |
+                |------|------|------|
+                | name | string | 项目名称 |
+                | role | string | 项目角色 |
+                | period | string | 时间段 |
+                | description | string | 项目描述 |
+                | achievements | array | 项目成果/亮点列表 |
+                | technologies | array | 使用的技术栈 |
+                | url | string | 项目链接 |
 
-                ---
+                ### 5. skills（技能）- 对象数组
+                每个技能包含以下字段：
+                | 字段 | 类型 | 说明 |
+                |------|------|------|
+                | name | string | 技能名称 |
+                | description | string | 技能描述（关键经验、应用场景） |
+                | level | string | 熟练度：了解/熟悉/熟练/精通 |
+                | category | string | 技能分类：编程语言/框架/工具/软技能等 |
 
-                ## 输出格式（严格JSON，单行压缩格式）
-                {"overallScore":72,"dimensionScores":{"content":68,"structure":80,"matching":70,"competitiveness":75},"suggestions":[{"priority":"high","category":"work","position":"XX公司-XX职位","title":"工作成果需要量化","current":"负责后端系统开发和维护","suggestion":"补充成果数据：主导核心接口优化，响应时间从500ms降至80ms","impact":"量化数据让HR快速评估你的实际贡献"}],"strengths":["教育背景对口","项目经历完整"],"weaknesses":["缺少量化数据","技能描述不够具体"],"quickWins":["在工作经历中加入2-3个量化成果","技能模块补充岗位核心关键词","项目描述补充技术选型和性能指标"]}
+                ### 6. certificates（证书/荣誉）- 数组
+                | 字段 | 类型 | 说明 |
+                |------|------|------|
+                | name | string | 证书/荣誉名称 |
+                | date | string | 获得日期 |
+                | issuer | string | 颁发机构 |
+                | credentialId | string | 证书编号 |
+                | url | string | 证书链接 |
 
-                ## 要求
-                1. overallScore = 四个维度加权平均
-                2. suggestions控制在8-10条
-                3. 每条建议必须包含current和suggestion
-                4. quickWins列出3-5个可快速改进的点
-                5. 评分客观：70分合格，80分优秀
-                6. 符合中国互联网行业简历规范
-                7. 只返回JSON，不要返回其他内容""";
+                ### 7. openSource（开源贡献）- 数组
+                | 字段 | 类型 | 说明 |
+                |------|------|------|
+                | projectName | string | 项目名称 |
+                | url | string | 项目地址（GitHub/GitLab等） |
+                | role | string | 角色：核心贡献者/文档贡献者/Issue贡献者等 |
+                | period | string | 时间段 |
+                | description | string | 贡献描述 |
+                | achievements | array | 贡献成果列表 |
 
-        /**
-         * 模块内容优化提示词
-         */
-        private String optimizeSection = """
-                你是一位专业的简历内容优化专家。
-
-                ## 任务
-                优化以下简历模块的内容，使其更专业、更有说服力。
-
-                <section_type>
-                {sectionType}
-                </section_type>
-
-                <target_position>
-                {targetPosition}
-                </target_position>
-
-                <original_content>
-                {originalContent}
-                </original_content>
-
-                ---
-
-                ## 优化原则
-
-                ### 工作经历 (work)
-                - STAR法则：情境→任务→行动→结果
-                - 成果量化：数据、百分比、规模
-                - 强动词：主导/构建/重构/优化
-                - 每段2-4个要点
-
-                ### 项目经历 (project)
-                - 背景（1句话，10-20字）
-                - 角色+贡献
-                - 技术栈具体化
-                - 成果量化
-
-                ### 个人简介 (summary)
-                - 3-5句话，150字内
-                - 突出核心优势
-                - 包含目标岗位关键词
-
-                ### 技能列表 (skills)
-                - 分类：语言/框架/工具/软技能
-                - 标注熟练程度：精通/熟练/了解
-                - 与目标岗位对齐
-
-                ### 教育经历 (education)
-                - 学校 | 学历 | 专业 | 时间
-                - 应届生可补充GPA、奖项
+                ### 8. markdownContent（原始内容）
+                将简历全部内容转换为Markdown格式：
+                - 标题用 # ## ### 层级
+                - 列表用 - 或 1.
+                - 保留所有文字信息，不要遗漏
 
                 ---
 
-                ## 输出格式（严格JSON，单行压缩格式）
-                {"optimizedContent":{},"changes":[{"type":"modified","field":"achievements[0]","before":"负责后端开发","after":"主导核心API开发，支撑日均50万请求，可用性99.9%","reason":"补充量化数据"}],"tips":["建议补充技术选型理由","可强调团队规模"],"confidence":"high"}
+                ## 边界情况处理
 
-                ## 要求
-                1. 不编造数据，保持真实性
-                2. 优化幅度适中，保留原意
-                3. 语言简洁，符合中文习惯
-                4. tips提示需要补充的信息
-                5. confidence如实反映：high/medium/low
-                6. 只返回JSON，不要返回其他内容""";
-
-        /**
-         * 岗位JD匹配提示词
-         */
-        private String matchJob = """
-                你是一位资深HR和招聘专家，精通简历筛选和人才评估。
-
-                ## 任务
-                分析简历与具体岗位JD的匹配程度，找出差距并给出优化方向。
-
-                <job_description>
-                {jobDescription}
-                </job_description>
-
-                <resume_content>
-                {resumeContent}
-                </resume_content>
+                | 情况 | 处理方式 |
+                |------|----------|
+                | 字段未找到 | 字符串设为 ""，数组设为 [] |
+                | 日期格式模糊 | 保持原样，如"2020年-2024年" |
+                | 多行描述 | 用 \\n 连接，保留完整内容 |
+                | 跨行信息 | 合并为单个字段，如公司名换行显示 |
+                | 分栏布局 | 按阅读顺序提取（从上到下，从左到右） |
+                | 重复信息 | 只保留一处，避免重复 |
 
                 ---
 
-                ## 分析维度
+                ## 质量检查清单
 
-                ### 1. 关键词匹配
-                - 提取JD核心关键词（技术栈、能力、业务领域）
-                - 检查简历覆盖情况
-                - 计算匹配率
-
-                ### 2. 硬性条件检查
-                - 学历要求 vs 实际学历
-                - 工作年限 vs 实际年限
-                - 必备技能 vs 实际技能
-
-                ### 3. 软性条件评估
-                - 加分项技能
-                - 行业经验
-                - 项目类型匹配度
-
-                ### 4. 风险点识别
-                - 可能被筛选掉的原因
-                - 简历中的潜在红线
+                输出前请确认：
+                1. 所有非空字段都来自简历原文，未编造信息
+                2. 时间段格式保持一致
+                3. 数组元素按简历中的时间倒序排列（最新在前）
+                4. markdownContent 包含简历中所有文字
+                5. 工作经历和项目经历区分正确
+                6. 只返回JSON，无其他内容
 
                 ---
 
-                ## 输出格式（严格JSON，单行压缩格式）
-                {"matchScore":72,"keywordAnalysis":{"matched":["Java","Spring Boot","MySQL","Redis","微服务"],"missing":["Kubernetes","高并发场景"],"partialMatch":["分布式（有基础但未强调）"],"matchRate":"70%"},"requirementCheck":{"mustHave":{"学历":{"required":"本科及以上","actual":"硕士","status":"pass","detail":""},"工作年限":{"required":"3-5年","actual":"4年","status":"pass","detail":""},"Java":{"required":"精通","actual":"熟练","status":"warn","detail":""},"微服务":{"required":"熟悉","actual":"未提及","status":"fail","detail":""}},"niceToHave":{"大厂经验":{"required":"","actual":"","status":"pass","detail":"有阿里经验"},"开源贡献":{"required":"","actual":"","status":"missing","detail":"未提及"}}},"riskAnalysis":{"redFlags":[],"warnings":["JD要求精通Java，简历写的是熟练，可能被HR筛选"],"passProbability":"中等"},"suggestions":[{"priority":"high","category":"skills","title":"补充微服务经验","action":"在技能模块添加Spring Cloud、Dubbo等关键词","reason":"JD明确要求熟悉微服务","position":"skills模块"}],"overallAdvice":"简历整体匹配度中等，建议重点补充微服务经验"}
+                ## 输出格式示例
 
-                ## 要求
-                1. 基于JD具体内容分析，不要泛泛而谈
-                2. requirementCheck要逐项对照
-                3. riskAnalysis要识别真实风险点
-                4. suggestions要针对JD具体要求
-                5. passProbability给出客观预估：高/中/低
-                6. 只返回JSON，不要返回其他内容""";
+                {"basicInfo":{"name":"张三","gender":"男","phone":"138****1234","email":"zhangsan@example.com","targetPosition":"高级Java工程师","summary":"5年互联网后端开发经验，擅长高并发系统设计","location":"北京","linkedin":"","github":"https://github.com/zhangsan","website":""},"education":[{"school":"XX大学","degree":"本科","major":"计算机科学与技术","period":"2015.09-2019.06","gpa":"3.8/4.0","courses":["数据结构","算法设计","操作系统"],"honors":["国家奖学金","优秀毕业生"]}],"work":[{"company":"XX科技有限公司","position":"后端开发工程师","period":"2019.07-至今","description":"负责核心业务系统开发\\n主导技术架构升级","location":"北京","achievements":["系统性能提升200%","主导3个核心项目上线"],"technologies":["Java","Spring Boot","MySQL"]}],"projects":[{"name":"订单系统重构","role":"技术负责人","period":"2022.03-2022.08","description":"重构老旧订单系统","achievements":["订单处理效率提升300%","系统可用性达99.9%"],"technologies":["Spring Cloud","RocketMQ","Redis"],"url":""}],"skills":[{"name":"Java","description":"5年经验，精通并发编程、JVM调优","level":"精通","category":"编程语言"},{"name":"Spring Boot","description":"熟练使用Spring生态构建微服务","level":"熟练","category":"框架"}],"certificates":[{"name":"AWS Solutions Architect","date":"2023.06","issuer":"Amazon","credentialId":"AWS-123456","url":""}],"openSource":[{"projectName":"Easy-Cache","url":"https://github.com/zhangsan/easy-cache","role":"项目创始人","period":"2021.03-至今","description":"一款轻量级Java分布式缓存框架，支持多级缓存、自动刷新、缓存穿透防护","achievements":["GitHub Star 2.3k+，Fork 400+","被50+公司用于生产环境","Maven中央库累计下载10w+","发布15个版本，持续维护中"]}],"markdownContent":"# 张三\\n\\n## 个人信息\\n..."}
+                """;
     }
 
     /**

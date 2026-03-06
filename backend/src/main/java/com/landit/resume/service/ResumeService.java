@@ -406,6 +406,10 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
         content.put("email", Objects.toString(info.getEmail(), ""));
         content.put("targetPosition", Objects.toString(info.getTargetPosition(), ""));
         content.put("summary", Objects.toString(info.getSummary(), ""));
+        content.put("location", Objects.toString(info.getLocation(), ""));
+        content.put("linkedin", Objects.toString(info.getLinkedin(), ""));
+        content.put("github", Objects.toString(info.getGithub(), ""));
+        content.put("website", Objects.toString(info.getWebsite(), ""));
 
         createSection(resumeId, "BASIC_INFO", "基本信息", content);
     }
@@ -423,6 +427,9 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
             content.put("degree", Objects.toString(edu.getDegree(), ""));
             content.put("major", Objects.toString(edu.getMajor(), ""));
             content.put("period", Objects.toString(edu.getPeriod(), ""));
+            content.put("gpa", Objects.toString(edu.getGpa(), ""));
+            content.put("courses", edu.getCourses() != null ? edu.getCourses() : List.of());
+            content.put("honors", edu.getHonors() != null ? edu.getHonors() : List.of());
 
             createSection(resumeId, "EDUCATION", Objects.toString(edu.getSchool(), "教育经历"), content);
         }
@@ -441,6 +448,9 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
             content.put("position", Objects.toString(work.getPosition(), ""));
             content.put("period", Objects.toString(work.getPeriod(), ""));
             content.put("description", Objects.toString(work.getDescription(), ""));
+            content.put("location", Objects.toString(work.getLocation(), ""));
+            content.put("achievements", work.getAchievements() != null ? work.getAchievements() : List.of());
+            content.put("technologies", work.getTechnologies() != null ? work.getTechnologies() : List.of());
 
             createSection(resumeId, "WORK", Objects.toString(work.getCompany(), "工作经历"), content);
         }
@@ -460,6 +470,8 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
             content.put("period", Objects.toString(project.getPeriod(), ""));
             content.put("description", Objects.toString(project.getDescription(), ""));
             content.put("achievements", project.getAchievements() != null ? project.getAchievements() : List.of());
+            content.put("technologies", project.getTechnologies() != null ? project.getTechnologies() : List.of());
+            content.put("url", Objects.toString(project.getUrl(), ""));
 
             createSection(resumeId, "PROJECT", Objects.toString(project.getName(), "项目经验"), content);
         }
@@ -468,11 +480,20 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
     /**
      * 创建技能模块
      */
-    private void createSkillsSection(String resumeId, List<String> skills) {
+    private void createSkillsSection(String resumeId, List<ResumeStructuredData.Skill> skills) {
         if (skills == null || skills.isEmpty()) {
             return;
         }
-        createSection(resumeId, "SKILLS", "专业技能", Map.of("skills", skills));
+        List<Map<String, Object>> skillList = new ArrayList<>();
+        for (ResumeStructuredData.Skill skill : skills) {
+            Map<String, Object> skillMap = new HashMap<>();
+            skillMap.put("name", Objects.toString(skill.getName(), ""));
+            skillMap.put("description", Objects.toString(skill.getDescription(), ""));
+            skillMap.put("level", Objects.toString(skill.getLevel(), ""));
+            skillMap.put("category", Objects.toString(skill.getCategory(), ""));
+            skillList.add(skillMap);
+        }
+        createSection(resumeId, "SKILLS", "专业技能", Map.of("skills", skillList));
     }
 
     /**
@@ -486,6 +507,9 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
             Map<String, Object> content = new HashMap<>();
             content.put("name", Objects.toString(cert.getName(), ""));
             content.put("date", Objects.toString(cert.getDate(), ""));
+            content.put("issuer", Objects.toString(cert.getIssuer(), ""));
+            content.put("credentialId", Objects.toString(cert.getCredentialId(), ""));
+            content.put("url", Objects.toString(cert.getUrl(), ""));
 
             createSection(resumeId, "CERTIFICATE", Objects.toString(cert.getName(), "证书/荣誉"), content);
         }

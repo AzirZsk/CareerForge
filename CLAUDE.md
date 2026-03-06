@@ -14,6 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | 日期 | 版本 | 变更内容 |
 |------|------|----------|
+| 2026-03-06 | 1.2.0 | 从 DashScope Starter 迁移到 OpenAI Starter |
 | 2026-03-03 | 1.1.0 | AI 上下文初始化：更新模块索引、添加 Mermaid 结构图、完善工作流文档 |
 | 2026-02-19 | 1.0.0 | 初始版本：项目基础架构文档 |
 
@@ -113,7 +114,7 @@ graph TD
 - **框架**：Spring Boot 3.5.11 + Java 17
 - **ORM**：MyBatis-Plus 3.5.9
 - **数据库**：SQLite（文件存储于 `backend/data/landit.db`）
-- **AI 集成**：Spring AI Alibaba 1.1.2 + DashScope（通义千问大模型）
+- **AI 集成**：Spring AI OpenAI（支持 OpenAI 协议的模型）
 - **工作流引擎**：Spring AI Alibaba Agent Framework（状态机 Graph）
 - **文档处理**：Apache PDFBox 3.0.4（PDF）、Apache POI 5.3.0（Word）
 - **对象映射**：MapStruct 1.6.3
@@ -230,7 +231,7 @@ npm run preview              # 预览构建结果
          v                        v
 +-----------------+     +----------------------+
 |  schemaClass    |     |  AI解析JSON Schema    |
-|  (DTO类型映射)   |     |  (DashScope大模型)    |
+|  (DTO类型映射)   |     |  (OpenAI协议模型)     |
 +-----------------+     +----------------------+
 ```
 
@@ -452,7 +453,7 @@ npm run preview              # 预览构建结果
 A:
 1. 后端：`cd backend && mvn spring-boot:run`
 2. 前端：`cd frontend && npm run dev`
-3. 需要配置环境变量 `DASHSCOPE_API_KEY` 用于 AI 功能
+3. 需要配置环境变量 `OPENAI_API_KEY` 用于 AI 功能
 
 ### Q: 如何添加新的工作流节点？
 A:

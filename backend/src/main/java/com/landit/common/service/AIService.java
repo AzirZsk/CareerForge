@@ -1,7 +1,5 @@
 package com.landit.common.service;
 
-import com.alibaba.cloud.ai.dashscope.api.DashScopeResponseFormat;
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.landit.common.config.AIPromptProperties;
@@ -9,22 +7,19 @@ import com.landit.common.enums.Gender;
 import com.landit.common.exception.BusinessException;
 import com.landit.common.schema.SectionSchemaRegistry;
 import com.landit.common.util.JsonParseHelper;
-import com.landit.resume.dto.DiagnoseResumeResponse;
-import com.landit.resume.dto.MatchJobResponse;
 import com.landit.resume.dto.ResumeParseResult;
 import com.landit.resume.dto.ResumeStructuredData;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
+import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.api.ResponseFormat;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import reactor.core.publisher.Flux;
 
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -51,7 +46,7 @@ public class AIService {
     /**
      * 从文件中解析简历信息
      * 支持图片、PDF等格式的简历文件，使用大模型进行多模态识别
-     * 使用流式请求，在服务层收集完整响应后返回
+     * 使用同步调用，配合 OpenAI ResponseFormat 约束输出格式
      *
      * @param file 上传的简历文件（图片或PDF）
      * @return 解析后的简历信息
@@ -65,30 +60,25 @@ public class AIService {
         // 创建UserMessage，包含文本和媒体
         UserMessage userMessage = UserMessage.builder()
                 .text(parsePrompt)
-                 .media(mediaList)
+                .media(mediaList)
                 .build();
-        // 创建Prompt并调用大模型（使用流式请求）
-        Prompt prompt = new Prompt(List.of(userMessage));
-        Flux<String> streamResponse = chatClient.prompt(prompt)
-                .options(DashScopeChatOptions.builder()
-                        .multiModel(true)
-                        .incrementalOutput(true)
-                        .responseFormat(DashScopeResponseFormat.builder()
-                                .type(DashScopeResponseFormat.Type.JSON_SCHEMA)
-                                .jsonScheme(DashScopeResponseFormat.JsonSchemaConfig.builder()
-                                        .name("ResumeParseResult")
-                                        .strict(true)
-                                        .schema(schemaRegistry.buildResumeSchema())
-                                        .build())
+        // 构建 JSON Schema 约束
+        OpenAiChatOptions options = OpenAiChatOptions.builder()
+                .responseFormat(ResponseFormat.builder()
+                        .type(ResponseFormat.Type.JSON_SCHEMA)
+                        .jsonSchema(ResponseFormat.JsonSchema.builder()
+                                .strict(true)
+                                .schema(schemaRegistry.buildResumeSchema())
+                                .name("resumeSchema")
                                 .build())
                         .build())
-                .stream()
+                .build();
+        // OpenAI: 同步调用
+        String jsonResponse = chatClient.prompt()
+                .messages(userMessage)
+                .options(options)
+                .call()
                 .content();
-        // 收集流式响应的所有块，拼接为完整JSON
-        String jsonResponse = streamResponse
-                .collectList()
-                .map(chunks -> String.join("", chunks))
-                .block();
         // 解析JSON响应
         ResumeParseResult result = parseResumeJsonResponse(jsonResponse);
         log.info("简历文件解析完成: 姓名={}", result.getName());
@@ -111,7 +101,6 @@ public class AIService {
 
             return ResumeParseResult.builder()
                     .name(name)
-                    .gender(gender)
                     .rawText(getTextOrEmpty(root, "markdownContent"))
                     .structuredData(structuredData)
                     .build();
@@ -132,7 +121,7 @@ public class AIService {
                 .education(parseArrayNode(root.get("education"), this::parseEducation))
                 .work(parseArrayNode(root.get("work"), this::parseWork))
                 .projects(parseArrayNode(root.get("projects"), this::parseProject))
-                .skills(parseStringList(root.get("skills")))
+                .skills(parseArrayNode(root.get("skills"), this::parseSkill))
                 .certificates(parseArrayNode(root.get("certificates"), this::parseCertificate))
                 .openSource(parseArrayNode(root.get("openSource"), this::parseOpenSource))
                 .build();
@@ -152,6 +141,10 @@ public class AIService {
                 .email(getTextOrEmpty(node, "email"))
                 .targetPosition(getTextOrEmpty(node, "targetPosition"))
                 .summary(getTextOrEmpty(node, "summary"))
+                .location(getTextOrEmpty(node, "location"))
+                .linkedin(getTextOrEmpty(node, "linkedin"))
+                .github(getTextOrEmpty(node, "github"))
+                .website(getTextOrEmpty(node, "website"))
                 .build();
     }
 
@@ -164,6 +157,9 @@ public class AIService {
                 .degree(getTextOrEmpty(node, "degree"))
                 .major(getTextOrEmpty(node, "major"))
                 .period(getTextOrEmpty(node, "period"))
+                .gpa(getTextOrEmpty(node, "gpa"))
+                .courses(parseStringList(node.get("courses")))
+                .honors(parseStringList(node.get("honors")))
                 .build();
     }
 
@@ -176,6 +172,9 @@ public class AIService {
                 .position(getTextOrEmpty(node, "position"))
                 .period(getTextOrEmpty(node, "period"))
                 .description(getTextOrEmpty(node, "description"))
+                .location(getTextOrEmpty(node, "location"))
+                .achievements(parseStringList(node.get("achievements")))
+                .technologies(parseStringList(node.get("technologies")))
                 .build();
     }
 
@@ -189,6 +188,8 @@ public class AIService {
                 .period(getTextOrEmpty(node, "period"))
                 .description(getTextOrEmpty(node, "description"))
                 .achievements(parseStringList(node.get("achievements")))
+                .technologies(parseStringList(node.get("technologies")))
+                .url(getTextOrEmpty(node, "url"))
                 .build();
     }
 
@@ -199,6 +200,9 @@ public class AIService {
         return ResumeStructuredData.Certificate.builder()
                 .name(getTextOrEmpty(node, "name"))
                 .date(getTextOrEmpty(node, "date"))
+                .issuer(getTextOrEmpty(node, "issuer"))
+                .credentialId(getTextOrEmpty(node, "credentialId"))
+                .url(getTextOrEmpty(node, "url"))
                 .build();
     }
 
@@ -213,6 +217,27 @@ public class AIService {
                 .period(getTextOrEmpty(node, "period"))
                 .description(getTextOrEmpty(node, "description"))
                 .achievements(parseStringList(node.get("achievements")))
+                .build();
+    }
+
+    /**
+     * 解析技能
+     */
+    private ResumeStructuredData.Skill parseSkill(JsonNode node) {
+        // 兼容旧格式：如果是字符串，转换为 Skill 对象
+        if (node.isTextual()) {
+            return ResumeStructuredData.Skill.builder()
+                    .name(node.asText())
+                    .description("")
+                    .level("")
+                    .category("")
+                    .build();
+        }
+        return ResumeStructuredData.Skill.builder()
+                .name(getTextOrEmpty(node, "name"))
+                .description(getTextOrEmpty(node, "description"))
+                .level(getTextOrEmpty(node, "level"))
+                .category(getTextOrEmpty(node, "category"))
                 .build();
     }
 
@@ -254,103 +279,13 @@ public class AIService {
         return node.has(field) ? node.get(field).asText() : defaultValue;
     }
 
-    // ==================== 简历优化相关方法 ====================
-
-    /**
-     * 简历诊断（快速模式）
-     *
-     * @param resumeContent   简历内容（JSON格式）
-     * @param targetPosition  目标岗位
-     * @return 诊断结果
-     */
-    public DiagnoseResumeResponse diagnoseResume(String resumeContent, String targetPosition) {
-        log.info("开始简历诊断（快速模式）: targetPosition={}", targetPosition);
-
-        String promptTemplate = promptProperties.getResume().getDiagnose();
-        String prompt = promptTemplate
-                .replace("{targetPosition}", targetPosition)
-                .replace("{resumeContent}", resumeContent);
-
-        String jsonResponse = callAIWithJsonResponse(prompt);
-        DiagnoseResumeResponse response = parseDiagnoseResponse(jsonResponse);
-
-        log.info("简历诊断完成: overallScore={}", response.getOverallScore());
-        return response;
-    }
-
-    /**
-     * 岗位JD匹配分析
-     *
-     * @param resumeContent  简历内容（JSON格式）
-     * @param jobDescription 岗位JD
-     * @return 匹配分析结果
-     */
-    public MatchJobResponse matchJobDescription(String resumeContent, String jobDescription) {
-        log.info("开始岗位JD匹配分析");
-
-        String promptTemplate = promptProperties.getResume().getMatchJob();
-        String prompt = promptTemplate
-                .replace("{resumeContent}", resumeContent)
-                .replace("{jobDescription}", jobDescription);
-
-        String jsonResponse = callAIWithJsonResponse(prompt);
-        MatchJobResponse response = parseMatchJobResponse(jsonResponse);
-
-        log.info("岗位JD匹配分析完成: matchScore={}", response.getMatchScore());
-        return response;
-    }
-
     // ==================== 私有辅助方法 ====================
-
-    /**
-     * 调用AI并获取JSON响应
-     */
-    private String callAIWithJsonResponse(String promptText) {
-        Prompt prompt = new Prompt(promptText);
-        Flux<String> streamResponse = chatClient.prompt(prompt)
-                .options(DashScopeChatOptions.builder()
-                        .incrementalOutput(true)
-                        .build())
-                .stream()
-                .content();
-
-        return streamResponse
-                .collectList()
-                .map(chunks -> String.join("", chunks))
-                .block();
-    }
 
     /**
      * 对象转JSON字符串
      */
     private String toJsonString(Object obj) {
         return JsonParseHelper.toJsonString(obj);
-    }
-
-    /**
-     * 解析诊断响应
-     */
-    private DiagnoseResumeResponse parseDiagnoseResponse(String jsonResponse) {
-        try {
-            String cleanJson = JsonParseHelper.cleanJsonResponse(jsonResponse);
-            return objectMapper.readValue(cleanJson, DiagnoseResumeResponse.class);
-        } catch (Exception e) {
-            log.error("解析诊断响应失败: {}", jsonResponse, e);
-            throw new RuntimeException("解析诊断响应失败", e);
-        }
-    }
-
-    /**
-     * 解析JD匹配响应
-     */
-    private MatchJobResponse parseMatchJobResponse(String jsonResponse) {
-        try {
-            String cleanJson = JsonParseHelper.cleanJsonResponse(jsonResponse);
-            return objectMapper.readValue(cleanJson, MatchJobResponse.class);
-        } catch (Exception e) {
-            log.error("解析JD匹配响应失败: {}", jsonResponse, e);
-            throw new RuntimeException("解析JD匹配响应失败", e);
-        }
     }
 
 }

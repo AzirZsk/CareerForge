@@ -163,8 +163,10 @@ export const resumeDetail: ResumeDetail = {
     }
   ],
   overallScore: 92,
-  formatScore: 95,
+  structureScore: 95,
   contentScore: 91,
+  matchingScore: 88,
+  competitivenessScore: 90,
   analyzed: true
 }
 
