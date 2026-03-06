@@ -97,8 +97,6 @@ public class AIService {
 
             ResumeStructuredData structuredData = parseStructuredData(root);
             String name = getTextOrEmpty(root, "name");
-            Gender gender = Gender.fromText(getTextOrDefault(root, "gender", "未知"));
-
             return ResumeParseResult.builder()
                     .name(name)
                     .rawText(getTextOrEmpty(root, "markdownContent"))

@@ -22,43 +22,68 @@ import java.util.List;
 public class ResumeStructuredData {
 
     /**
+     * 姓名（根级必填字段）
+     */
+    @SchemaField(value = "姓名", required = true)
+    private String name;
+
+    /**
+     * 性别（根级必填字段）
+     */
+    @SchemaField(value = "性别", enumValues = {"男", "女", "未知"}, required = true)
+    private Gender gender;
+
+    /**
+     * markdown 格式的简历完整内容（根级必填字段）
+     */
+    @SchemaField(value = "markdown格式的简历完整内容", required = true)
+    private String markdownContent;
+
+    /**
      * 基本信息
      */
+    @SchemaField("基本信息")
     private BasicInfo basicInfo;
 
     /**
      * 教育经历列表
      */
+    @SchemaField("教育经历")
     @Builder.Default
     private List<EducationExperience> education = List.of();
 
     /**
      * 工作经历列表
      */
+    @SchemaField("工作经历")
     @Builder.Default
     private List<WorkExperience> work = List.of();
 
     /**
      * 项目经验列表
      */
+    @SchemaField("项目经历")
     @Builder.Default
     private List<ProjectExperience> projects = List.of();
 
     /**
      * 技能列表
      */
+    @SchemaField("专业技能")
     @Builder.Default
     private List<Skill> skills = List.of();
 
     /**
      * 证书/荣誉列表
      */
+    @SchemaField("证书荣誉")
     @Builder.Default
     private List<Certificate> certificates = List.of();
 
     /**
      * 开源贡献列表
      */
+    @SchemaField("开源贡献")
     @Builder.Default
     private List<OpenSourceContribution> openSource = List.of();
 

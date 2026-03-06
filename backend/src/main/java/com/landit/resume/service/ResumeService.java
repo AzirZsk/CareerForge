@@ -388,6 +388,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
         createProjectSections(resumeId, data.getProjects());
         createSkillsSection(resumeId, data.getSkills());
         createCertificateSections(resumeId, data.getCertificates());
+        createOpenSourceSections(resumeId, data.getOpenSource());
 
         log.info("简历模块创建完成: resumeId={}", resumeId);
     }
@@ -512,6 +513,26 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
             content.put("url", Objects.toString(cert.getUrl(), ""));
 
             createSection(resumeId, "CERTIFICATE", Objects.toString(cert.getName(), "证书/荣誉"), content);
+        }
+    }
+
+    /**
+     * 创建开源贡献模块
+     */
+    private void createOpenSourceSections(String resumeId, List<ResumeStructuredData.OpenSourceContribution> openSources) {
+        if (openSources == null || openSources.isEmpty()) {
+            return;
+        }
+        for (ResumeStructuredData.OpenSourceContribution openSource : openSources) {
+            Map<String, Object> content = new HashMap<>();
+            content.put("projectName", Objects.toString(openSource.getProjectName(), ""));
+            content.put("url", Objects.toString(openSource.getUrl(), ""));
+            content.put("role", Objects.toString(openSource.getRole(), ""));
+            content.put("period", Objects.toString(openSource.getPeriod(), ""));
+            content.put("description", Objects.toString(openSource.getDescription(), ""));
+            content.put("achievements", openSource.getAchievements() != null ? openSource.getAchievements() : List.of());
+
+            createSection(resumeId, "OPEN_SOURCE", Objects.toString(openSource.getProjectName(), "开源贡献"), content);
         }
     }
 

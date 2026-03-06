@@ -28,7 +28,7 @@ public final class SchemaGenerator {
      * @return JSON Schema Map
      */
     public static Map<String, Object> fromClass(Class<?> clazz) {
-        return fromClass(clazz, new ArrayList<>());
+        return fromClass(clazz, new ArrayList<>(), null);
     }
 
     /**
@@ -39,6 +39,29 @@ public final class SchemaGenerator {
      * @return JSON Schema Map
      */
     public static Map<String, Object> fromClass(Class<?> clazz, List<String> required) {
+        return fromClass(clazz, required, null);
+    }
+
+    /**
+     * 从类生成 JSON Schema（含描述）
+     *
+     * @param clazz       带有 @SchemaField 注解的类
+     * @param description 对象级别描述
+     * @return JSON Schema Map
+     */
+    public static Map<String, Object> fromClass(Class<?> clazz, String description) {
+        return fromClass(clazz, new ArrayList<>(), description);
+    }
+
+    /**
+     * 从类生成 JSON Schema（含描述和必填字段）
+     *
+     * @param clazz       带有 @SchemaField 注解的类
+     * @param required    必填字段列表
+     * @param description 对象级别描述
+     * @return JSON Schema Map
+     */
+    public static Map<String, Object> fromClass(Class<?> clazz, List<String> required, String description) {
         JsonSchemaBuilder.SchemaPropsBuilder propsBuilder = JsonSchemaBuilder.props();
         List<String> requiredFields = new ArrayList<>(required);
         // 遍历所有字段
@@ -53,6 +76,13 @@ public final class SchemaGenerator {
             if (annotation.required()) {
                 requiredFields.add(fieldName);
             }
+        }
+        // 根据 description 和 required 决定使用哪个重载方法
+        if (description != null && !description.isEmpty()) {
+            if (requiredFields.isEmpty()) {
+                return JsonSchemaBuilder.objectSchema(propsBuilder, description);
+            }
+            return JsonSchemaBuilder.objectSchema(propsBuilder, requiredFields, description);
         }
         if (requiredFields.isEmpty()) {
             return JsonSchemaBuilder.objectSchema(propsBuilder);
@@ -87,9 +117,9 @@ public final class SchemaGenerator {
         if (Map.class.equals(fieldType)) {
             return JsonSchemaBuilder.objectSchema(description);
         }
-        // 处理嵌套对象类型
+        // 处理嵌套对象类型，传递 description
         if (isNestedObject(fieldType)) {
-            return fromClass(fieldType);
+            return fromClass(fieldType, description);
         }
         // 默认返回字符串类型
         return JsonSchemaBuilder.stringSchema(description);
@@ -106,9 +136,9 @@ public final class SchemaGenerator {
         if (String.class.equals(itemType)) {
             return JsonSchemaBuilder.arraySchema(JsonSchemaBuilder.stringSchema(description));
         }
-        // 处理 List<嵌套对象> 类型
+        // 处理 List<嵌套对象> 类型，传递 description 给 items
         if (isNestedObject(itemType)) {
-            Map<String, Object> itemSchema = fromClass(itemType);
+            Map<String, Object> itemSchema = fromClass(itemType, description);
             return JsonSchemaBuilder.arraySchema(itemSchema);
         }
         // 默认返回字符串数组
