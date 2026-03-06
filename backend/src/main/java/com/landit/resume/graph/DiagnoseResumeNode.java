@@ -144,15 +144,16 @@ public class DiagnoseResumeNode implements NodeAction {
             }
 
             // 构建使用简短标识符的 JSON
-            sb.append(buildSectionJsonWithShortId(section, shortId, shortIdToRealIdMap)).append("\n\n");
+            sb.append(buildSectionJsonWithShortId(section, shortId)).append("\n\n");
         }
         return sb.toString();
     }
 
     /**
-     * 构建单个 section 的 JSON，使用简短标识符替代原始 ID
+     * 构建单个 section 的 JSON，仅替换 section 级别的 id 为简短标识符
+     * 嵌套的 items 保持原始结构，不做 id 替换
      */
-    private String buildSectionJsonWithShortId(ResumeDetailVO.ResumeSectionVO section, String shortId, Map<String, String> shortIdToRealIdMap) {
+    private String buildSectionJsonWithShortId(ResumeDetailVO.ResumeSectionVO section, String shortId) {
         StringBuilder sb = new StringBuilder();
         sb.append("{");
         sb.append("\"id\":\"").append(shortId).append("\",");
@@ -162,29 +163,10 @@ public class DiagnoseResumeNode implements NodeAction {
             sb.append(",\"title\":\"").append(escapeJson(section.getTitle())).append("\"");
         }
 
-        // 处理聚合类型的 items
+        // items 和 content 保持原始 JSON 序列化
         if (section.getItems() != null && !section.getItems().isEmpty()) {
-            sb.append(",\"items\":[");
-            for (int i = 0; i < section.getItems().size(); i++) {
-                ResumeDetailVO.ResumeSectionItemVO item = section.getItems().get(i);
-                if (i > 0) sb.append(",");
-                // 为 item 也生成简短标识符：shortId_itemIndex（如 work_1_1, work_1_2）
-                String itemShortId = shortId + "_" + (i + 1);
-                if (item.getId() != null) {
-                    shortIdToRealIdMap.put(itemShortId, item.getId());
-                }
-                sb.append("{\"id\":\"").append(itemShortId).append("\"");
-                if (item.getTitle() != null) {
-                    sb.append(",\"title\":\"").append(escapeJson(item.getTitle())).append("\"");
-                }
-                if (item.getContent() != null) {
-                    sb.append(",\"content\":").append(JsonParseHelper.toJsonString(item.getContent()));
-                }
-                sb.append("}");
-            }
-            sb.append("]");
+            sb.append(",\"items\":").append(JsonParseHelper.toJsonString(section.getItems()));
         } else if (section.getContent() != null) {
-            // 单条类型，直接输出 content
             sb.append(",\"content\":").append(JsonParseHelper.toJsonString(section.getContent()));
         }
 
