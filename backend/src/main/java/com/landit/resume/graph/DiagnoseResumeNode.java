@@ -4,6 +4,7 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.landit.common.config.AIPromptProperties;
 import com.landit.common.util.ChatClientHelper;
+import cn.hutool.core.util.StrUtil;
 import com.landit.common.util.JsonParseHelper;
 import com.landit.resume.dto.DiagnoseResumeResponse;
 import com.landit.resume.dto.ResumeDetailVO;
@@ -39,7 +40,7 @@ public class DiagnoseResumeNode implements NodeAction {
 
         ResumeDetailVO resumeDetail = (ResumeDetailVO) state.value(STATE_RESUME_CONTENT).orElse(null);
         Objects.requireNonNull(resumeDetail);
-        String targetPosition = resumeDetail.getTargetPosition() != null
+        String targetPosition = StrUtil.isNotBlank(resumeDetail.getTargetPosition())
                 ? resumeDetail.getTargetPosition()
                 : DEFAULT_TARGET_POSITION;
 
