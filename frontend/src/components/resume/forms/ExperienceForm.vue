@@ -394,7 +394,7 @@ function removeAchievement(index: number): void {
 
 .form-textarea {
   resize: vertical;
-  min-height: 100px;
+  min-height: 140px;
 }
 
 .achievements-input {

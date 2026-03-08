@@ -70,6 +70,8 @@ public class AIPromptProperties {
                 |------|------|------|------|
                 | name | string | 是 | 姓名，未找到则为空字符串 |
                 | gender | string | 是 | 性别：男/女/未知 |
+                | birthday | string | 是 | 出生日期，如 1995-03 或 1995-03-15 |
+                | age | string | 是 | 年龄，如 28 |
                 | phone | string | 是 | 联系电话，保持原格式 |
                 | email | string | 是 | 邮箱地址 |
                 | targetPosition | string | 是 | 求职意向/目标岗位 |
@@ -175,7 +177,7 @@ public class AIPromptProperties {
 
                 ## 输出格式示例
 
-                {"basicInfo":{"name":"张三","gender":"男","phone":"138****1234","email":"zhangsan@example.com","targetPosition":"高级Java工程师","summary":"5年互联网后端开发经验，擅长高并发系统设计","location":"北京","linkedin":"","github":"https://github.com/zhangsan","website":""},"education":[{"school":"XX大学","degree":"本科","major":"计算机科学与技术","period":"2015.09-2019.06","gpa":"3.8/4.0","courses":["数据结构","算法设计","操作系统"],"honors":["国家奖学金","优秀毕业生"]}],"work":[{"company":"XX科技有限公司","position":"后端开发工程师","period":"2019.07-至今","description":"负责核心业务系统开发\\n主导技术架构升级","location":"北京","achievements":["系统性能提升200%","主导3个核心项目上线"],"technologies":["Java","Spring Boot","MySQL"]}],"projects":[{"name":"订单系统重构","role":"技术负责人","period":"2022.03-2022.08","description":"重构老旧订单系统","achievements":["订单处理效率提升300%","系统可用性达99.9%"],"technologies":["Spring Cloud","RocketMQ","Redis"],"url":""}],"skills":[{"name":"Java","description":"5年经验，精通并发编程、JVM调优","level":"精通","category":"编程语言"},{"name":"Spring Boot","description":"熟练使用Spring生态构建微服务","level":"熟练","category":"框架"}],"certificates":[{"name":"AWS Solutions Architect","date":"2023.06","issuer":"Amazon","credentialId":"AWS-123456","url":""}],"openSource":[{"projectName":"Easy-Cache","url":"https://github.com/zhangsan/easy-cache","role":"项目创始人","period":"2021.03-至今","description":"一款轻量级Java分布式缓存框架，支持多级缓存、自动刷新、缓存穿透防护","achievements":["GitHub Star 2.3k+，Fork 400+","被50+公司用于生产环境","Maven中央库累计下载10w+","发布15个版本，持续维护中"]}],"markdownContent":"# 张三\\n\\n## 个人信息\\n..."}
+                {"basicInfo":{"name":"张三","gender":"男","birthday":"1995-03","age":"28","phone":"138****1234","email":"zhangsan@example.com","targetPosition":"高级Java工程师","summary":"5年互联网后端开发经验，擅长高并发系统设计","location":"北京","linkedin":"","github":"https://github.com/zhangsan","website":""},"education":[{"school":"XX大学","degree":"本科","major":"计算机科学与技术","period":"2015.09-2019.06","gpa":"3.8/4.0","courses":["数据结构","算法设计","操作系统"],"honors":["国家奖学金","优秀毕业生"]}],"work":[{"company":"XX科技有限公司","position":"后端开发工程师","period":"2019.07-至今","description":"负责核心业务系统开发\\n主导技术架构升级","location":"北京","achievements":["系统性能提升200%","主导3个核心项目上线"],"technologies":["Java","Spring Boot","MySQL"]}],"projects":[{"name":"订单系统重构","role":"技术负责人","period":"2022.03-2022.08","description":"重构老旧订单系统","achievements":["订单处理效率提升300%","系统可用性达99.9%"],"technologies":["Spring Cloud","RocketMQ","Redis"],"url":""}],"skills":[{"name":"Java","description":"5年经验，精通并发编程、JVM调优","level":"精通","category":"编程语言"},{"name":"Spring Boot","description":"熟练使用Spring生态构建微服务","level":"熟练","category":"框架"}],"certificates":[{"name":"AWS Solutions Architect","date":"2023.06","issuer":"Amazon","credentialId":"AWS-123456","url":""}],"openSource":[{"projectName":"Easy-Cache","url":"https://github.com/zhangsan/easy-cache","role":"项目创始人","period":"2021.03-至今","description":"一款轻量级Java分布式缓存框架，支持多级缓存、自动刷新、缓存穿透防护","achievements":["GitHub Star 2.3k+，Fork 400+","被50+公司用于生产环境","Maven中央库累计下载10w+","发布15个版本，持续维护中"]}],"markdownContent":"# 张三\\n\\n## 个人信息\\n..."}
                 """;
     }
 

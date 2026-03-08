@@ -24,6 +24,26 @@
         </select>
       </div>
       <div class="form-group">
+        <label class="form-label">出生日期</label>
+        <input
+          v-model="localData.birthday"
+          type="text"
+          class="form-input"
+          placeholder="如 1995-03 或 1995-03-15"
+        />
+      </div>
+      <div class="form-group">
+        <label class="form-label">年龄</label>
+        <input
+          v-model="localData.age"
+          type="text"
+          class="form-input"
+          placeholder="如 28"
+        />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
         <label class="form-label required">电话</label>
         <input
           v-model="localData.phone"
@@ -32,15 +52,15 @@
           placeholder="请输入手机号"
         />
       </div>
-    </div>
-    <div class="form-group">
-      <label class="form-label required">邮箱</label>
-      <input
-        v-model="localData.email"
-        type="email"
-        class="form-input"
-        placeholder="请输入邮箱地址"
-      />
+      <div class="form-group">
+        <label class="form-label required">邮箱</label>
+        <input
+          v-model="localData.email"
+          type="email"
+          class="form-input"
+          placeholder="请输入邮箱地址"
+        />
+      </div>
     </div>
     <div class="form-group">
       <label class="form-label">目标岗位</label>
@@ -85,6 +105,8 @@ function initData(): void {
   const data: Record<string, string> = {
     name: '',
     gender: '',
+    birthday: '',
+    age: '',
     phone: '',
     email: '',
     targetPosition: '',
@@ -124,8 +146,11 @@ watch(
 
 .form-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: $spacing-lg;
+  &:has(.form-group:nth-child(2):last-child) {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .form-group {
@@ -171,6 +196,6 @@ watch(
 
 .form-textarea {
   resize: vertical;
-  min-height: 100px;
+  min-height: 140px;
 }
 </style>

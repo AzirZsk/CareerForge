@@ -95,6 +95,18 @@ public class ResumeStructuredData {
         private String gender;
 
         /**
+         * 出生日期（如 1995-03 或 1995-03-15）
+         */
+        @SchemaField("出生日期")
+        private String birthday;
+
+        /**
+         * 年龄
+         */
+        @SchemaField("年龄")
+        private String age;
+
+        /**
          * 电话
          */
         @SchemaField("电话")

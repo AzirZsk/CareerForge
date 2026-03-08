@@ -84,6 +84,8 @@ export type SectionType = 'BASIC_INFO' | 'EDUCATION' | 'WORK' | 'PROJECT' | 'SKI
 export interface BasicInfoContent {
   name: string
   gender?: string
+  birthday?: string
+  age?: string
   phone?: string
   email?: string
   targetPosition?: string
