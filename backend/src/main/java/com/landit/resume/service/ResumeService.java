@@ -74,14 +74,6 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
     }
 
     /**
-     * 获取简历列表
-     */
-    public List<Resume> getResumes(ResumeStatus status) {
-        // TODO: 实现查询逻辑
-        return null;
-    }
-
-    /**
      * 获取简历详情
      *
      * @param id 简历ID
@@ -189,62 +181,6 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
         return value != null ? value : 0;
     }
 
-    /**
-     * 创建空白简历
-     */
-    public Resume createResume(CreateResumeRequest request) {
-        // TODO: 实现创建逻辑
-        return null;
-    }
-
-    /**
-     * 更新简历
-     */
-    public ResumeDetailVO updateResume(String id, UpdateResumeRequest request) {
-        // TODO: 实现更新逻辑
-        return null;
-    }
-
-    /**
-     * 删除简历
-     */
-    public void deleteResume(String id) {
-        // TODO: 实现删除逻辑
-    }
-
-    /**
-     * 设置主简历
-     */
-    public void setPrimaryResume(String id) {
-        // TODO: 实现设置逻辑
-    }
-
-    /**
-     * 获取优化建议
-     */
-    public List<ResumeSuggestionVO> getResumeSuggestions(String id) {
-        // TODO: 实现查询逻辑
-        return null;
-    }
-
-    /**
-     * 获取简历版本历史
-     */
-    public List<ResumeVersionVO> getVersionHistory(String resumeId) {
-        LambdaQueryWrapper<ResumeVersion> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ResumeVersion::getResumeId, resumeId)
-                .orderByDesc(ResumeVersion::getVersion);
-        List<ResumeVersion> versions = resumeVersionMapper.selectList(wrapper);
-        return resumeConvertor.toVersionVOList(versions);
-    }
-
-    /**
-     * 获取指定版本详情
-     */
-    public ResumeDetailVO getVersionDetail(String resumeId, Integer version) {
-        // TODO: 实现查询逻辑
-        return null;
-    }
 
     /**
      * 获取版本实体
@@ -269,6 +205,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
     public List<ResumeSection> getResumeSections(String resumeId) {
         LambdaQueryWrapper<ResumeSection> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ResumeSection::getResumeId, resumeId)
+                .ne(ResumeSection::getType, SectionType.RAW_TEXT.getCode())
                 .isNull(ResumeSection::getResumeVersionId);
         return resumeSectionMapper.selectList(wrapper);
     }
@@ -593,16 +530,6 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
             throw BusinessException.notFound("模块不存在");
         }
         resumeSectionMapper.deleteById(sectionId);
-    }
-
-    /**
-     * 根据ID获取模块实体
-     *
-     * @param sectionId 模块ID
-     * @return 模块实体
-     */
-    public ResumeSection getSectionById(String sectionId) {
-        return resumeSectionMapper.selectById(sectionId);
     }
 
     /**
