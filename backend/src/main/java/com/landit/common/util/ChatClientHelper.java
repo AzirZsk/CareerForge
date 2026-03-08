@@ -59,6 +59,7 @@ public final class ChatClientHelper {
         for (int attempt = 1; attempt <= MAX_RETRY; attempt++) {
             try {
                 String response = callWithSchemaInternal(chatClient, systemPrompt, userPrompt, schemaJson);
+                log.debug("大模型响应：{}", response);
                 return JsonParseHelper.parseToEntity(response, responseClass);
             } catch (Exception e) {
                 log.warn("AI 调用解析失败，第 {}/{} 次尝试，错误: {}", attempt, MAX_RETRY, e.getMessage());

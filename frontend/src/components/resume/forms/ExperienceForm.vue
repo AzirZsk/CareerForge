@@ -421,10 +421,17 @@ function initData(): void {
   }
 }
 
+// 标记是否正在同步，避免无限循环
+let isSyncing = false
+
 // 监听外部变化
 watch(
   () => props.modelValue,
-  () => initData(),
+  () => {
+    if (!isSyncing) {
+      initData()
+    }
+  },
   { immediate: true, deep: true }
 )
 
@@ -447,7 +454,12 @@ watch(
         highlights: item.highlights.filter((h) => h.trim())
       }))
     }
+    isSyncing = true
     emit('update:modelValue', data)
+    // 使用 nextTick 确保 Vue 完成更新后再重置标志
+    setTimeout(() => {
+      isSyncing = false
+    }, 0)
   },
   { deep: true }
 )

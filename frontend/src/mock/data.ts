@@ -90,23 +90,23 @@ export const resumeDetail: ResumeDetail = {
         {
           id: 'work_001',
           title: '字节跳动',
-          content: {
+          content: JSON.stringify({
             company: '字节跳动',
             position: '高级前端工程师',
             period: '2022.03 - 至今',
             description: '负责抖音创作者平台的前端架构设计与核心功能开发，主导了微前端架构的落地，性能优化提升40%。'
-          },
+          }),
           score: 95
         },
         {
           id: 'work_002',
           title: '美团',
-          content: {
+          content: JSON.stringify({
             company: '美团',
             position: '前端工程师',
             period: '2019.07 - 2022.02',
             description: '参与美团外卖商家端管理系统开发，负责订单管理、数据看板等核心模块。'
-          },
+          }),
           score: 90
         }
       ],
@@ -127,13 +127,13 @@ export const resumeDetail: ResumeDetail = {
         {
           id: 'project_001',
           title: '创作者数据分析平台',
-          content: {
+          content: JSON.stringify({
             name: '创作者数据分析平台',
             role: '前端负责人',
             period: '2023.01 - 2023.08',
             description: '从0到1搭建创作者数据分析平台，支持百万级数据实时可视化展示。',
             achievements: ['页面加载速度提升60%', '日活用户突破50万', '获得团队Q3最佳项目奖']
-          },
+          }),
           score: 88
         }
       ],

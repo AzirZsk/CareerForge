@@ -14,6 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | 日期 | 版本 | 变更内容 |
 |------|------|----------|
+| 2026-03-08 | 1.3.0 | AI 上下文更新：简化工作流结构、更新组件清单、补充 composables 文档 |
 | 2026-03-06 | 1.2.0 | 从 DashScope Starter 迁移到 OpenAI Starter |
 | 2026-03-03 | 1.1.0 | AI 上下文初始化：更新模块索引、添加 Mermaid 结构图、完善工作流文档 |
 | 2026-02-19 | 1.0.0 | 初始版本：项目基础架构文档 |
@@ -75,6 +76,7 @@ graph TD
     C --> C3["stores"]
     C --> C4["api"]
     C --> C5["types"]
+    C --> C6["composables"]
 
     click B "./backend/CLAUDE.md" "查看 backend 模块文档"
     click C "./frontend/CLAUDE.md" "查看 frontend 模块文档"
@@ -163,25 +165,9 @@ npm run preview              # 预览构建结果
 |                        ResumeOptimizeGraph                                    |
 +------------------------------------------------------------------------------+
 |                                                                              |
-|   START --> DiagnoseQuick --+--[MODE_PRECISE]--> DiagnosePrecise --+        |
-|              (快速诊断)      |                                      |        |
-|                             +--[MODE_QUICK]----------------------->|        |
-|                                                                    v        |
-|                                                        GenerateSuggestions   |
-|                                                            (生成建议)        |
-|                                                                 |           |
-|                                                                 v           |
-|                                                         OptimizeSection     |
-|                                                           (模块优化)         |
-|                                                                 |           |
-|                                                    [interruptBefore]        |
-|                                                                 v           |
-|                                                          HumanReview        |
-|                                                           (人工审核)         |
-|                                                                 |           |
-|                                                                 v           |
-|                                                          SaveVersion --> END |
-|                                                           (保存版本)         |
+|   START --> DiagnoseQuick --> GenerateSuggestions --> OptimizeSection --> END|
+|              (快速诊断)           (生成建议)              (内容优化)           |
+|                                                                              |
 +------------------------------------------------------------------------------+
 ```
 
@@ -192,16 +178,12 @@ npm run preview              # 预览构建结果
 | `ResumeOptimizeGraphConfig` | `resume/graph/` | 定义工作流节点、边、状态策略 |
 | `ResumeOptimizeGraphService` | `resume/graph/` | 执行、恢复、状态管理工作流 |
 | `ResumeOptimizeGraphConstants` | `resume/graph/` | 统一管理状态键、节点名称等常量 |
-| `DiagnoseResumeNode` | `resume/graph/` | 快速诊断简历问题 |
-| `DiagnosePreciseResumeNode` | `resume/graph/` | 精准诊断（结合搜索结果） |
+| `DiagnoseResumeNode` | `resume/graph/` | 快速诊断简历问题（评分、建议） |
 | `GenerateSuggestionsNode` | `resume/graph/` | 生成优化建议 |
 | `OptimizeSectionNode` | `resume/graph/` | 优化具体模块内容 |
-| `HumanReviewNode` | `resume/graph/` | 人工审核中断点 |
-| `SaveVersionNode` | `resume/graph/` | 保存优化后版本 |
 
 **工作流特性：**
-- **两种模式**：快速模式（MODE_QUICK）、精准模式（MODE_PRECISE，需要搜索结果）
-- **中断点机制**：`interruptBefore(NODE_HUMAN_REVIEW)` 支持人工审核后恢复
+- **简化流程**：三步完成优化（诊断 -> 建议 -> 优化）
 - **流式执行**：支持 SSE 实时推送节点输出
 - **状态持久化**：MemorySaver 存储工作流状态（生产环境应替换为 Redis）
 
@@ -209,12 +191,11 @@ npm run preview              # 预览构建结果
 
 | 状态键 | 类型 | 描述 |
 |--------|------|------|
-| `resume_id` | Replace | 简历ID |
 | `resume_content` | Replace | 简历内容（JSON格式） |
-| `target_position` | Replace | 目标岗位 |
-| `diagnosis_mode` | Replace | 诊断模式（quick/precise） |
+| `diagnosis_mode` | Replace | 诊断模式（quick） |
 | `diagnosis_result` | Replace | 诊断结果（JSON格式） |
 | `suggestions` | Replace | 优化建议（JSON格式） |
+| `selected_suggestions` | Append | 用户选择的建议 |
 | `optimized_sections` | Replace | 优化后的简历内容 |
 | `messages` | Append | 消息日志 |
 
@@ -239,7 +220,7 @@ npm run preview              # 预览构建结果
 
 | 组件 | 位置 | 职责 |
 |------|------|------|
-| `SectionType` | `common/enums/` | 定义 8 种区块类型（基本信息、教育、工作、项目、技能、证书、开源贡献、原始文本） |
+| `SectionType` | `common/enums/` | 定义 9 种区块类型（基本信息、教育、工作、项目、技能、证书、开源贡献、自定义、原始文本） |
 | `SectionSchemaRegistry` | `common/schema/` | 根据 SectionType 动态构建完整简历 JSON Schema |
 | `GraphSchemaRegistry` | `common/schema/` | 工作流节点 Schema 构建器 |
 | `JsonSchemaBuilder` | `common/util/` | 提供流畅的 Schema 构建接口 |
@@ -255,9 +236,10 @@ npm run preview              # 预览构建结果
 | EDUCATION | EducationExperience.class | 数组 | 教育经历 |
 | WORK | WorkExperience.class | 数组 | 工作经历 |
 | PROJECT | ProjectExperience.class | 数组 | 项目经验 |
-| SKILLS | null（字符串数组） | 数组 | 专业技能 |
+| SKILLS | Skill.class | 数组 | 专业技能 |
 | CERTIFICATE | Certificate.class | 数组 | 证书荣誉 |
 | OPEN_SOURCE | OpenSourceContribution.class | 数组 | 开源贡献 |
+| CUSTOM | CustomSection.class | 数组 | 自定义区块 |
 | RAW_TEXT | null | - | 原始文本（不参与Schema） |
 
 ### API 统一响应格式
@@ -437,10 +419,11 @@ npm run preview              # 预览构建结果
 | 区域 | 状态 | 覆盖率 | 说明 |
 |------|------|--------|------|
 | 后端 Controllers | 已扫描 | 100% | 7个控制器全部识别 |
-| 后端 Services | 已扫描 | 100% | 9个服务类全部识别 |
-| 后端 Graph 节点 | 已扫描 | 100% | 7个工作流节点全部识别 |
+| 后端 Services | 已扫描 | 100% | 7个服务类全部识别 |
+| 后端 Graph 节点 | 已扫描 | 100% | 3个工作流节点全部识别 |
 | 前端 Views | 已扫描 | 100% | 9个页面组件全部识别 |
-| 前端 Components | 已扫描 | 100% | 9个组件全部识别 |
+| 前端 Components | 已扫描 | 100% | 17个组件全部识别 |
+| 前端 Composables | 已扫描 | 100% | 3个组合式函数全部识别 |
 | 数据库 Schema | 已扫描 | 100% | 14张表全部识别 |
 | API 文档 | 已扫描 | 100% | OpenAPI 3.0 定义完整 |
 | 测试文件 | 未发现 | 0% | 建议补充 |
@@ -463,7 +446,13 @@ A:
 4. 在 `resumeOptimizeKeyStrategyFactory` 中添加节点需要的状态策略
 5. 使用 `addEdge()` 或 `addConditionalEdges()` 连接节点
 
-### Q: 如何切换诊断模式？
-A: 在调用 `/resumes/{id}/optimize/stream` 时传入 `mode` 参数：
-- `mode=quick`：快速诊断（默认）
-- `mode=precise`：精准诊断（需要搜索结果）
+### Q: 如何使用简历优化功能？
+A: 前端使用 `useResumeOptimize` composable：
+```typescript
+import { useResumeOptimize } from '@/composables/useResumeOptimize'
+
+const { startOptimize, state, stageHistory } = useResumeOptimize()
+startOptimize(resumeId, 'quick', targetPosition)
+```
+
+---

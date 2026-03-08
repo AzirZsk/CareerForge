@@ -137,7 +137,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
                     .map(section -> ResumeDetailVO.ResumeSectionItemVO.builder()
                             .id(section.getId())
                             .title(section.getTitle())
-                            .content(parseContentToObject(section.getContent()))
+                            .content(section.getContent())
                             .score(section.getScore())
                             .build())
                     .collect(java.util.stream.Collectors.toList());

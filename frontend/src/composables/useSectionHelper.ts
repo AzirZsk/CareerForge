@@ -61,6 +61,23 @@ const BASIC_INFO_FIELD_ORDER: string[] = [
 ]
 
 export function useSectionHelper() {
+  // 解析 content 字符串为对象
+  function parseContent<T = Record<string, unknown>>(content: string | Record<string, unknown> | undefined | null): T {
+    if (!content) {
+      return {} as T
+    }
+    // 如果已经是对象，直接返回
+    if (typeof content === 'object') {
+      return content as T
+    }
+    try {
+      return JSON.parse(content) as T
+    } catch {
+      console.warn('解析 content 失败:', content)
+      return {} as T
+    }
+  }
+
   // 获取模块图标
   function getSectionIcon(type: string): string {
     return sectionIcons[type] || '📄'
@@ -90,10 +107,11 @@ export function useSectionHelper() {
   }
 
   // 获取自定义区块 item 的预览文本
-  function getCustomItemPreview(item: { content: Record<string, unknown> }): string {
-    const items = item.content.items as Array<Record<string, unknown>> | undefined
-    if (items?.length) {
-      return `${items.length} 条记录`
+  function getCustomItemPreview(item: { content: string | Record<string, unknown> }): string {
+    // content 可能是 JSON 字符串，需要先解析
+    const parsedContent = parseContent<{ items?: Array<Record<string, unknown>> }>(item.content)
+    if (parsedContent.items?.length) {
+      return `${parsedContent.items.length} 条记录`
     }
     return '暂无内容'
   }
@@ -136,6 +154,7 @@ export function useSectionHelper() {
   return {
     sectionIcons,
     fieldLabels,
+    parseContent,
     getSectionIcon,
     getSectionPreview,
     getCustomItemPreview,

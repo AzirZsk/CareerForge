@@ -133,9 +133,11 @@ import SectionList from '@/components/resume/SectionList.vue'
 import SectionContent from '@/components/resume/SectionContent.vue'
 import { useResumeOptimize } from '@/composables/useResumeOptimize'
 import { useSectionEdit } from '@/composables/useSectionEdit'
+import { useSectionHelper } from '@/composables/useSectionHelper'
 import type { ResumeSection, ResumeSuggestionItem } from '@/types'
 
 const store = useAppStore()
+const { parseContent } = useSectionHelper()
 const route = useRoute()
 const activeSection = ref<string>('')
 const resumeId = ref<string>('')
@@ -157,11 +159,13 @@ const currentSectionDetail = computed<ResumeSection | undefined>(() => {
     if (s.type === 'CUSTOM' && s.items) {
       const item = s.items.find(i => i.id === activeSection.value)
       if (item) {
+        // 解析 content 获取 title
+        const parsedContent = parseContent<Record<string, unknown>>(item.content)
         // 返回一个虚拟的 section，只包含选中的 item
         return {
           id: item.id,
           type: 'CUSTOM_ITEM',
-          title: (item.content as Record<string, unknown>).title as string || '自定义区块',
+          title: (parsedContent?.title as string) || '自定义区块',
           content: item.content,
           items: null,
           score: item.score ?? 0,

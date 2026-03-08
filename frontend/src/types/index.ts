@@ -196,7 +196,7 @@ export type ResumeSectionContent =
 export interface ResumeSectionItem {
   id: string
   title: string
-  content: Record<string, unknown>
+  content: string
   score: number | null
 }
 

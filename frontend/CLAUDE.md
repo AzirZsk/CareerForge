@@ -8,6 +8,7 @@
 
 | 日期 | 版本 | 变更内容 |
 |------|------|----------|
+| 2026-03-08 | 1.2.0 | 更新组件清单、补充 Composables 文档、完善简历区块组件 |
 | 2026-03-03 | 1.1.0 | 添加简历优化相关类型、更新组件清单、完善 API 模块文档 |
 | 2026-02-19 | 1.0.0 | 初始版本 |
 
@@ -147,8 +148,8 @@ export default defineConfig(({ mode }) => {
 #### 核心类型文件
 | 文件 | 描述 |
 |------|------|
-| `types/index.ts` | 通用业务类型定义 |
-| `types/resume-optimize.ts` | 简历优化工作流类型定义 |
+| `types/index.ts` | 通用业务类型定义（445 行） |
+| `types/resume-optimize.ts` | 简历优化工作流类型定义（295 行） |
 
 #### 用户相关 (types/index.ts)
 ```typescript
@@ -179,6 +180,7 @@ interface UserInitResponse {
 #### 简历相关 (types/index.ts)
 ```typescript
 type ResumeStatus = 'OPTIMIZED' | 'DRAFT'
+type SectionType = 'BASIC_INFO' | 'EDUCATION' | 'WORK' | 'PROJECT' | 'SKILLS' | 'CERTIFICATE' | 'OPEN_SOURCE' | 'CUSTOM'
 
 interface PrimaryResumeVO {
   id: string
@@ -198,8 +200,10 @@ interface ResumeDetail {
   targetPosition: string
   sections: ResumeSection[]
   overallScore: number
-  formatScore: number
   contentScore: number
+  structureScore: number
+  matchingScore: number
+  competitivenessScore: number
   analyzed: boolean
 }
 
@@ -227,7 +231,6 @@ type OptimizeStage =
   | 'generate_suggestions'
   | 'optimize_section'
   | 'human_review'
-  | 'save_version'
   | 'end'
 
 // SSE 进度事件
@@ -392,6 +395,8 @@ toggleSidebar(): void
 
 ## Composables
 
+前端使用 **Composables（组合式函数）** 封装复用逻辑：
+
 ### useResumeOptimize (composables/useResumeOptimize.ts)
 
 简历优化工作流的组合式函数，封装 SSE 连接和状态管理：
@@ -417,6 +422,63 @@ const {
 - 阶段数据解析
 - 错误处理
 - 断点续传
+
+**使用示例**：
+```typescript
+import { useResumeOptimize } from '@/composables/useResumeOptimize'
+
+const { startOptimize, state, stageHistory } = useResumeOptimize()
+
+// 开始优化
+startOptimize(resumeId, 'quick', targetPosition)
+
+// 监听进度
+watch(() => state.currentStage, (stage) => {
+  console.log('当前阶段:', stage)
+})
+```
+
+### useSectionEdit (composables/useSectionEdit.ts)
+
+简历区块编辑的组合式函数，封装区块的增删改逻辑：
+
+```typescript
+const {
+  // 状态
+  editingSection,
+  isEditing,
+
+  // 方法
+  startEdit,
+  saveEdit,
+  cancelEdit
+} = useSectionEdit()
+```
+
+**功能**：
+- 区块编辑状态管理
+- 表单数据验证
+- 保存/取消操作
+
+### useSectionHelper (composables/useSectionHelper.ts)
+
+简历区块辅助工具函数：
+
+```typescript
+const {
+  // 方法
+  getSectionTypeLabel,
+  getSectionIcon,
+  formatSectionContent,
+  validateSectionData
+} = useSectionHelper()
+```
+
+**功能**：
+- 区块类型标签映射
+- 区块图标获取
+- 内容格式化
+- 数据校验
 
 ---
 
@@ -479,7 +541,7 @@ $radius-full: 9999px;
 
 ## 组件结构
 
-### 页面组件 (views/)
+### 页面组件 (views/) - 9 个
 | 组件 | 功能 |
 |------|------|
 | Onboarding.vue | 用户引导页，上传简历初始化 |
@@ -492,20 +554,36 @@ $radius-full: 9999px;
 | ReviewDetail.vue | 复盘详情，维度分析可视化 |
 | Profile.vue | 个人信息设置 |
 
-### 公共组件 (components/common/)
+### 公共组件 (components/common/) - 1 个
 | 组件 | 功能 |
 |------|------|
 | AppNavbar.vue | 顶部导航栏 |
 
-### 简历组件 (components/resume/)
+### 简历组件 (components/resume/) - 8 个
 | 组件 | 功能 |
 |------|------|
 | EditSectionModal.vue | 编辑简历模块弹窗 |
 | ResumeContentViewer.vue | 简历内容查看器 |
 | ResumeComparison.vue | 简历优化前后对比 |
 | OptimizeProgressModal.vue | 优化进度弹窗（SSE 实时展示） |
+| ResumeHeader.vue | 简历头部信息 |
+| MetricsSection.vue | 指标展示区域 |
+| SectionContent.vue | 区块内容渲染 |
+| SectionList.vue | 区块列表管理 |
 
-### 表单组件 (components/resume/forms/)
+### 简历区块组件 (components/resume/sections/) - 7 个
+| 组件 | 功能 |
+|------|------|
+| BasicInfoSection.vue | 基本信息区块 |
+| EducationSection.vue | 教育经历区块 |
+| WorkSection.vue | 工作经历区块 |
+| ProjectSection.vue | 项目经验区块 |
+| SkillsSection.vue | 技能区块 |
+| CertificateSection.vue | 证书荣誉区块 |
+| OpenSourceSection.vue | 开源贡献区块 |
+| CustomSection.vue | 自定义区块 |
+
+### 表单组件 (components/resume/forms/) - 3 个
 | 组件 | 功能 |
 |------|------|
 | BasicInfoForm.vue | 基本信息表单 |
@@ -592,14 +670,16 @@ frontend/
 │   ├── stores/
 │   │   └── index.ts             # Pinia Store
 │   ├── types/
-│   │   ├── index.ts             # 通用类型定义
-│   │   └── resume-optimize.ts   # 简历优化类型
+│   │   ├── index.ts             # 通用类型定义（445 行）
+│   │   └── resume-optimize.ts   # 简历优化类型（295 行）
 │   ├── api/
 │   │   ├── user.ts              # 用户 API
 │   │   └── resume.ts            # 简历 API
 │   ├── composables/
-│   │   └── useResumeOptimize.ts # 简历优化 Composable
-│   ├── views/                   # 页面组件
+│   │   ├── useResumeOptimize.ts # 简历优化 Composable
+│   │   ├── useSectionEdit.ts    # 区块编辑 Composable
+│   │   └── useSectionHelper.ts  # 区块辅助工具
+│   ├── views/                   # 页面组件（9 个）
 │   │   ├── Onboarding.vue
 │   │   ├── Home.vue
 │   │   ├── Resume.vue
@@ -617,6 +697,19 @@ frontend/
 │   │       ├── ResumeContentViewer.vue
 │   │       ├── ResumeComparison.vue
 │   │       ├── OptimizeProgressModal.vue
+│   │       ├── ResumeHeader.vue
+│   │       ├── MetricsSection.vue
+│   │       ├── SectionContent.vue
+│   │       ├── SectionList.vue
+│   │       ├── sections/
+│   │       │   ├── BasicInfoSection.vue
+│   │       │   ├── EducationSection.vue
+│   │       │   ├── WorkSection.vue
+│   │       │   ├── ProjectSection.vue
+│   │       │   ├── SkillsSection.vue
+│   │       │   ├── CertificateSection.vue
+│   │       │   ├── OpenSourceSection.vue
+│   │       │   └── CustomSection.vue
 │   │       └── forms/
 │   │           ├── BasicInfoForm.vue
 │   │           ├── ExperienceForm.vue

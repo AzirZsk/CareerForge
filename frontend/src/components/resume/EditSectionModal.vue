@@ -131,21 +131,37 @@ onUnmounted(() => {
   document.body.style.overflow = ''
 })
 
+// 解析 content（可能是对象或 JSON 字符串）
+function parseContent(content: unknown): Record<string, unknown> {
+  if (!content) {
+    return {}
+  }
+  if (typeof content === 'string') {
+    try {
+      return JSON.parse(content)
+    } catch {
+      return {}
+    }
+  }
+  return content as Record<string, unknown>
+}
+
 // 监听 section/itemId 变化，深拷贝数据到表单
 watch(
   [() => props.section, () => props.itemId, () => props.visible],
   ([newSection, newItemId]) => {
     if (newSection && props.visible) {
-      // 技能类型：数据在 items[0].content
+      // 技能类型：数据在 items[0].content（字符串类型，需要解析）
       if (sectionType.value === 'SKILLS') {
         if (newSection.items?.[0]?.content) {
-          formData.value = JSON.parse(JSON.stringify(newSection.items[0].content))
+          const parsed = parseContent(newSection.items[0].content)
+          formData.value = JSON.parse(JSON.stringify(parsed))
         } else {
           formData.value = { skills: [] }
         }
         return
       }
-      // 单条类型（BASIC_INFO）
+      // 单条类型（BASIC_INFO）：content 已经是对象
       if (!isAggregate.value) {
         if (newSection.content) {
           formData.value = JSON.parse(JSON.stringify(newSection.content))
@@ -156,14 +172,16 @@ watch(
       }
       // CUSTOM_ITEM 类型：直接使用 section.content（虚拟 section 的 items 为 null）
       if (newSection.type === 'CUSTOM_ITEM' && newSection.content) {
-        formData.value = JSON.parse(JSON.stringify(newSection.content))
+        const parsed = parseContent(newSection.content)
+        formData.value = JSON.parse(JSON.stringify(parsed))
         return
       }
-      // 聚合类型：根据 itemId 找到对应的 item
+      // 聚合类型：根据 itemId 找到对应的 item（item.content 是字符串，需要解析）
       if (newSection.items && newItemId) {
         const item = newSection.items.find((i) => i.id === newItemId)
         if (item) {
-          formData.value = JSON.parse(JSON.stringify(item.content))
+          const parsed = parseContent(item.content)
+          formData.value = JSON.parse(JSON.stringify(parsed))
           return
         }
       }

@@ -167,7 +167,7 @@ public class DiagnoseResumeNode implements NodeAction {
             jsonMap.put("items", section.getItems());
         } else if (section.getContent() != null) {
             // content 已经是 JSON 字符串，需要先解析为对象再序列化
-            jsonMap.put("content", JsonParseHelper.parseToEntity(section.getContent().toString(), Object.class));
+            jsonMap.put("content", section.getContent());
         }
         return JsonParseHelper.toJsonString(jsonMap);
     }

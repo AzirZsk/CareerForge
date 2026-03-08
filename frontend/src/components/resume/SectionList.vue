@@ -30,7 +30,7 @@
             <div class="section-header">
               <div class="section-info">
                 <span class="section-icon">{{ getSectionIcon(section.type) }}</span>
-                <span class="section-name">{{ (item.content as Record<string, unknown>).title as string || '自定义区块' }}</span>
+                <span class="section-name">{{ parseContent(item.content)?.title || '自定义区块' }}</span>
               </div>
               <div class="section-score" :class="analyzed && item.score != null ? getScoreClass(item.score) : ''">
                 {{ analyzed ? (item.score ?? '~') : '~' }}
@@ -86,7 +86,12 @@ defineEmits<{
   'add-section': []
 }>()
 
-const { getSectionIcon, getSectionPreview, getCustomItemPreview, getScoreClass } = useSectionHelper()
+const { getSectionIcon, getSectionPreview, getCustomItemPreview, getScoreClass, parseContent } = useSectionHelper()
+
+interface CustomContent {
+  title?: string
+  items?: Array<Record<string, unknown>>
+}
 </script>
 
 <style lang="scss" scoped>

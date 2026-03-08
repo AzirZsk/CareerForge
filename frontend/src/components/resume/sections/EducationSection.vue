@@ -5,11 +5,11 @@
 
 <template>
   <div class="content-block education-block">
-    <div class="experience-item" v-for="item in items" :key="item.id">
+    <div class="experience-item" v-for="item in parsedItems" :key="item.id">
       <div class="exp-header">
-        <h4 class="exp-title">{{ item.content.school }}</h4>
+        <h4 class="exp-title">{{ item.parsedContent.school }}</h4>
         <div class="exp-actions">
-          <span class="exp-period" v-if="item.content.period">{{ item.content.period }}</span>
+          <span class="exp-period" v-if="item.parsedContent.period">{{ item.parsedContent.period }}</span>
           <button class="item-btn edit" @click="$emit('edit-item', item.id)" title="编辑">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -24,19 +24,35 @@
           </button>
         </div>
       </div>
-      <p class="exp-position" v-if="item.content.major || item.content.degree">
-        {{ item.content.degree }} · {{ item.content.major }}
+      <p class="exp-position" v-if="item.parsedContent.major || item.parsedContent.degree">
+        {{ item.parsedContent.degree }} · {{ item.parsedContent.major }}
       </p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { ResumeSectionItem } from '@/types'
+import { useSectionHelper } from '@/composables/useSectionHelper'
 
-defineProps<{
+const props = defineProps<{
   items: ResumeSectionItem[]
 }>()
+
+const { parseContent } = useSectionHelper()
+
+interface EducationContent {
+  school: string
+  period?: string
+  major?: string
+  degree?: string
+}
+
+const parsedItems = computed(() => props.items.map(item => ({
+  ...item,
+  parsedContent: parseContent<EducationContent>(item.content)
+})))
 
 defineEmits<{
   'edit-item': [itemId: string]

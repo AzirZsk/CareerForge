@@ -29,9 +29,9 @@
     </div>
     <!-- 自定义区块列表 -->
     <div v-else class="custom-section-list">
-      <div class="custom-section-item" v-for="item in items" :key="item.id">
+      <div class="custom-section-item" v-for="item in parsedItems" :key="item.id">
         <div class="custom-section-header">
-          <h4 class="custom-section-title">{{ (item.content as Record<string, unknown>).title as string }}</h4>
+          <h4 class="custom-section-title">{{ item.parsedContent.title }}</h4>
           <div class="exp-actions">
             <button class="item-btn edit" @click="$emit('edit-item', item.id)" title="编辑">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -50,7 +50,7 @@
         <div class="custom-content-items">
           <div
             class="content-item"
-            v-for="(contentItem, idx) in getContentItems(item.content)"
+            v-for="(contentItem, idx) in item.parsedContent.items"
             :key="idx"
           >
             <div class="content-item-header">
@@ -72,31 +72,42 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { ResumeSectionItem, ResumeSectionContent } from '@/types'
+import { useSectionHelper } from '@/composables/useSectionHelper'
 
 const props = defineProps<{
   items?: ResumeSectionItem[]
-  content?: ResumeSectionContent
+  // content 可能是解析后的对象，也可能是 JSON 字符串（来自后端）
+  content?: ResumeSectionContent | string
   isSingleItem?: boolean
 }>()
+
+const { parseContent } = useSectionHelper()
+
+interface CustomContent {
+  title?: string
+  items?: Array<Record<string, unknown>>
+}
 
 defineEmits<{
   'edit-item': [itemId: string]
   'delete-item': [itemId: string]
 }>()
 
-// 获取内容项列表
-function getContentItems(content: Record<string, unknown>): Array<Record<string, unknown>> {
-  return (content.items as Array<Record<string, unknown>>) ?? []
-}
-
 // 单条 item 的内容项
 const contentItems = computed(() => {
   if (props.isSingleItem && props.content) {
-    const content = props.content as Record<string, unknown>
-    return (content.items as Array<Record<string, unknown>>) ?? []
+    // content 可能是 JSON 字符串，需要先解析
+    const parsedContent = parseContent<CustomContent>(props.content)
+    return (parsedContent.items as Array<Record<string, unknown>>) ?? []
   }
   return []
 })
+
+// 解析后的 items
+const parsedItems = computed(() => (props.items ?? []).map(item => ({
+  ...item,
+  parsedContent: parseContent<CustomContent>(item.content)
+})))
 </script>
 
 <style lang="scss" scoped>

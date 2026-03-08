@@ -133,7 +133,8 @@
                       <div class="highlights-title">亮点</div>
                       <div class="highlight-tag" v-for="(h, idx) in item.data.strengths" :key="idx">{{ h }}</div>
                     </div>
-                    <div class="quickwins-section" v-if="item.data.quickWins?.length">
+                    <!-- 快速改进建议仅在精准诊断阶段展示 -->
+                    <div class="quickwins-section" v-if="item.stage === 'diagnose_precise' && item.data.quickWins?.length">
                       <div class="quickwins-title">快速改进建议</div>
                       <div class="quickwin-item" v-for="(quickWin, idx) in item.data.quickWins" :key="idx">
                         ✓ {{ quickWin }}

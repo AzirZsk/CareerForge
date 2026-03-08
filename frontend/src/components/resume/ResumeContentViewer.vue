@@ -1,4 +1,4 @@
-<!--=====================================================
+`<!--=====================================================
   LandIt 简历内容查看器组件
   展示简历的具体内容（用于对比视图）
   支持新的区块数组格式
@@ -50,11 +50,11 @@
           <h3>{{ section.title }}</h3>
           <div v-for="(item, idx) in section.items" :key="item.id" class="experience-item">
             <div class="exp-header">
-              <span class="exp-title">{{ item.content?.school }}</span>
-              <span class="exp-period">{{ item.content?.period }}</span>
+              <span class="exp-title">{{ parseContent(item.content)?.school }}</span>
+              <span class="exp-period">{{ parseContent(item.content)?.period }}</span>
             </div>
             <div class="exp-details">
-              {{ item.content?.degree }}<span v-if="item.content?.major"> · {{ item.content?.major }}</span>
+              {{ parseContent(item.content)?.degree }}<span v-if="parseContent(item.content)?.major"> · {{ parseContent(item.content)?.major }}</span>
             </div>
             <!-- 教育经历新增的 achievements 字段 -->
             <div v-if="item.achievements" class="exp-achievements">
@@ -70,12 +70,12 @@
           <h3>{{ section.title }}</h3>
           <div v-for="(item, idx) in section.items" :key="item.id" class="experience-item">
             <div class="exp-header">
-              <span class="exp-title">{{ item.content?.company }}</span>
-              <span class="exp-period">{{ item.content?.period }}</span>
+              <span class="exp-title">{{ parseContent(item.content)?.company }}</span>
+              <span class="exp-period">{{ parseContent(item.content)?.period }}</span>
             </div>
-            <div class="exp-role">{{ item.content?.position }}</div>
-            <p v-if="item.content?.description" class="exp-description" :class="getChangeClass(section.type, 'items[' + idx + '].content.description')">
-              {{ item.content?.description }}
+            <div class="exp-role">{{ parseContent(item.content)?.position }}</div>
+            <p v-if="parseContent(item.content)?.description" class="exp-description" :class="getChangeClass(section.type, 'items[' + idx + '].content.description')">
+              {{ parseContent(item.content)?.description }}
             </p>
             <!-- 工作经历新增的 achievements 字段 -->
             <div v-if="item.achievements" class="exp-achievements">
@@ -91,16 +91,16 @@
           <h3>{{ section.title }}</h3>
           <div v-for="(item, idx) in section.items" :key="item.id" class="experience-item">
             <div class="exp-header">
-              <span class="exp-title">{{ item.content?.name }}</span>
-              <span class="exp-period">{{ item.content?.period }}</span>
+              <span class="exp-title">{{ parseContent(item.content)?.name }}</span>
+              <span class="exp-period">{{ parseContent(item.content)?.period }}</span>
             </div>
-            <div class="exp-role">{{ item.content?.role }}</div>
-            <p v-if="item.content?.description" class="exp-description">
-              {{ item.content?.description }}
+            <div class="exp-role">{{ parseContent(item.content)?.role }}</div>
+            <p v-if="parseContent(item.content)?.description" class="exp-description">
+              {{ parseContent(item.content)?.description }}
             </p>
-            <div v-if="item.content?.achievements?.length" class="exp-achievements">
+            <div v-if="getAchievements(item.content)?.length" class="exp-achievements">
               <div
-                v-for="(ach, achIdx) in item.content.achievements"
+                v-for="(ach, achIdx) in getAchievements(item.content)"
                 :key="achIdx"
                 class="achievement-item"
                 :class="getChangeClass(section.type, 'items[' + idx + '].content.achievements[' + achIdx + ']')"
@@ -142,9 +142,9 @@
           <h3>{{ section.title }}</h3>
           <div v-for="(item, idx) in section.items" :key="item.id" class="certificate-item">
             <span class="cert-name" :class="getChangeClass(section.type, 'items[' + idx + '].content.name')">
-              {{ item.content?.name }}
+              {{ parseContent(item.content)?.name }}
             </span>
-            <span v-if="item.content?.date" class="cert-date">{{ item.content?.date }}</span>
+            <span v-if="parseContent(item.content)?.date" class="cert-date">{{ parseContent(item.content)?.date }}</span>
           </div>
         </div>
 
@@ -153,11 +153,11 @@
           <h3>{{ section.title }}</h3>
           <div v-for="item in section.items" :key="item.id" class="experience-item">
             <div class="exp-header">
-              <span class="exp-title">{{ item.content?.name }}</span>
-              <span class="exp-period">{{ item.content?.url }}</span>
+              <span class="exp-title">{{ parseContent(item.content)?.name }}</span>
+              <span class="exp-period">{{ parseContent(item.content)?.url }}</span>
             </div>
-            <p v-if="item.content?.description" class="exp-description">
-              {{ item.content?.description }}
+            <p v-if="parseContent(item.content)?.description" class="exp-description">
+              {{ parseContent(item.content)?.description }}
             </p>
           </div>
         </div>
@@ -175,6 +175,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { ResumeSection, ChangeItem, ResumeSectionType } from '@/types/resume-optimize'
+import { useSectionHelper } from '@/composables/useSectionHelper'
 
 interface Props {
   sections: ResumeSection[]
@@ -183,6 +184,8 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+
+const { parseContent } = useSectionHelper()
 
 const isEmpty = computed(() => !props.sections || props.sections.length === 0)
 
@@ -245,7 +248,22 @@ function formatValue(value: any): string {
 
 // 获取技能列表
 function getSkills(section: ResumeSection): { name: string; level?: string; description?: string; category?: string }[] {
-  const skills = section.items?.[0]?.content?.skills
+  const firstItem = section.items?.[0]
+  if (!firstItem) return []
+
+  interface SkillItem {
+    name: string
+    level?: string
+    description?: string
+    category?: string
+  }
+
+  interface SkillsContent {
+    skills?: SkillItem[] | string[]
+  }
+
+  const content = parseContent<SkillsContent>(firstItem.content)
+  const skills = content?.skills
   if (Array.isArray(skills)) {
     return skills.map((s) => {
       if (typeof s === 'string') {
@@ -255,6 +273,15 @@ function getSkills(section: ResumeSection): { name: string; level?: string; desc
     })
   }
   return []
+}
+
+// 获取成就列表
+function getAchievements(content: string): string[] {
+  interface ContentWithAchievements {
+    achievements?: string[]
+  }
+  const parsed = parseContent<ContentWithAchievements>(content)
+  return parsed?.achievements ?? []
 }
 
 // 判断字段是否有变更
@@ -274,7 +301,7 @@ function getChangeClass(sectionType: ResumeSectionType, fieldPath: string): stri
 
     // 处理不同的路径格式
     const normalizedChangeField = change.field
-      .replace(/\[(\d+)\]/g, '[$1]')  // 保持数组索引格式
+      .replace(/\[(\d+)\]/g, '[$1]')
       .toLowerCase()
 
     const normalizedFullPath = fullPath.toLowerCase()

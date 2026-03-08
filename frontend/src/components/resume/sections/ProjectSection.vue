@@ -5,11 +5,11 @@
 
 <template>
   <div class="content-block project-block">
-    <div class="experience-item" v-for="item in items" :key="item.id">
+    <div class="experience-item" v-for="item in parsedItems" :key="item.id">
       <div class="exp-header">
-        <h4 class="exp-title">{{ item.content.name }}</h4>
+        <h4 class="exp-title">{{ item.parsedContent.name }}</h4>
         <div class="exp-actions">
-          <span class="exp-period" v-if="item.content.period">{{ item.content.period }}</span>
+          <span class="exp-period" v-if="item.parsedContent.period">{{ item.parsedContent.period }}</span>
           <button class="item-btn edit" @click="$emit('edit-item', item.id)" title="编辑">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -24,21 +24,38 @@
           </button>
         </div>
       </div>
-      <p class="exp-position" v-if="item.content.role">{{ item.content.role }}</p>
-      <p class="exp-desc" v-if="item.content.description">{{ item.content.description }}</p>
-      <div v-if="(item.content.achievements as string[])?.length" class="exp-achievements">
-        <span v-for="a in (item.content.achievements as string[])" :key="a" class="achievement-tag">{{ a }}</span>
+      <p class="exp-position" v-if="item.parsedContent.role">{{ item.parsedContent.role }}</p>
+      <p class="exp-desc" v-if="item.parsedContent.description">{{ item.parsedContent.description }}</p>
+      <div v-if="(item.parsedContent.achievements as string[])?.length" class="exp-achievements">
+        <span v-for="a in (item.parsedContent.achievements as string[])" :key="a" class="achievement-tag">{{ a }}</span>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { ResumeSectionItem } from '@/types'
+import { useSectionHelper } from '@/composables/useSectionHelper'
 
-defineProps<{
+const props = defineProps<{
   items: ResumeSectionItem[]
 }>()
+
+const { parseContent } = useSectionHelper()
+
+interface ProjectContent {
+  name: string
+  period?: string
+  role?: string
+  description?: string
+  achievements?: string[]
+}
+
+const parsedItems = computed(() => props.items.map(item => ({
+  ...item,
+  parsedContent: parseContent<ProjectContent>(item.content)
+})))
 
 defineEmits<{
   'edit-item': [itemId: string]

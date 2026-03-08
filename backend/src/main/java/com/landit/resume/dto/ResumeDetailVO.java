@@ -110,10 +110,9 @@ public class ResumeDetailVO {
         private String title;
 
         /**
-         * 模块内容，类型根据模块类型不同而不同
-         * @see com.landit.common.enums.SectionType
+         * 模块内容（JSON字符串格式）
          */
-        private Object content;
+        private String content;
 
         /**
          * 模块评分（0-100），null表示未评分

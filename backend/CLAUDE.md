@@ -8,6 +8,7 @@
 
 | 日期 | 版本 | 变更内容 |
 |------|------|----------|
+| 2026-03-08 | 1.3.0 | 更新工作流结构（简化为三节点）、更新文件清单、补充 Composables 说明 |
 | 2026-03-06 | 1.2.0 | 从 DashScope Starter 迁移到 OpenAI Starter |
 | 2026-03-03 | 1.1.0 | 更新工作流文档、补充 AI 配置详情、完善 API 清单 |
 | 2026-02-19 | 1.0.0 | 初始版本 |
@@ -91,14 +92,16 @@ ApiResponse<T> {
 | spring-boot-starter-web | 3.5.11 | Web 框架 |
 | spring-boot-starter-validation | 3.5.11 | 参数校验 |
 | mybatis-plus-spring-boot3-starter | 3.5.9 | ORM 框架 |
+| mybatis-plus-jsqlparser | 3.5.9 | 分页插件 |
 | sqlite-jdbc | 3.47.2.0 | SQLite 驱动 |
 | lombok | - | 代码简化 |
 | hutool-all | 5.8.34 | 工具库 |
 | springdoc-openapi-starter-webmvc-ui | 2.8.4 | API 文档 |
 | spring-ai-alibaba-agent-framework | 1.1.2.0 | 工作流引擎 |
-| spring-ai-openai-spring-boot-starter | - | AI 大模型（OpenAI 协议） |
+| spring-ai-starter-model-openai | 1.1.2 | AI 大模型（OpenAI 协议） |
 | pdfbox | 3.0.4 | PDF 处理 |
 | poi-ooxml | 5.3.0 | Word 处理 |
+| mapstruct | 1.6.3 | 对象映射 |
 
 ### 配置文件 (application.yml)
 ```yaml
@@ -136,36 +139,25 @@ mybatis-plus:
 简历优化功能基于 Spring AI Alibaba Agent Framework 构建状态机工作流：
 
 ```
-START --> DiagnoseQuick --+--[MODE_PRECISE]--> DiagnosePrecise --+
-                           |                                      |
-                           +--[MODE_QUICK]----------------------->|
-                                                                  v
-                                                      GenerateSuggestions
-                                                                          |
-                                                                          v
-                                                                  OptimizeSection
-                                                                          |
-                                                               [interruptBefore]
-                                                                          v
-                                                                    HumanReview
-                                                                          |
-                                                                          v
-                                                                    SaveVersion --> END
+START --> DiagnoseQuick --> GenerateSuggestions --> OptimizeSection --> END
+           (快速诊断)           (生成建议)              (内容优化)
 ```
 
-**工作流组件：**
+**当前工作流为简化版本，仅包含三个核心节点：**
+
+| 节点 | 类名 | 职责 |
+|------|------|------|
+| diagnose_quick | DiagnoseResumeNode | 快速诊断简历问题（评分、建议） |
+| generate_suggestions | GenerateSuggestionsNode | 基于诊断结果生成优化建议 |
+| optimize_section | OptimizeSectionNode | 根据建议优化简历内容 |
+
+**工作流配置文件：**
 
 | 文件 | 职责 |
 |------|------|
 | `ResumeOptimizeGraphConfig.java` | 定义工作流节点、边、状态策略 |
 | `ResumeOptimizeGraphService.java` | 执行、恢复、状态管理工作流 |
 | `ResumeOptimizeGraphConstants.java` | 统一管理状态键、节点名称等常量 |
-| `DiagnoseResumeNode.java` | 快速诊断简历问题 |
-| `DiagnosePreciseResumeNode.java` | 精准诊断（结合搜索结果） |
-| `GenerateSuggestionsNode.java` | 生成优化建议 |
-| `OptimizeSectionNode.java` | 优化具体模块内容 |
-| `HumanReviewNode.java` | 人工审核中断点 |
-| `SaveVersionNode.java` | 保存优化后版本 |
 
 **工作流 API：**
 
@@ -183,12 +175,26 @@ START --> DiagnoseQuick --+--[MODE_PRECISE]--> DiagnosePrecise --+
 
 | 组件 | 路径 | 职责 |
 |------|------|------|
-| SectionType | `common/enums/` | 定义 8 种区块类型 |
+| SectionType | `common/enums/` | 定义 9 种区块类型 |
 | SectionSchemaRegistry | `common/schema/` | 动态构建简历 JSON Schema |
 | GraphSchemaRegistry | `common/schema/` | 工作流节点 Schema 构建 |
 | JsonSchemaBuilder | `common/util/` | Schema 构建工具 |
 | SchemaGenerator | `common/util/` | 从 Class 生成 Schema |
 | AIPromptProperties | `common/config/` | AI 提示词配置 |
+
+**区块类型定义：**
+
+| SectionType | schemaClass | 聚合类型 | 描述 |
+|-------------|-------------|----------|------|
+| BASIC_INFO | BasicInfo.class | 单对象 | 基本信息 |
+| EDUCATION | EducationExperience.class | 数组 | 教育经历 |
+| WORK | WorkExperience.class | 数组 | 工作经历 |
+| PROJECT | ProjectExperience.class | 数组 | 项目经验 |
+| SKILLS | Skill.class | 数组 | 专业技能 |
+| CERTIFICATE | Certificate.class | 数组 | 证书荣誉 |
+| OPEN_SOURCE | OpenSourceContribution.class | 数组 | 开源贡献 |
+| CUSTOM | CustomSection.class | 数组 | 自定义区块 |
+| RAW_TEXT | null | - | 原始文本 |
 
 ### AI 配置
 
@@ -198,13 +204,14 @@ AI 功能通过 `AIPromptProperties` 配置类管理提示词：
 
 **提示词类别**：
 - `resume.parse` - 简历解析提示词
-- `resume.diagnose` - 快速诊断提示词
-- `resume.diagnosePrecise` - 精准诊断提示词
-- `resume.optimizeSection` - 模块优化提示词
-- `graph.diagnoseQuick` - 工作流快速诊断提示词
-- `graph.diagnosePrecise` - 工作流精准诊断提示词
-- `graph.generateSuggestions` - 生成建议提示词
-- `graph.optimizeSection` - 内容优化提示词
+- `graph.diagnoseQuickConfig` - 工作流快速诊断提示词（拆分版：systemPrompt + userPromptTemplate）
+- `graph.generateSuggestionsConfig` - 生成建议提示词（拆分版）
+- `graph.optimizeSectionConfig` - 内容优化提示词（拆分版）
+
+**提示词拆分优化**：
+为了支持前缀缓存（Prefix Caching），提示词被拆分为：
+- `systemPrompt`：固定部分（角色定义、任务说明、评估维度、输出格式）
+- `userPromptTemplate`：动态部分（目标岗位、简历内容等，使用 `{variableName}` 占位符）
 
 ---
 
@@ -215,8 +222,8 @@ AI 功能通过 `AIPromptProperties` 配置类管理提示词：
 | 表名 | 实体类 | 描述 |
 |------|--------|------|
 | t_user | User | 用户信息 |
-| t_resume | Resume | 简历主表 |
-| t_resume_version | - | 简历历史版本（快照） |
+| t_resume | Resume | 简历主表（含评分字段） |
+| t_resume_version | ResumeVersion | 简历历史版本（快照） |
 | t_resume_section | ResumeSection | 简历模块（区块） |
 | t_resume_suggestion | ResumeSuggestion | 简历优化建议 |
 | t_interview | Interview | 面试记录 |
@@ -250,8 +257,8 @@ public abstract class BaseEntity {
 
 | 枚举 | 值 | 描述 |
 |------|-----|------|
-| SectionType | BASIC_INFO, EDUCATION, WORK, PROJECT, SKILLS, CERTIFICATE, OPEN_SOURCE, RAW_TEXT | 简历区块类型 |
-| Gender | MALE, FEMALE, UNKNOWN | 性别 |
+| SectionType | BASIC_INFO, EDUCATION, WORK, PROJECT, SKILLS, CERTIFICATE, OPEN_SOURCE, CUSTOM, RAW_TEXT | 简历区块类型 |
+| Gender | MALE, FEMALE | 性别 |
 | ResumeStatus | OPTIMIZED, DRAFT | 简历状态 |
 | ResumeType | PRIMARY, DERIVED | 简历类型 |
 | InterviewType | TECHNICAL, BEHAVIORAL | 面试类型 |
@@ -268,9 +275,10 @@ public abstract class BaseEntity {
 
 ### common - 公共模块
 - **路径**：`src/main/java/com/landit/common/`
+- **文件统计**：33 个 Java 文件
 - **组件**：
   - `annotation/` - @SchemaField（标记 DTO 字段的 Schema 元数据）
-  - `config/` - MyBatisPlusConfig, SqliteConfig, AIConfig, AIPromptProperties
+  - `config/` - MyBatisPlusConfig, SqliteConfig, AIConfig, AIPromptProperties, JacksonConfig
   - `entity/` - BaseEntity
   - `enums/` - SectionType, Gender 等 11 个枚举类
   - `exception/` - BusinessException, GlobalExceptionHandler
@@ -282,16 +290,19 @@ public abstract class BaseEntity {
 
 ### user - 用户模块
 - **路径**：`src/main/java/com/landit/user/`
+- **文件统计**：11 个 Java 文件
 - **实体**：User（name, gender, avatar）
 - **API**：
   - `GET /user/status` - 获取用户状态
-  - `POST /user/init` - 初始化用户
+  - `POST /user/init` - 初始化用户（上传简历）
   - `GET /user/profile` - 获取用户信息
   - `PUT /user/profile` - 更新用户信息
   - `POST /user/avatar` - 上传头像
+  - `POST /user/parse` - 解析简历文件为图片列表
 
 ### resume - 简历模块
 - **路径**：`src/main/java/com/landit/resume/`
+- **文件统计**：39 个 Java 文件
 - **实体**：Resume, ResumeSection, ResumeSuggestion, ResumeVersion
 - **控制器**：ResumeController, ResumeOptimizeGraphController
 - **Handler**：ResumeHandler, ResumeOptimizeGraphHandler
@@ -299,18 +310,21 @@ public abstract class BaseEntity {
   - 简历 CRUD
   - 版本管理与回滚
   - 简历派生（岗位定制）
-  - AI 优化工作流
+  - AI 优化工作流（SSE 流式）
   - PDF 导出
   - 模块级 CRUD
 
 ### resume/graph - 简历优化工作流
 - **路径**：`src/main/java/com/landit/resume/graph/`
-- **节点**：DiagnoseResumeNode, DiagnosePreciseResumeNode, GenerateSuggestionsNode, OptimizeSectionNode, HumanReviewNode, SaveVersionNode
+- **文件统计**：7 个 Java 文件
+- **节点**：DiagnoseResumeNode, GenerateSuggestionsNode, OptimizeSectionNode
 - **配置**：ResumeOptimizeGraphConfig, ResumeOptimizeGraphConstants
 - **服务**：ResumeOptimizeGraphService
+- **Handler**：ResumeOptimizeGraphHandler
 
 ### interview - 面试模块
 - **路径**：`src/main/java/com/landit/interview/`
+- **文件统计**：20 个 Java 文件
 - **实体**：Interview, InterviewQuestion, InterviewSession, Conversation
 - **核心功能**：
   - 面试会话管理
@@ -320,6 +334,7 @@ public abstract class BaseEntity {
 
 ### review - 复盘模块
 - **路径**：`src/main/java/com/landit/review/`
+- **文件统计**：13 个 Java 文件
 - **实体**：InterviewReview, ReviewDimension, QuestionAnalysis, ImprovementPlan
 - **核心功能**：
   - 多维度评分
@@ -329,6 +344,7 @@ public abstract class BaseEntity {
 
 ### statistics - 统计模块
 - **路径**：`src/main/java/com/landit/statistics/`
+- **文件统计**：4 个 Java 文件
 - **DTO**：StatisticsVO
 - **核心功能**：
   - 总览数据（面试次数、平均分、提升率）
@@ -338,6 +354,7 @@ public abstract class BaseEntity {
 
 ### job - 职位推荐模块
 - **路径**：`src/main/java/com/landit/job/`
+- **文件统计**：4 个 Java 文件
 - **实体**：Job
 - **核心功能**：
   - 职位推荐
@@ -348,7 +365,7 @@ public abstract class BaseEntity {
 ## 常见问题 (FAQ)
 
 ### Q: 如何查看 SQL 日志？
-A: `application.yml` 中已配置 `log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl`
+A: `application.yml` 中取消注释 `log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl`
 
 ### Q: 数据库文件在哪里？
 A: `backend/data/landit.db`（相对于 backend 目录）
@@ -394,31 +411,32 @@ backend/
 ├── src/main/
 │   ├── java/com/landit/
 │   │   ├── LanditApplication.java       # 应用入口
-│   │   ├── common/                      # 公共模块
+│   │   ├── common/                      # 公共模块（33 个文件）
 │   │   │   ├── annotation/              # @SchemaField 注解
-│   │   │   ├── config/                  # 配置类（AI、MyBatis、SQLite）
+│   │   │   ├── config/                  # 配置类（AI、MyBatis、SQLite、Jackson）
 │   │   │   ├── entity/                  # 基础实体
-│   │   │   ├── enums/                   # 枚举定义
+│   │   │   ├── enums/                   # 枚举定义（11 个）
 │   │   │   ├── exception/               # 异常处理
 │   │   │   ├── handler/                 # MyBatis 处理器
 │   │   │   ├── response/                # 统一响应
 │   │   │   ├── schema/                  # Schema 注册表
 │   │   │   ├── service/                 # 公共服务（AI、文件、搜索）
 │   │   │   └── util/                    # 工具类
-│   │   ├── user/                        # 用户模块
-│   │   ├── resume/                      # 简历模块
+│   │   ├── user/                        # 用户模块（11 个文件）
+│   │   ├── resume/                      # 简历模块（39 个文件）
 │   │   │   ├── controller/              # 控制器
 │   │   │   ├── convertor/               # 转换器
 │   │   │   ├── dto/                     # 数据传输对象
 │   │   │   ├── entity/                  # 实体类
-│   │   │   ├── graph/                   # 工作流节点
+│   │   │   ├── graph/                   # 工作流节点（7 个文件）
 │   │   │   ├── handler/                 # 业务处理器
 │   │   │   ├── mapper/                  # 数据访问
-│   │   │   └── service/                 # 服务层
-│   │   ├── interview/                   # 面试模块
-│   │   ├── review/                      # 复盘模块
-│   │   ├── statistics/                  # 统计模块
-│   │   └── job/                         # 职位模块
+│   │   │   ├── service/                 # 服务层
+│   │   │   └── util/                    # 工具类
+│   │   ├── interview/                   # 面试模块（20 个文件）
+│   │   ├── review/                      # 复盘模块（13 个文件）
+│   │   ├── statistics/                  # 统计模块（4 个文件）
+│   │   └── job/                         # 职位模块（4 个文件）
 │   └── resources/
 │       ├── application.yml              # 应用配置
 │       ├── logback-spring.xml           # 日志配置
