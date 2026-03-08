@@ -1,5 +1,6 @@
 package com.landit.common.util;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -56,6 +57,15 @@ public final class JsonParseHelper {
         } catch (Exception e) {
             log.error("解析JSON到实体失败: targetClass={}, json={}", clazz.getSimpleName(), json, e);
             throw new IllegalArgumentException("解析JSON失败: " + clazz.getSimpleName(), e);
+        }
+    }
+
+    public static <T> T parseToEntity(String json, TypeReference<T> type) {
+        try {
+            return OBJECT_MAPPER.readValue(json, type);
+        } catch (Exception e) {
+            log.error("解析JSON到实体失败: targetClass={}, json={}", type, json, e);
+            throw new IllegalArgumentException("解析JSON失败: " + type, e);
         }
     }
 

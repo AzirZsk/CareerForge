@@ -123,6 +123,36 @@ class ChangeFieldTranslatorTest {
         assertEquals("unknownField", ChangeFieldTranslator.translateField("unknownField"));
     }
 
+    @Test
+    @DisplayName("自定义区块字段翻译 - content 为 JSON 字符串")
+    void testTranslateCustomSectionsWithJsonStringContent() {
+        // 模拟真实场景：content 是 JSON 字符串而非 Map 对象
+        List<Map<String, Object>> sectionsWithStringContent = createTestSectionsWithStringContent();
+        // 应该能正确解析 JSON 字符串并获取 title
+        assertEquals("游戏经历[1]-内容项列表[1]-描述",
+                ChangeFieldTranslator.translateField("customSections[0].items[0].description", sectionsWithStringContent));
+        assertEquals("游戏经历[1]-区块标题",
+                ChangeFieldTranslator.translateField("customSections[0].title", sectionsWithStringContent));
+    }
+
+    @Test
+    @DisplayName("自定义区块字段翻译 - content 为 null")
+    void testTranslateCustomSectionsWithNullContent() {
+        List<Map<String, Object>> sectionsWithNullContent = createTestSectionsWithNullContent();
+        // content 为 null 时应回退到默认翻译
+        assertEquals("自定义区块[1]-区块标题",
+                ChangeFieldTranslator.translateField("customSections[0].title", sectionsWithNullContent));
+    }
+
+    @Test
+    @DisplayName("自定义区块字段翻译 - content 为空字符串")
+    void testTranslateCustomSectionsWithEmptyContent() {
+        List<Map<String, Object>> sectionsWithEmptyContent = createTestSectionsWithEmptyContent();
+        // content 为空字符串时应回退到默认翻译
+        assertEquals("自定义区块[1]-区块标题",
+                ChangeFieldTranslator.translateField("customSections[0].title", sectionsWithEmptyContent));
+    }
+
     /**
      * 创建测试用的 sections 数据
      */
@@ -160,6 +190,59 @@ class ChangeFieldTranslatorTest {
         customSection.put("items", items);
         sections.add(customSection);
 
+        return sections;
+    }
+
+    /**
+     * 创建 content 为 JSON 字符串的测试数据（模拟真实场景）
+     */
+    private List<Map<String, Object>> createTestSectionsWithStringContent() {
+        List<Map<String, Object>> sections = new ArrayList<>();
+        Map<String, Object> customSection = new LinkedHashMap<>();
+        customSection.put("type", "CUSTOM");
+        List<Map<String, Object>> items = new ArrayList<>();
+        Map<String, Object> item1 = new LinkedHashMap<>();
+        item1.put("id", "custom_1");
+        // content 是 JSON 字符串，而非 Map 对象
+        String jsonContent = "{\"title\":\"游戏经历\",\"items\":[{\"name\":\"三角洲行动\",\"role\":\"玩家\",\"period\":\"2023-2024\",\"description\":\"游戏时长 2000+小时\",\"highlights\":[\"段位三角洲巅峰\"]}]}";
+        item1.put("content", jsonContent);
+        items.add(item1);
+        customSection.put("items", items);
+        sections.add(customSection);
+        return sections;
+    }
+
+    /**
+     * 创建 content 为 null 的测试数据
+     */
+    private List<Map<String, Object>> createTestSectionsWithNullContent() {
+        List<Map<String, Object>> sections = new ArrayList<>();
+        Map<String, Object> customSection = new LinkedHashMap<>();
+        customSection.put("type", "CUSTOM");
+        List<Map<String, Object>> items = new ArrayList<>();
+        Map<String, Object> item1 = new LinkedHashMap<>();
+        item1.put("id", "custom_1");
+        item1.put("content", null);
+        items.add(item1);
+        customSection.put("items", items);
+        sections.add(customSection);
+        return sections;
+    }
+
+    /**
+     * 创建 content 为空字符串的测试数据
+     */
+    private List<Map<String, Object>> createTestSectionsWithEmptyContent() {
+        List<Map<String, Object>> sections = new ArrayList<>();
+        Map<String, Object> customSection = new LinkedHashMap<>();
+        customSection.put("type", "CUSTOM");
+        List<Map<String, Object>> items = new ArrayList<>();
+        Map<String, Object> item1 = new LinkedHashMap<>();
+        item1.put("id", "custom_1");
+        item1.put("content", "");
+        items.add(item1);
+        customSection.put("items", items);
+        sections.add(customSection);
         return sections;
     }
 }

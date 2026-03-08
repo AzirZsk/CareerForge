@@ -594,6 +594,68 @@ public class AIPromptProperties {
 
                     ---
 
+                    ## 字段路径规范（重要）
+
+                    ### 路径格式
+                    路径格式为：`{区块名}[{索引}].{属性名}` 或 `{区块名}.{属性名}`
+
+                    ### 区块名称对照表
+                    | 区块名 | 类型 | 说明 | 示例路径 |
+                    |-------|------|------|---------|
+                    | basicInfo | 单对象 | 基本信息 | basicInfo.name, basicInfo.summary |
+                    | education | 数组 | 教育经历 | education[0].school, education[0].major |
+                    | work | 数组 | 工作经历 | work[0].description, work[0].company |
+                    | projects | 数组 | 项目经验 | projects[0].name, projects[0].description |
+                    | skills | 数组 | 专业技能 | skills[0].name, skills[0].level |
+                    | certificates | 数组 | 证书荣誉 | certificates[0].name |
+                    | openSource | 数组 | 开源贡献 | openSource[0].projectName |
+                    | customSections | 数组 | 自定义区块 | customSections[0].title |
+
+                    ### 索引规则
+                    - 数组索引从 **0** 开始（第一条为 [0]，第二条为 [1]）
+                    - 单对象区块（basicInfo）不需要索引
+
+                    ### 嵌套属性
+                    部分区块包含嵌套数组属性，路径格式为：`{区块名}[{索引}].{数组属性}[{子索引}]`
+
+                    示例：
+                    - `work[0].achievements[0]` - 第一条工作经历的第一个成果
+                    - `projects[0].technologies[0]` - 第一个项目的第一个技术
+                    - `education[0].courses[0]` - 第一条教育经历的第一个课程
+
+                    ### 路径校验要求
+                    1. **必须使用正确的区块名**（区分 work/projects/skills 等，注意 projects 是复数形式）
+                    2. **索引不能越界**（work[5] 只有在存在 6 条工作经历时才有效）
+                    3. **属性名必须存在**（参考下方各区块的属性列表）
+
+                    ### 各区块属性列表
+
+                    #### basicInfo 属性
+                    name, gender, birthday, age, phone, email, targetPosition, summary, location, linkedin, github, website
+
+                    #### education 属性
+                    school, degree, major, period, gpa, courses（数组）, honors（数组）
+
+                    #### work 属性
+                    company, position, period, description, location, achievements（数组）, technologies（数组）
+
+                    #### projects 属性
+                    name, role, period, description, achievements（数组）, technologies（数组）, url
+
+                    #### skills 属性
+                    name, description, level, category
+
+                    #### certificates 属性
+                    name, date, issuer, credentialId, url
+
+                    #### openSource 属性
+                    projectName, url, role, period, description, achievements（数组）
+
+                    #### customSections 属性
+                    title, items（数组，每个 item 包含 name, role, period, description, highlights）
+
+                    ---
+
                     ## 边界条件处理
 
                     | 情况 | 处理方式 |
@@ -636,7 +698,7 @@ public class AIPromptProperties {
                     ---
 
                     ## 输出格式示例（严格JSON，单行压缩格式）
-                    {"changes":[{"type":"modified","field":"work[0].description","valueType":"string","before":{"stringValue":"负责后端开发"},"after":{"stringValue":"主导核心API开发，支撑日均50万请求，可用性99.9%"},"reason":"使用强动词+补充量化数据"},{"type":"modified","field":"project[0].achievements","valueType":"string_array","before":{"arrayValue":["完成用户模块"]},"after":{"arrayValue":["完成用户模块设计","支撑XX万日活","接口响应时间优化80%"]},"reason":"量化项目成果，XX需用户补充具体数值"},{"type":"added","field":"skills[5]","valueType":"string","before":null,"after":{"stringValue":"微服务架构（Spring Cloud）"},"reason":"补充目标岗位核心技能"}],"improvementScore":15,"tips":["建议补充用户模块的具体日活数据","可强调团队规模信息"]}
+                    {"changes":[{"type":"modified","field":"work[0].description","valueType":"string","before":{"stringValue":"负责后端开发"},"after":{"stringValue":"主导核心API开发，支撑日均50万请求，可用性99.9%"},"reason":"使用强动词+补充量化数据"},{"type":"modified","field":"projects[0].achievements[0]","valueType":"string","before":{"stringValue":"完成用户模块"},"after":{"stringValue":"主导用户模块设计，支撑XX万日活"},"reason":"量化项目成果，XX需用户补充具体数值"},{"type":"added","field":"skills[3]","valueType":"string","before":null,"after":{"stringValue":"微服务架构（Spring Cloud）"},"reason":"补充目标岗位核心技能"}],"improvementScore":15,"tips":["建议补充用户模块的具体日活数据","可强调团队规模信息"]}
 
                     ---
 
@@ -650,7 +712,9 @@ public class AIPromptProperties {
                     5. 无法确定的数据已用"XX"占位符标记
                     6. tips包含需要用户补充的具体信息
                     7. improvementScore反映实际优化幅度（0-30分）
-                    8. 只返回JSON，不要返回其他任何内容
+                    8. 区块名使用正确（work/projects/skills等，注意projects是复数）
+                    9. 数组索引未越界（不超过实际条目数-1）
+                    10. 只返回JSON，不要返回其他任何内容
                     """,
                     // userPromptTemplate
                     """
