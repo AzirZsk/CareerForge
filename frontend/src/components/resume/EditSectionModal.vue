@@ -76,12 +76,15 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>()
 
-// 模块类型
-const sectionType = computed(() => props.section?.type ?? '')
+// 模块类型（CUSTOM_ITEM 当作 CUSTOM 处理）
+const sectionType = computed(() => {
+  const type = props.section?.type ?? ''
+  return type === 'CUSTOM_ITEM' ? 'CUSTOM' : type
+})
 
 // 是否为聚合类型
 const isAggregate = computed(() => {
-  return ['EDUCATION', 'WORK', 'PROJECT', 'CERTIFICATE', 'OPEN_SOURCE'].includes(sectionType.value)
+  return ['EDUCATION', 'WORK', 'PROJECT', 'CERTIFICATE', 'OPEN_SOURCE', 'CUSTOM'].includes(sectionType.value)
 })
 
 // 弹窗标题
@@ -93,7 +96,8 @@ const modalTitle = computed(() => {
     WORK: '工作经历',
     PROJECT: '项目经历',
     CERTIFICATE: '证书/荣誉',
-    OPEN_SOURCE: '开源贡献'
+    OPEN_SOURCE: '开源贡献',
+    CUSTOM: '自定义区块'
   }
   const baseTitle = baseTitles[sectionType.value] || '模块'
   if (isAggregate.value) {

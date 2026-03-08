@@ -51,7 +51,7 @@
           <div v-else class="upload-loading">
             <div class="loading-spinner"></div>
             <p class="loading-title">正在解析简历</p>
-            <p class="loading-desc">AI正在提取您的个人信息，请稍候...</p>
+            <p class="loading-desc">AI正在解析您的简历，请稍后...</p>
           </div>
         </div>
 

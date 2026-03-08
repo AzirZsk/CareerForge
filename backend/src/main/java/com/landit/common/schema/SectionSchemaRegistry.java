@@ -30,17 +30,4 @@ public class SectionSchemaRegistry {
         );
     }
 
-    /**
-     * 根据 SectionType 构建单个模块的 Schema
-     *
-     * @param sectionType 模块类型
-     * @return 模块 Schema
-     */
-    public Map<String, Object> buildSchema(SectionType sectionType) {
-        Class<?> schemaClass = sectionType.getSchemaClass();
-        if (schemaClass == null) {
-            return JsonSchemaBuilder.objectSchema(JsonSchemaBuilder.props());
-        }
-        return SchemaGenerator.fromClass(schemaClass);
-    }
 }

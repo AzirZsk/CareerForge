@@ -78,7 +78,7 @@ export interface ResumeSuggestionItem {
 }
 
 // 简历模块类型枚举
-export type SectionType = 'BASIC_INFO' | 'EDUCATION' | 'WORK' | 'PROJECT' | 'SKILLS' | 'CERTIFICATE' | 'OPEN_SOURCE'
+export type SectionType = 'BASIC_INFO' | 'EDUCATION' | 'WORK' | 'PROJECT' | 'SKILLS' | 'CERTIFICATE' | 'OPEN_SOURCE' | 'CUSTOM'
 
 // 基本信息（后端实际字段）
 export interface BasicInfoContent {
@@ -161,6 +161,21 @@ export interface OpenSourceContribution {
   achievements?: string[]
 }
 
+// 通用内容项（用于自定义区块）
+export interface ContentItem {
+  name: string
+  role?: string
+  period?: string
+  description?: string
+  highlights?: string[]
+}
+
+// 自定义区块
+export interface CustomSection {
+  title: string
+  items: ContentItem[]
+}
+
 // 简历模块内容类型（支持后端单个对象和 mock 数组格式）
 export type ResumeSectionContent =
   | BasicInfoContent
@@ -172,6 +187,9 @@ export type ResumeSectionContent =
   | SkillsContent
   | string[]
   | CertificateContent
+  | OpenSourceContribution
+  | CustomSection
+  | CustomSection[]
   | Record<string, unknown>
 
 // 简历模块聚合项（用于 PROJECT、WORK、EDUCATION、CERTIFICATE 类型）

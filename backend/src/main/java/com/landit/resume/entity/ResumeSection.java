@@ -1,13 +1,9 @@
 package com.landit.resume.entity;
 
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import com.landit.common.entity.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-
-import java.util.Map;
 
 /**
  * 简历模块实体类
@@ -27,8 +23,10 @@ public class ResumeSection extends BaseEntity {
 
     private String title;
 
-    @TableField(typeHandler = JacksonTypeHandler.class)
-    private Map<String, Object> content;
+    /**
+     * 模块内容，存储为JSON字符串
+     */
+    private String content;
 
     private Integer score;
 

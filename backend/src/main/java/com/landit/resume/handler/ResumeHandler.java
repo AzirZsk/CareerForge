@@ -282,8 +282,9 @@ public class ResumeHandler {
      */
     @Transactional(rollbackFor = Exception.class)
     public ResumeDetailVO updateResumeSection(String resumeId, String sectionId, Map<String, Object> content) {
-        // 更新模块内容
-        resumeService.updateSection(sectionId, content);
+        // 更新模块内容（将Map序列化为JSON字符串）
+        String contentJson = toJsonString(content);
+        resumeService.updateSection(sectionId, contentJson);
         // 重新计算简历评分
         recalculateResumeScore(resumeId);
         // 返回更新后的详情
@@ -302,8 +303,9 @@ public class ResumeHandler {
      */
     @Transactional(rollbackFor = Exception.class)
     public ResumeDetailVO addResumeSection(String resumeId, String type, String title, Map<String, Object> content) {
-        // 创建模块
-        resumeService.createSectionPublic(resumeId, type, title, content);
+        // 创建模块（将Map序列化为JSON字符串）
+        String contentJson = toJsonString(content);
+        resumeService.createSectionPublic(resumeId, type, title, contentJson);
         // 重新计算简历完整度
         recalculateResumeCompleteness(resumeId);
         // 返回更新后的详情

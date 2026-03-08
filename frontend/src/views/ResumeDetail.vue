@@ -134,33 +134,57 @@
             </button>
           </div>
           <div class="sections-list">
-            <div
-              v-for="(section, index) in store.currentResume.sections"
-              :key="section.id"
-              class="section-card"
-              :class="{ active: activeSection === section.id }"
-              :style="{ '--index': index }"
-              @click="activeSection = section.id"
-            >
-              <div class="section-header">
-                <div class="section-info">
-                  <span class="section-icon">{{ getSectionIcon(section.type) }}</span>
-                  <span class="section-name">{{ section.title }}</span>
+            <template v-for="(section, index) in store.currentResume.sections" :key="section.id">
+              <!-- CUSTOM 类型：展开显示每个 item -->
+              <template v-if="section.type === 'CUSTOM' && section.items">
+                <div
+                  v-for="(item, itemIndex) in section.items"
+                  :key="item.id"
+                  class="section-card"
+                  :class="{ active: activeSection === item.id }"
+                  :style="{ '--index': index + itemIndex }"
+                  @click="activeSection = item.id"
+                >
+                  <div class="section-header">
+                    <div class="section-info">
+                      <span class="section-icon">{{ getSectionIcon(section.type) }}</span>
+                      <span class="section-name">{{ (item.content as Record<string, unknown>).title as string || '自定义区块' }}</span>
+                    </div>
+                    <div class="section-score" :class="store.currentResume.analyzed && item.score != null ? getScoreClass(item.score) : ''">
+                      {{ store.currentResume.analyzed ? (item.score ?? '~') : '~' }}
+                    </div>
+                  </div>
+                  <p class="section-preview">{{ getCustomItemPreview(item) }}</p>
                 </div>
-                <div class="section-score" :class="store.currentResume.analyzed ? getScoreClass(section.score) : ''">
-                  {{ store.currentResume.analyzed ? section.score : '~' }}
+              </template>
+              <!-- 非 CUSTOM 类型：正常显示 -->
+              <div
+                v-else
+                class="section-card"
+                :class="{ active: activeSection === section.id }"
+                :style="{ '--index': index }"
+                @click="activeSection = section.id"
+              >
+                <div class="section-header">
+                  <div class="section-info">
+                    <span class="section-icon">{{ getSectionIcon(section.type) }}</span>
+                    <span class="section-name">{{ section.title }}</span>
+                  </div>
+                  <div class="section-score" :class="store.currentResume.analyzed ? getScoreClass(section.score) : ''">
+                    {{ store.currentResume.analyzed ? section.score : '~' }}
+                  </div>
+                </div>
+                <p class="section-preview">{{ getSectionPreview(section) }}</p>
+                <div v-if="section.suggestions?.length" class="section-hint">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                  {{ section.suggestions.length }} 条优化建议
                 </div>
               </div>
-              <p class="section-preview">{{ getSectionPreview(section) }}</p>
-              <div v-if="section.suggestions?.length" class="section-hint">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="12" y1="16" x2="12" y2="12"></line>
-                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                </svg>
-                {{ section.suggestions.length }} 条优化建议
-              </div>
-            </div>
+            </template>
           </div>
         </section>
 
@@ -168,15 +192,15 @@
           <div class="panel-header">
             <h2 class="panel-title">{{ currentSectionDetail?.title }}</h2>
             <div class="panel-actions">
-              <!-- 单条类型：显示编辑按钮 -->
-              <button v-if="!isAggregateSection" class="panel-btn" @click="openEditModal">
+              <!-- 单条类型或 CUSTOM_ITEM：显示编辑按钮 -->
+              <button v-if="!isAggregateSection || isCustomItem" class="panel-btn" @click="openEditModal">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                 </svg>
                 编辑
               </button>
-              <!-- 聚合类型：显示添加按钮 -->
+              <!-- 聚合类型（非 CUSTOM_ITEM）：显示添加按钮 -->
               <button v-else class="panel-btn primary" @click="openAddItemModal">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -187,8 +211,30 @@
             </div>
           </div>
           <div class="detail-content">
+            <!-- 自定义区块单个 item（从侧边栏选中） -->
+            <div class="content-block" v-if="currentSectionDetail?.type === 'CUSTOM_ITEM'">
+              <div class="custom-section-item">
+                <div class="custom-content-items">
+                  <div
+                    class="content-item"
+                    v-for="(contentItem, idx) in ((currentSectionDetail.content as Record<string, unknown>).items as Array<Record<string, unknown>>)"
+                    :key="idx"
+                  >
+                    <div class="content-item-header">
+                      <span class="content-item-name">{{ contentItem.name as string }}</span>
+                      <span class="content-item-period" v-if="contentItem.period">{{ contentItem.period as string }}</span>
+                    </div>
+                    <p class="exp-position" v-if="contentItem.role">{{ contentItem.role as string }}</p>
+                    <p class="exp-desc" v-if="contentItem.description">{{ contentItem.description as string }}</p>
+                    <div v-if="(contentItem.highlights as string[])?.length" class="content-item-highlights">
+                      <span v-for="h in contentItem.highlights" :key="h" class="highlight-tag">{{ h as string }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
             <!-- 基本信息（单条） -->
-            <div class="content-block" v-if="currentSectionDetail?.type === 'BASIC_INFO' && basicContent">
+            <div class="content-block" v-else-if="currentSectionDetail?.type === 'BASIC_INFO' && basicContent">
               <div v-for="{ key, value } in getOrderedBasicInfoFields(basicContent)" :key="key" class="info-row">
                 <span class="info-label">{{ getFieldLabel(key) }}</span>
                 <span class="info-value">{{ value }}</span>
@@ -315,7 +361,7 @@
                   <div class="exp-header">
                     <h4 class="exp-title">
                       {{ item.content.projectName }}
-                      <a v-if="item.content.url" :href="item.content.url" target="_blank" class="exp-link" title="访问项目">
+                      <a v-if="item.content.url" :href="item.content.url as string" target="_blank" class="exp-link" title="访问项目">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                           <polyline points="15 3 21 3 21 9"></polyline>
@@ -343,6 +389,45 @@
                   <p class="exp-desc" v-if="item.content.description">{{ item.content.description }}</p>
                   <div v-if="(item.content.achievements as string[])?.length" class="exp-achievements">
                     <span v-for="a in (item.content.achievements as string[])" :key="a" class="achievement-tag">{{ a }}</span>
+                  </div>
+                </div>
+              </template>
+              <!-- 自定义区块列表 -->
+              <template v-else-if="currentSectionDetail?.type === 'CUSTOM'">
+                <div class="custom-section-item" v-for="item in currentSectionDetail.items" :key="item.id">
+                  <div class="custom-section-header">
+                    <h4 class="custom-section-title">{{ (item.content as Record<string, unknown>).title as string }}</h4>
+                    <div class="exp-actions">
+                      <button class="item-btn edit" @click="openEditItemModal(item.id)" title="编辑">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                      </button>
+                      <button class="item-btn delete" @click="deleteItem(item.id)" title="删除">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <polyline points="3 6 5 6 21 6"></polyline>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="custom-content-items">
+                    <div
+                      class="content-item"
+                      v-for="(contentItem, idx) in ((item.content as Record<string, unknown>).items as Array<Record<string, unknown>>)"
+                      :key="idx"
+                    >
+                      <div class="content-item-header">
+                        <span class="content-item-name">{{ contentItem.name as string }}</span>
+                        <span class="content-item-period" v-if="contentItem.period">{{ contentItem.period as string }}</span>
+                      </div>
+                      <p class="exp-position" v-if="contentItem.role">{{ contentItem.role as string }}</p>
+                      <p class="exp-desc" v-if="contentItem.description">{{ contentItem.description as string }}</p>
+                      <div v-if="(contentItem.highlights as string[])?.length" class="content-item-highlights">
+                        <span v-for="h in contentItem.highlights" :key="h" class="highlight-tag">{{ h as string }}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </template>
@@ -449,13 +534,38 @@ onMounted(async () => {
 })
 
 const currentSectionDetail = computed<ResumeSection | undefined>(() => {
-  return store.currentResume.sections.find((s: ResumeSection) => s.id === activeSection.value)
+  // 首先检查是否是 CUSTOM 类型的 item
+  for (const s of store.currentResume.sections) {
+    if (s.type === 'CUSTOM' && s.items) {
+      const item = s.items.find(i => i.id === activeSection.value)
+      if (item) {
+        // 返回一个虚拟的 section，只包含选中的 item
+        return {
+          id: item.id,
+          type: 'CUSTOM_ITEM',
+          title: (item.content as Record<string, unknown>).title as string || '自定义区块',
+          content: item.content,
+          items: null,
+          score: item.score ?? 0,
+          suggestions: null
+        } as ResumeSection
+      }
+    }
+  }
+  // 非 CUSTOM 类型：直接匹配 section.id
+  const section = store.currentResume.sections.find((s: ResumeSection) => s.id === activeSection.value)
+  return section
+})
+
+// 判断当前是否为 CUSTOM 类型的单个 item
+const isCustomItem = computed<boolean>(() => {
+  return currentSectionDetail.value?.type === 'CUSTOM_ITEM'
 })
 
 // 判断当前模块是否为聚合类型
 const isAggregateSection = computed<boolean>(() => {
   const type = currentSectionDetail.value?.type
-  return ['EDUCATION', 'WORK', 'PROJECT', 'CERTIFICATE', 'OPEN_SOURCE'].includes(type ?? '')
+  return ['EDUCATION', 'WORK', 'PROJECT', 'CERTIFICATE', 'OPEN_SOURCE', 'CUSTOM'].includes(type ?? '')
 })
 
 // 基本信息（BASIC_INFO）- 单条类型
@@ -492,7 +602,8 @@ const sectionIcons: Record<string, string> = {
   PROJECT: '🎯',
   SKILLS: '⚡',
   CERTIFICATE: '🏆',
-  OPEN_SOURCE: '🌐'
+  OPEN_SOURCE: '🌐',
+  CUSTOM: '📋'
 }
 
 function getSectionIcon(type: string): string {
@@ -519,6 +630,15 @@ function getSectionPreview(section: ResumeSection): string {
     return content.name ?? '基本信息'
   }
   return section.title ?? ''
+}
+
+// 获取自定义区块 item 的预览文本
+function getCustomItemPreview(item: { content: Record<string, unknown> }): string {
+  const items = item.content.items as Array<Record<string, unknown>> | undefined
+  if (items?.length) {
+    return `${items.length} 条记录`
+  }
+  return '暂无内容'
 }
 
 function getScoreClass(score: number): string {
@@ -623,7 +743,12 @@ function openEditModal(): void {
   if (!currentSectionDetail.value) {
     return
   }
-  editItemId.value = null
+  // 对于 CUSTOM_ITEM 类型，设置 editItemId
+  if (currentSectionDetail.value.type === 'CUSTOM_ITEM') {
+    editItemId.value = currentSectionDetail.value.id
+  } else {
+    editItemId.value = null
+  }
   isNewItem.value = false
   isEditModalVisible.value = true
 }

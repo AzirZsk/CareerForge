@@ -269,6 +269,89 @@
         </div>
       </div>
     </template>
+
+    <!-- 自定义区块 -->
+    <template v-else-if="sectionType === 'CUSTOM'">
+      <div class="form-group">
+        <label class="form-label required">区块标题</label>
+        <input
+          v-model="localData.title"
+          type="text"
+          class="form-input"
+          placeholder="例如：游戏经历、志愿者经历、竞赛经历"
+        />
+      </div>
+      <div class="form-group">
+        <label class="form-label">内容项</label>
+        <div class="content-items">
+          <div
+            v-for="(item, index) in localContentItems"
+            :key="index"
+            class="content-item-card"
+          >
+            <div class="item-header">
+              <span class="item-index">内容项 {{ index + 1 }}</span>
+              <button class="remove-item-btn" @click="removeContentItem(index)" type="button">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <div class="form-group">
+              <label class="form-label required">名称</label>
+              <input v-model="item.name" type="text" class="form-input" placeholder="请输入名称" />
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">角色/职位</label>
+                <input v-model="item.role" type="text" class="form-input" placeholder="请输入角色或职位" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">时间段</label>
+                <input v-model="item.period" type="text" class="form-input" placeholder="例如：2023.01 - 2023.06" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">详细描述</label>
+              <textarea v-model="item.description" class="form-textarea" rows="3" placeholder="请输入详细描述"></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">成果/要点</label>
+              <div class="highlights-input">
+                <div
+                  v-for="(_highlight, hIndex) in item.highlights"
+                  :key="hIndex"
+                  class="highlight-item"
+                >
+                  <input v-model="item.highlights[hIndex]" type="text" class="form-input" placeholder="请输入成果或要点" />
+                  <button class="remove-btn" @click="removeHighlight(index, hIndex)" type="button">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  </button>
+                </div>
+                <button class="add-highlight-btn" @click="addHighlight(index)" type="button">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  添加要点
+                </button>
+              </div>
+            </div>
+          </div>
+          <button class="add-item-btn" @click="addContentItem" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            添加内容项
+          </button>
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -291,10 +374,28 @@ const emit = defineEmits<Emits>()
 const localData = ref<Record<string, string>>({})
 const localAchievements = ref<string[]>([])
 
+// 自定义区块内容项
+interface ContentItemData {
+  name: string
+  role: string
+  period: string
+  description: string
+  highlights: string[]
+}
+const localContentItems = ref<ContentItemData[]>([])
+
 // 初始化数据
 function initData(): void {
   const data: Record<string, string> = {}
   for (const [key, value] of Object.entries(props.modelValue)) {
+    // 自定义区块特殊处理：title 单独存储，items 存入 localContentItems
+    if (props.sectionType === 'CUSTOM') {
+      if (key === 'title' && typeof value === 'string') {
+        data[key] = value
+      }
+      continue
+    }
+    // 其他类型：排除 achievements
     if (key !== 'achievements' && typeof value === 'string') {
       data[key] = value
     }
@@ -303,6 +404,21 @@ function initData(): void {
   // 处理项目成果数组
   const achievements = props.modelValue?.achievements
   localAchievements.value = Array.isArray(achievements) ? [...achievements] : []
+  // 处理自定义区块的 items
+  if (props.sectionType === 'CUSTOM') {
+    const items = props.modelValue?.items
+    if (Array.isArray(items)) {
+      localContentItems.value = items.map((item: Record<string, unknown>) => ({
+        name: (item.name as string) || '',
+        role: (item.role as string) || '',
+        period: (item.period as string) || '',
+        description: (item.description as string) || '',
+        highlights: Array.isArray(item.highlights) ? [...(item.highlights as string[])] : []
+      }))
+    } else {
+      localContentItems.value = []
+    }
+  }
 }
 
 // 监听外部变化
@@ -314,12 +430,22 @@ watch(
 
 // 监听本地数据变化，同步到父组件
 watch(
-  [localData, localAchievements],
+  [localData, localAchievements, localContentItems],
   () => {
     const data: Record<string, unknown> = { ...localData.value }
     // 如果是项目经历或开源贡献，同步成果数组
     if (props.sectionType === 'PROJECT' || props.sectionType === 'OPEN_SOURCE') {
       data.achievements = localAchievements.value.filter((a) => a.trim())
+    }
+    // 如果是自定义区块，同步 items 数组
+    if (props.sectionType === 'CUSTOM') {
+      data.items = localContentItems.value.map((item) => ({
+        name: item.name,
+        role: item.role || undefined,
+        period: item.period || undefined,
+        description: item.description || undefined,
+        highlights: item.highlights.filter((h) => h.trim())
+      }))
     }
     emit('update:modelValue', data)
   },
@@ -334,6 +460,32 @@ function addAchievement(): void {
 // 删除成果
 function removeAchievement(index: number): void {
   localAchievements.value.splice(index, 1)
+}
+
+// 添加内容项
+function addContentItem(): void {
+  localContentItems.value.push({
+    name: '',
+    role: '',
+    period: '',
+    description: '',
+    highlights: []
+  })
+}
+
+// 删除内容项
+function removeContentItem(index: number): void {
+  localContentItems.value.splice(index, 1)
+}
+
+// 添加要点
+function addHighlight(itemIndex: number): void {
+  localContentItems.value[itemIndex].highlights.push('')
+}
+
+// 删除要点
+function removeHighlight(itemIndex: number, highlightIndex: number): void {
+  localContentItems.value[itemIndex].highlights.splice(highlightIndex, 1)
 }
 </script>
 
@@ -443,6 +595,93 @@ function removeAchievement(index: number): void {
   border-radius: $radius-sm;
   transition: all $transition-fast;
   align-self: flex-start;
+  &:hover {
+    background: rgba(212, 168, 83, 0.2);
+  }
+}
+
+// 自定义区块样式
+.content-items {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.content-item-card {
+  padding: $spacing-lg;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: $radius-md;
+}
+
+.item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-md;
+}
+
+.item-index {
+  font-size: $text-sm;
+  font-weight: $weight-medium;
+  color: $color-accent;
+}
+
+.remove-item-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $color-text-tertiary;
+  border-radius: $radius-sm;
+  transition: all $transition-fast;
+  &:hover {
+    background: rgba(248, 113, 113, 0.1);
+    color: $color-error;
+  }
+}
+
+.highlights-input {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.highlight-item {
+  display: flex;
+  gap: $spacing-sm;
+  .form-input {
+    flex: 1;
+  }
+}
+
+.add-highlight-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-xs $spacing-sm;
+  font-size: $text-xs;
+  color: $color-accent;
+  background: transparent;
+  border-radius: $radius-sm;
+  transition: all $transition-fast;
+  align-self: flex-start;
+  &:hover {
+    background: $color-accent-glow;
+  }
+}
+
+.add-item-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-sm $spacing-md;
+  font-size: $text-sm;
+  color: $color-accent;
+  background: $color-accent-glow;
+  border-radius: $radius-sm;
+  transition: all $transition-fast;
   &:hover {
     background: rgba(212, 168, 83, 0.2);
   }

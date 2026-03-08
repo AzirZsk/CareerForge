@@ -15,6 +15,7 @@ import org.springframework.ai.chat.client.ChatClient;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -154,36 +155,21 @@ public class DiagnoseResumeNode implements NodeAction {
      * 嵌套的 items 保持原始结构，不做 id 替换
      */
     private String buildSectionJsonWithShortId(ResumeDetailVO.ResumeSectionVO section, String shortId) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("{");
-        sb.append("\"id\":\"").append(shortId).append("\",");
-        sb.append("\"type\":\"").append(section.getType()).append("\"");
-
+        // 使用 Map 构建 JSON，避免手动转义
+        Map<String, Object> jsonMap = new LinkedHashMap<>();
+        jsonMap.put("id", shortId);
+        jsonMap.put("type", section.getType());
         if (section.getTitle() != null) {
-            sb.append(",\"title\":\"").append(escapeJson(section.getTitle())).append("\"");
+            jsonMap.put("title", section.getTitle());
         }
-
         // items 和 content 保持原始 JSON 序列化
         if (section.getItems() != null && !section.getItems().isEmpty()) {
-            sb.append(",\"items\":").append(JsonParseHelper.toJsonString(section.getItems()));
+            jsonMap.put("items", section.getItems());
         } else if (section.getContent() != null) {
-            sb.append(",\"content\":").append(JsonParseHelper.toJsonString(section.getContent()));
+            // content 已经是 JSON 字符串，需要先解析为对象再序列化
+            jsonMap.put("content", JsonParseHelper.parseToEntity(section.getContent().toString(), Object.class));
         }
-
-        sb.append("}");
-        return sb.toString();
-    }
-
-    /**
-     * 转义 JSON 字符串中的特殊字符
-     */
-    private String escapeJson(String str) {
-        if (str == null) return "";
-        return str.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r")
-                .replace("\t", "\\t");
+        return JsonParseHelper.toJsonString(jsonMap);
     }
 
     /**

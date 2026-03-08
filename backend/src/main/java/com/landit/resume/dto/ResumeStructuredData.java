@@ -75,6 +75,13 @@ public class ResumeStructuredData {
     private List<OpenSourceContribution> openSource = List.of();
 
     /**
+     * 自定义区块列表
+     */
+    @SchemaField("自定义区块")
+    @Builder.Default
+    private List<CustomSection> customSections = List.of();
+
+    /**
      * 基本信息DTO
      */
     @Data
@@ -430,5 +437,67 @@ public class ResumeStructuredData {
          */
         @SchemaField("技能分类")
         private String category;
+    }
+
+    /**
+     * 自定义区块DTO
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CustomSection {
+        /**
+         * 区块标题（如：游戏经历、志愿者经历、竞赛经历等）
+         */
+        @SchemaField(value = "区块标题", required = true)
+        private String title;
+
+        /**
+         * 内容项列表
+         */
+        @SchemaField(value = "内容项列表", required = true)
+        @Builder.Default
+        private List<ContentItem> items = List.of();
+    }
+
+    /**
+     * 通用内容项DTO
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ContentItem {
+        /**
+         * 内容项名称
+         */
+        @SchemaField(value = "内容项名称", required = true)
+        private String name;
+
+        /**
+         * 角色或职位
+         */
+        @SchemaField("角色或职位")
+        private String role;
+
+        /**
+         * 时间段
+         */
+        @SchemaField("时间段")
+        private String period;
+
+        /**
+         * 详细描述
+         */
+        @SchemaField("详细描述")
+        private String description;
+
+        /**
+         * 成果或要点
+         */
+        @SchemaField("成果或要点")
+        @Builder.Default
+        private List<String> highlights = List.of();
     }
 }

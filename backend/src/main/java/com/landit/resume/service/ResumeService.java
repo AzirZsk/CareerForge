@@ -6,6 +6,7 @@ import com.landit.common.enums.ResumeStatus;
 import com.landit.common.enums.ResumeType;
 import com.landit.common.enums.SectionType;
 import com.landit.common.exception.BusinessException;
+import com.landit.common.util.JsonParseHelper;
 import com.landit.resume.convertor.ResumeConvertor;
 import com.landit.resume.dto.CreateResumeRequest;
 import com.landit.resume.dto.DeriveResumeRequest;
@@ -26,7 +27,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -137,7 +137,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
                     .map(section -> ResumeDetailVO.ResumeSectionItemVO.builder()
                             .id(section.getId())
                             .title(section.getTitle())
-                            .content(section.getContent())
+                            .content(parseContentToObject(section.getContent()))
                             .score(section.getScore())
                             .build())
                     .collect(java.util.stream.Collectors.toList());
@@ -155,11 +155,27 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
                 .id(first.getId())
                 .type(typeCode)
                 .title(first.getTitle())
-                .content(first.getContent())
+                .content(parseContentToObject(first.getContent()))
                 .score(first.getScore())
                 .items(null)
                 .suggestions(null)
                 .build();
+    }
+
+    /**
+     * 将JSON字符串解析为对象
+     * 如果解析失败则返回原始字符串
+     */
+    private Object parseContentToObject(String contentJson) {
+        if (contentJson == null || contentJson.isEmpty()) {
+            return null;
+        }
+        try {
+            return JsonParseHelper.parseToEntity(contentJson, Object.class);
+        } catch (IllegalArgumentException e) {
+            log.warn("解析content JSON失败，返回原始字符串: {}", e.getMessage());
+            return contentJson;
+        }
     }
 
     /**
@@ -313,7 +329,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
      * 创建简历各模块记录
      */
     private void createResumeSections(String resumeId, ResumeStructuredData data) {
-        createSection(resumeId, SectionType.RAW_TEXT, SectionType.RAW_TEXT.getDescription(), Map.of("content", data));
+        createSection(resumeId, SectionType.RAW_TEXT, SectionType.RAW_TEXT.getDescription(), toJsonString(data));
         createBasicInfoSection(resumeId, data.getBasicInfo());
         createEducationSections(resumeId, data.getEducation());
         createWorkSections(resumeId, data.getWork());
@@ -321,6 +337,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
         createSkillsSection(resumeId, data.getSkills());
         createCertificateSections(resumeId, data.getCertificates());
         createOpenSourceSections(resumeId, data.getOpenSource());
+        createCustomSections(resumeId, data.getCustomSections());
 
         log.info("简历模块创建完成: resumeId={}", resumeId);
     }
@@ -332,19 +349,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
         if (info == null) {
             return;
         }
-        Map<String, Object> content = new HashMap<>();
-        content.put("name", Objects.toString(info.getName(), ""));
-        content.put("gender", Objects.toString(info.getGender(), ""));
-        content.put("phone", Objects.toString(info.getPhone(), ""));
-        content.put("email", Objects.toString(info.getEmail(), ""));
-        content.put("targetPosition", Objects.toString(info.getTargetPosition(), ""));
-        content.put("summary", Objects.toString(info.getSummary(), ""));
-        content.put("location", Objects.toString(info.getLocation(), ""));
-        content.put("linkedin", Objects.toString(info.getLinkedin(), ""));
-        content.put("github", Objects.toString(info.getGithub(), ""));
-        content.put("website", Objects.toString(info.getWebsite(), ""));
-
-        createSection(resumeId, SectionType.BASIC_INFO, SectionType.BASIC_INFO.getDescription(), content);
+        createSection(resumeId, SectionType.BASIC_INFO, SectionType.BASIC_INFO.getDescription(), toJsonString(info));
     }
 
     /**
@@ -355,16 +360,8 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
             return;
         }
         for (ResumeStructuredData.EducationExperience edu : educations) {
-            Map<String, Object> content = new HashMap<>();
-            content.put("school", Objects.toString(edu.getSchool(), ""));
-            content.put("degree", Objects.toString(edu.getDegree(), ""));
-            content.put("major", Objects.toString(edu.getMajor(), ""));
-            content.put("period", Objects.toString(edu.getPeriod(), ""));
-            content.put("gpa", Objects.toString(edu.getGpa(), ""));
-            content.put("courses", edu.getCourses() != null ? edu.getCourses() : List.of());
-            content.put("honors", edu.getHonors() != null ? edu.getHonors() : List.of());
-
-            createSection(resumeId, SectionType.EDUCATION, Objects.toString(edu.getSchool(), SectionType.EDUCATION.getDescription()), content);
+            String title = Objects.toString(edu.getSchool(), SectionType.EDUCATION.getDescription());
+            createSection(resumeId, SectionType.EDUCATION, title, toJsonString(edu));
         }
     }
 
@@ -376,16 +373,8 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
             return;
         }
         for (ResumeStructuredData.WorkExperience work : works) {
-            Map<String, Object> content = new HashMap<>();
-            content.put("company", Objects.toString(work.getCompany(), ""));
-            content.put("position", Objects.toString(work.getPosition(), ""));
-            content.put("period", Objects.toString(work.getPeriod(), ""));
-            content.put("description", Objects.toString(work.getDescription(), ""));
-            content.put("location", Objects.toString(work.getLocation(), ""));
-            content.put("achievements", work.getAchievements() != null ? work.getAchievements() : List.of());
-            content.put("technologies", work.getTechnologies() != null ? work.getTechnologies() : List.of());
-
-            createSection(resumeId, SectionType.WORK, Objects.toString(work.getCompany(), SectionType.WORK.getDescription()), content);
+            String title = Objects.toString(work.getCompany(), SectionType.WORK.getDescription());
+            createSection(resumeId, SectionType.WORK, title, toJsonString(work));
         }
     }
 
@@ -397,16 +386,8 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
             return;
         }
         for (ResumeStructuredData.ProjectExperience project : projects) {
-            Map<String, Object> content = new HashMap<>();
-            content.put("name", Objects.toString(project.getName(), ""));
-            content.put("role", Objects.toString(project.getRole(), ""));
-            content.put("period", Objects.toString(project.getPeriod(), ""));
-            content.put("description", Objects.toString(project.getDescription(), ""));
-            content.put("achievements", project.getAchievements() != null ? project.getAchievements() : List.of());
-            content.put("technologies", project.getTechnologies() != null ? project.getTechnologies() : List.of());
-            content.put("url", Objects.toString(project.getUrl(), ""));
-
-            createSection(resumeId, SectionType.PROJECT, Objects.toString(project.getName(), SectionType.PROJECT.getDescription()), content);
+            String title = Objects.toString(project.getName(), SectionType.PROJECT.getDescription());
+            createSection(resumeId, SectionType.PROJECT, title, toJsonString(project));
         }
     }
 
@@ -417,16 +398,8 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
         if (skills == null || skills.isEmpty()) {
             return;
         }
-        List<Map<String, Object>> skillList = new ArrayList<>();
-        for (ResumeStructuredData.Skill skill : skills) {
-            Map<String, Object> skillMap = new HashMap<>();
-            skillMap.put("name", Objects.toString(skill.getName(), ""));
-            skillMap.put("description", Objects.toString(skill.getDescription(), ""));
-            skillMap.put("level", Objects.toString(skill.getLevel(), ""));
-            skillMap.put("category", Objects.toString(skill.getCategory(), ""));
-            skillList.add(skillMap);
-        }
-        createSection(resumeId, SectionType.SKILLS, SectionType.SKILLS.getDescription(), Map.of("skills", skillList));
+        // 保持与原有结构兼容：{"skills": [...]}
+        createSection(resumeId, SectionType.SKILLS, SectionType.SKILLS.getDescription(), toJsonString(Map.of("skills", skills)));
     }
 
     /**
@@ -437,14 +410,8 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
             return;
         }
         for (ResumeStructuredData.Certificate cert : certificates) {
-            Map<String, Object> content = new HashMap<>();
-            content.put("name", Objects.toString(cert.getName(), ""));
-            content.put("date", Objects.toString(cert.getDate(), ""));
-            content.put("issuer", Objects.toString(cert.getIssuer(), ""));
-            content.put("credentialId", Objects.toString(cert.getCredentialId(), ""));
-            content.put("url", Objects.toString(cert.getUrl(), ""));
-
-            createSection(resumeId, SectionType.CERTIFICATE, Objects.toString(cert.getName(), SectionType.CERTIFICATE.getDescription()), content);
+            String title = Objects.toString(cert.getName(), SectionType.CERTIFICATE.getDescription());
+            createSection(resumeId, SectionType.CERTIFICATE, title, toJsonString(cert));
         }
     }
 
@@ -456,22 +423,28 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
             return;
         }
         for (ResumeStructuredData.OpenSourceContribution openSource : openSources) {
-            Map<String, Object> content = new HashMap<>();
-            content.put("projectName", Objects.toString(openSource.getProjectName(), ""));
-            content.put("url", Objects.toString(openSource.getUrl(), ""));
-            content.put("role", Objects.toString(openSource.getRole(), ""));
-            content.put("period", Objects.toString(openSource.getPeriod(), ""));
-            content.put("description", Objects.toString(openSource.getDescription(), ""));
-            content.put("achievements", openSource.getAchievements() != null ? openSource.getAchievements() : List.of());
+            String title = Objects.toString(openSource.getProjectName(), SectionType.OPEN_SOURCE.getDescription());
+            createSection(resumeId, SectionType.OPEN_SOURCE, title, toJsonString(openSource));
+        }
+    }
 
-            createSection(resumeId, SectionType.OPEN_SOURCE, Objects.toString(openSource.getProjectName(), SectionType.OPEN_SOURCE.getDescription()), content);
+    /**
+     * 创建自定义区块模块
+     */
+    private void createCustomSections(String resumeId, List<ResumeStructuredData.CustomSection> customSections) {
+        if (customSections == null || customSections.isEmpty()) {
+            return;
+        }
+        for (ResumeStructuredData.CustomSection customSection : customSections) {
+            String sectionTitle = Objects.toString(customSection.getTitle(), SectionType.CUSTOM.getDescription());
+            createSection(resumeId, SectionType.CUSTOM, sectionTitle, toJsonString(customSection));
         }
     }
 
     /**
      * 通用方法：创建并保存一个简历模块
      */
-    private void createSection(String resumeId, SectionType type, String title, Map<String, Object> content) {
+    private void createSection(String resumeId, SectionType type, String title, String content) {
         ResumeSection section = new ResumeSection();
         section.setResumeId(resumeId);
         section.setResumeVersionId(null);
@@ -481,15 +454,22 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
         resumeSectionMapper.insert(section);
     }
 
+    /**
+     * 将对象序列化为JSON字符串
+     */
+    private String toJsonString(Object obj) {
+        return JsonParseHelper.toJsonString(obj);
+    }
+
     // ==================== 模块级 CRUD 操作 ====================
 
     /**
      * 更新单个模块内容
      *
      * @param sectionId 模块ID
-     * @param content   新的内容
+     * @param content   新的内容（JSON字符串）
      */
-    public void updateSection(String sectionId, Map<String, Object> content) {
+    public void updateSection(String sectionId, String content) {
         ResumeSection section = resumeSectionMapper.selectById(sectionId);
         if (section == null) {
             throw BusinessException.notFound("模块不存在");
@@ -504,10 +484,10 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
      * @param resumeId 简历ID
      * @param type     模块类型
      * @param title    模块标题
-     * @param content  模块内容
+     * @param content  模块内容（JSON字符串）
      * @return 创建的模块实体
      */
-    public ResumeSection createSectionPublic(String resumeId, String type, String title, Map<String, Object> content) {
+    public ResumeSection createSectionPublic(String resumeId, String type, String title, String content) {
         ResumeSection section = new ResumeSection();
         section.setResumeId(resumeId);
         section.setResumeVersionId(null);

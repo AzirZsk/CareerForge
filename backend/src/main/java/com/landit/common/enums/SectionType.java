@@ -22,6 +22,7 @@ public enum SectionType {
     SKILLS("SKILLS", "专业技能", true, ResumeStructuredData.Skill.class, "skills"),
     CERTIFICATE("CERTIFICATE", "证书荣誉", true, ResumeStructuredData.Certificate.class, "certificates"),
     OPEN_SOURCE("OPEN_SOURCE", "开源贡献", true, ResumeStructuredData.OpenSourceContribution.class, "openSource"),
+    CUSTOM("CUSTOM", "自定义区块", true, ResumeStructuredData.CustomSection.class, "customSections"),
     RAW_TEXT("RAW_TEXT", "原始文本", false, null, null);
 
     private final String code;
