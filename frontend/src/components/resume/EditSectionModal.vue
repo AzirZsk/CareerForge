@@ -89,6 +89,10 @@ const isAggregate = computed(() => {
 
 // 弹窗标题
 const modalTitle = computed(() => {
+  // CUSTOM_ITEM 类型：使用 section 的实际标题
+  if (props.section?.type === 'CUSTOM_ITEM' && props.section.title) {
+    return props.isNew ? `添加${props.section.title}` : `编辑${props.section.title}`
+  }
   const baseTitles: Record<string, string> = {
     BASIC_INFO: '基本信息',
     SKILLS: '技能',
@@ -148,6 +152,11 @@ watch(
         } else {
           formData.value = {}
         }
+        return
+      }
+      // CUSTOM_ITEM 类型：直接使用 section.content（虚拟 section 的 items 为 null）
+      if (newSection.type === 'CUSTOM_ITEM' && newSection.content) {
+        formData.value = JSON.parse(JSON.stringify(newSection.content))
         return
       }
       // 聚合类型：根据 itemId 找到对应的 item

@@ -6,22 +6,20 @@
 <template>
   <div class="content-block custom-block">
     <!-- 自定义区块 item（从侧边栏选中） -->
-    <div class="custom-section-item" v-if="isSingleItem">
-      <div class="custom-content-items">
-        <div
-          class="content-item"
-          v-for="(contentItem, idx) in contentItems"
-          :key="idx"
-        >
-          <div class="content-item-header">
-            <span class="content-item-name">{{ contentItem.name as string }}</span>
-            <span class="content-item-period" v-if="contentItem.period">{{ contentItem.period as string }}</span>
-          </div>
-          <p class="exp-position" v-if="contentItem.role">{{ contentItem.role as string }}</p>
-          <p class="exp-desc" v-if="contentItem.description">{{ contentItem.description as string }}</p>
-          <div v-if="(contentItem.highlights as string[])?.length" class="content-item-highlights">
-            <span v-for="h in contentItem.highlights" :key="h" class="highlight-tag">{{ h as string }}</span>
-          </div>
+    <div class="custom-content-items" v-if="isSingleItem">
+      <div
+        class="content-item"
+        v-for="(contentItem, idx) in contentItems"
+        :key="idx"
+      >
+        <div class="content-item-header">
+          <span class="content-item-name">{{ contentItem.name as string }}</span>
+          <span class="content-item-period" v-if="contentItem.period">{{ contentItem.period as string }}</span>
+        </div>
+        <p class="exp-position" v-if="contentItem.role">{{ contentItem.role as string }}</p>
+        <p class="exp-desc" v-if="contentItem.description">{{ contentItem.description as string }}</p>
+        <div v-if="(contentItem.highlights as string[])?.length" class="content-item-highlights">
+          <span v-for="h in contentItem.highlights" :key="h" class="highlight-tag">{{ h as string }}</span>
         </div>
       </div>
       <!-- 空状态提示 -->
