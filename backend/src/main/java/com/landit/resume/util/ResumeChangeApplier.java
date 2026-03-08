@@ -1,8 +1,11 @@
 package com.landit.resume.util;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.landit.common.enums.SectionType;
 import com.landit.common.util.JsonParseHelper;
 import com.landit.resume.dto.OptimizeSectionResponse;
+import com.landit.resume.dto.ResumeDetailVO;
+import com.landit.resume.dto.ResumeStructuredData;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -14,6 +17,11 @@ import java.util.stream.Collectors;
 /**
  * 简历变更应用工具
  * 将 AI 生成的变更列表应用到简历数据
+ * <p>
+ * 设计说明：
+ * - 对外提供强类型接口（ResumeSectionVO）
+ * - 内部使用 Map 处理动态属性修改（因为 AI 生成的 field 路径是动态的）
+ * - 提供 contentToTypedObject 方法将 Map 转换为强类型对象
  *
  * @author Azir
  */
@@ -42,28 +50,107 @@ public final class ResumeChangeApplier {
      * @param changes  变更列表
      * @return 优化后的简历 sections
      */
-    @SuppressWarnings("unchecked")
-    public static List<Map<String, Object>> applyChanges(List<?> sections, List<OptimizeSectionResponse.Change> changes) {
+    public static List<ResumeDetailVO.ResumeSectionVO> applyChanges(
+            List<ResumeDetailVO.ResumeSectionVO> sections,
+            List<OptimizeSectionResponse.Change> changes) {
         if (sections == null) {
             return null;
         }
-        // 将 sections 转换为 List<Map> 进行深拷贝和修改
+        // 使用 TypeReference 进行强类型深拷贝
         String json = JsonParseHelper.toJsonString(sections);
-        List<Map<String, Object>> sectionsList = JsonParseHelper.parseToEntity(json, List.class);
+        List<ResumeDetailVO.ResumeSectionVO> sectionsCopy = JsonParseHelper.parseToEntity(json, new TypeReference<>() {}
+        );
         if (changes == null || changes.isEmpty()) {
-            return sectionsList;
+            return sectionsCopy;
         }
         for (OptimizeSectionResponse.Change change : changes) {
             String field = change.getField();
             String type = change.getType();
             Object value = change.getAfterValue();
             try {
-                applyChangeToSections(sectionsList, field, type, value);
+                applyChangeToSections(sectionsCopy, field, type, value);
             } catch (Exception e) {
                 log.warn("应用变更失败: field={}, type={}, error={}", field, type, e.getMessage());
             }
         }
-        return sectionsList;
+        return sectionsCopy;
+    }
+
+    /**
+     * 将 Map 格式的 content 转换为强类型对象
+     * 用于外部调用方获取类型安全的 content 数据
+     *
+     * @param contentMap  content 的 Map 表示
+     * @param sectionType 区块类型
+     * @param <T>         目标类型
+     * @return 强类型对象，转换失败返回 null
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T contentToTypedObject(Map<String, Object> contentMap, SectionType sectionType) {
+        if (contentMap == null || sectionType == null) {
+            return null;
+        }
+        Class<?> schemaClass = sectionType.getSchemaClass();
+        if (schemaClass == null) {
+            return null;
+        }
+        try {
+            String json = JsonParseHelper.toJsonString(contentMap);
+            return (T) JsonParseHelper.parseToEntity(json, schemaClass);
+        } catch (Exception e) {
+            log.warn("转换强类型失败: sectionType={}, error={}", sectionType, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 将聚合类型的 item content 转换为强类型对象列表
+     *
+     * @param section     简历区块
+     * @param sectionType 区块类型
+     * @param <T>         目标类型
+     * @return 强类型对象列表
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> List<T> itemsToTypedList(ResumeDetailVO.ResumeSectionVO section, SectionType sectionType) {
+        if (section == null || section.getItems() == null || sectionType == null) {
+            return List.of();
+        }
+        Class<?> schemaClass = sectionType.getSchemaClass();
+        if (schemaClass == null) {
+            return List.of();
+        }
+        List<T> result = new ArrayList<>();
+        for (ResumeDetailVO.ResumeSectionItemVO item : section.getItems()) {
+            Map<String, Object> contentMap = resolveContentToMap(item.getContent());
+            if (contentMap != null) {
+                T typedObj = contentToTypedObject(contentMap, sectionType);
+                if (typedObj != null) {
+                    result.add(typedObj);
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * 获取 BASIC_INFO 的强类型对象
+     *
+     * @param section 简历区块
+     * @return BasicInfo 对象，转换失败返回 null
+     */
+    @SuppressWarnings("unchecked")
+    public static ResumeStructuredData.BasicInfo getBasicInfo(ResumeDetailVO.ResumeSectionVO section) {
+        if (section == null || section.getContent() == null) {
+            return null;
+        }
+        Map<String, Object> contentMap;
+        if (section.getContent() instanceof Map) {
+            contentMap = (Map<String, Object>) section.getContent();
+        } else {
+            return null;
+        }
+        return contentToTypedObject(contentMap, SectionType.BASIC_INFO);
     }
 
     /**
@@ -75,7 +162,8 @@ public final class ResumeChangeApplier {
      * @param value    新值
      */
     @SuppressWarnings("unchecked")
-    private static void applyChangeToSections(List<Map<String, Object>> sections, String field, String type, Object value) {
+    private static void applyChangeToSections(List<ResumeDetailVO.ResumeSectionVO> sections,
+                                               String field, String type, Object value) {
         // 1. 解析路径
         ChangePathInfo pathInfo = parseChangePath(field);
         if (pathInfo.getSectionType() == null) {
@@ -83,7 +171,7 @@ public final class ResumeChangeApplier {
             return;
         }
         // 2. 定位目标 section
-        Map<String, Object> targetSection = findTargetSection(sections, pathInfo.getSectionType());
+        ResumeDetailVO.ResumeSectionVO targetSection = findTargetSection(sections, pathInfo.getSectionType());
         if (targetSection == null) {
             log.warn("未找到目标区块: {}", pathInfo.getSectionType());
             return;
@@ -102,10 +190,10 @@ public final class ResumeChangeApplier {
     /**
      * 根据 SectionType 定位目标 section
      */
-    private static Map<String, Object> findTargetSection(List<Map<String, Object>> sections, SectionType sectionType) {
-        for (Map<String, Object> section : sections) {
-            String type = (String) section.get("type");
-            if (sectionType.getCode().equals(type)) {
+    private static ResumeDetailVO.ResumeSectionVO findTargetSection(
+            List<ResumeDetailVO.ResumeSectionVO> sections, SectionType sectionType) {
+        for (ResumeDetailVO.ResumeSectionVO section : sections) {
+            if (sectionType.getCode().equals(section.getType())) {
                 return section;
             }
         }
@@ -117,12 +205,12 @@ public final class ResumeChangeApplier {
      * BASIC_INFO 结构：content = { name: "...", email: "..." }
      */
     @SuppressWarnings("unchecked")
-    private static void applyChangeToBasicInfo(Map<String, Object> section,
+    private static void applyChangeToBasicInfo(ResumeDetailVO.ResumeSectionVO section,
                                                 ChangePathInfo pathInfo, String type, Object value) {
-        Map<String, Object> content = (Map<String, Object>) section.get("content");
+        Map<String, Object> content = (Map<String, Object>) section.getContent();
         if (content == null) {
             content = new LinkedHashMap<>();
-            section.put("content", content);
+            section.setContent(content);
         }
         String property = pathInfo.getPropertyPath();
         if (property == null) {
@@ -140,18 +228,19 @@ public final class ResumeChangeApplier {
      * SKILLS 结构：items[0].content = "{...}" (JSON 字符串)，其中 skills = [{name, description, level, category}]
      */
     @SuppressWarnings("unchecked")
-    private static void applyChangeToSkills(Map<String, Object> section,
+    private static void applyChangeToSkills(ResumeDetailVO.ResumeSectionVO section,
                                              ChangePathInfo pathInfo, String type, Object value) {
-        List<Map<String, Object>> items = (List<Map<String, Object>>) section.get("items");
+        List<ResumeDetailVO.ResumeSectionItemVO> items = section.getItems();
         if (items == null || items.isEmpty()) {
             items = new ArrayList<>();
-            section.put("items", items);
-            Map<String, Object> newItem = new LinkedHashMap<>();
-            newItem.put("content", "{}");
+            section.setItems(items);
+            ResumeDetailVO.ResumeSectionItemVO newItem = ResumeDetailVO.ResumeSectionItemVO.builder()
+                    .content("{}")
+                    .build();
             items.add(newItem);
         }
-        Map<String, Object> firstItem = items.get(0);
-        Map<String, Object> content = resolveContentToMap(firstItem.get("content"));
+        ResumeDetailVO.ResumeSectionItemVO firstItem = items.get(0);
+        Map<String, Object> content = resolveContentToMap(firstItem.getContent());
         if (content == null) {
             content = new LinkedHashMap<>();
         }
@@ -178,7 +267,7 @@ public final class ResumeChangeApplier {
             skillsList.set(index, (Map<String, Object>) value);
         }
         // 修改后将 content 序列化回 JSON 字符串
-        firstItem.put("content", JsonParseHelper.toJsonString(content));
+        firstItem.setContent(JsonParseHelper.toJsonString(content));
     }
 
     /**
@@ -186,43 +275,45 @@ public final class ResumeChangeApplier {
      * 聚合类型结构：items = [{ id: "...", content: "{...}" }]  // content 是 JSON 字符串
      */
     @SuppressWarnings("unchecked")
-    private static void applyChangeToAggregateSection(Map<String, Object> section,
+    private static void applyChangeToAggregateSection(ResumeDetailVO.ResumeSectionVO section,
                                                        ChangePathInfo pathInfo, String type, Object value) {
-        List<Map<String, Object>> items = (List<Map<String, Object>>) section.get("items");
+        List<ResumeDetailVO.ResumeSectionItemVO> items = section.getItems();
         if (items == null) {
             items = new ArrayList<>();
-            section.put("items", items);
+            section.setItems(items);
         }
         int index = pathInfo.getArrayIndex();
         String property = pathInfo.getPropertyPath();
         if ("added".equals(type)) {
             // 新增：创建新的 item，content 存储为 JSON 字符串
             if (value instanceof Map) {
-                Map<String, Object> newItem = new LinkedHashMap<>();
-                newItem.put("id", UUID.randomUUID().toString());
-                newItem.put("content", JsonParseHelper.toJsonString(value));
+                ResumeDetailVO.ResumeSectionItemVO newItem = ResumeDetailVO.ResumeSectionItemVO.builder()
+                        .id(UUID.randomUUID().toString())
+                        .content(JsonParseHelper.toJsonString(value))
+                        .build();
                 items.add(newItem);
             } else if (value instanceof String && property == null) {
-                Map<String, Object> newItem = new LinkedHashMap<>();
-                newItem.put("id", UUID.randomUUID().toString());
                 Map<String, Object> contentMap = new LinkedHashMap<>();
                 contentMap.put("name", value);
-                newItem.put("content", JsonParseHelper.toJsonString(contentMap));
+                ResumeDetailVO.ResumeSectionItemVO newItem = ResumeDetailVO.ResumeSectionItemVO.builder()
+                        .id(UUID.randomUUID().toString())
+                        .content(JsonParseHelper.toJsonString(contentMap))
+                        .build();
                 items.add(newItem);
             }
         } else if ("removed".equals(type) && index >= 0 && index < items.size()) {
             items.remove(index);
         } else if (index >= 0 && index < items.size()) {
             // 修改：更新指定 item 的 content
-            Map<String, Object> item = items.get(index);
-            Map<String, Object> content = resolveContentToMap(item.get("content"));
+            ResumeDetailVO.ResumeSectionItemVO item = items.get(index);
+            Map<String, Object> content = resolveContentToMap(item.getContent());
             if (content == null) {
                 content = new LinkedHashMap<>();
             }
             if (property != null) {
                 applyPropertyChange(content, property, type, value);
                 // 修改后将 Map 序列化回 JSON 字符串
-                item.put("content", JsonParseHelper.toJsonString(content));
+                item.setContent(JsonParseHelper.toJsonString(content));
             }
         }
     }

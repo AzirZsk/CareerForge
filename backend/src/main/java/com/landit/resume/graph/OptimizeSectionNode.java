@@ -68,7 +68,10 @@ public class OptimizeSectionNode implements NodeAction {
         List<OptimizeSectionResponse.Change> changes = response.getChanges() != null ? response.getChanges() : List.of();
         int changeCount = changes.size();
         // afterSection: 根据 changes 计算优化后的简历内容
-        List<?> afterSection = ResumeChangeApplier.applyChanges(resumeDetail.getSections(), changes);
+        List<ResumeDetailVO.ResumeSectionVO> afterSection = ResumeChangeApplier.applyChanges(
+                resumeDetail.getSections(),
+                changes
+        );
         Map<String, Object> nodeOutput = buildNodeOutput(response, changes, changeCount, beforeSection, afterSection);
         String optimizeResult = JsonParseHelper.toJsonString(response);
         return Map.of(
@@ -83,7 +86,8 @@ public class OptimizeSectionNode implements NodeAction {
 
     private Map<String, Object> buildNodeOutput(OptimizeSectionResponse response,
                                                 List<OptimizeSectionResponse.Change> changes, int changeCount,
-                                                List<ResumeDetailVO.ResumeSectionVO> beforeSection, List<?> afterSection) {
+                                                List<ResumeDetailVO.ResumeSectionVO> beforeSection,
+                                                List<ResumeDetailVO.ResumeSectionVO> afterSection) {
         return JsonParseHelper.buildNodeOutput(
                 NODE_OPTIMIZE_SECTION,
                 80,
