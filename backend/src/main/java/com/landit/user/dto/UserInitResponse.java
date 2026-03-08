@@ -1,6 +1,5 @@
 package com.landit.user.dto;
 
-import com.landit.common.enums.Gender;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,6 +21,6 @@ public class UserInitResponse {
 
     private String name;
 
-    private Gender gender;
+    private String gender;
 
 }

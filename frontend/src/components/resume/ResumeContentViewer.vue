@@ -17,9 +17,9 @@
         <div v-if="section.type === 'BASIC_INFO'" class="resume-section">
           <h3>{{ section.title }}</h3>
           <div class="info-grid">
-            <div v-for="(value, key) in section.content" :key="key" class="info-item">
-              <span class="info-label">{{ getFieldLabel(String(key)) }}</span>
-              <span class="info-value" :class="getChangeClass(section.type, String(key))">
+            <div v-for="{ key, value } in getOrderedBasicInfoFields(section.content as Record<string, unknown>)" :key="key" class="info-item">
+              <span class="info-label">{{ getFieldLabel(key) }}</span>
+              <span class="info-value" :class="getChangeClass(section.type, key)">
                 {{ formatValue(value) }}
               </span>
             </div>
@@ -120,15 +120,20 @@
         <!-- 专业技能 -->
         <div v-else-if="section.type === 'SKILLS'" class="resume-section">
           <h3>{{ section.title }}</h3>
-          <div class="skills-list">
-            <span
+          <div class="skills-container">
+            <div
               v-for="(skill, idx) in getSkills(section)"
               :key="idx"
-              class="skill-tag"
+              class="skill-item"
               :class="getChangeClass(section.type, 'items[0].content.skills[' + idx + ']')"
             >
-              {{ skill }}
-            </span>
+              <div class="skill-header">
+                <span class="skill-name">{{ skill.name }}</span>
+                <span v-if="skill.level" class="skill-level">{{ skill.level }}</span>
+              </div>
+              <p v-if="skill.description" class="skill-description">{{ skill.description }}</p>
+              <span v-if="skill.category" class="skill-category">{{ skill.category }}</span>
+            </div>
           </div>
         </div>
 
@@ -188,11 +193,47 @@ const FIELD_LABELS: Record<string, string> = {
   phone: '电话',
   email: '邮箱',
   targetPosition: '目标岗位',
-  summary: '简介'
+  location: '所在地',
+  linkedin: 'LinkedIn',
+  github: 'GitHub',
+  website: '个人网站',
+  summary: '个人简介'
 }
+
+// 基本信息字段显示顺序（按简历展示习惯排序）
+const BASIC_INFO_FIELD_ORDER: string[] = [
+  'name',
+  'gender',
+  'phone',
+  'email',
+  'targetPosition',
+  'location',
+  'linkedin',
+  'github',
+  'website',
+  'summary'
+]
 
 function getFieldLabel(key: string): string {
   return FIELD_LABELS[key] || key
+}
+
+// 获取排序后的基本信息字段
+function getOrderedBasicInfoFields(content: Record<string, unknown>): { key: string; value: unknown }[] {
+  const result: { key: string; value: unknown }[] = []
+  // 先按预定义顺序添加
+  for (const key of BASIC_INFO_FIELD_ORDER) {
+    if (content[key] !== undefined && content[key] !== null && content[key] !== '') {
+      result.push({ key, value: content[key] })
+    }
+  }
+  // 再添加未在预定义顺序中但有值的字段
+  for (const [key, value] of Object.entries(content)) {
+    if (!BASIC_INFO_FIELD_ORDER.includes(key) && value !== undefined && value !== null && value !== '') {
+      result.push({ key, value })
+    }
+  }
+  return result
 }
 
 function formatValue(value: any): string {
@@ -203,9 +244,15 @@ function formatValue(value: any): string {
 }
 
 // 获取技能列表
-function getSkills(section: ResumeSection): string[] {
-  if (section.items?.[0]?.content?.skills) {
-    return section.items[0].content.skills
+function getSkills(section: ResumeSection): { name: string; level?: string; description?: string; category?: string }[] {
+  const skills = section.items?.[0]?.content?.skills
+  if (Array.isArray(skills)) {
+    return skills.map((s) => {
+      if (typeof s === 'string') {
+        return { name: s }
+      }
+      return s
+    })
   }
   return []
 }
@@ -419,19 +466,58 @@ function getChangeClass(sectionType: ResumeSectionType, fieldPath: string): stri
   }
 }
 
-.skills-list {
+.skills-container {
   display: flex;
-  flex-wrap: wrap;
-  gap: $spacing-xs;
+  flex-direction: column;
+  gap: $spacing-md;
 }
 
-.skill-tag {
-  padding: $spacing-xs $spacing-sm;
-  background: rgba(212, 168, 83, 0.1);
+.skill-item {
+  padding: $spacing-md;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: $radius-md;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.2s;
+  &:hover {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.skill-header {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-xs;
+}
+
+.skill-name {
+  font-size: $text-sm;
+  font-weight: $weight-medium;
+  color: $color-text-primary;
+}
+
+.skill-level {
+  padding: 2px $spacing-sm;
+  font-size: $text-xs;
+  background: rgba(212, 168, 83, 0.15);
   color: $color-accent;
   border-radius: $radius-sm;
+}
+
+.skill-description {
   font-size: $text-sm;
-  transition: all 0.2s;
+  color: $color-text-secondary;
+  line-height: $leading-relaxed;
+  margin-bottom: $spacing-xs;
+}
+
+.skill-category {
+  display: inline-block;
+  padding: 2px $spacing-xs;
+  font-size: $text-xs;
+  background: rgba(255, 255, 255, 0.05);
+  color: $color-text-tertiary;
+  border-radius: $radius-sm;
 }
 
 .certificate-item {

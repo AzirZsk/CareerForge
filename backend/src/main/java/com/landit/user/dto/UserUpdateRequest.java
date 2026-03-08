@@ -1,6 +1,5 @@
 package com.landit.user.dto;
 
-import com.landit.common.enums.Gender;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
@@ -15,6 +14,6 @@ public class UserUpdateRequest {
     @NotBlank(message = "姓名不能为空")
     private String name;
 
-    private Gender gender;
+    private String gender;
 
 }

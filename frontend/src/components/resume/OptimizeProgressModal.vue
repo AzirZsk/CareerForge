@@ -358,6 +358,10 @@ const sortedStageHistory = computed(() => {
 })
 
 function handleClose() {
+  // 优化完成时触发 complete 事件，让父组件刷新数据
+  if (props.state.isCompleted) {
+    emit('complete')
+  }
   emit('update:visible', false)
 }
 

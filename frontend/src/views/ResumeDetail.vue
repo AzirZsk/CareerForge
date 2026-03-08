@@ -189,21 +189,21 @@
           <div class="detail-content">
             <!-- 基本信息（单条） -->
             <div class="content-block" v-if="currentSectionDetail?.type === 'BASIC_INFO' && basicContent">
-              <template v-for="(value, key) in basicContent" :key="key">
-                <div class="info-row" v-if="value">
-                  <span class="info-label">{{ getFieldLabel(key as string) }}</span>
-                  <span class="info-value">{{ value }}</span>
-                </div>
-              </template>
+              <div v-for="{ key, value } in getOrderedBasicInfoFields(basicContent)" :key="key" class="info-row">
+                <span class="info-label">{{ getFieldLabel(key) }}</span>
+                <span class="info-value">{{ value }}</span>
+              </div>
             </div>
             <!-- 技能（单条） -->
-            <div class="content-block" v-else-if="currentSectionDetail?.type === 'SKILLS'">
-              <ul class="skill-list">
-                <li v-for="(skill, idx) in skillContent" :key="idx">
+            <div class="content-block skills-block" v-else-if="currentSectionDetail?.type === 'SKILLS'">
+              <div v-for="(skill, idx) in skillContent" :key="idx" class="skill-item">
+                <div class="skill-header">
                   <span class="skill-name">{{ skill.name }}</span>
                   <span v-if="skill.level" class="skill-level">{{ skill.level }}</span>
-                </li>
-              </ul>
+                </div>
+                <p v-if="skill.description" class="skill-description">{{ skill.description }}</p>
+                <span v-if="skill.category" class="skill-category">{{ skill.category }}</span>
+              </div>
             </div>
             <!-- 聚合类型（教育、工作、项目、证书） -->
             <div class="content-block" v-else-if="currentSectionDetail?.items?.length">
@@ -500,6 +500,12 @@ function getSectionIcon(type: string): string {
 }
 
 function getSectionPreview(section: ResumeSection): string {
+  // 技能类型：统计 skills 数组长度
+  if (section.type === 'SKILLS') {
+    const firstItem = section.items?.[0]
+    const content = firstItem?.content as SkillsContent | undefined
+    return `${content?.skills?.length ?? 0} 项技能`
+  }
   // 聚合类型（有items）
   if (section.items?.length) {
     if (section.type === 'OPEN_SOURCE') {
@@ -511,11 +517,6 @@ function getSectionPreview(section: ResumeSection): string {
   if (section.type === 'BASIC_INFO') {
     const content = section.content as BasicInfoContent
     return content.name ?? '基本信息'
-  }
-  if (section.type === 'SKILLS') {
-    const firstItem = section.items?.[0]
-    const content = firstItem?.content as SkillsContent | undefined
-    return `${content?.skills?.length ?? 0} 项技能`
   }
   return section.title ?? ''
 }
@@ -537,7 +538,11 @@ const fieldLabels: Record<string, string> = {
   phone: '电话',
   email: '邮箱',
   targetPosition: '目标岗位',
-  summary: '简介',
+  location: '所在地',
+  linkedin: 'LinkedIn',
+  github: 'GitHub',
+  website: '个人网站',
+  summary: '个人简介',
   school: '学校',
   major: '专业',
   degree: '学历',
@@ -551,8 +556,41 @@ const fieldLabels: Record<string, string> = {
   date: '日期'
 }
 
+// 基本信息字段显示顺序（按简历展示习惯排序）
+const BASIC_INFO_FIELD_ORDER: string[] = [
+  'name',
+  'gender',
+  'phone',
+  'email',
+  'targetPosition',
+  'location',
+  'linkedin',
+  'github',
+  'website',
+  'summary'
+]
+
 function getFieldLabel(key: string): string {
   return fieldLabels[key] || key
+}
+
+// 获取排序后的基本信息字段
+function getOrderedBasicInfoFields(content: BasicInfoContent): { key: string; value: unknown }[] {
+  const result: { key: string; value: unknown }[] = []
+  // 先按预定义顺序添加
+  for (const key of BASIC_INFO_FIELD_ORDER) {
+    const value = content[key as keyof BasicInfoContent]
+    if (value !== undefined && value !== null && value !== '') {
+      result.push({ key, value })
+    }
+  }
+  // 再添加未在预定义顺序中但有值的字段
+  for (const [key, value] of Object.entries(content)) {
+    if (!BASIC_INFO_FIELD_ORDER.includes(key) && value !== undefined && value !== null && value !== '') {
+      result.push({ key, value })
+    }
+  }
+  return result
 }
 
 function optimizeResume(): void {
@@ -1136,22 +1174,62 @@ async function deleteItem(itemId: string): Promise<void> {
   border-radius: $radius-sm;
 }
 
-.skill-list {
+.skill-item {
+  padding: $spacing-md;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: $radius-md;
+  margin-bottom: $spacing-sm;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all $transition-fast;
+  &:last-child {
+    margin-bottom: 0;
+  }
+  &:hover {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.skills-block {
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
-  li {
-    position: relative;
-    padding-left: $spacing-lg;
-    font-size: $text-sm;
-    color: $color-text-secondary;
-    &::before {
-      content: '▸';
-      position: absolute;
-      left: 0;
-      color: $color-accent;
-    }
-  }
+}
+
+.skill-header {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-xs;
+}
+
+.skill-name {
+  font-size: $text-sm;
+  font-weight: $weight-medium;
+  color: $color-text-primary;
+}
+
+.skill-level {
+  padding: 2px $spacing-sm;
+  font-size: $text-xs;
+  background: rgba(212, 168, 83, 0.15);
+  color: $color-accent;
+  border-radius: $radius-sm;
+}
+
+.skill-description {
+  font-size: $text-sm;
+  color: $color-text-secondary;
+  line-height: $leading-relaxed;
+  margin-bottom: $spacing-xs;
+}
+
+.skill-category {
+  display: inline-block;
+  padding: 2px $spacing-xs;
+  font-size: $text-xs;
+  background: rgba(255, 255, 255, 0.05);
+  color: $color-text-tertiary;
+  border-radius: $radius-sm;
 }
 
 .suggestions-block {

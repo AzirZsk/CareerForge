@@ -1,13 +1,11 @@
 package com.landit.common.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.landit.common.config.AIPromptProperties;
-import com.landit.common.enums.Gender;
 import com.landit.common.exception.BusinessException;
 import com.landit.common.schema.SectionSchemaRegistry;
 import com.landit.common.util.JsonParseHelper;
-import com.landit.resume.dto.ResumeParseResult;
 import com.landit.resume.dto.ResumeStructuredData;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,13 +18,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 /**
  * AI 服务
- * 基于 Spring AI Alibaba 实现大模型对话能力
+ * 基于 Spring AI OpenAI 实现大模型对话能力
  *
  * @author Azir
  */
@@ -51,7 +46,7 @@ public class AIService {
      * @param file 上传的简历文件（图片或PDF）
      * @return 解析后的简历信息
      */
-    public ResumeParseResult parseResumeFromFile(MultipartFile file) {
+    public ResumeStructuredData parseResumeFromFile(MultipartFile file) {
         log.info("开始解析简历文件: {}", file.getOriginalFilename());
         // 将文件转换为Media列表
         List<Media> mediaList = fileToImageService.convertToMedia(file);
@@ -80,210 +75,25 @@ public class AIService {
                 .call()
                 .content();
         // 解析JSON响应
-        ResumeParseResult result = parseResumeJsonResponse(jsonResponse);
-        log.info("简历文件解析完成: 姓名={}", result.getName());
+        ResumeStructuredData result = parseResumeJsonResponse(jsonResponse);
+        log.info("简历文件解析完成:{}", JsonParseHelper.toJsonString(result));
         return result;
     }
 
     /**
      * 解析简历JSON响应
+     * 直接使用 Jackson 反序列化
      *
      * @param jsonResponse 大模型返回的JSON字符串
-     * @return 解析后的ResumeParseResult对象
+     * @return 解析后的 ResumeStructuredData 对象
      */
-    private ResumeParseResult parseResumeJsonResponse(String jsonResponse) {
+    private ResumeStructuredData parseResumeJsonResponse(String jsonResponse) {
         try {
-            JsonNode root = objectMapper.readTree(jsonResponse);
-
-            ResumeStructuredData structuredData = parseStructuredData(root);
-            String name = getTextOrEmpty(root, "name");
-            return ResumeParseResult.builder()
-                    .name(name)
-                    .rawText(getTextOrEmpty(root, "markdownContent"))
-                    .structuredData(structuredData)
-                    .build();
+            return objectMapper.readValue(jsonResponse, ResumeStructuredData.class);
         } catch (Exception e) {
             log.error("解析简历JSON响应失败: {}", jsonResponse, e);
             throw BusinessException.serverError("解析简历响应失败");
         }
-    }
-
-    /**
-     * 解析结构化简历数据
-     */
-    private ResumeStructuredData parseStructuredData(JsonNode root) {
-        JsonNode basicInfoNode = root.get("basicInfo");
-
-        return ResumeStructuredData.builder()
-                .basicInfo(parseBasicInfo(basicInfoNode))
-                .education(parseArrayNode(root.get("education"), this::parseEducation))
-                .work(parseArrayNode(root.get("work"), this::parseWork))
-                .projects(parseArrayNode(root.get("projects"), this::parseProject))
-                .skills(parseArrayNode(root.get("skills"), this::parseSkill))
-                .certificates(parseArrayNode(root.get("certificates"), this::parseCertificate))
-                .openSource(parseArrayNode(root.get("openSource"), this::parseOpenSource))
-                .build();
-    }
-
-    /**
-     * 解析基本信息
-     */
-    private ResumeStructuredData.BasicInfo parseBasicInfo(JsonNode node) {
-        if (node == null || node.isNull()) {
-            return ResumeStructuredData.BasicInfo.builder().build();
-        }
-        return ResumeStructuredData.BasicInfo.builder()
-                .name(getTextOrEmpty(node, "name"))
-                .gender(Gender.fromText(getTextOrDefault(node, "gender", "未知")))
-                .phone(getTextOrEmpty(node, "phone"))
-                .email(getTextOrEmpty(node, "email"))
-                .targetPosition(getTextOrEmpty(node, "targetPosition"))
-                .summary(getTextOrEmpty(node, "summary"))
-                .location(getTextOrEmpty(node, "location"))
-                .linkedin(getTextOrEmpty(node, "linkedin"))
-                .github(getTextOrEmpty(node, "github"))
-                .website(getTextOrEmpty(node, "website"))
-                .build();
-    }
-
-    /**
-     * 解析教育经历
-     */
-    private ResumeStructuredData.EducationExperience parseEducation(JsonNode node) {
-        return ResumeStructuredData.EducationExperience.builder()
-                .school(getTextOrEmpty(node, "school"))
-                .degree(getTextOrEmpty(node, "degree"))
-                .major(getTextOrEmpty(node, "major"))
-                .period(getTextOrEmpty(node, "period"))
-                .gpa(getTextOrEmpty(node, "gpa"))
-                .courses(parseStringList(node.get("courses")))
-                .honors(parseStringList(node.get("honors")))
-                .build();
-    }
-
-    /**
-     * 解析工作经历
-     */
-    private ResumeStructuredData.WorkExperience parseWork(JsonNode node) {
-        return ResumeStructuredData.WorkExperience.builder()
-                .company(getTextOrEmpty(node, "company"))
-                .position(getTextOrEmpty(node, "position"))
-                .period(getTextOrEmpty(node, "period"))
-                .description(getTextOrEmpty(node, "description"))
-                .location(getTextOrEmpty(node, "location"))
-                .achievements(parseStringList(node.get("achievements")))
-                .technologies(parseStringList(node.get("technologies")))
-                .build();
-    }
-
-    /**
-     * 解析项目经验
-     */
-    private ResumeStructuredData.ProjectExperience parseProject(JsonNode node) {
-        return ResumeStructuredData.ProjectExperience.builder()
-                .name(getTextOrEmpty(node, "name"))
-                .role(getTextOrEmpty(node, "role"))
-                .period(getTextOrEmpty(node, "period"))
-                .description(getTextOrEmpty(node, "description"))
-                .achievements(parseStringList(node.get("achievements")))
-                .technologies(parseStringList(node.get("technologies")))
-                .url(getTextOrEmpty(node, "url"))
-                .build();
-    }
-
-    /**
-     * 解析证书
-     */
-    private ResumeStructuredData.Certificate parseCertificate(JsonNode node) {
-        return ResumeStructuredData.Certificate.builder()
-                .name(getTextOrEmpty(node, "name"))
-                .date(getTextOrEmpty(node, "date"))
-                .issuer(getTextOrEmpty(node, "issuer"))
-                .credentialId(getTextOrEmpty(node, "credentialId"))
-                .url(getTextOrEmpty(node, "url"))
-                .build();
-    }
-
-    /**
-     * 解析开源贡献
-     */
-    private ResumeStructuredData.OpenSourceContribution parseOpenSource(JsonNode node) {
-        return ResumeStructuredData.OpenSourceContribution.builder()
-                .projectName(getTextOrEmpty(node, "projectName"))
-                .url(getTextOrEmpty(node, "url"))
-                .role(getTextOrEmpty(node, "role"))
-                .period(getTextOrEmpty(node, "period"))
-                .description(getTextOrEmpty(node, "description"))
-                .achievements(parseStringList(node.get("achievements")))
-                .build();
-    }
-
-    /**
-     * 解析技能
-     */
-    private ResumeStructuredData.Skill parseSkill(JsonNode node) {
-        // 兼容旧格式：如果是字符串，转换为 Skill 对象
-        if (node.isTextual()) {
-            return ResumeStructuredData.Skill.builder()
-                    .name(node.asText())
-                    .description("")
-                    .level("")
-                    .category("")
-                    .build();
-        }
-        return ResumeStructuredData.Skill.builder()
-                .name(getTextOrEmpty(node, "name"))
-                .description(getTextOrEmpty(node, "description"))
-                .level(getTextOrEmpty(node, "level"))
-                .category(getTextOrEmpty(node, "category"))
-                .build();
-    }
-
-    /**
-     * 通用数组解析方法
-     */
-    private <T> List<T> parseArrayNode(JsonNode node, Function<JsonNode, T> parser) {
-        if (node == null || !node.isArray()) {
-            return List.of();
-        }
-        return StreamSupport.stream(node.spliterator(), false)
-                .map(parser)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * 解析字符串列表
-     */
-    private List<String> parseStringList(JsonNode node) {
-        if (node == null || !node.isArray()) {
-            return List.of();
-        }
-        return StreamSupport.stream(node.spliterator(), false)
-                .map(JsonNode::asText)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * 获取文本字段，若不存在返回空字符串
-     */
-    private String getTextOrEmpty(JsonNode node, String field) {
-        return node.has(field) ? node.get(field).asText() : "";
-    }
-
-    /**
-     * 获取文本字段，若不存在返回默认值
-     */
-    private String getTextOrDefault(JsonNode node, String field, String defaultValue) {
-        return node.has(field) ? node.get(field).asText() : defaultValue;
-    }
-
-    // ==================== 私有辅助方法 ====================
-
-    /**
-     * 对象转JSON字符串
-     */
-    private String toJsonString(Object obj) {
-        return JsonParseHelper.toJsonString(obj);
     }
 
 }

@@ -61,7 +61,7 @@ public class OptimizeSectionNode implements NodeAction {
                 chatClient, systemPrompt, userPrompt, OptimizeSectionResponse.class
         );
 
-        log.info("简历内容优化完成");
+        log.info("简历内容优化完成:{}", JsonParseHelper.toJsonString(response));
 
         // 为每个变更添加翻译字段
         if (response.getChanges() != null) {

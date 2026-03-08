@@ -1,7 +1,6 @@
 package com.landit.resume.dto;
 
 import com.landit.common.annotation.SchemaField;
-import com.landit.common.enums.Gender;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,18 +19,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ResumeStructuredData {
-
-    /**
-     * 姓名（根级必填字段）
-     */
-    @SchemaField(value = "姓名", required = true)
-    private String name;
-
-    /**
-     * 性别（根级必填字段）
-     */
-    @SchemaField(value = "性别", enumValues = {"男", "女", "未知"}, required = true)
-    private Gender gender;
 
     /**
      * markdown 格式的简历完整内容（根级必填字段）
@@ -105,7 +92,7 @@ public class ResumeStructuredData {
          * 性别
          */
         @SchemaField(value = "性别", enumValues = {"男", "女", "未知"})
-        private Gender gender;
+        private String gender;
 
         /**
          * 电话

@@ -50,34 +50,4 @@ public class UserController {
         return ApiResponse.success(userHandler.initUser(file));
     }
 
-    @Operation(summary = "解析简历为图片列表（用于初始化用户）")
-    @PostMapping("/parse-resume")
-    public ApiResponse<ResumeImagesResponse> parseResumeForInit(@RequestParam("file") MultipartFile file) {
-        return ApiResponse.success(userHandler.parseResumeForInit(file));
-    }
-
-    @Operation(summary = "创建用户（AI解析简历后调用）")
-    @PostMapping("/create")
-    public ApiResponse<UserInitResponse> createUser(@Valid @RequestBody UserCreateRequest request) {
-        return ApiResponse.success(userService.createUser(request));
-    }
-
-    @Operation(summary = "获取当前用户信息")
-    @GetMapping("/profile")
-    public ApiResponse<User> getUserProfile() {
-        return ApiResponse.success(userService.getUserProfile());
-    }
-
-    @Operation(summary = "更新用户信息")
-    @PutMapping("/profile")
-    public ApiResponse<User> updateUserProfile(@Valid @RequestBody UserUpdateRequest request) {
-        return ApiResponse.success(userService.updateUserProfile(request));
-    }
-
-    @Operation(summary = "上传头像")
-    @PostMapping("/avatar")
-    public ApiResponse<AvatarUploadResponse> uploadAvatar(@RequestParam("file") MultipartFile file) {
-        return ApiResponse.success(userHandler.uploadAvatar(file));
-    }
-
 }

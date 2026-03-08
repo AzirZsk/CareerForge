@@ -1,7 +1,6 @@
 package com.landit.user.service;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.landit.common.enums.Gender;
 import com.landit.common.exception.BusinessException;
 import com.landit.user.dto.UserCreateRequest;
 import com.landit.user.dto.UserStatusResponse;
@@ -34,8 +33,7 @@ public class UserService extends ServiceImpl<UserMapper, User> {
             return UserStatusResponse.notExists();
         }
         // 用户存在，返回用户信息
-        String genderValue = user.getGender() != null ? user.getGender().name() : null;
-        return UserStatusResponse.exists(user.getId(), user.getName(), genderValue, user.getAvatar());
+        return UserStatusResponse.exists(user.getId(), user.getName(), user.getGender(), user.getAvatar());
     }
 
     /**

@@ -2,7 +2,6 @@ package com.landit.user.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.landit.common.entity.BaseEntity;
-import com.landit.common.enums.Gender;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -18,7 +17,7 @@ public class User extends BaseEntity {
 
     private String name;
 
-    private Gender gender;
+    private String gender;
 
     private String avatar;
 

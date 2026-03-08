@@ -6,7 +6,7 @@
 <template>
   <Teleport to="body">
     <Transition name="modal">
-      <div v-if="visible" class="modal-overlay" @click.self="handleCancel">
+      <div v-if="visible" class="modal-overlay">
         <div class="modal-container">
           <div class="modal-header">
             <h3 class="modal-title">{{ modalTitle }}</h3>
@@ -128,7 +128,16 @@ watch(
   [() => props.section, () => props.itemId, () => props.visible],
   ([newSection, newItemId]) => {
     if (newSection && props.visible) {
-      // 单条类型（BASIC_INFO、SKILLS）
+      // 技能类型：数据在 items[0].content
+      if (sectionType.value === 'SKILLS') {
+        if (newSection.items?.[0]?.content) {
+          formData.value = JSON.parse(JSON.stringify(newSection.items[0].content))
+        } else {
+          formData.value = { skills: [] }
+        }
+        return
+      }
+      // 单条类型（BASIC_INFO）
       if (!isAggregate.value) {
         if (newSection.content) {
           formData.value = JSON.parse(JSON.stringify(newSection.content))

@@ -1,6 +1,5 @@
 package com.landit.user.dto;
 
-import com.landit.common.enums.Gender;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,6 +27,6 @@ public class UserCreateRequest {
     /**
      * 性别
      */
-    private Gender gender;
+    private String gender;
 
 }
