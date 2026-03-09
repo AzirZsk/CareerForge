@@ -6,6 +6,8 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.ResponseFormat;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
 /**
@@ -116,20 +118,33 @@ public final class ChatClientHelper {
     // ==================== 提示词处理工具方法 ====================
 
     /**
+     * 时间格式化器（精确到秒）
+     */
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    /**
      * 替换提示词模板中的变量占位符
      * 占位符格式：{variableName}
+     * 自动在模板最前面添加当前时间戳
      *
      * @param template 提示词模板
      * @param variables 变量键值对
-     * @return 替换后的提示词
+     * @return 替换后的提示词（带时间戳前缀）
      */
     public static String renderTemplate(String template, Map<String, String> variables) {
-        if (template == null || variables == null) {
-            return template;
+        if (template == null) {
+            return null;
         }
-        String result = template;
-        for (Map.Entry<String, String> entry : variables.entrySet()) {
-            result = result.replace("{" + entry.getKey() + "}", entry.getValue());
+
+        // 在模板最前面添加当前时间
+        String currentTime = LocalDateTime.now().format(TIME_FORMATTER);
+        String result = "[当前时间：" + currentTime + "]\n\n" + template;
+
+        // 替换变量
+        if (variables != null) {
+            for (Map.Entry<String, String> entry : variables.entrySet()) {
+                result = result.replace("{" + entry.getKey() + "}", entry.getValue());
+            }
         }
         return result;
     }
