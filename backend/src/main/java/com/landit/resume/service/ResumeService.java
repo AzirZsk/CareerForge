@@ -26,11 +26,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * 简历服务实现类
@@ -91,8 +93,8 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
 
         // 查询简历模块列表（非版本快照）
         List<ResumeSection> sections = getResumeSections(id);
-        // 聚合sections：多条类型合并为items数组
-        vo.setSections(aggregateSections(sections));
+        // 每种类型一条记录，直接映射
+        vo.setSections(sections.stream().map(this::buildSectionVO).collect(Collectors.toList()));
 
         // 设置是否已完成分析
         vo.setAnalyzed(isResumeAnalyzed(resume));
@@ -104,62 +106,79 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
     }
 
     /**
-     * 聚合sections数据
-     * 对于可能有多条的类型（PROJECT、WORK、EDUCATION、CERTIFICATE）进行聚合
-     * 单条类型（BASIC_INFO、SKILLS）保持原有结构
-     *
-     * @param sections 原始sections列表
-     * @return 聚合后的VO列表
-     */
-    private List<ResumeDetailVO.ResumeSectionVO> aggregateSections(List<ResumeSection> sections) {
-        // 使用LinkedHashMap保持插入顺序
-        Map<String, List<ResumeSection>> groupedSections = new LinkedHashMap<>();
-        // 按类型分组
-        for (ResumeSection section : sections) {
-            groupedSections.computeIfAbsent(section.getType(), k -> new ArrayList<>()).add(section);
-        }
-        // 按原始顺序构建VO
-        return groupedSections.entrySet().stream()
-                .map(entry -> buildSectionVO(entry.getKey(), entry.getValue()))
-                .collect(java.util.stream.Collectors.toList());
-    }
-
-    /**
      * 构建单个SectionVO
-     * 聚合类型使用items，单条类型使用content
+     * 聚合类型从 content 解析数组并生成 items，单条类型直接返回 content
+     *
+     * @param section 简历模块实体
+     * @return SectionVO
      */
-    private ResumeDetailVO.ResumeSectionVO buildSectionVO(String typeCode, List<ResumeSection> sections) {
-        ResumeSection first = sections.get(0);
-        SectionType sectionType = SectionType.fromCode(typeCode);
-        // 聚合类型：使用items数组
+    private ResumeDetailVO.ResumeSectionVO buildSectionVO(ResumeSection section) {
+        SectionType sectionType = SectionType.fromCode(section.getType());
+
+        // 聚合类型：从 content 解析数组并生成 items
         if (sectionType != null && sectionType.isAggregate()) {
-            List<ResumeDetailVO.ResumeSectionItemVO> items = sections.stream()
-                    .map(section -> ResumeDetailVO.ResumeSectionItemVO.builder()
-                            .id(section.getId())
-                            .title(section.getTitle())
-                            .content(section.getContent())
-                            .score(section.getScore())
-                            .build())
-                    .collect(java.util.stream.Collectors.toList());
+            List<?> items = JsonParseHelper.parseToEntity(section.getContent(), new TypeReference<List<Object>>() {});
+            List<ResumeDetailVO.ResumeSectionItemVO> itemVOs = new ArrayList<>();
+            if (items != null) {
+                for (int i = 0; i < items.size(); i++) {
+                    itemVOs.add(ResumeDetailVO.ResumeSectionItemVO.builder()
+                        .id(section.getId() + "_" + i)
+                        .title(extractTitle(items.get(i), sectionType))
+                        .content(toJsonString(items.get(i)))
+                        .build());
+                }
+            }
             return ResumeDetailVO.ResumeSectionVO.builder()
-                    .id(first.getId())
-                    .type(typeCode)
-                    .title(sectionType.getDescription())
-                    .score(first.getScore())
-                    .items(items)
-                    .suggestions(null)
-                    .build();
+                .id(section.getId())
+                .type(section.getType())
+                .title(sectionType.getDescription())
+                .score(section.getScore())
+                .items(itemVOs)
+                .suggestions(null)
+                .build();
         }
         // 单条类型：保持原有结构，content 直接返回 JSON 字符串
         return ResumeDetailVO.ResumeSectionVO.builder()
-                .id(first.getId())
-                .type(typeCode)
-                .title(first.getTitle())
-                .content(first.getContent())
-                .score(first.getScore())
-                .items(null)
-                .suggestions(null)
-                .build();
+            .id(section.getId())
+            .type(section.getType())
+            .title(section.getTitle())
+            .content(section.getContent())
+            .score(section.getScore())
+            .items(null)
+            .suggestions(null)
+            .build();
+    }
+
+    /**
+     * 从聚合类型的单个元素中提取标题
+     *
+     * @param item 单个元素（Map 类型）
+     * @param type 区块类型
+     * @return 提取的标题
+     */
+    private String extractTitle(Object item, SectionType type) {
+        if (item instanceof Map) {
+            Map<?, ?> map = (Map<?, ?>) item;
+            switch (type) {
+                case WORK:
+                    return Objects.toString(map.get("company"), "工作经历");
+                case PROJECT:
+                    return Objects.toString(map.get("name"), "项目经验");
+                case EDUCATION:
+                    return Objects.toString(map.get("school"), "教育经历");
+                case CERTIFICATE:
+                    return Objects.toString(map.get("name"), "证书");
+                case OPEN_SOURCE:
+                    return Objects.toString(map.get("projectName"), "开源贡献");
+                case CUSTOM:
+                    return Objects.toString(map.get("title"), "自定义区块");
+                case SKILLS:
+                    return "技能";
+                default:
+                    return type.getDescription();
+            }
+        }
+        return type.getDescription();
     }
 
     /**
@@ -315,13 +334,13 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
     private void createResumeSections(String resumeId, ResumeStructuredData data) {
         createSection(resumeId, SectionType.RAW_TEXT, SectionType.RAW_TEXT.getDescription(), toJsonString(data));
         createBasicInfoSection(resumeId, data.getBasicInfo());
-        createEducationSections(resumeId, data.getEducation());
-        createWorkSections(resumeId, data.getWork());
-        createProjectSections(resumeId, data.getProjects());
-        createSkillsSection(resumeId, data.getSkills());
-        createCertificateSections(resumeId, data.getCertificates());
-        createOpenSourceSections(resumeId, data.getOpenSource());
-        createCustomSections(resumeId, data.getCustomSections());
+        createAggregateSection(resumeId, SectionType.EDUCATION, data.getEducation());
+        createAggregateSection(resumeId, SectionType.WORK, data.getWork());
+        createAggregateSection(resumeId, SectionType.PROJECT, data.getProjects());
+        createAggregateSection(resumeId, SectionType.SKILLS, data.getSkills());
+        createAggregateSection(resumeId, SectionType.CERTIFICATE, data.getCertificates());
+        createAggregateSection(resumeId, SectionType.OPEN_SOURCE, data.getOpenSource());
+        createAggregateSection(resumeId, SectionType.CUSTOM, data.getCustomSections());
 
         log.info("简历模块创建完成: resumeId={}", resumeId);
     }
@@ -337,92 +356,17 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
     }
 
     /**
-     * 创建教育经历模块
+     * 创建聚合类型区块（每种类型只保存一条记录，content 存储数组 JSON）
+     *
+     * @param resumeId 简历ID
+     * @param type     区块类型
+     * @param items    区块内容列表
      */
-    private void createEducationSections(String resumeId, List<ResumeStructuredData.EducationExperience> educations) {
-        if (educations == null || educations.isEmpty()) {
+    private void createAggregateSection(String resumeId, SectionType type, List<?> items) {
+        if (items == null || items.isEmpty()) {
             return;
         }
-        for (ResumeStructuredData.EducationExperience edu : educations) {
-            String title = Objects.toString(edu.getSchool(), SectionType.EDUCATION.getDescription());
-            createSection(resumeId, SectionType.EDUCATION, title, toJsonString(edu));
-        }
-    }
-
-    /**
-     * 创建工作经历模块
-     */
-    private void createWorkSections(String resumeId, List<ResumeStructuredData.WorkExperience> works) {
-        if (works == null || works.isEmpty()) {
-            return;
-        }
-        for (ResumeStructuredData.WorkExperience work : works) {
-            String title = Objects.toString(work.getCompany(), SectionType.WORK.getDescription());
-            createSection(resumeId, SectionType.WORK, title, toJsonString(work));
-        }
-    }
-
-    /**
-     * 创建项目经验模块
-     */
-    private void createProjectSections(String resumeId, List<ResumeStructuredData.ProjectExperience> projects) {
-        if (projects == null || projects.isEmpty()) {
-            return;
-        }
-        for (ResumeStructuredData.ProjectExperience project : projects) {
-            String title = Objects.toString(project.getName(), SectionType.PROJECT.getDescription());
-            createSection(resumeId, SectionType.PROJECT, title, toJsonString(project));
-        }
-    }
-
-    /**
-     * 创建技能模块
-     */
-    private void createSkillsSection(String resumeId, List<ResumeStructuredData.Skill> skills) {
-        if (skills == null || skills.isEmpty()) {
-            return;
-        }
-        // 保持与原有结构兼容：{"skills": [...]}
-        createSection(resumeId, SectionType.SKILLS, SectionType.SKILLS.getDescription(), toJsonString(Map.of("skills", skills)));
-    }
-
-    /**
-     * 创建证书模块
-     */
-    private void createCertificateSections(String resumeId, List<ResumeStructuredData.Certificate> certificates) {
-        if (certificates == null || certificates.isEmpty()) {
-            return;
-        }
-        for (ResumeStructuredData.Certificate cert : certificates) {
-            String title = Objects.toString(cert.getName(), SectionType.CERTIFICATE.getDescription());
-            createSection(resumeId, SectionType.CERTIFICATE, title, toJsonString(cert));
-        }
-    }
-
-    /**
-     * 创建开源贡献模块
-     */
-    private void createOpenSourceSections(String resumeId, List<ResumeStructuredData.OpenSourceContribution> openSources) {
-        if (openSources == null || openSources.isEmpty()) {
-            return;
-        }
-        for (ResumeStructuredData.OpenSourceContribution openSource : openSources) {
-            String title = Objects.toString(openSource.getProjectName(), SectionType.OPEN_SOURCE.getDescription());
-            createSection(resumeId, SectionType.OPEN_SOURCE, title, toJsonString(openSource));
-        }
-    }
-
-    /**
-     * 创建自定义区块模块
-     */
-    private void createCustomSections(String resumeId, List<ResumeStructuredData.CustomSection> customSections) {
-        if (customSections == null || customSections.isEmpty()) {
-            return;
-        }
-        for (ResumeStructuredData.CustomSection customSection : customSections) {
-            String sectionTitle = Objects.toString(customSection.getTitle(), SectionType.CUSTOM.getDescription());
-            createSection(resumeId, SectionType.CUSTOM, sectionTitle, toJsonString(customSection));
-        }
+        createSection(resumeId, type, type.getDescription(), toJsonString(items));
     }
 
     /**

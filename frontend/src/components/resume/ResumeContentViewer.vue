@@ -276,11 +276,14 @@ function getSkills(section: ResumeSection): { name: string; level?: string; desc
 }
 
 // 获取成就列表
-function getAchievements(content: string): string[] {
+function getAchievements(content: string | Record<string, any> | null | undefined): string[] {
   interface ContentWithAchievements {
     achievements?: string[]
   }
-  const parsed = parseContent<ContentWithAchievements>(content)
+  // 如果已经是对象，直接使用；如果是字符串，需要解析
+  const parsed = typeof content === 'string'
+    ? parseContent<ContentWithAchievements>(content)
+    : (content as ContentWithAchievements)
   return parsed?.achievements ?? []
 }
 

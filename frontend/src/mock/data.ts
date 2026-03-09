@@ -70,13 +70,13 @@ export const resumeDetail: ResumeDetail = {
       id: 'section_001',
       type: 'BASIC_INFO',
       title: '基本信息',
-      content: {
+      content: JSON.stringify({
         name: 'Azir',
         phone: '138****8888',
         email: 'zhangshukun@example.com',
         targetPosition: '高级前端工程师',
         summary: '5年前端开发经验，专注于大型Web应用架构设计与性能优化'
-      },
+      }),
       items: null,
       score: 100,
       suggestions: []
@@ -149,10 +149,53 @@ export const resumeDetail: ResumeDetail = {
       id: 'section_004',
       type: 'SKILLS',
       title: '专业技能',
-      content: {
-        skills: ['精通 Vue.js / React 框架，熟悉源码实现', '熟练使用 TypeScript 进行大型项目开发', '具有丰富的性能优化和工程化经验', '熟悉 Node.js，能够开发服务端应用']
-      },
-      items: null,
+      content: null,
+      items: [
+        {
+          id: 'skill_001',
+          title: '技能',
+          content: JSON.stringify({
+            name: 'Vue.js / React',
+            description: '精通 Vue.js / React 框架，熟悉源码实现',
+            level: 'expert',
+            category: 'frontend'
+          }),
+          score: null
+        },
+        {
+          id: 'skill_002',
+          title: '技能',
+          content: JSON.stringify({
+            name: 'TypeScript',
+            description: '熟练使用 TypeScript 进行大型项目开发',
+            level: 'expert',
+            category: 'language'
+          }),
+          score: null
+        },
+        {
+          id: 'skill_003',
+          title: '技能',
+          content: JSON.stringify({
+            name: '性能优化',
+            description: '具有丰富的性能优化和工程化经验',
+            level: 'advanced',
+            category: 'engineering'
+          }),
+          score: null
+        },
+        {
+          id: 'skill_004',
+          title: '技能',
+          content: JSON.stringify({
+            name: 'Node.js',
+            description: '熟悉 Node.js，能够开发服务端应用',
+            level: 'intermediate',
+            category: 'backend'
+          }),
+          score: null
+        }
+      ],
       score: 85,
       suggestions: [
         {

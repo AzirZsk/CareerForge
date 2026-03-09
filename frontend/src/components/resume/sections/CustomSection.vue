@@ -96,8 +96,9 @@ defineEmits<{
 // 单条 item 的内容项
 const contentItems = computed(() => {
   if (props.isSingleItem && props.content) {
-    // content 可能是 JSON 字符串，需要先解析
-    const parsedContent = parseContent<CustomContent>(props.content)
+    // content 可能是 JSON 字符串或对象，需要先解析
+    const contentStr = typeof props.content === 'string' ? props.content : JSON.stringify(props.content)
+    const parsedContent = parseContent<CustomContent>(contentStr)
     return (parsedContent.items as Array<Record<string, unknown>>) ?? []
   }
   return []

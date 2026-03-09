@@ -139,15 +139,12 @@ public final class ResumeChangeApplier {
      * @param section 简历区块
      * @return BasicInfo 对象，转换失败返回 null
      */
-    @SuppressWarnings("unchecked")
     public static ResumeStructuredData.BasicInfo getBasicInfo(ResumeDetailVO.ResumeSectionVO section) {
         if (section == null || section.getContent() == null) {
             return null;
         }
-        Map<String, Object> contentMap;
-        if (section.getContent() instanceof Map) {
-            contentMap = (Map<String, Object>) section.getContent();
-        } else {
+        Map<String, Object> contentMap = resolveContentToMap(section.getContent());
+        if (contentMap == null) {
             return null;
         }
         return contentToTypedObject(contentMap, SectionType.BASIC_INFO);
@@ -202,15 +199,13 @@ public final class ResumeChangeApplier {
 
     /**
      * 应用变更到 BASIC_INFO 类型
-     * BASIC_INFO 结构：content = { name: "...", email: "..." }
+     * BASIC_INFO 结构：content = "{...}" (JSON 字符串格式)
      */
-    @SuppressWarnings("unchecked")
     private static void applyChangeToBasicInfo(ResumeDetailVO.ResumeSectionVO section,
                                                 ChangePathInfo pathInfo, String type, Object value) {
-        Map<String, Object> content = (Map<String, Object>) section.getContent();
+        Map<String, Object> content = resolveContentToMap(section.getContent());
         if (content == null) {
             content = new LinkedHashMap<>();
-            section.setContent(content);
         }
         String property = pathInfo.getPropertyPath();
         if (property == null) {
@@ -221,6 +216,8 @@ public final class ResumeChangeApplier {
         } else {
             content.put(property, value);
         }
+        // 修改后将 content 序列化回 JSON 字符串
+        section.setContent(JsonParseHelper.toJsonString(content));
     }
 
     /**

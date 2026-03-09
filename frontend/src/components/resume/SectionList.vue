@@ -87,11 +87,6 @@ defineEmits<{
 }>()
 
 const { getSectionIcon, getSectionPreview, getCustomItemPreview, getScoreClass, parseContent } = useSectionHelper()
-
-interface CustomContent {
-  title?: string
-  items?: Array<Record<string, unknown>>
-}
 </script>
 
 <style lang="scss" scoped>

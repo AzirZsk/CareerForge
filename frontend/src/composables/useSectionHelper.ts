@@ -3,7 +3,7 @@
 // @author Azir
 // =====================================================
 
-import type { ResumeSection, BasicInfoContent, SkillsContent } from '@/types'
+import type { ResumeSection, BasicInfoContent } from '@/types'
 
 // 模块图标映射（后端大写格式）
 const sectionIcons: Record<string, string> = {
@@ -85,11 +85,9 @@ export function useSectionHelper() {
 
   // 获取模块预览文本
   function getSectionPreview(section: ResumeSection): string {
-    // 技能类型：统计 skills 数组长度
+    // 技能类型：直接统计 items 数组长度
     if (section.type === 'SKILLS') {
-      const firstItem = section.items?.[0]
-      const content = parseContent<SkillsContent>(firstItem?.content)
-      return `${content?.skills?.length ?? 0} 项技能`
+      return `${section.items?.length ?? 0} 项技能`
     }
     // 聚合类型（有items）
     if (section.items?.length) {
