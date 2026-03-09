@@ -1,15 +1,14 @@
 package com.landit.resume.util;
 
+import com.landit.common.util.JsonParseHelper;
 import com.landit.resume.dto.OptimizeSectionResponse;
+import com.landit.resume.dto.ResumeDetailVO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -21,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("ResumeChangeApplier 测试")
 class ResumeChangeApplierTest {
 
-    private List<Map<String, Object>> testSections;
+    private List<ResumeDetailVO.ResumeSectionVO> testSections;
 
     @BeforeEach
     void setUp() {
@@ -39,10 +38,9 @@ class ResumeChangeApplierTest {
                     "modified", "basicInfo.summary", "string",
                     null, "5年电竞新媒体运营经验，精通从0到1账号搭建与内容矩阵运营。"
             );
-            List<Map<String, Object>> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
-            Map<String, Object> basicInfo = findSectionByType(result, "BASIC_INFO");
-            @SuppressWarnings("unchecked")
-            Map<String, Object> content = (Map<String, Object>) basicInfo.get("content");
+            List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
+            ResumeDetailVO.ResumeSectionVO basicInfo = findSectionByType(result, "BASIC_INFO");
+            Map<String, Object> content = parseContent(basicInfo.getContent());
             assertEquals("5年电竞新媒体运营经验，精通从0到1账号搭建与内容矩阵运营。", content.get("summary"));
         }
 
@@ -53,10 +51,9 @@ class ResumeChangeApplierTest {
                     "modified", "basicInfo.name", "string",
                     "陈家尧", "张三"
             );
-            List<Map<String, Object>> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
-            Map<String, Object> basicInfo = findSectionByType(result, "BASIC_INFO");
-            @SuppressWarnings("unchecked")
-            Map<String, Object> content = (Map<String, Object>) basicInfo.get("content");
+            List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
+            ResumeDetailVO.ResumeSectionVO basicInfo = findSectionByType(result, "BASIC_INFO");
+            Map<String, Object> content = parseContent(basicInfo.getContent());
             assertEquals("张三", content.get("name"));
         }
     }
@@ -72,12 +69,10 @@ class ResumeChangeApplierTest {
                     "modified", "work[0].period", "string",
                     "2025.03-2026.03", "2023.03-2024.12"
             );
-            List<Map<String, Object>> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
-            Map<String, Object> workSection = findSectionByType(result, "WORK");
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> items = (List<Map<String, Object>>) workSection.get("items");
-            Map<String, Object> content = parseContent(items.get(0).get("content"));
-            assertEquals("2023.03-2024.12", content.get("period"));
+            List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
+            ResumeDetailVO.ResumeSectionVO workSection = findSectionByType(result, "WORK");
+            List<Map<String, Object>> items = parseContentArray(workSection.getContent());
+            assertEquals("2023.03-2024.12", items.get(0).get("period"));
         }
 
         @Test
@@ -88,12 +83,10 @@ class ResumeChangeApplierTest {
                     "modified", "work[0].description", "string",
                     "旧描述", newDescription
             );
-            List<Map<String, Object>> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
-            Map<String, Object> workSection = findSectionByType(result, "WORK");
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> items = (List<Map<String, Object>>) workSection.get("items");
-            Map<String, Object> content = parseContent(items.get(0).get("content"));
-            assertTrue(content.get("description").toString().contains("全平台内容运营"));
+            List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
+            ResumeDetailVO.ResumeSectionVO workSection = findSectionByType(result, "WORK");
+            List<Map<String, Object>> items = parseContentArray(workSection.getContent());
+            assertTrue(items.get(0).get("description").toString().contains("全平台内容运营"));
         }
 
         @Test
@@ -103,13 +96,11 @@ class ResumeChangeApplierTest {
             OptimizeSectionResponse.Change change = createArrayChange(
                     "modified", "work[0].technologies", null, newTechnologies
             );
-            List<Map<String, Object>> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
-            Map<String, Object> workSection = findSectionByType(result, "WORK");
+            List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
+            ResumeDetailVO.ResumeSectionVO workSection = findSectionByType(result, "WORK");
+            List<Map<String, Object>> items = parseContentArray(workSection.getContent());
             @SuppressWarnings("unchecked")
-            List<Map<String, Object>> items = (List<Map<String, Object>>) workSection.get("items");
-            Map<String, Object> content = parseContent(items.get(0).get("content"));
-            @SuppressWarnings("unchecked")
-            List<String> technologies = (List<String>) content.get("technologies");
+            List<String> technologies = (List<String>) items.get(0).get("technologies");
             assertEquals(3, technologies.size());
             assertTrue(technologies.contains("抖音/小红书运营"));
         }
@@ -121,12 +112,10 @@ class ResumeChangeApplierTest {
                     "modified", "work[1].description", "string",
                     "旧描述", "负责FPX永劫无间分部所有内容"
             );
-            List<Map<String, Object>> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
-            Map<String, Object> workSection = findSectionByType(result, "WORK");
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> items = (List<Map<String, Object>>) workSection.get("items");
-            Map<String, Object> content = parseContent(items.get(1).get("content"));
-            assertTrue(content.get("description").toString().contains("FPX"));
+            List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
+            ResumeDetailVO.ResumeSectionVO workSection = findSectionByType(result, "WORK");
+            List<Map<String, Object>> items = parseContentArray(workSection.getContent());
+            assertTrue(items.get(1).get("description").toString().contains("FPX"));
         }
     }
 
@@ -143,12 +132,13 @@ class ResumeChangeApplierTest {
                     "added", "skills[0]", "string",
                     null, "社交媒体运营（精通）"
             );
-            List<Map<String, Object>> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
-            Map<String, Object> skillsSection = findSectionByType(result, "SKILLS");
+            List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
+            ResumeDetailVO.ResumeSectionVO skillsSection = findSectionByType(result, "SKILLS");
             assertNotNull(skillsSection);
+            Map<String, Object> content = parseContent(skillsSection.getContent());
             @SuppressWarnings("unchecked")
-            List<Map<String, Object>> items = (List<Map<String, Object>>) skillsSection.get("items");
-            assertFalse(items.isEmpty());
+            List<Map<String, Object>> skills = (List<Map<String, Object>>) content.get("skills");
+            assertFalse(skills.isEmpty());
         }
 
         @Test
@@ -160,12 +150,9 @@ class ResumeChangeApplierTest {
                     createChange("added", "skills[1]", "string", null, "内容创作与视频剪辑"),
                     createChange("added", "skills[2]", "string", null, "数据分析")
             );
-            List<Map<String, Object>> result = ResumeChangeApplier.applyChanges(testSections, changes);
-            Map<String, Object> skillsSection = findSectionByType(result, "SKILLS");
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> items = (List<Map<String, Object>>) skillsSection.get("items");
-            @SuppressWarnings("unchecked")
-            Map<String, Object> content = parseContent(items.get(0).get("content"));
+            List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(testSections, changes);
+            ResumeDetailVO.ResumeSectionVO skillsSection = findSectionByType(result, "SKILLS");
+            Map<String, Object> content = parseContent(skillsSection.getContent());
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> skills = (List<Map<String, Object>>) content.get("skills");
             assertTrue(skills.size() >= 3);
@@ -184,13 +171,11 @@ class ResumeChangeApplierTest {
                     "modified", "education[0].courses",
                     List.of("宏观经济学", "微观经济学"), newCourses
             );
-            List<Map<String, Object>> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
-            Map<String, Object> educationSection = findSectionByType(result, "EDUCATION");
+            List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
+            ResumeDetailVO.ResumeSectionVO educationSection = findSectionByType(result, "EDUCATION");
+            List<Map<String, Object>> items = parseContentArray(educationSection.getContent());
             @SuppressWarnings("unchecked")
-            List<Map<String, Object>> items = (List<Map<String, Object>>) educationSection.get("items");
-            Map<String, Object> content = parseContent(items.get(0).get("content"));
-            @SuppressWarnings("unchecked")
-            List<String> courses = (List<String>) content.get("courses");
+            List<String> courses = (List<String>) items.get(0).get("courses");
             assertEquals(3, courses.size());
             assertTrue(courses.contains("市场营销"));
         }
@@ -208,13 +193,11 @@ class ResumeChangeApplierTest {
                     "modified", "customSections[0].items[2].description", "string",
                     "游戏时长 3000+小时，累计充值 5W 左右。", newDescription
             );
-            List<Map<String, Object>> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
-            Map<String, Object> customSection = findSectionByType(result, "CUSTOM");
+            List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
+            ResumeDetailVO.ResumeSectionVO customSection = findSectionByType(result, "CUSTOM");
+            List<Map<String, Object>> items = parseContentArray(customSection.getContent());
             @SuppressWarnings("unchecked")
-            List<Map<String, Object>> items = (List<Map<String, Object>>) customSection.get("items");
-            Map<String, Object> content = parseContent(items.get(0).get("content"));
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> contentItems = (List<Map<String, Object>>) content.get("items");
+            List<Map<String, Object>> contentItems = (List<Map<String, Object>>) items.get(0).get("items");
             Map<String, Object> targetItem = contentItems.get(2);
             assertTrue(targetItem.get("description").toString().contains("产品测试"));
         }
@@ -232,25 +215,20 @@ class ResumeChangeApplierTest {
                     createChange("modified", "work[0].period", "string", "2025.03-2026.03", "2023.03-2024.12"),
                     createArrayChange("modified", "education[0].courses", null, List.of("市场营销", "统计学"))
             );
-            List<Map<String, Object>> result = ResumeChangeApplier.applyChanges(testSections, changes);
+            List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(testSections, changes);
             // 验证基本信息
-            Map<String, Object> basicInfo = findSectionByType(result, "BASIC_INFO");
-            @SuppressWarnings("unchecked")
-            Map<String, Object> basicContent = (Map<String, Object>) basicInfo.get("content");
+            ResumeDetailVO.ResumeSectionVO basicInfo = findSectionByType(result, "BASIC_INFO");
+            Map<String, Object> basicContent = parseContent(basicInfo.getContent());
             assertEquals("新的个人简介", basicContent.get("summary"));
             // 验证工作经历
-            Map<String, Object> workSection = findSectionByType(result, "WORK");
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> workItems = (List<Map<String, Object>>) workSection.get("items");
-            Map<String, Object> workContent = parseContent(workItems.get(0).get("content"));
-            assertEquals("2023.03-2024.12", workContent.get("period"));
+            ResumeDetailVO.ResumeSectionVO workSection = findSectionByType(result, "WORK");
+            List<Map<String, Object>> workItems = parseContentArray(workSection.getContent());
+            assertEquals("2023.03-2024.12", workItems.get(0).get("period"));
             // 验证教育经历
-            Map<String, Object> educationSection = findSectionByType(result, "EDUCATION");
+            ResumeDetailVO.ResumeSectionVO educationSection = findSectionByType(result, "EDUCATION");
+            List<Map<String, Object>> eduItems = parseContentArray(educationSection.getContent());
             @SuppressWarnings("unchecked")
-            List<Map<String, Object>> eduItems = (List<Map<String, Object>>) educationSection.get("items");
-            Map<String, Object> eduContent = parseContent(eduItems.get(0).get("content"));
-            @SuppressWarnings("unchecked")
-            List<String> courses = (List<String>) eduContent.get("courses");
+            List<String> courses = (List<String>) eduItems.get(0).get("courses");
             assertEquals(2, courses.size());
         }
     }
@@ -262,14 +240,14 @@ class ResumeChangeApplierTest {
         @Test
         @DisplayName("sections 为 null")
         void testNullSections() {
-            List<Map<String, Object>> result = ResumeChangeApplier.applyChanges(null, List.of());
+            List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(null, List.of());
             assertNull(result);
         }
 
         @Test
         @DisplayName("changes 为 null")
         void testNullChanges() {
-            List<Map<String, Object>> result = ResumeChangeApplier.applyChanges(testSections, null);
+            List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(testSections, null);
             assertNotNull(result);
             assertEquals(testSections.size(), result.size());
         }
@@ -277,7 +255,7 @@ class ResumeChangeApplierTest {
         @Test
         @DisplayName("changes 为空列表")
         void testEmptyChanges() {
-            List<Map<String, Object>> result = ResumeChangeApplier.applyChanges(testSections, List.of());
+            List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(testSections, List.of());
             assertNotNull(result);
             assertEquals(testSections.size(), result.size());
         }
@@ -308,25 +286,32 @@ class ResumeChangeApplierTest {
     /**
      * 查找指定类型的区块
      */
-    private Map<String, Object> findSectionByType(List<Map<String, Object>> sections, String type) {
+    private ResumeDetailVO.ResumeSectionVO findSectionByType(List<ResumeDetailVO.ResumeSectionVO> sections, String type) {
         return sections.stream()
-                .filter(s -> type.equals(s.get("type")))
+                .filter(s -> type.equals(s.getType()))
                 .findFirst()
                 .orElse(null);
     }
 
     /**
-     * 解析 content（可能是 JSON 字符串或 Map）
+     * 解析 content 为 Map（用于 BASIC_INFO 等单对象类型）
+     */
+    private Map<String, Object> parseContent(String content) {
+        if (content == null) {
+            return new LinkedHashMap<>();
+        }
+        return JsonParseHelper.parseToMap(content);
+    }
+
+    /**
+     * 解析 content 为 List<Map>（用于 WORK、EDUCATION 等聚合类型）
      */
     @SuppressWarnings("unchecked")
-    private Map<String, Object> parseContent(Object content) {
-        if (content instanceof Map) {
-            return (Map<String, Object>) content;
+    private List<Map<String, Object>> parseContentArray(String content) {
+        if (content == null) {
+            return new ArrayList<>();
         }
-        if (content instanceof String) {
-            return com.landit.common.util.JsonParseHelper.parseToMap((String) content);
-        }
-        return new LinkedHashMap<>();
+        return JsonParseHelper.parseToEntity(content, ArrayList.class);
     }
 
     /**
@@ -362,84 +347,107 @@ class ResumeChangeApplierTest {
      */
     private void ensureSkillsSection() {
         if (findSectionByType(testSections, "SKILLS") == null) {
-            Map<String, Object> skillsSection = new LinkedHashMap<>();
-            skillsSection.put("type", "SKILLS");
-            skillsSection.put("title", "专业技能");
-            List<Map<String, Object>> items = new ArrayList<>();
-            Map<String, Object> item = new LinkedHashMap<>();
-            item.put("content", "{\"skills\":[]}");
-            items.add(item);
-            skillsSection.put("items", items);
+            ResumeDetailVO.ResumeSectionVO skillsSection = ResumeDetailVO.ResumeSectionVO.builder()
+                    .type("SKILLS")
+                    .title("专业技能")
+                    .content("{\"skills\":[]}")
+                    .build();
             testSections.add(skillsSection);
         }
     }
 
     /**
      * 创建测试用的 sections 数据（模拟真实简历结构）
+     * 使用新的数据结构：content 为 JSON 字符串
      */
-    private List<Map<String, Object>> createTestSections() {
-        List<Map<String, Object>> sections = new ArrayList<>();
-        // 基本信息
-        Map<String, Object> basicInfo = new LinkedHashMap<>();
-        basicInfo.put("type", "BASIC_INFO");
-        basicInfo.put("title", "基本信息");
+    private List<ResumeDetailVO.ResumeSectionVO> createTestSections() {
+        List<ResumeDetailVO.ResumeSectionVO> sections = new ArrayList<>();
+
+        // 基本信息 - content 是单个对象 JSON
         Map<String, Object> basicContent = new LinkedHashMap<>();
         basicContent.put("name", "陈家尧");
         basicContent.put("gender", "男");
         basicContent.put("phone", "15215575397");
         basicContent.put("email", "1776096741@qq.com");
         basicContent.put("summary", "");
-        basicInfo.put("content", basicContent);
-        sections.add(basicInfo);
-        // 教育经历
-        Map<String, Object> education = new LinkedHashMap<>();
-        education.put("type", "EDUCATION");
-        education.put("title", "教育经历");
+        sections.add(ResumeDetailVO.ResumeSectionVO.builder()
+                .type("BASIC_INFO")
+                .title("基本信息")
+                .content(JsonParseHelper.toJsonString(basicContent))
+                .build());
+
+        // 教育经历 - content 是数组 JSON
         List<Map<String, Object>> eduItems = new ArrayList<>();
-        Map<String, Object> eduItem = new LinkedHashMap<>();
-        eduItem.put("id", "edu_1");
-        eduItem.put("content", "{\"school\":\"宿州学院\",\"degree\":\"本科\",\"major\":\"国际经济与贸易\",\"period\":\"2017.09-2021.06\",\"courses\":[\"宏观经济学\",\"微观经济学\",\"经济法\",\"会计学\"]}");
-        eduItems.add(eduItem);
-        education.put("items", eduItems);
-        sections.add(education);
-        // 工作经历
-        Map<String, Object> work = new LinkedHashMap<>();
-        work.put("type", "WORK");
-        work.put("title", "工作经历");
+        Map<String, Object> edu1 = new LinkedHashMap<>();
+        edu1.put("id", "edu_1");
+        edu1.put("school", "宿州学院");
+        edu1.put("degree", "本科");
+        edu1.put("major", "国际经济与贸易");
+        edu1.put("period", "2017.09-2021.06");
+        edu1.put("courses", List.of("宏观经济学", "微观经济学", "经济法", "会计学"));
+        eduItems.add(edu1);
+        sections.add(ResumeDetailVO.ResumeSectionVO.builder()
+                .type("EDUCATION")
+                .title("教育经历")
+                .content(JsonParseHelper.toJsonString(eduItems))
+                .build());
+
+        // 工作经历 - content 是数组 JSON
         List<Map<String, Object>> workItems = new ArrayList<>();
-        // 工作1
         Map<String, Object> work1 = new LinkedHashMap<>();
         work1.put("id", "work_1");
-        work1.put("content", "{\"company\":\"自媒体博主\",\"position\":\"游戏博主\",\"period\":\"2025.03-2026.03\",\"description\":\"账号从0到1搭建\",\"technologies\":[]}");
+        work1.put("company", "自媒体博主");
+        work1.put("position", "游戏博主");
+        work1.put("period", "2025.03-2026.03");
+        work1.put("description", "账号从0到1搭建");
+        work1.put("technologies", new ArrayList<>());
         workItems.add(work1);
-        // 工作2
+
         Map<String, Object> work2 = new LinkedHashMap<>();
         work2.put("id", "work_2");
-        work2.put("content", "{\"company\":\"FPX电子竞技俱乐部\",\"position\":\"新媒体运营\",\"period\":\"2024.05-2025.03\",\"description\":\"负责FPX永劫无间分部\"}");
+        work2.put("company", "FPX电子竞技俱乐部");
+        work2.put("position", "新媒体运营");
+        work2.put("period", "2024.05-2025.03");
+        work2.put("description", "负责FPX永劫无间分部");
         workItems.add(work2);
-        // 工作3
+
         Map<String, Object> work3 = new LinkedHashMap<>();
         work3.put("id", "work_3");
-        work3.put("content", "{\"company\":\"JDG电子竞技俱乐部\",\"position\":\"新媒体运营\",\"period\":\"2022.06-2024.01\"}");
+        work3.put("company", "JDG电子竞技俱乐部");
+        work3.put("position", "新媒体运营");
+        work3.put("period", "2022.06-2024.01");
         workItems.add(work3);
-        // 工作4
+
         Map<String, Object> work4 = new LinkedHashMap<>();
         work4.put("id", "work_4");
-        work4.put("content", "{\"company\":\"WBG电子竞技俱乐部\",\"position\":\"新媒体运营\",\"period\":\"2021.06-2022.03\"}");
+        work4.put("company", "WBG电子竞技俱乐部");
+        work4.put("position", "新媒体运营");
+        work4.put("period", "2021.06-2022.03");
         workItems.add(work4);
-        work.put("items", workItems);
-        sections.add(work);
-        // 自定义区块
-        Map<String, Object> custom = new LinkedHashMap<>();
-        custom.put("type", "CUSTOM");
-        custom.put("title", "自定义区块");
+
+        sections.add(ResumeDetailVO.ResumeSectionVO.builder()
+                .type("WORK")
+                .title("工作经历")
+                .content(JsonParseHelper.toJsonString(workItems))
+                .build());
+
+        // 自定义区块 - content 是数组 JSON
         List<Map<String, Object>> customItems = new ArrayList<>();
-        Map<String, Object> customItem = new LinkedHashMap<>();
-        customItem.put("id", "custom_1");
-        customItem.put("content", "{\"title\":\"游戏经历\",\"items\":[{\"name\":\"三角洲行动\",\"description\":\"游戏时长2000+小时\"},{\"name\":\"英雄联盟\",\"description\":\"游戏时长2000+小时\"},{\"name\":\"MMO游戏\",\"description\":\"游戏时长 3000+小时，累计充值 5W 左右。\"}]}");
-        customItems.add(customItem);
-        custom.put("items", customItems);
-        sections.add(custom);
+        Map<String, Object> custom1 = new LinkedHashMap<>();
+        custom1.put("id", "custom_1");
+        custom1.put("title", "游戏经历");
+        List<Map<String, Object>> gameItems = new ArrayList<>();
+        gameItems.add(Map.of("name", "三角洲行动", "description", "游戏时长2000+小时"));
+        gameItems.add(Map.of("name", "英雄联盟", "description", "游戏时长2000+小时"));
+        gameItems.add(Map.of("name", "MMO游戏", "description", "游戏时长 3000+小时，累计充值 5W 左右。"));
+        custom1.put("items", gameItems);
+        customItems.add(custom1);
+        sections.add(ResumeDetailVO.ResumeSectionVO.builder()
+                .type("CUSTOM")
+                .title("自定义区块")
+                .content(JsonParseHelper.toJsonString(customItems))
+                .build());
+
         return sections;
     }
 }
