@@ -161,10 +161,10 @@ watch(
         }
         return
       }
-      // 单条类型（BASIC_INFO）：content 已经是对象
+      // 单条类型（BASIC_INFO）：content 是 JSON 字符串，需要解析
       if (!isAggregate.value) {
         if (newSection.content) {
-          formData.value = JSON.parse(JSON.stringify(newSection.content))
+          formData.value = JSON.parse(JSON.stringify(parseContent(newSection.content)))
         } else {
           formData.value = {}
         }

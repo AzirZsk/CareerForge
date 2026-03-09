@@ -150,32 +150,16 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
                     .suggestions(null)
                     .build();
         }
-        // 单条类型：保持原有结构
+        // 单条类型：保持原有结构，content 直接返回 JSON 字符串
         return ResumeDetailVO.ResumeSectionVO.builder()
                 .id(first.getId())
                 .type(typeCode)
                 .title(first.getTitle())
-                .content(parseContentToObject(first.getContent()))
+                .content(first.getContent())
                 .score(first.getScore())
                 .items(null)
                 .suggestions(null)
                 .build();
-    }
-
-    /**
-     * 将JSON字符串解析为对象
-     * 如果解析失败则返回原始字符串
-     */
-    private Object parseContentToObject(String contentJson) {
-        if (contentJson == null || contentJson.isEmpty()) {
-            return null;
-        }
-        try {
-            return JsonParseHelper.parseToEntity(contentJson, Object.class);
-        } catch (IllegalArgumentException e) {
-            log.warn("解析content JSON失败，返回原始字符串: {}", e.getMessage());
-            return contentJson;
-        }
     }
 
     /**

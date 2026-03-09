@@ -88,7 +88,7 @@ export function useSectionHelper() {
     // 技能类型：统计 skills 数组长度
     if (section.type === 'SKILLS') {
       const firstItem = section.items?.[0]
-      const content = firstItem?.content as SkillsContent | undefined
+      const content = parseContent<SkillsContent>(firstItem?.content)
       return `${content?.skills?.length ?? 0} 项技能`
     }
     // 聚合类型（有items）
@@ -98,9 +98,9 @@ export function useSectionHelper() {
       }
       return `${section.items.length} 条记录`
     }
-    // 单条类型（有content）
+    // 单条类型（有content）- 需要解析 JSON 字符串
     if (section.type === 'BASIC_INFO') {
-      const content = section.content as BasicInfoContent
+      const content = parseContent<BasicInfoContent>(section.content)
       return content.name ?? '基本信息'
     }
     return section.title ?? ''

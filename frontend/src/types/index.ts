@@ -202,13 +202,13 @@ export interface ResumeSectionItem {
 
 // 简历模块
 // 支持两种模式：
-// - 单条模式：使用 content 字段（BASIC_INFO）
+// - 单条模式：使用 content 字段（BASIC_INFO）- JSON 字符串格式，需前端解析
 // - 聚合模式：使用 items 字段（PROJECT、WORK、EDUCATION、CERTIFICATE、SKILLS）
 export interface ResumeSection {
   id: string
   type: string
   title: string
-  content: ResumeSectionContent | null
+  content: string | null
   items: ResumeSectionItem[] | null
   score: number
   suggestions: ResumeSuggestionItem[] | null

@@ -17,7 +17,7 @@
         <div v-if="section.type === 'BASIC_INFO'" class="resume-section">
           <h3>{{ section.title }}</h3>
           <div class="info-grid">
-            <div v-for="{ key, value } in getOrderedBasicInfoFields(section.content as Record<string, unknown>)" :key="key" class="info-item">
+            <div v-for="{ key, value } in getOrderedBasicInfoFields(parseContent(section.content))" :key="key" class="info-item">
               <span class="info-label">{{ getFieldLabel(key) }}</span>
               <span class="info-value" :class="getChangeClass(section.type, key)">
                 {{ formatValue(value) }}

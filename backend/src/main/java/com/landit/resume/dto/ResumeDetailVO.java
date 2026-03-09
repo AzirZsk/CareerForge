@@ -81,9 +81,9 @@ public class ResumeDetailVO {
         private String title;
 
         /**
-         * 单条内容（用于 BASIC_INFO、SKILLS 等单条类型）
+         * 单条内容（JSON 字符串格式，用于 BASIC_INFO、SKILLS 等单条类型）
          */
-        private Object content;
+        private String content;
 
         /**
          * 聚合项列表（用于 PROJECT、WORK、EDUCATION、CERTIFICATE 等多条类型）

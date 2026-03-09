@@ -97,6 +97,7 @@ import CertificateSection from './sections/CertificateSection.vue'
 import OpenSourceSection from './sections/OpenSourceSection.vue'
 import CustomSection from './sections/CustomSection.vue'
 import type { ResumeSection, BasicInfoContent, SkillsContent, Skill } from '@/types'
+import { useSectionHelper } from '@/composables/useSectionHelper'
 
 const props = defineProps<{
   section: ResumeSection | undefined
@@ -109,18 +110,20 @@ defineEmits<{
   'delete-item': [itemId: string]
 }>()
 
+const { parseContent } = useSectionHelper()
+
 // 判断当前模块是否为聚合类型
 const isAggregateSection = computed<boolean>(() => {
   const type = props.section?.type
   return ['EDUCATION', 'WORK', 'PROJECT', 'CERTIFICATE', 'OPEN_SOURCE', 'CUSTOM'].includes(type ?? '')
 })
 
-// 基本信息（BASIC_INFO）- 单条类型
+// 基本信息（BASIC_INFO）- 单条类型，需要解析 JSON 字符串
 const basicContent = computed<BasicInfoContent | null>(() => {
   if (props.section?.type !== 'BASIC_INFO') {
     return null
   }
-  return props.section.content as BasicInfoContent
+  return parseContent<BasicInfoContent>(props.section.content)
 })
 
 // 技能（SKILLS）- 聚合类型，数据在 items[0].content.skills
