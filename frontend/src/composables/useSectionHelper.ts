@@ -156,10 +156,10 @@ export function useSectionHelper() {
 
   /**
    * 获取技能列表
+   * content 是 JSON 字符串格式的数组
    */
   function getSkillsList(section: ResumeSection): Skill[] {
-    const content = parseContent<SkillsContent>(section.content)
-    return content?.skills ?? []
+    return parseAggregatedContent<Skill>(section)
   }
 
   /**
