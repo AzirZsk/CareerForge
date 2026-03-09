@@ -1,7 +1,7 @@
 `<!--=====================================================
   LandIt 简历内容查看器组件
   展示简历的具体内容（用于对比视图）
-  支持新的区块数组格式
+  统一从 content 解析数据
   @author Azir
 =====================================================-->
 
@@ -13,54 +13,19 @@
 
     <div v-else class="resume-content">
       <template v-for="section in sections" :key="section.id">
-        <!-- 基本信息 -->
-        <div v-if="section.type === 'BASIC_INFO'" class="resume-section">
-          <h3>{{ section.title }}</h3>
-          <div class="info-grid">
-            <div v-for="{ key, value } in getOrderedBasicInfoFields(parseContent(section.content))" :key="key" class="info-item">
-              <span class="info-label">{{ getFieldLabel(key) }}</span>
-              <span class="info-value" :class="getChangeClass(section.type, key)">
-                {{ formatValue(value) }}
-              </span>
-            </div>
-          </div>
-          <!-- 新增的扩展字段 -->
-          <div v-if="section.description" class="extra-field">
-            <span class="extra-label">工作描述</span>
-            <p class="extra-value description" :class="getChangeClass(section.type, 'description')">
-              {{ section.description }}
-            </p>
-          </div>
-          <div v-if="section.awards" class="extra-field">
-            <span class="extra-label">荣誉奖项</span>
-            <p class="extra-value" :class="getChangeClass(section.type, 'awards')">
-              {{ section.awards }}
-            </p>
-          </div>
-          <div v-if="section.achievements" class="extra-field">
-            <span class="extra-label">主要成就</span>
-            <p class="extra-value" :class="getChangeClass(section.type, 'achievements')">
-              {{ section.achievements }}
-            </p>
-          </div>
-        </div>
-
         <!-- 教育经历 -->
-        <div v-else-if="section.type === 'EDUCATION'" class="resume-section">
+        <div v-if="section.type === 'EDUCATION'" class="resume-section">
           <h3>{{ section.title }}</h3>
-          <div v-for="(item, idx) in section.items" :key="item.id" class="experience-item">
+          <div v-for="(item, idx) in getEducationList(section)" :key="idx" class="experience-item">
             <div class="exp-header">
-              <span class="exp-title">{{ parseContent(item.content)?.school }}</span>
-              <span class="exp-period">{{ parseContent(item.content)?.period }}</span>
+              <span class="exp-title">{{ item.school }}</span>
+              <span class="exp-period">{{ item.period }}</span>
             </div>
             <div class="exp-details">
-              {{ parseContent(item.content)?.degree }}<span v-if="parseContent(item.content)?.major"> · {{ parseContent(item.content)?.major }}</span>
+              {{ item.degree }}<span v-if="item.major"> · {{ item.major }}</span>
             </div>
-            <!-- 教育经历新增的 achievements 字段 -->
-            <div v-if="item.achievements" class="exp-achievements">
-              <div class="achievement-item" :class="getChangeClass(section.type, 'items[' + idx + '].achievements')">
-                {{ item.achievements }}
-              </div>
+            <div v-if="item.honors?.length" class="exp-honors">
+              <span v-for="honor in item.honors" :key="honor" class="honor-tag">{{ honor }}</span>
             </div>
           </div>
         </div>
@@ -68,18 +33,18 @@
         <!-- 工作经历 -->
         <div v-else-if="section.type === 'WORK'" class="resume-section">
           <h3>{{ section.title }}</h3>
-          <div v-for="(item, idx) in section.items" :key="item.id" class="experience-item">
+          <div v-for="(item, idx) in getWorkList(section)" :key="idx" class="experience-item">
             <div class="exp-header">
-              <span class="exp-title">{{ parseContent(item.content)?.company }}</span>
-              <span class="exp-period">{{ parseContent(item.content)?.period }}</span>
+              <span class="exp-title">{{ item.company }}</span>
+              <span class="exp-period">{{ item.period }}</span>
             </div>
-            <div class="exp-role">{{ parseContent(item.content)?.position }}</div>
-            <p v-if="parseContent(item.content)?.description" class="exp-description" :class="getChangeClass(section.type, 'items[' + idx + '].content.description')">
-              {{ parseContent(item.content)?.description }}
+            <div class="exp-role">{{ item.position }}</div>
+            <p v-if="item.description" class="exp-description" :class="getChangeClass(section.type, 'work[' + idx + '].description')">
+              {{ item.description }}
             </p>
             <!-- 工作经历新增的 achievements 字段 -->
             <div v-if="item.achievements" class="exp-achievements">
-              <div class="achievement-item" :class="getChangeClass(section.type, 'items[' + idx + '].achievements')">
+              <div class="achievement-item" :class="getChangeClass(section.type, 'work[' + idx + '].achievements')">
                 {{ item.achievements }}
               </div>
             </div>
@@ -89,29 +54,23 @@
         <!-- 项目经历 -->
         <div v-else-if="section.type === 'PROJECT'" class="resume-section">
           <h3>{{ section.title }}</h3>
-          <div v-for="(item, idx) in section.items" :key="item.id" class="experience-item">
+          <div v-for="(item, idx) in getProjectList(section)" :key="idx" class="experience-item">
             <div class="exp-header">
-              <span class="exp-title">{{ parseContent(item.content)?.name }}</span>
-              <span class="exp-period">{{ parseContent(item.content)?.period }}</span>
+              <span class="exp-title">{{ item.name }}</span>
+              <span class="exp-period">{{ item.period }}</span>
             </div>
-            <div class="exp-role">{{ parseContent(item.content)?.role }}</div>
-            <p v-if="parseContent(item.content)?.description" class="exp-description">
-              {{ parseContent(item.content)?.description }}
+            <div class="exp-role">{{ item.role }}</div>
+            <p v-if="item.description" class="exp-description">
+              {{ item.description }}
             </p>
-            <div v-if="getAchievements(item.content)?.length" class="exp-achievements">
+            <div v-if="item.achievements?.length" class="exp-achievements">
               <div
-                v-for="(ach, achIdx) in getAchievements(item.content)"
+                v-for="(ach, achIdx) in item.achievements"
                 :key="achIdx"
                 class="achievement-item"
-                :class="getChangeClass(section.type, 'items[' + idx + '].content.achievements[' + achIdx + ']')"
+                :class="getChangeClass(section.type, 'project[' + idx + '].achievements[' + achIdx + ']')"
               >
                 {{ ach }}
-              </div>
-            </div>
-            <!-- 项目新增的 achievements 字段 -->
-            <div v-if="item.achievements" class="exp-achievements extra">
-              <div class="achievement-item highlight" :class="getChangeClass(section.type, 'items[' + idx + '].achievements')">
-                {{ item.achievements }}
               </div>
             </div>
           </div>
@@ -122,10 +81,10 @@
           <h3>{{ section.title }}</h3>
           <div class="skills-container">
             <div
-              v-for="(skill, idx) in getSkills(section)"
+              v-for="(skill, idx) in getSkillsList(section)"
               :key="idx"
               class="skill-item"
-              :class="getChangeClass(section.type, 'items[0].content.skills[' + idx + ']')"
+              :class="getChangeClass(section.type, 'skills[' + idx + ']')"
             >
               <div class="skill-header">
                 <span class="skill-name">{{ skill.name }}</span>
@@ -140,24 +99,24 @@
         <!-- 证书荣誉 -->
         <div v-else-if="section.type === 'CERTIFICATE'" class="resume-section">
           <h3>{{ section.title }}</h3>
-          <div v-for="(item, idx) in section.items" :key="item.id" class="certificate-item">
-            <span class="cert-name" :class="getChangeClass(section.type, 'items[' + idx + '].content.name')">
-              {{ parseContent(item.content)?.name }}
+          <div v-for="(item, idx) in getCertificateList(section)" :key="idx" class="certificate-item">
+            <span class="cert-name" :class="getChangeClass(section.type, 'certificate[' + idx + '].name')">
+              {{ item.name }}
             </span>
-            <span v-if="parseContent(item.content)?.date" class="cert-date">{{ parseContent(item.content)?.date }}</span>
+            <span v-if="item.date" class="cert-date">{{ item.date }}</span>
           </div>
         </div>
 
         <!-- 开源贡献 -->
         <div v-else-if="section.type === 'OPEN_SOURCE'" class="resume-section">
           <h3>{{ section.title }}</h3>
-          <div v-for="item in section.items" :key="item.id" class="experience-item">
+          <div v-for="(item, idx) in getOpenSourceList(section)" :key="idx" class="experience-item">
             <div class="exp-header">
-              <span class="exp-title">{{ parseContent(item.content)?.name }}</span>
-              <span class="exp-period">{{ parseContent(item.content)?.url }}</span>
+              <span class="exp-title">{{ item.projectName }}</span>
+              <span class="exp-period">{{ item.url }}</span>
             </div>
-            <p v-if="parseContent(item.content)?.description" class="exp-description">
-              {{ parseContent(item.content)?.description }}
+            <p v-if="item.description" class="exp-description">
+              {{ item.description }}
             </p>
           </div>
         </div>
@@ -174,7 +133,8 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { ResumeSection, ChangeItem, ResumeSectionType } from '@/types/resume-optimize'
+import type { ResumeSection } from '@/types'
+import type { ChangeItem } from '@/types/resume-optimize'
 import { useSectionHelper } from '@/composables/useSectionHelper'
 
 interface Props {
@@ -185,110 +145,19 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const { parseContent } = useSectionHelper()
+const {
+  getWorkList,
+  getProjectList,
+  getEducationList,
+  getSkillsList,
+  getCertificateList,
+  getOpenSourceList
+} = useSectionHelper()
 
 const isEmpty = computed(() => !props.sections || props.sections.length === 0)
 
-// 字段标签映射
-const FIELD_LABELS: Record<string, string> = {
-  name: '姓名',
-  gender: '性别',
-  phone: '电话',
-  email: '邮箱',
-  targetPosition: '目标岗位',
-  location: '所在地',
-  linkedin: 'LinkedIn',
-  github: 'GitHub',
-  website: '个人网站',
-  summary: '个人简介'
-}
-
-// 基本信息字段显示顺序（按简历展示习惯排序）
-const BASIC_INFO_FIELD_ORDER: string[] = [
-  'name',
-  'gender',
-  'phone',
-  'email',
-  'targetPosition',
-  'location',
-  'linkedin',
-  'github',
-  'website',
-  'summary'
-]
-
-function getFieldLabel(key: string): string {
-  return FIELD_LABELS[key] || key
-}
-
-// 获取排序后的基本信息字段
-function getOrderedBasicInfoFields(content: Record<string, unknown>): { key: string; value: unknown }[] {
-  const result: { key: string; value: unknown }[] = []
-  // 先按预定义顺序添加
-  for (const key of BASIC_INFO_FIELD_ORDER) {
-    if (content[key] !== undefined && content[key] !== null && content[key] !== '') {
-      result.push({ key, value: content[key] })
-    }
-  }
-  // 再添加未在预定义顺序中但有值的字段
-  for (const [key, value] of Object.entries(content)) {
-    if (!BASIC_INFO_FIELD_ORDER.includes(key) && value !== undefined && value !== null && value !== '') {
-      result.push({ key, value })
-    }
-  }
-  return result
-}
-
-function formatValue(value: any): string {
-  if (value === null || value === undefined) return '-'
-  if (Array.isArray(value)) return value.join(', ')
-  if (typeof value === 'object') return JSON.stringify(value)
-  return String(value)
-}
-
-// 获取技能列表
-function getSkills(section: ResumeSection): { name: string; level?: string; description?: string; category?: string }[] {
-  const firstItem = section.items?.[0]
-  if (!firstItem) return []
-
-  interface SkillItem {
-    name: string
-    level?: string
-    description?: string
-    category?: string
-  }
-
-  interface SkillsContent {
-    skills?: SkillItem[] | string[]
-  }
-
-  const content = parseContent<SkillsContent>(firstItem.content)
-  const skills = content?.skills
-  if (Array.isArray(skills)) {
-    return skills.map((s) => {
-      if (typeof s === 'string') {
-        return { name: s }
-      }
-      return s
-    })
-  }
-  return []
-}
-
-// 获取成就列表
-function getAchievements(content: string | Record<string, any> | null | undefined): string[] {
-  interface ContentWithAchievements {
-    achievements?: string[]
-  }
-  // 如果已经是对象，直接使用；如果是字符串，需要解析
-  const parsed = typeof content === 'string'
-    ? parseContent<ContentWithAchievements>(content)
-    : (content as ContentWithAchievements)
-  return parsed?.achievements ?? []
-}
-
 // 判断字段是否有变更
-function getChangeClass(sectionType: ResumeSectionType, fieldPath: string): string {
+function getChangeClass(sectionType: string, fieldPath: string): string {
   if (!props.changes?.length) return ''
 
   // 构建完整路径

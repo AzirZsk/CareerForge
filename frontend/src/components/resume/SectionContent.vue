@@ -1,5 +1,6 @@
 <!--=====================================================
   简历模块内容容器组件
+  统一从 content 解析数据
   @author Azir
 =====================================================-->
 
@@ -18,62 +19,62 @@
       :content="basicContent"
     />
 
-    <!-- 技能（单条） -->
+    <!-- 技能（单条，SKILLS 类型 content 是 { skills: [...] } -->
     <SkillsSection
       v-else-if="section?.type === 'SKILLS'"
-      :skills="skillContent"
+      :skills="skillsList"
     />
 
     <!-- 教育经历列表 -->
     <EducationSection
-      v-else-if="section?.type === 'EDUCATION' && section.items?.length"
-      :items="section.items"
+      v-else-if="section?.type === 'EDUCATION' && educationItems.length"
+      :items="educationItems"
       @edit-item="(id) => $emit('edit-item', id)"
       @delete-item="(id) => $emit('delete-item', id)"
     />
 
     <!-- 工作经历列表 -->
     <WorkSection
-      v-else-if="section?.type === 'WORK' && section.items?.length"
-      :items="section.items"
+      v-else-if="section?.type === 'WORK' && workItems.length"
+      :items="workItems"
       @edit-item="(id) => $emit('edit-item', id)"
       @delete-item="(id) => $emit('delete-item', id)"
     />
 
     <!-- 项目经历列表 -->
     <ProjectSection
-      v-else-if="section?.type === 'PROJECT' && section.items?.length"
-      :items="section.items"
+      v-else-if="section?.type === 'PROJECT' && projectItems.length"
+      :items="projectItems"
       @edit-item="(id) => $emit('edit-item', id)"
       @delete-item="(id) => $emit('delete-item', id)"
     />
 
     <!-- 证书列表 -->
     <CertificateSection
-      v-else-if="section?.type === 'CERTIFICATE' && section.items?.length"
-      :items="section.items"
+      v-else-if="section?.type === 'CERTIFICATE' && certificateItems.length"
+      :items="certificateItems"
       @edit-item="(id) => $emit('edit-item', id)"
       @delete-item="(id) => $emit('delete-item', id)"
     />
 
     <!-- 开源贡献列表 -->
     <OpenSourceSection
-      v-else-if="section?.type === 'OPEN_SOURCE' && section.items?.length"
-      :items="section.items"
+      v-else-if="section?.type === 'OPEN_SOURCE' && openSourceItems.length"
+      :items="openSourceItems"
       @edit-item="(id) => $emit('edit-item', id)"
       @delete-item="(id) => $emit('delete-item', id)"
     />
 
     <!-- 自定义区块列表 -->
     <CustomSection
-      v-else-if="section?.type === 'CUSTOM' && section.items?.length"
-      :items="section.items"
+      v-else-if="section?.type === 'CUSTOM' && customItems.length"
+      :items="customItems"
       @edit-item="(id) => $emit('edit-item', id)"
       @delete-item="(id) => $emit('delete-item', id)"
     />
 
     <!-- 聚合类型无数据提示 -->
-    <div class="empty-block" v-else-if="isAggregateSection && !section?.items?.length">
+    <div class="empty-block" v-else-if="isAggregateSection && !hasItems">
       <p class="empty-text">暂无记录</p>
       <button class="add-item-btn" @click="$emit('add-item')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -96,7 +97,7 @@ import ProjectSection from './sections/ProjectSection.vue'
 import CertificateSection from './sections/CertificateSection.vue'
 import OpenSourceSection from './sections/OpenSourceSection.vue'
 import CustomSection from './sections/CustomSection.vue'
-import type { ResumeSection, BasicInfoContent, SkillsContent, Skill } from '@/types'
+import type { ResumeSection, BasicInfoContent, Skill } from '@/types'
 import { useSectionHelper } from '@/composables/useSectionHelper'
 
 const props = defineProps<{
@@ -110,12 +111,22 @@ defineEmits<{
   'delete-item': [itemId: string]
 }>()
 
-const { parseContent } = useSectionHelper()
+const {
+  parseContent,
+  getWorkItems,
+  getProjectItems,
+  getEducationItems,
+  getSkillsList,
+  getCertificateItems,
+  getOpenSourceItems,
+  getCustomItems,
+  isAggregateType
+} = useSectionHelper()
 
 // 判断当前模块是否为聚合类型
 const isAggregateSection = computed<boolean>(() => {
   const type = props.section?.type
-  return ['EDUCATION', 'WORK', 'PROJECT', 'CERTIFICATE', 'OPEN_SOURCE', 'CUSTOM'].includes(type ?? '')
+  return isAggregateType(type ?? '')
 })
 
 // 基本信息（BASIC_INFO）- 单条类型，需要解析 JSON 字符串
@@ -126,51 +137,73 @@ const basicContent = computed<BasicInfoContent | null>(() => {
   return parseContent<BasicInfoContent>(props.section.content)
 })
 
-// 技能（SKILLS）- 聚合类型，数据在 items[0].content.skills
-const skillContent = computed<Skill[]>(() => {
+// 技能（SKILLS）- content 存储的是 { skills: [...] }
+const skillsList = computed<Skill[]>(() => {
   if (props.section?.type !== 'SKILLS') {
     return []
   }
-  const firstItem = props.section.items?.[0]
-  const content = firstItem?.content as SkillsContent | null | undefined
-  return content?.skills ?? []
+  return getSkillsList(props.section)
+})
+
+// 工作经历列表
+const workItems = computed(() => {
+  if (props.section?.type !== 'WORK') {
+    return []
+  }
+  return getWorkItems(props.section)
+})
+
+// 项目经历列表
+const projectItems = computed(() => {
+  if (props.section?.type !== 'PROJECT') {
+    return []
+  }
+  return getProjectItems(props.section)
+})
+
+// 教育经历列表
+const educationItems = computed(() => {
+  if (props.section?.type !== 'EDUCATION') {
+    return []
+  }
+  return getEducationItems(props.section)
+})
+
+// 证书列表
+const certificateItems = computed(() => {
+  if (props.section?.type !== 'CERTIFICATE') {
+    return []
+  }
+  return getCertificateItems(props.section)
+})
+
+// 开源贡献列表
+const openSourceItems = computed(() => {
+  if (props.section?.type !== 'OPEN_SOURCE') {
+    return []
+  }
+  return getOpenSourceItems(props.section)
+})
+
+// 自定义区块列表
+const customItems = computed(() => {
+  if (props.section?.type !== 'CUSTOM') {
+    return []
+  }
+  return getCustomItems(props.section)
+})
+
+// 是否有任何项
+const hasItems = computed(() => {
+  return (
+    workItems.value.length > 0 ||
+    projectItems.value.length > 0 ||
+    educationItems.value.length > 0 ||
+    skillsList.value.length > 0 ||
+    certificateItems.value.length > 0 ||
+    openSourceItems.value.length > 0 ||
+    customItems.value.length > 0
+  )
 })
 </script>
 
-<style lang="scss" scoped>
-.detail-content {
-  margin-bottom: $spacing-xl;
-}
-
-// 空状态
-.empty-block {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: $spacing-2xl;
-  text-align: center;
-}
-
-.empty-text {
-  font-size: $text-sm;
-  color: $color-text-tertiary;
-  margin-bottom: $spacing-lg;
-}
-
-.add-item-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: $spacing-xs;
-  padding: $spacing-sm $spacing-lg;
-  font-size: $text-sm;
-  color: $color-accent;
-  background: $color-accent-glow;
-  border-radius: $radius-md;
-  transition: all $transition-fast;
-  &:hover {
-    background: rgba(212, 168, 83, 0.2);
-    transform: translateY(-2px);
-  }
-}
-</style>

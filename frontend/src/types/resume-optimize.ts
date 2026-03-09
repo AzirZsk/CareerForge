@@ -168,27 +168,19 @@ export type ResumeSectionType =
   | 'CERTIFICATE'
   | 'OPEN_SOURCE'
 
-/** 简历区块 */
+/** 简历区块 - 统一使用 content 字段 */
 export interface ResumeSection {
   id: string
+  resumeId: string
   type: ResumeSectionType
   title: string
-  content: Record<string, any> | null
-  items: ResumeSectionItem[] | null
+  /** content 是 JSON 字符串，需解析 */
+  content: string | null
   score: number
   suggestions: string[] | null
   /** 优化后新增的字段 */
   awards?: string
   description?: string
-  achievements?: string
-}
-
-/** 简历区块子项 */
-export interface ResumeSectionItem {
-  id: string
-  title: string
-  content: Record<string, any>
-  score: number
   achievements?: string
 }
 

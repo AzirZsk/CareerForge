@@ -107,78 +107,24 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
 
     /**
      * 构建单个SectionVO
-     * 聚合类型从 content 解析数组并生成 items，单条类型直接返回 content
+     * 统一返回 content 字段（JSON 字符串），不再生成 items
      *
      * @param section 简历模块实体
      * @return SectionVO
      */
     private ResumeDetailVO.ResumeSectionVO buildSectionVO(ResumeSection section) {
         SectionType sectionType = SectionType.fromCode(section.getType());
+        String title = sectionType != null ? sectionType.getDescription() : section.getTitle();
 
-        // 聚合类型：从 content 解析数组并生成 items
-        if (sectionType != null && sectionType.isAggregate()) {
-            List<?> items = JsonParseHelper.parseToEntity(section.getContent(), new TypeReference<List<Object>>() {});
-            List<ResumeDetailVO.ResumeSectionItemVO> itemVOs = new ArrayList<>();
-            if (items != null) {
-                for (int i = 0; i < items.size(); i++) {
-                    itemVOs.add(ResumeDetailVO.ResumeSectionItemVO.builder()
-                        .id(section.getId() + "_" + i)
-                        .title(extractTitle(items.get(i), sectionType))
-                        .content(toJsonString(items.get(i)))
-                        .build());
-                }
-            }
-            return ResumeDetailVO.ResumeSectionVO.builder()
-                .id(section.getId())
-                .type(section.getType())
-                .title(sectionType.getDescription())
-                .score(section.getScore())
-                .items(itemVOs)
-                .suggestions(null)
-                .build();
-        }
-        // 单条类型：保持原有结构，content 直接返回 JSON 字符串
         return ResumeDetailVO.ResumeSectionVO.builder()
             .id(section.getId())
+            .resumeId(section.getResumeId())
             .type(section.getType())
-            .title(section.getTitle())
+            .title(title)
             .content(section.getContent())
             .score(section.getScore())
-            .items(null)
             .suggestions(null)
             .build();
-    }
-
-    /**
-     * 从聚合类型的单个元素中提取标题
-     *
-     * @param item 单个元素（Map 类型）
-     * @param type 区块类型
-     * @return 提取的标题
-     */
-    private String extractTitle(Object item, SectionType type) {
-        if (item instanceof Map) {
-            Map<?, ?> map = (Map<?, ?>) item;
-            switch (type) {
-                case WORK:
-                    return Objects.toString(map.get("company"), "工作经历");
-                case PROJECT:
-                    return Objects.toString(map.get("name"), "项目经验");
-                case EDUCATION:
-                    return Objects.toString(map.get("school"), "教育经历");
-                case CERTIFICATE:
-                    return Objects.toString(map.get("name"), "证书");
-                case OPEN_SOURCE:
-                    return Objects.toString(map.get("projectName"), "开源贡献");
-                case CUSTOM:
-                    return Objects.toString(map.get("title"), "自定义区块");
-                case SKILLS:
-                    return "技能";
-                default:
-                    return type.getDescription();
-            }
-        }
-        return type.getDescription();
     }
 
     /**

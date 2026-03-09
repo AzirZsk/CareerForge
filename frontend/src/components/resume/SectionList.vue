@@ -1,5 +1,6 @@
 <!--=====================================================
   简历模块列表组件
+  统一从 content 解析数据
   @author Azir
 =====================================================-->
 
@@ -18,9 +19,9 @@
     <div class="sections-list">
       <template v-for="(section, index) in sections" :key="section.id">
         <!-- CUSTOM 类型：展开显示每个 item -->
-        <template v-if="section.type === 'CUSTOM' && section.items">
+        <template v-if="section.type === 'CUSTOM'">
           <div
-            v-for="(item, itemIndex) in section.items"
+            v-for="(item, itemIndex) in getCustomItems(section)"
             :key="item.id"
             class="section-card"
             :class="{ active: activeSection === item.id }"
@@ -30,13 +31,13 @@
             <div class="section-header">
               <div class="section-info">
                 <span class="section-icon">{{ getSectionIcon(section.type) }}</span>
-                <span class="section-name">{{ parseContent(item.content)?.title || '自定义区块' }}</span>
+                <span class="section-name">{{ item.content?.title || '自定义区块' }}</span>
               </div>
-              <div class="section-score" :class="analyzed && item.score != null ? getScoreClass(item.score) : ''">
+              <div class="section-score" :class="analyzed && item.score != null ? getScoreClass(item.score!) : ''">
                 {{ analyzed ? (item.score ?? '~') : '~' }}
               </div>
             </div>
-            <p class="section-preview">{{ getCustomItemPreview(item) }}</p>
+            <p class="section-preview">{{ getCustomItemPreview({ content: JSON.stringify(item.content) }) }}</p>
           </div>
         </template>
         <!-- 非 CUSTOM 类型：正常显示 -->
@@ -86,7 +87,13 @@ defineEmits<{
   'add-section': []
 }>()
 
-const { getSectionIcon, getSectionPreview, getCustomItemPreview, getScoreClass, parseContent } = useSectionHelper()
+const {
+  getSectionIcon,
+  getSectionPreview,
+  getCustomItemPreview,
+  getScoreClass,
+  getCustomItems
+} = useSectionHelper()
 </script>
 
 <style lang="scss" scoped>

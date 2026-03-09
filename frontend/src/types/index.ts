@@ -176,6 +176,14 @@ export interface CustomSection {
   items: ContentItem[]
 }
 
+// 简历模块子项（用于组件间传递）
+// 每个子项都有 id 和解析后的 content
+export interface ResumeSectionItem<T = Record<string, unknown>> {
+  id: string
+  content: T
+  score?: number
+}
+
 // 简历模块内容类型（支持后端单个对象和 mock 数组格式）
 export type ResumeSectionContent =
   | BasicInfoContent
@@ -192,24 +200,16 @@ export type ResumeSectionContent =
   | CustomSection[]
   | Record<string, unknown>
 
-// 简历模块聚合项（用于 PROJECT、WORK、EDUCATION、CERTIFICATE 类型）
-export interface ResumeSectionItem {
-  id: string
-  title: string
-  content: string
-  score: number | null
-}
-
 // 简历模块
-// 支持两种模式：
-// - 单条模式：使用 content 字段（BASIC_INFO）- JSON 字符串格式，需前端解析
-// - 聚合模式：使用 items 字段（PROJECT、WORK、EDUCATION、CERTIFICATE、SKILLS）
+// 统一使用 content 字段存储内容（JSON 字符串格式）
+// - BASIC_INFO: content 存储单个对象 JSON
+// - 其他聚合类型: content 存储数组 JSON
 export interface ResumeSection {
   id: string
+  resumeId: string
   type: string
   title: string
   content: string | null
-  items: ResumeSectionItem[] | null
   score: number
   suggestions: ResumeSuggestionItem[] | null
 }

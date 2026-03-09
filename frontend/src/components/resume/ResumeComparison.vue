@@ -49,7 +49,8 @@
 
 <script setup lang="ts">
 import ResumeContentViewer from './ResumeContentViewer.vue'
-import type { ResumeSection, ChangeItem } from '@/types/resume-optimize'
+import type { ResumeSection } from '@/types'
+import type { ChangeItem } from '@/types/resume-optimize'
 
 interface Props {
   /** 优化前的区块数据（新格式） */
@@ -61,7 +62,7 @@ interface Props {
   /** 预计提升分数 */
   improvementScore?: number
   /** 兼容旧格式 */
-  beforeResume?: Record<string, any>
+  beforeResume?: Record<string, unknown>
 }
 
 defineProps<Props>()

@@ -187,8 +187,15 @@ public class ResumeOptimizeGraphHandler {
      * 判断简历区块是否有内容
      */
     private boolean hasContent(ResumeDetailVO.ResumeSectionVO section) {
-        return section.getContent() != null ||
-                (section.getItems() != null && !section.getItems().isEmpty());
+        if (section.getContent() == null || section.getContent().isEmpty()) {
+            return false;
+        }
+        // 检查是否为空数组或空对象
+        String content = section.getContent().trim();
+        if (content.equals("[]") || content.equals("{}")) {
+            return false;
+        }
+        return true;
     }
 
     /**

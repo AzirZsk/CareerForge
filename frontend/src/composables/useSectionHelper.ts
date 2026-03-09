@@ -3,7 +3,7 @@
 // @author Azir
 // =====================================================
 
-import type { ResumeSection, BasicInfoContent } from '@/types'
+import type { ResumeSection, ResumeSectionItem, BasicInfoContent, WorkExperience, ProjectExperience, EducationContent, Skill, SkillsContent, CertificateContent, OpenSourceContribution, CustomSection } from '@/types'
 
 // 模块图标映射（后端大写格式）
 const sectionIcons: Record<string, string> = {
@@ -60,6 +60,9 @@ const BASIC_INFO_FIELD_ORDER: string[] = [
   'summary'
 ]
 
+// 聚合类型列表
+const AGGREGATE_TYPES = ['EDUCATION', 'WORK', 'PROJECT', 'CERTIFICATE', 'OPEN_SOURCE', 'CUSTOM', 'SKILLS']
+
 export function useSectionHelper() {
   // 解析 content 字符串为对象
   function parseContent<T = Record<string, unknown>>(content: string | Record<string, unknown> | undefined | null): T {
@@ -78,6 +81,148 @@ export function useSectionHelper() {
     }
   }
 
+  /**
+   * 解析聚合类型的 content 为数组
+   * content 是 JSON 字符串格式的数组
+   */
+  function parseAggregatedContent<T>(section: ResumeSection): T[] {
+    if (!section.content) {
+      return []
+    }
+    try {
+      const parsed = typeof section.content === 'string'
+        ? JSON.parse(section.content)
+        : section.content
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      console.warn('解析聚合 content 失败:', section.content)
+      return []
+    }
+  }
+
+  /**
+   * 获取工作经历列表
+   */
+  function getWorkList(section: ResumeSection): WorkExperience[] {
+    return parseAggregatedContent<WorkExperience>(section)
+  }
+
+  /**
+   * 获取工作经历列表（ResumeSectionItem 格式）
+   */
+  function getWorkItems(section: ResumeSection): ResumeSectionItem<WorkExperience>[] {
+    const items = parseAggregatedContent<WorkExperience & { id?: string }>(section)
+    return items.map((item, index) => ({
+      id: item.id || `work_${index}`,
+      content: item
+    }))
+  }
+
+  /**
+   * 获取项目经历列表
+   */
+  function getProjectList(section: ResumeSection): ProjectExperience[] {
+    return parseAggregatedContent<ProjectExperience>(section)
+  }
+
+  /**
+   * 获取项目经历列表（ResumeSectionItem 格式）
+   */
+  function getProjectItems(section: ResumeSection): ResumeSectionItem<ProjectExperience>[] {
+    const items = parseAggregatedContent<ProjectExperience & { id?: string }>(section)
+    return items.map((item, index) => ({
+      id: item.id || `project_${index}`,
+      content: item
+    }))
+  }
+
+  /**
+   * 获取教育经历列表
+   */
+  function getEducationList(section: ResumeSection): EducationContent[] {
+    return parseAggregatedContent<EducationContent>(section)
+  }
+
+  /**
+   * 获取教育经历列表（ResumeSectionItem 格式）
+   */
+  function getEducationItems(section: ResumeSection): ResumeSectionItem<EducationContent>[] {
+    const items = parseAggregatedContent<EducationContent & { id?: string }>(section)
+    return items.map((item, index) => ({
+      id: item.id || `education_${index}`,
+      content: item
+    }))
+  }
+
+  /**
+   * 获取技能列表
+   */
+  function getSkillsList(section: ResumeSection): Skill[] {
+    const content = parseContent<SkillsContent>(section.content)
+    return content?.skills ?? []
+  }
+
+  /**
+   * 获取证书列表
+   */
+  function getCertificateList(section: ResumeSection): CertificateContent[] {
+    return parseAggregatedContent<CertificateContent>(section)
+  }
+
+  /**
+   * 获取证书列表（ResumeSectionItem 格式）
+   */
+  function getCertificateItems(section: ResumeSection): ResumeSectionItem<CertificateContent>[] {
+    const items = parseAggregatedContent<CertificateContent & { id?: string }>(section)
+    return items.map((item, index) => ({
+      id: item.id || `certificate_${index}`,
+      content: item
+    }))
+  }
+
+  /**
+   * 获取开源贡献列表
+   */
+  function getOpenSourceList(section: ResumeSection): OpenSourceContribution[] {
+    return parseAggregatedContent<OpenSourceContribution>(section)
+  }
+
+  /**
+   * 获取开源贡献列表（ResumeSectionItem 格式）
+   */
+  function getOpenSourceItems(section: ResumeSection): ResumeSectionItem<OpenSourceContribution>[] {
+    const items = parseAggregatedContent<OpenSourceContribution & { id?: string }>(section)
+    return items.map((item, index) => ({
+      id: item.id || `opensource_${index}`,
+      content: item
+    }))
+  }
+
+  /**
+   * 获取自定义区块列表
+   */
+  function getCustomList(section: ResumeSection): CustomSection[] {
+    return parseAggregatedContent<CustomSection>(section)
+  }
+
+  /**
+   * 获取自定义区块列表（ResumeSectionItem 格式）
+   */
+  function getCustomItems(section: ResumeSection): ResumeSectionItem<CustomSection>[] {
+    const items = parseAggregatedContent<CustomSection & { id?: string; score?: number }>(section)
+    return items.map((item, index) => ({
+      id: item.id || `custom_${index}`,
+      title: item.title || '自定义区块',
+      content: item,
+      score: item.score
+    }))
+  }
+
+  // 判断是否为聚合类型
+  function isAggregateType(type: string): boolean {
+    return AGGREGATE_TYPES.includes(type)
+  }
+
   // 获取模块图标
   function getSectionIcon(type: string): string {
     return sectionIcons[type] || '📄'
@@ -85,18 +230,23 @@ export function useSectionHelper() {
 
   // 获取模块预览文本
   function getSectionPreview(section: ResumeSection): string {
-    // 技能类型：直接统计 items 数组长度
+    // 技能类型：解析 content 中的 skills 数组
     if (section.type === 'SKILLS') {
-      return `${section.items?.length ?? 0} 项技能`
+      const skills = getSkillsList(section)
+      return `${skills.length} 项技能`
     }
-    // 聚合类型（有items）
-    if (section.items?.length) {
-      if (section.type === 'OPEN_SOURCE') {
-        return `${section.items.length} 个项目`
+    // 聚合类型：解析 content 数组
+    if (isAggregateType(section.type)) {
+      const items = parseAggregatedContent(section)
+      if (items.length > 0) {
+        if (section.type === 'OPEN_SOURCE') {
+          return `${items.length} 个项目`
+        }
+        return `${items.length} 条记录`
       }
-      return `${section.items.length} 条记录`
+      return '暂无记录'
     }
-    // 单条类型（有content）- 需要解析 JSON 字符串
+    // 单条类型（BASIC_INFO）- 需要解析 JSON 字符串
     if (section.type === 'BASIC_INFO') {
       const content = parseContent<BasicInfoContent>(section.content)
       return content.name ?? '基本信息'
@@ -153,6 +303,21 @@ export function useSectionHelper() {
     sectionIcons,
     fieldLabels,
     parseContent,
+    parseAggregatedContent,
+    getWorkList,
+    getWorkItems,
+    getProjectList,
+    getProjectItems,
+    getEducationList,
+    getEducationItems,
+    getSkillsList,
+    getCertificateList,
+    getCertificateItems,
+    getOpenSourceList,
+    getOpenSourceItems,
+    getCustomList,
+    getCustomItems,
+    isAggregateType,
     getSectionIcon,
     getSectionPreview,
     getCustomItemPreview,

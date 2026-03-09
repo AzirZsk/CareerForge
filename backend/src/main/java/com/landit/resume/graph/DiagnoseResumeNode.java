@@ -5,6 +5,7 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.landit.common.config.AIPromptProperties;
 import com.landit.common.util.ChatClientHelper;
 import cn.hutool.core.util.StrUtil;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.landit.common.util.JsonParseHelper;
 import com.landit.resume.dto.DiagnoseResumeResponse;
 import com.landit.resume.dto.ResumeDetailVO;
@@ -152,7 +153,7 @@ public class DiagnoseResumeNode implements NodeAction {
 
     /**
      * 构建单个 section 的 JSON，仅替换 section 级别的 id 为简短标识符
-     * 嵌套的 items 保持原始结构，不做 id 替换
+     * 统一使用 content 字段存储内容
      */
     private String buildSectionJsonWithShortId(ResumeDetailVO.ResumeSectionVO section, String shortId) {
         // 使用 Map 构建 JSON，避免手动转义
@@ -162,12 +163,10 @@ public class DiagnoseResumeNode implements NodeAction {
         if (section.getTitle() != null) {
             jsonMap.put("title", section.getTitle());
         }
-        // items 和 content 保持原始 JSON 序列化
-        if (section.getItems() != null && !section.getItems().isEmpty()) {
-            jsonMap.put("items", section.getItems());
-        } else if (section.getContent() != null) {
-            // content 已经是 JSON 字符串，需要先解析为对象再序列化
-            jsonMap.put("content", section.getContent());
+        // content 统一存储数据（JSON 字符串），需要先解析为对象再序列化
+        if (section.getContent() != null) {
+            Object contentObj = JsonParseHelper.parseToEntity(section.getContent(), new TypeReference<Object>() {});
+            jsonMap.put("content", contentObj);
         }
         return JsonParseHelper.toJsonString(jsonMap);
     }

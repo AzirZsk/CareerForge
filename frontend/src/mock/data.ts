@@ -68,6 +68,7 @@ export const resumeDetail: ResumeDetail = {
   sections: [
     {
       id: 'section_001',
+      resumeId: 'resume_001',
       type: 'BASIC_INFO',
       title: '基本信息',
       content: JSON.stringify({
@@ -77,39 +78,28 @@ export const resumeDetail: ResumeDetail = {
         targetPosition: '高级前端工程师',
         summary: '5年前端开发经验，专注于大型Web应用架构设计与性能优化'
       }),
-      items: null,
       score: 100,
       suggestions: []
     },
     {
       id: 'section_002',
+      resumeId: 'resume_001',
       type: 'WORK',
       title: '工作经历',
-      content: null,
-      items: [
+      content: JSON.stringify([
         {
-          id: 'work_001',
-          title: '字节跳动',
-          content: JSON.stringify({
-            company: '字节跳动',
-            position: '高级前端工程师',
-            period: '2022.03 - 至今',
-            description: '负责抖音创作者平台的前端架构设计与核心功能开发，主导了微前端架构的落地，性能优化提升40%。'
-          }),
-          score: 95
+          company: '字节跳动',
+          position: '高级前端工程师',
+          period: '2022.03 - 至今',
+          description: '负责抖音创作者平台的前端架构设计与核心功能开发，主导了微前端架构的落地，性能优化提升40%。'
         },
         {
-          id: 'work_002',
-          title: '美团',
-          content: JSON.stringify({
-            company: '美团',
-            position: '前端工程师',
-            period: '2019.07 - 2022.02',
-            description: '参与美团外卖商家端管理系统开发，负责订单管理、数据看板等核心模块。'
-          }),
-          score: 90
+          company: '美团',
+          position: '前端工程师',
+          period: '2019.07 - 2022.02',
+          description: '参与美团外卖商家端管理系统开发，负责订单管理、数据看板等核心模块。'
         }
-      ],
+      ]),
       score: 95,
       suggestions: [
         {
@@ -120,23 +110,18 @@ export const resumeDetail: ResumeDetail = {
     },
     {
       id: 'section_003',
+      resumeId: 'resume_001',
       type: 'PROJECT',
       title: '项目经历',
-      content: null,
-      items: [
+      content: JSON.stringify([
         {
-          id: 'project_001',
-          title: '创作者数据分析平台',
-          content: JSON.stringify({
-            name: '创作者数据分析平台',
-            role: '前端负责人',
-            period: '2023.01 - 2023.08',
-            description: '从0到1搭建创作者数据分析平台，支持百万级数据实时可视化展示。',
-            achievements: ['页面加载速度提升60%', '日活用户突破50万', '获得团队Q3最佳项目奖']
-          }),
-          score: 88
+          name: '创作者数据分析平台',
+          role: '前端负责人',
+          period: '2023.01 - 2023.08',
+          description: '从0到1搭建创作者数据分析平台，支持百万级数据实时可视化展示。',
+          achievements: ['页面加载速度提升60%', '日活用户突破50万', '获得团队Q3最佳项目奖']
         }
-      ],
+      ]),
       score: 88,
       suggestions: [
         {
@@ -147,55 +132,37 @@ export const resumeDetail: ResumeDetail = {
     },
     {
       id: 'section_004',
+      resumeId: 'resume_001',
       type: 'SKILLS',
       title: '专业技能',
-      content: null,
-      items: [
-        {
-          id: 'skill_001',
-          title: '技能',
-          content: JSON.stringify({
+      content: JSON.stringify({
+        skills: [
+          {
             name: 'Vue.js / React',
             description: '精通 Vue.js / React 框架，熟悉源码实现',
             level: 'expert',
             category: 'frontend'
-          }),
-          score: null
-        },
-        {
-          id: 'skill_002',
-          title: '技能',
-          content: JSON.stringify({
+          },
+          {
             name: 'TypeScript',
             description: '熟练使用 TypeScript 进行大型项目开发',
             level: 'expert',
             category: 'language'
-          }),
-          score: null
-        },
-        {
-          id: 'skill_003',
-          title: '技能',
-          content: JSON.stringify({
+          },
+          {
             name: '性能优化',
             description: '具有丰富的性能优化和工程化经验',
             level: 'advanced',
             category: 'engineering'
-          }),
-          score: null
-        },
-        {
-          id: 'skill_004',
-          title: '技能',
-          content: JSON.stringify({
+          },
+          {
             name: 'Node.js',
             description: '熟悉 Node.js，能够开发服务端应用',
             level: 'intermediate',
             category: 'backend'
-          }),
-          score: null
-        }
-      ],
+          }
+        ]
+      }),
       score: 85,
       suggestions: [
         {

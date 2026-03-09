@@ -5,11 +5,11 @@
 
 <template>
   <div class="content-block certificate-block">
-    <div class="experience-item" v-for="item in parsedItems" :key="item.id">
+    <div class="experience-item" v-for="item in items" :key="item.id">
       <div class="exp-header">
-        <h4 class="exp-title">{{ item.parsedContent.name }}</h4>
+        <h4 class="exp-title">{{ item.content.name }}</h4>
         <div class="exp-actions">
-          <span class="exp-period" v-if="item.parsedContent.date">{{ item.parsedContent.date }}</span>
+          <span class="exp-period" v-if="item.content.date">{{ item.content.date }}</span>
           <button class="item-btn edit" @click="$emit('edit-item', item.id)" title="编辑">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -29,25 +29,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import type { ResumeSectionItem } from '@/types'
-import { useSectionHelper } from '@/composables/useSectionHelper'
+import type { ResumeSectionItem, CertificateContent } from '@/types'
 
-const props = defineProps<{
-  items: ResumeSectionItem[]
+defineProps<{
+  items: ResumeSectionItem<CertificateContent>[]
 }>()
-
-const { parseContent } = useSectionHelper()
-
-interface CertificateContent {
-  name: string
-  date?: string
-}
-
-const parsedItems = computed(() => props.items.map(item => ({
-  ...item,
-  parsedContent: parseContent<CertificateContent>(item.content)
-})))
 
 defineEmits<{
   'edit-item': [itemId: string]

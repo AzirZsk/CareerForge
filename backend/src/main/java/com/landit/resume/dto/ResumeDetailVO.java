@@ -64,9 +64,9 @@ public class ResumeDetailVO {
 
     /**
      * 简历模块VO
-     * 支持两种模式：
-     * - 单条模式：使用 content 字段（BASIC_INFO、SKILLS）
-     * - 聚合模式：使用 items 字段（PROJECT、WORK、EDUCATION、CERTIFICATE）
+     * 统一使用 content 字段存储内容（JSON 字符串格式）
+     * - 单条类型（BASIC_INFO）：content 存储单个对象 JSON
+     * - 聚合类型（WORK、PROJECT、EDUCATION 等）：content 存储数组 JSON
      */
     @Data
     @Builder
@@ -76,48 +76,25 @@ public class ResumeDetailVO {
 
         private String id;
 
+        /**
+         * 所属简历ID
+         */
+        private String resumeId;
+
         private String type;
 
         private String title;
 
         /**
-         * 单条内容（JSON 字符串格式，用于 BASIC_INFO、SKILLS 等单条类型）
+         * 模块内容（JSON 字符串格式）
+         * - BASIC_INFO: 单个对象 JSON
+         * - 其他聚合类型: 数组 JSON
          */
         private String content;
-
-        /**
-         * 聚合项列表（用于 PROJECT、WORK、EDUCATION、CERTIFICATE 等多条类型）
-         */
-        private List<ResumeSectionItemVO> items;
 
         private Integer score;
 
         private List<ResumeSuggestionItemVO> suggestions;
-
-    }
-
-    /**
-     * 聚合模块中的单项VO
-     */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ResumeSectionItemVO {
-
-        private String id;
-
-        private String title;
-
-        /**
-         * 模块内容（JSON字符串格式）
-         */
-        private String content;
-
-        /**
-         * 模块评分（0-100），null表示未评分
-         */
-        private Integer score;
 
     }
 

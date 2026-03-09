@@ -1,5 +1,6 @@
 <!--=====================================================
   LandIt 简历模块编辑弹窗
+  统一从 content 解析数据
   @author Azir
 =====================================================-->
 
@@ -53,6 +54,7 @@ import BasicInfoForm from './forms/BasicInfoForm.vue'
 import SkillsForm from './forms/SkillsForm.vue'
 import ExperienceForm from './forms/ExperienceForm.vue'
 import type { ResumeSection } from '@/types'
+import { useSectionHelper } from '@/composables/useSectionHelper'
 
 interface Props {
   visible: boolean
@@ -76,6 +78,13 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>()
 
+const {
+  parseContent,
+  parseAggregatedContent,
+  getSkillsList,
+  isAggregateType
+} = useSectionHelper()
+
 // 模块类型（CUSTOM_ITEM 当作 CUSTOM 处理）
 const sectionType = computed(() => {
   const type = props.section?.type ?? ''
@@ -84,7 +93,7 @@ const sectionType = computed(() => {
 
 // 是否为聚合类型
 const isAggregate = computed(() => {
-  return ['EDUCATION', 'WORK', 'PROJECT', 'CERTIFICATE', 'OPEN_SOURCE', 'CUSTOM'].includes(sectionType.value)
+  return isAggregateType(sectionType.value)
 })
 
 // 弹窗标题
@@ -131,57 +140,38 @@ onUnmounted(() => {
   document.body.style.overflow = ''
 })
 
-// 解析 content（可能是对象或 JSON 字符串）
-function parseContent(content: unknown): Record<string, unknown> {
-  if (!content) {
-    return {}
-  }
-  if (typeof content === 'string') {
-    try {
-      return JSON.parse(content)
-    } catch {
-      return {}
-    }
-  }
-  return content as Record<string, unknown>
-}
-
 // 监听 section/itemId 变化，深拷贝数据到表单
 watch(
   [() => props.section, () => props.itemId, () => props.visible],
   ([newSection, newItemId]) => {
     if (newSection && props.visible) {
-      // 技能类型：数据在 items[0].content（字符串类型，需要解析）
+      // 技能类型：数据在 content.skills 数组中
       if (sectionType.value === 'SKILLS') {
-        if (newSection.items?.[0]?.content) {
-          const parsed = parseContent(newSection.items[0].content)
-          formData.value = JSON.parse(JSON.stringify(parsed))
-        } else {
-          formData.value = { skills: [] }
-        }
+        const skills = getSkillsList(newSection)
+        formData.value = JSON.parse(JSON.stringify({ skills }))
         return
       }
       // 单条类型（BASIC_INFO）：content 是 JSON 字符串，需要解析
       if (!isAggregate.value) {
-        if (newSection.content) {
-          formData.value = JSON.parse(JSON.stringify(parseContent(newSection.content)))
-        } else {
-          formData.value = {}
-        }
+        formData.value = JSON.parse(JSON.stringify(parseContent(newSection.content)))
         return
       }
-      // CUSTOM_ITEM 类型：直接使用 section.content（虚拟 section 的 items 为 null）
+      // CUSTOM_ITEM 类型：直接使用 section.content（虚拟 section 的 content）
       if (newSection.type === 'CUSTOM_ITEM' && newSection.content) {
         const parsed = parseContent(newSection.content)
         formData.value = JSON.parse(JSON.stringify(parsed))
         return
       }
-      // 聚合类型：根据 itemId 找到对应的 item（item.content 是字符串，需要解析）
-      if (newSection.items && newItemId) {
-        const item = newSection.items.find((i) => i.id === newItemId)
+      // 聚合类型：根据 itemId 找到对应的 item
+      if (newSection.content && newItemId) {
+        // 从 content 解析数组
+        const items = parseAggregatedContent(newSection)
+        // 根据 itemId 找到对应项
+        const item = items.find((i: any) => i.id === newItemId)
         if (item) {
-          const parsed = parseContent(item.content)
-          formData.value = JSON.parse(JSON.stringify(parsed))
+          // 去除 id 字段，只保留内容
+          const { id, ...content } = item as Record<string, unknown>
+          formData.value = JSON.parse(JSON.stringify(content))
           return
         }
       }

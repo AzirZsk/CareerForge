@@ -156,21 +156,24 @@ const {
 const currentSectionDetail = computed<ResumeSection | undefined>(() => {
   // 首先检查是否是 CUSTOM 类型的 item
   for (const s of store.currentResume.sections) {
-    if (s.type === 'CUSTOM' && s.items) {
-      const item = s.items.find(i => i.id === activeSection.value)
-      if (item) {
-        // 解析 content 获取 title
-        const parsedContent = parseContent<Record<string, unknown>>(item.content)
-        // 返回一个虚拟的 section，只包含选中的 item
-        return {
-          id: item.id,
-          type: 'CUSTOM_ITEM',
-          title: (parsedContent?.title as string) || '自定义区块',
-          content: item.content,
-          items: null,
-          score: item.score ?? 0,
-          suggestions: null
-        } as ResumeSection
+    if (s.type === 'CUSTOM' && s.content) {
+      // 解析 CUSTOM 类型的 content 数组
+      const customItems = parseContent<Array<{ id?: string; title?: string } & Record<string, unknown>>>(s.content)
+      if (Array.isArray(customItems)) {
+        const item = customItems.find((i, idx) => (i.id || `custom_${idx}`) === activeSection.value)
+        if (item) {
+          const itemIndex = customItems.indexOf(item)
+          // 返回一个虚拟的 section，只包含选中的 item
+          return {
+            id: item.id || `custom_${itemIndex}`,
+            resumeId: s.resumeId,
+            type: 'CUSTOM_ITEM',
+            title: (item.title as string) || '自定义区块',
+            content: JSON.stringify(item),
+            score: (item.score as number) ?? 0,
+            suggestions: null
+          } as ResumeSection
+        }
       }
     }
   }
