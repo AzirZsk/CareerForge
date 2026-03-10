@@ -45,6 +45,7 @@
           :active-section="activeSection"
           :analyzed="store.currentResume.analyzed"
           @update:active-section="activeSection = $event"
+          @add-section="showAddSectionModal = true"
         />
 
         <!-- 详情面板 -->
@@ -101,12 +102,19 @@
     <!-- 编辑弹窗 -->
     <EditSectionModal
       v-model:visible="isEditModalVisible"
-      :section="currentSectionDetail ?? null"
+      :section="editingSection ?? null"
       :item-index="editItemIndex"
       :is-new="isNewItem"
       :saving="isSaving"
       @save="handleSave"
       @cancel="closeEditModal"
+    />
+
+    <!-- 添加模块弹窗 -->
+    <AddSectionModal
+      v-model:visible="showAddSectionModal"
+      :existing-types="existingSectionTypes"
+      @select="handleSelectSectionType"
     />
 
     <!-- 优化进度弹窗 -->
@@ -126,6 +134,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores'
 import EditSectionModal from '@/components/resume/EditSectionModal.vue'
+import AddSectionModal from '@/components/resume/AddSectionModal.vue'
 import OptimizeProgressModal from '@/components/resume/OptimizeProgressModal.vue'
 import ResumeHeader from '@/components/resume/ResumeHeader.vue'
 import MetricsSection from '@/components/resume/MetricsSection.vue'
@@ -134,7 +143,7 @@ import SectionContent from '@/components/resume/SectionContent.vue'
 import { useResumeOptimize } from '@/composables/useResumeOptimize'
 import { useSectionEdit } from '@/composables/useSectionEdit'
 import { useSectionHelper } from '@/composables/useSectionHelper'
-import type { ResumeSection, ResumeSuggestionItem } from '@/types'
+import type { ResumeSection, ResumeSuggestionItem, SectionType } from '@/types'
 
 const store = useAppStore()
 const { parseContent } = useSectionHelper()
@@ -144,6 +153,14 @@ const resumeId = ref<string>('')
 
 // 优化相关状态
 const showOptimizeModal = ref<boolean>(false)
+
+// 添加模块相关状态
+const showAddSectionModal = ref<boolean>(false)
+
+// 已存在的模块类型列表
+const existingSectionTypes = computed<SectionType[]>(() => {
+  return store.currentResume.sections.map((s: ResumeSection) => s.type as SectionType)
+})
 const {
   state: optimizeState,
   startOptimize,
@@ -182,17 +199,50 @@ const currentSectionDetail = computed<ResumeSection | undefined>(() => {
   return section
 })
 
+// 类型标题映射
+const SECTION_TYPE_TITLES: Record<SectionType, string> = {
+  BASIC_INFO: '基本信息',
+  EDUCATION: '教育经历',
+  WORK: '工作经历',
+  PROJECT: '项目经历',
+  SKILLS: '专业技能',
+  CERTIFICATE: '证书荣誉',
+  OPEN_SOURCE: '开源贡献',
+  CUSTOM: '自定义区块'
+}
+
+// 编辑弹窗使用的 section（支持新建模块时的虚拟 section）
+const editingSection = computed<ResumeSection | undefined>(() => {
+  // 新建模块模式：返回虚拟 section
+  if (isNewSection.value && pendingSectionType.value) {
+    return {
+      id: 'new_section',
+      resumeId: resumeId.value,
+      type: pendingSectionType.value,
+      title: SECTION_TYPE_TITLES[pendingSectionType.value] || '新模块',
+      content: null,
+      score: 0,
+      suggestions: null
+    } as ResumeSection
+  }
+  // 编辑模式：返回当前选中的 section
+  return currentSectionDetail.value
+})
+
 // 使用编辑 composable
 const {
   isEditModalVisible,
   isSaving,
   editItemIndex,
   isNewItem,
+  isNewSection,
+  pendingSectionType,
   isAggregateSection,
   isCustomItem,
   openEditModal,
   openEditItemModal,
   openAddItemModal,
+  openNewSectionModal,
   closeEditModal,
   handleSave,
   deleteItem
@@ -239,6 +289,11 @@ function optimizeResume(): void {
 function exportResume(): void {
   // TODO: 实现导出 PDF 功能
   alert('导出 PDF 功能开发中...')
+}
+
+// 选择要添加的模块类型
+function handleSelectSectionType(type: SectionType): void {
+  openNewSectionModal(type)
 }
 
 // 优化完成后刷新简历详情

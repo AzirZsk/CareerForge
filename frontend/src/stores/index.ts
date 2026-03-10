@@ -177,11 +177,14 @@ export const useAppStore = defineStore('app', () => {
   // 新增简历模块
   async function addResumeSection(
     resumeId: string,
-    data: { type: string; title: string; content: Record<string, unknown> }
-  ): Promise<void> {
+    data: { type: string; title: string; content: Record<string, unknown> | Record<string, unknown>[] }
+  ): Promise<string | undefined> {
     try {
       const result = await resumeApi.createSection(resumeId, data)
       currentResume.value = result
+      // 返回新创建的模块 ID（根据类型查找最新添加的）
+      const newSection = result.sections.find((s) => s.type === data.type)
+      return newSection?.id ? String(newSection.id) : undefined
     } catch (error) {
       console.error('新增模块失败', error)
       throw error

@@ -5,7 +5,19 @@
 
 import { ref, computed, type Ref } from 'vue'
 import { useAppStore } from '@/stores'
-import type { ResumeSection } from '@/types'
+import type { ResumeSection, SectionType } from '@/types'
+
+// 模块类型标题映射
+const SECTION_TYPE_TITLES: Record<SectionType, string> = {
+  BASIC_INFO: '基本信息',
+  EDUCATION: '教育经历',
+  WORK: '工作经历',
+  PROJECT: '项目经历',
+  SKILLS: '专业技能',
+  CERTIFICATE: '证书荣誉',
+  OPEN_SOURCE: '开源贡献',
+  CUSTOM: '自定义区块'
+}
 
 export function useSectionEdit(
   resumeId: Ref<string>,
@@ -19,6 +31,10 @@ export function useSectionEdit(
   const isSaving = ref<boolean>(false)
   const editItemIndex = ref<number | null>(null)
   const isNewItem = ref<boolean>(false)
+
+  // 新建模块状态
+  const isNewSection = ref<boolean>(false)
+  const pendingSectionType = ref<SectionType | null>(null)
 
   // 判断当前模块是否为聚合类型
   const isAggregateSection = computed<boolean>(() => {
@@ -44,6 +60,8 @@ export function useSectionEdit(
       editItemIndex.value = null
     }
     isNewItem.value = false
+    isNewSection.value = false
+    pendingSectionType.value = null
     isEditModalVisible.value = true
   }
 
@@ -51,6 +69,8 @@ export function useSectionEdit(
   function openEditItemModal(index: number): void {
     editItemIndex.value = index
     isNewItem.value = false
+    isNewSection.value = false
+    pendingSectionType.value = null
     isEditModalVisible.value = true
   }
 
@@ -58,6 +78,18 @@ export function useSectionEdit(
   function openAddItemModal(): void {
     editItemIndex.value = null
     isNewItem.value = true
+    isNewSection.value = false
+    pendingSectionType.value = null
+    isEditModalVisible.value = true
+  }
+
+  // 打开新建模块弹窗
+  function openNewSectionModal(type: SectionType): void {
+    // 创建一个虚拟 section 用于编辑弹窗
+    isNewSection.value = true
+    pendingSectionType.value = type
+    isNewItem.value = true
+    editItemIndex.value = null
     isEditModalVisible.value = true
   }
 
@@ -66,15 +98,41 @@ export function useSectionEdit(
     isEditModalVisible.value = false
     editItemIndex.value = null
     isNewItem.value = false
+    isNewSection.value = false
+    pendingSectionType.value = null
   }
 
   // 保存编辑
   async function handleSave(data: { content: Record<string, unknown>; itemIndex?: number; isNew: boolean }): Promise<void> {
-    if (!resumeId.value || !activeSection.value) {
+    if (!resumeId.value) {
       return
     }
     isSaving.value = true
     try {
+      // 新建模块
+      if (isNewSection.value && pendingSectionType.value) {
+        const type = pendingSectionType.value
+        const title = SECTION_TYPE_TITLES[type] || '新模块'
+        // 聚合类型：content 需要包装为数组
+        const isAggregate = ['EDUCATION', 'WORK', 'PROJECT', 'CERTIFICATE', 'OPEN_SOURCE', 'CUSTOM'].includes(type)
+        const content = isAggregate ? [data.content] : data.content
+        const newSectionId = await store.addResumeSection(resumeId.value, {
+          type,
+          title,
+          content
+        })
+        // 创建成功后选中新模块
+        if (newSectionId) {
+          activeSection.value = newSectionId
+        }
+        closeEditModal()
+        return
+      }
+
+      if (!activeSection.value) {
+        return
+      }
+
       if (isAggregateSection.value) {
         // 聚合类型：新增或编辑条目，需要更新整个数组
         if (data.isNew) {
@@ -116,6 +174,8 @@ export function useSectionEdit(
     isSaving,
     editItemIndex,
     isNewItem,
+    isNewSection,
+    pendingSectionType,
     // 计算属性
     isAggregateSection,
     isCustomItem,
@@ -123,6 +183,7 @@ export function useSectionEdit(
     openEditModal,
     openEditItemModal,
     openAddItemModal,
+    openNewSectionModal,
     closeEditModal,
     handleSave,
     deleteItem

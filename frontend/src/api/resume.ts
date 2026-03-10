@@ -63,7 +63,7 @@ export async function updateSection(
  */
 export async function createSection(
   resumeId: string,
-  data: { type: string; title: string; content: Record<string, unknown> }
+  data: { type: string; title: string; content: Record<string, unknown> | Record<string, unknown>[] }
 ): Promise<ResumeDetail> {
   const response = await fetch(`${API_BASE}/resumes/${resumeId}/sections`, {
     method: 'POST',
