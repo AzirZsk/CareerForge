@@ -113,8 +113,34 @@ export function useSectionEdit(
       if (isNewSection.value && pendingSectionType.value) {
         const type = pendingSectionType.value
         const title = SECTION_TYPE_TITLES[type] || '新模块'
-        // 聚合类型：content 需要包装为数组
-        const isAggregate = ['EDUCATION', 'WORK', 'PROJECT', 'CERTIFICATE', 'OPEN_SOURCE', 'CUSTOM'].includes(type)
+
+        // CUSTOM 类型：检查是否已存在，存在则追加，不存在则创建
+        if (type === 'CUSTOM') {
+          const existingCustomSection = store.currentResume.sections.find((s: ResumeSection) => s.type === 'CUSTOM')
+          if (existingCustomSection) {
+            // 已存在 CUSTOM section：追加到 content 数组
+            await store.addResumeSectionItem(resumeId.value, existingCustomSection.id, data.content)
+            // 选中新添加的 item
+            const items = JSON.parse(existingCustomSection.content || '[]')
+            const newItemIndex = items.length // 追加后的索引
+            activeSection.value = `custom_${newItemIndex}`
+          } else {
+            // 不存在：创建新的 CUSTOM section
+            const newSectionId = await store.addResumeSection(resumeId.value, {
+              type,
+              title,
+              content: [data.content]
+            })
+            if (newSectionId) {
+              activeSection.value = newSectionId
+            }
+          }
+          closeEditModal()
+          return
+        }
+
+        // 其他聚合类型：正常创建
+        const isAggregate = ['EDUCATION', 'WORK', 'PROJECT', 'CERTIFICATE', 'OPEN_SOURCE'].includes(type)
         const content = isAggregate ? [data.content] : data.content
         const newSectionId = await store.addResumeSection(resumeId.value, {
           type,

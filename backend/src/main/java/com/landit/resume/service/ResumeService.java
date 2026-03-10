@@ -441,4 +441,55 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
         }
         log.info("模块评分已更新: resumeId={}, count={}", resumeId, sectionScores.size());
     }
+
+    /**
+     * 更新自定义区块中每个 item 的评分
+     * 评分存储在 content JSON 中每个 item 的 score 字段
+     *
+     * @param resumeId      简历ID
+     * @param itemScores    item 评分 Map<compositeId, score>
+     *                      compositeId 格式：sectionId:itemIndex
+     */
+    public void updateCustomItemScores(String resumeId, Map<String, Integer> itemScores) {
+        if (itemScores == null || itemScores.isEmpty()) {
+            return;
+        }
+
+        // 按 sectionId 分组
+        Map<String, Map<Integer, Integer>> sectionItemScores = new java.util.HashMap<>();
+        for (Map.Entry<String, Integer> entry : itemScores.entrySet()) {
+            String[] parts = entry.getKey().split(":");
+            if (parts.length == 2) {
+                String sectionId = parts[0];
+                int itemIndex = Integer.parseInt(parts[1]);
+                sectionItemScores.computeIfAbsent(sectionId, k -> new java.util.HashMap<>())
+                    .put(itemIndex, entry.getValue());
+            }
+        }
+
+        // 更新每个 section 的 content
+        for (Map.Entry<String, Map<Integer, Integer>> sectionEntry : sectionItemScores.entrySet()) {
+            ResumeSection section = resumeSectionMapper.selectById(sectionEntry.getKey());
+            if (section != null && section.getResumeId().equals(resumeId)
+                    && SectionType.CUSTOM.getCode().equals(section.getType())) {
+                List<ResumeStructuredData.CustomSection> items = JsonParseHelper.parseToEntity(
+                    section.getContent(),
+                    new TypeReference<List<ResumeStructuredData.CustomSection>>() {}
+                );
+                if (items != null) {
+                    // 更新每个 item 的 score
+                    for (Map.Entry<Integer, Integer> itemEntry : sectionEntry.getValue().entrySet()) {
+                        int idx = itemEntry.getKey();
+                        if (idx >= 0 && idx < items.size()) {
+                            items.get(idx).setScore(itemEntry.getValue());
+                        }
+                    }
+                    // 保存更新后的 content
+                    section.setContent(JsonParseHelper.toJsonString(items));
+                    resumeSectionMapper.updateById(section);
+                }
+            }
+        }
+        log.info("自定义区块 item 评分已更新: resumeId={}, count={}", resumeId, itemScores.size());
+    }
 }

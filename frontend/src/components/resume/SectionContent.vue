@@ -19,9 +19,9 @@
       :content="basicContent"
     />
 
-    <!-- 技能（单条，SKILLS 类型 content 是 { skills: [...] } -->
+    <!-- 技能（SKILLS 类型 content 是数组 [...] -->
     <SkillsSection
-      v-else-if="section?.type === 'SKILLS'"
+      v-else-if="section?.type === 'SKILLS' && skillsList.length"
       :skills="skillsList"
     />
 

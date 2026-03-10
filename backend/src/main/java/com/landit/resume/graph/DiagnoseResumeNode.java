@@ -7,8 +7,10 @@ import com.landit.common.util.ChatClientHelper;
 import cn.hutool.core.util.StrUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.landit.common.util.JsonParseHelper;
+import com.landit.common.enums.SectionType;
 import com.landit.resume.dto.DiagnoseResumeResponse;
 import com.landit.resume.dto.ResumeDetailVO;
+import com.landit.resume.dto.ResumeStructuredData;
 import com.landit.resume.service.ResumeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -67,8 +69,10 @@ public class DiagnoseResumeNode implements NodeAction {
                 chatClient, systemPrompt, userPrompt, DiagnoseResumeResponse.class
         );
 
-        // 将 AI 返回的简短标识符映射回原始雪花 ID
-        mapShortIdsToRealIds(response, shortIdToRealIdMap);
+        // 将 AI 返回的简短标识符映射回原始雪花 ID，并区分普通 section 和 custom item
+        Map<String, Map<String, Integer>> mappedScores = mapShortIdsToRealIds(response, shortIdToRealIdMap);
+        Map<String, Integer> normalSectionScores = mappedScores.get("normalSectionScores");
+        Map<String, Integer> customItemScores = mappedScores.get("customItemScores");
 
         String diagnosisResult = JsonParseHelper.toJsonString(response);
 
@@ -80,9 +84,13 @@ public class DiagnoseResumeNode implements NodeAction {
             try {
                 // 保存整体评分和维度评分
                 resumeService.updateDiagnosisScores(resumeId, response.getOverallScore(), response.getDimensionScores());
-                // 保存模块评分
-                if (response.getSectionScores() != null && !response.getSectionScores().isEmpty()) {
-                    resumeService.updateSectionScores(resumeId, response.getSectionScores());
+                // 保存普通模块评分
+                if (normalSectionScores != null && !normalSectionScores.isEmpty()) {
+                    resumeService.updateSectionScores(resumeId, normalSectionScores);
+                }
+                // 保存自定义区块 item 评分
+                if (customItemScores != null && !customItemScores.isEmpty()) {
+                    resumeService.updateCustomItemScores(resumeId, customItemScores);
                 }
                 log.info("诊断评分已保存: resumeId={}, overallScore={}", resumeId, response.getOverallScore());
             } catch (Exception e) {
@@ -117,6 +125,7 @@ public class DiagnoseResumeNode implements NodeAction {
     /**
      * 构建结构化的简历内容，使用简短标识符替代雪花 ID
      * 简短标识符格式：{type}_{index}，如 work_1, project_2, skills_1
+     * 对于 CUSTOM 类型，展开每个 item 作为独立评分单元：custom_1, custom_2, ...
      *
      * @param resumeDetail      简历详情
      * @param shortIdToRealIdMap 用于存储简短标识符到真实 ID 的映射
@@ -131,22 +140,48 @@ public class DiagnoseResumeNode implements NodeAction {
 
         // 用于统计每种类型的序号
         Map<String, Integer> typeCounters = new HashMap<>();
+        // 用于统计 custom item 的序号
+        int customIndex = 0;
 
         for (ResumeDetailVO.ResumeSectionVO section : sections) {
-            String type = section.getType() != null ? section.getType().toLowerCase() : "section";
-            int index = typeCounters.getOrDefault(type, 0) + 1;
-            typeCounters.put(type, index);
+            String type = section.getType() != null ? section.getType() : "section";
 
-            // 生成简短标识符：type_index（如 work_1, project_2）
-            String shortId = type + "_" + index;
+            // CUSTOM 类型特殊处理：展开每个 item 作为独立评分单元
+            if (SectionType.CUSTOM.getCode().equals(type)) {
+                List<ResumeStructuredData.CustomSection> customItems = JsonParseHelper.parseToEntity(
+                    section.getContent(),
+                    new TypeReference<List<ResumeStructuredData.CustomSection>>() {}
+                );
+                if (customItems != null && !customItems.isEmpty()) {
+                    for (int i = 0; i < customItems.size(); i++) {
+                        String shortId = "custom_" + customIndex++;
+                        // 映射格式：sectionId:itemIndex（用于后续更新 item 的 score）
+                        shortIdToRealIdMap.put(shortId, section.getId() + ":" + i);
+                        // 构建单个 custom item 的 JSON
+                        Map<String, Object> jsonMap = new LinkedHashMap<>();
+                        jsonMap.put("id", shortId);
+                        jsonMap.put("type", "CUSTOM");
+                        jsonMap.put("title", customItems.get(i).getTitle());
+                        jsonMap.put("content", customItems.get(i).getItems());
+                        sb.append(JsonParseHelper.toJsonString(jsonMap)).append("\n\n");
+                    }
+                }
+            } else {
+                // 其他类型按 section 级别处理
+                int index = typeCounters.getOrDefault(type.toLowerCase(), 0) + 1;
+                typeCounters.put(type.toLowerCase(), index);
 
-            // 记录映射关系
-            if (section.getId() != null) {
-                shortIdToRealIdMap.put(shortId, section.getId());
+                // 生成简短标识符：type_index（如 work_1, project_2）
+                String shortId = type.toLowerCase() + "_" + index;
+
+                // 记录映射关系
+                if (section.getId() != null) {
+                    shortIdToRealIdMap.put(shortId, section.getId());
+                }
+
+                // 构建使用简短标识符的 JSON
+                sb.append(buildSectionJsonWithShortId(section, shortId)).append("\n\n");
             }
-
-            // 构建使用简短标识符的 JSON
-            sb.append(buildSectionJsonWithShortId(section, shortId)).append("\n\n");
         }
         return sb.toString();
     }
@@ -173,29 +208,49 @@ public class DiagnoseResumeNode implements NodeAction {
 
     /**
      * 将 AI 返回的简短标识符映射回原始雪花 ID
+     * 同时区分普通 section 评分和 custom item 评分
      *
      * @param response            AI 响应
      * @param shortIdToRealIdMap  简短标识符到真实 ID 的映射
+     * @return 包含两种评分的 Map：normalSectionScores 和 customItemScores
      */
-    private void mapShortIdsToRealIds(DiagnoseResumeResponse response, Map<String, String> shortIdToRealIdMap) {
+    private Map<String, Map<String, Integer>> mapShortIdsToRealIds(
+            DiagnoseResumeResponse response, Map<String, String> shortIdToRealIdMap) {
+        Map<String, Map<String, Integer>> result = new HashMap<>();
+        Map<String, Integer> normalSectionScores = new HashMap<>();
+        Map<String, Integer> customItemScores = new HashMap<>();
+
         if (response.getSectionScores() == null || shortIdToRealIdMap.isEmpty()) {
-            return;
+            result.put("normalSectionScores", normalSectionScores);
+            result.put("customItemScores", customItemScores);
+            return result;
         }
 
         Map<String, Integer> originalScores = response.getSectionScores();
-        Map<String, Integer> mappedScores = new HashMap<>();
 
         for (Map.Entry<String, Integer> entry : originalScores.entrySet()) {
             String shortId = entry.getKey();
             String realId = shortIdToRealIdMap.get(shortId);
             if (realId != null) {
-                mappedScores.put(realId, entry.getValue());
+                if (realId.contains(":")) {
+                    // Custom item 格式：sectionId:itemIndex
+                    customItemScores.put(realId, entry.getValue());
+                } else {
+                    // 普通 section
+                    normalSectionScores.put(realId, entry.getValue());
+                }
             } else {
                 log.warn("无法映射 sectionScore id: {}, 该简短标识符不在映射表中", shortId);
             }
         }
 
-        response.setSectionScores(mappedScores);
-        log.info("sectionScores 映射完成: 原始 {} 条 -> 映射 {} 条", originalScores.size(), mappedScores.size());
+        // 更新 response 的 sectionScores 为普通 section 评分（兼容后续逻辑）
+        response.setSectionScores(normalSectionScores);
+        log.info("sectionScores 映射完成: 普通 section {} 条, custom item {} 条",
+                normalSectionScores.size(), customItemScores.size());
+
+        result.put("normalSectionScores", normalSectionScores);
+        result.put("customItemScores", customItemScores);
+        return result;
     }
 }

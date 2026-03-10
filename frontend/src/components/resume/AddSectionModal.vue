@@ -67,7 +67,14 @@ const emit = defineEmits<{
 
 // 计算可添加的类型（过滤已存在的类型）
 const availableTypes = computed(() => {
-  return SECTION_TYPE_CONFIG.filter((item) => !props.existingTypes.includes(item.type))
+  return SECTION_TYPE_CONFIG.filter((item) => {
+    // CUSTOM 类型始终可选（用户可以添加多个自定义区块）
+    if (item.type === 'CUSTOM') {
+      return true
+    }
+    // 其他类型：过滤已存在的
+    return !props.existingTypes.includes(item.type)
+  })
 })
 
 function handleSelectType(type: SectionType): void {

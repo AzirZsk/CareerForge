@@ -175,6 +175,7 @@ export interface ContentItem {
 // 自定义区块
 export interface CustomSection {
   title: string
+  score?: number  // 评分（0-100）
   items: ContentItem[]
 }
 

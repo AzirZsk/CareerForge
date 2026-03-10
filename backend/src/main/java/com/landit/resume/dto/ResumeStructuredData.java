@@ -467,6 +467,12 @@ public class ResumeStructuredData {
         private String title;
 
         /**
+         * 评分（0-100）
+         * 注意：此字段不参与 AI 解析，由优化流程计算得出
+         */
+        private Integer score;
+
+        /**
          * 内容项列表
          */
         @SchemaField(value = "内容项列表", required = true)
