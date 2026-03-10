@@ -224,8 +224,7 @@ export const useAppStore = defineStore('app', () => {
         }
       }
       items.push(content)
-      const newContent = { content: JSON.stringify(items) }
-      const result = await resumeApi.updateSection(resumeId, parentSectionId, newContent)
+      const result = await resumeApi.updateSection(resumeId, parentSectionId, items)
       currentResume.value = result
     } catch (error) {
       console.error('新增条目失败', error)
@@ -259,8 +258,7 @@ export const useAppStore = defineStore('app', () => {
         throw new Error(`索引 ${itemIndex} 超出范围`)
       }
       items[itemIndex] = content
-      const newContent = { content: JSON.stringify(items) }
-      const result = await resumeApi.updateSection(resumeId, parentSectionId, newContent)
+      const result = await resumeApi.updateSection(resumeId, parentSectionId, items)
       currentResume.value = result
     } catch (error) {
       console.error('更新条目失败', error)
@@ -293,8 +291,7 @@ export const useAppStore = defineStore('app', () => {
         throw new Error(`索引 ${itemIndex} 超出范围`)
       }
       items.splice(itemIndex, 1)
-      const newContent = { content: JSON.stringify(items) }
-      const result = await resumeApi.updateSection(resumeId, parentSectionId, newContent)
+      const result = await resumeApi.updateSection(resumeId, parentSectionId, items)
       currentResume.value = result
     } catch (error) {
       console.error('删除条目失败', error)
