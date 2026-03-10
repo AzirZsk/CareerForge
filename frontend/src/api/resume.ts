@@ -37,17 +37,17 @@ export async function getResumeDetail(id: string): Promise<ResumeDetail> {
  * 更新简历模块
  * @param resumeId 简历ID
  * @param sectionId 模块ID
- * @param content 模块内容
+ * @param content 模块内容（对象或数组）
  */
 export async function updateSection(
   resumeId: string,
   sectionId: string,
-  content: Record<string, unknown>
+  content: Record<string, unknown> | Record<string, unknown>[]
 ): Promise<ResumeDetail> {
   const response = await fetch(`${API_BASE}/resumes/${resumeId}/sections/${sectionId}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(content)
+    body: JSON.stringify({ content: JSON.stringify(content) })
   })
   const result: ApiResponse<ResumeDetail> = await response.json()
   if (result.code !== 200) {

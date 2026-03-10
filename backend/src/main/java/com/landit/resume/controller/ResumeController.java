@@ -4,6 +4,7 @@ import com.landit.common.response.ApiResponse;
 import com.landit.resume.dto.AddSectionRequest;
 import com.landit.resume.dto.PrimaryResumeVO;
 import com.landit.resume.dto.ResumeDetailVO;
+import com.landit.resume.dto.UpdateSectionRequest;
 import com.landit.resume.handler.ResumeHandler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -17,8 +18,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Map;
 
 /**
  * 简历管理控制器
@@ -51,8 +50,8 @@ public class ResumeController {
     public ApiResponse<ResumeDetailVO> updateSection(
             @PathVariable String id,
             @PathVariable String sectionId,
-            @RequestBody Map<String, Object> content) {
-        return ApiResponse.success(resumeHandler.updateResumeSection(id, sectionId, content));
+            @Valid @RequestBody UpdateSectionRequest request) {
+        return ApiResponse.success(resumeHandler.updateResumeSection(id, sectionId, request.getContent()));
     }
 
     @Operation(summary = "新增简历模块")

@@ -281,9 +281,8 @@ public class ResumeHandler {
      * @return 更新后的简历详情
      */
     @Transactional(rollbackFor = Exception.class)
-    public ResumeDetailVO updateResumeSection(String resumeId, String sectionId, Map<String, Object> content) {
-        // 更新模块内容（将Map序列化为JSON字符串）
-        String contentJson = toJsonString(content);
+    public ResumeDetailVO updateResumeSection(String resumeId, String sectionId, String contentJson) {
+        // 更新模块内容
         resumeService.updateSection(sectionId, contentJson);
         // 重新计算简历评分
         recalculateResumeScore(resumeId);
