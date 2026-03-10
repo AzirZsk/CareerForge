@@ -266,6 +266,19 @@ public class ResumeStructuredData {
         @SchemaField("技术栈")
         @Builder.Default
         private List<String> technologies = List.of();
+
+        /**
+         * 公司行业
+         */
+        @SchemaField("公司行业")
+        private String industry;
+
+        /**
+         * 代表产品
+         */
+        @SchemaField("代表产品")
+        @Builder.Default
+        private List<String> products = List.of();
     }
 
     /**

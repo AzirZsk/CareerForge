@@ -46,18 +46,18 @@ const fieldLabels: Record<string, string> = {
 
 // 基本信息字段显示顺序（按简历展示习惯排序）
 const BASIC_INFO_FIELD_ORDER: string[] = [
-  'name',
-  'gender',
-  'birthday',
-  'age',
-  'phone',
-  'email',
-  'targetPosition',
-  'location',
-  'linkedin',
-  'github',
-  'website',
-  'summary'
+  'name',            // 姓名
+  'targetPosition',  // 目标岗位（提前，作为简历定位锚点）
+  'gender',          // 性别
+  'birthday',        // 出生日期
+  'age',             // 年龄
+  'phone',           // 电话
+  'email',           // 邮箱
+  'location',        // 所在地
+  'linkedin',        // LinkedIn
+  'github',          // GitHub
+  'website',         // 个人网站
+  'summary'          // 个人简介
 ]
 
 // 聚合类型列表

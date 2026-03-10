@@ -102,6 +102,8 @@ public class AIPromptProperties {
                 | location | string | 工作地点（城市） |
                 | achievements | array | 工作成果列表 |
                 | technologies | array | 使用的技术栈 |
+                | industry | string | 公司行业（如：电商、金融科技、在线教育） |
+                | products | array | 代表产品列表（如：["淘宝App", "支付宝"]） |
 
                 ### 4. projects（项目经验）- 数组
                 | 字段 | 类型 | 说明 |
@@ -637,7 +639,7 @@ public class AIPromptProperties {
                     school, degree, major, period, gpa, courses（数组）, honors（数组）
 
                     #### work 属性
-                    company, position, period, description, location, achievements（数组）, technologies（数组）
+                    company, position, period, description, location, achievements（数组）, technologies（数组）, industry, products（数组）
 
                     #### projects 属性
                     name, role, period, description, achievements（数组）, technologies（数组）, url

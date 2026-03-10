@@ -116,6 +116,8 @@ export interface WorkExperience {
   location?: string
   achievements?: string[]
   technologies?: string[]
+  industry?: string      // 公司行业
+  products?: string[]    // 代表产品
 }
 
 // 项目经历内容
