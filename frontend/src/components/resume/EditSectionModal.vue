@@ -59,19 +59,19 @@ import { useSectionHelper } from '@/composables/useSectionHelper'
 interface Props {
   visible: boolean
   section: ResumeSection | null
-  itemId?: string | null
+  itemIndex?: number | null
   isNew?: boolean
   saving?: boolean
 }
 
 interface Emits {
   (e: 'update:visible', value: boolean): void
-  (e: 'save', data: { content: Record<string, unknown>; itemId?: string; isNew: boolean }): void
+  (e: 'save', data: { content: Record<string, unknown>; itemIndex?: number; isNew: boolean }): void
   (e: 'cancel'): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  itemId: null,
+  itemIndex: null,
   isNew: false,
   saving: false
 })
@@ -140,10 +140,10 @@ onUnmounted(() => {
   document.body.style.overflow = ''
 })
 
-// 监听 section/itemId 变化，深拷贝数据到表单
+// 监听 section/itemIndex 变化，深拷贝数据到表单
 watch(
-  [() => props.section, () => props.itemId, () => props.visible],
-  ([newSection, newItemId]) => {
+  [() => props.section, () => props.itemIndex, () => props.visible],
+  ([newSection, newItemIndex]) => {
     if (newSection && props.visible) {
       // 技能类型：数据在 content.skills 数组中
       if (sectionType.value === 'SKILLS') {
@@ -162,13 +162,13 @@ watch(
         formData.value = JSON.parse(JSON.stringify(parsed))
         return
       }
-      // 聚合类型：根据 itemId 找到对应的 item
-      if (newSection.content && newItemId) {
+      // 聚合类型：根据 itemIndex 找到对应的 item
+      if (newSection.content && newItemIndex !== null && newItemIndex !== undefined) {
         // 从 content 解析数组
         const items = parseAggregatedContent(newSection)
-        // 根据 itemId 找到对应项
-        const item = items.find((i: any) => i.id === newItemId)
-        if (item) {
+        // 根据索引获取对应项
+        if (items[newItemIndex]) {
+          const item = items[newItemIndex]
           // 去除 id 字段，只保留内容
           const { id, ...content } = item as Record<string, unknown>
           formData.value = JSON.parse(JSON.stringify(content))
@@ -192,7 +192,7 @@ function handleCancel(): void {
 function handleSave(): void {
   emit('save', {
     content: formData.value,
-    itemId: props.itemId ?? undefined,
+    itemIndex: props.itemIndex ?? undefined,
     isNew: props.isNew
   })
 }

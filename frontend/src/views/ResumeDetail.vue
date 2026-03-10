@@ -102,7 +102,7 @@
     <EditSectionModal
       v-model:visible="isEditModalVisible"
       :section="currentSectionDetail ?? null"
-      :item-id="editItemId"
+      :item-index="editItemIndex"
       :is-new="isNewItem"
       :saving="isSaving"
       @save="handleSave"
@@ -186,7 +186,7 @@ const currentSectionDetail = computed<ResumeSection | undefined>(() => {
 const {
   isEditModalVisible,
   isSaving,
-  editItemId,
+  editItemIndex,
   isNewItem,
   isAggregateSection,
   isCustomItem,

@@ -3,7 +3,7 @@
 // @author Azir
 // =====================================================
 
-import type { ResumeSection, ResumeSectionItem, BasicInfoContent, WorkExperience, ProjectExperience, EducationContent, Skill, SkillsContent, CertificateContent, OpenSourceContribution, CustomSection } from '@/types'
+import type { ResumeSection, ResumeSectionItem, BasicInfoContent, WorkExperience, ProjectExperience, EducationContent, Skill, CertificateContent, OpenSourceContribution, CustomSection } from '@/types'
 
 // 模块图标映射（后端大写格式）
 const sectionIcons: Record<string, string> = {
@@ -299,6 +299,72 @@ export function useSectionHelper() {
     return result
   }
 
+  /**
+   * 更新聚合类型中的某一条记录
+   * @param section 原始 section
+   * @param index 条目索引
+   * @param newContent 新内容
+   * @returns 更新后的整个数组 JSON 字符串
+   */
+  function updateAggregatedItem(
+    section: ResumeSection,
+    index: number,
+    newContent: Record<string, unknown>
+  ): string {
+    const items = parseAggregatedContent(section)
+    if (index < 0 || index >= items.length) {
+      throw new Error(`索引 ${index} 超出范围`)
+    }
+    items[index] = newContent
+    return JSON.stringify(items)
+  }
+
+  /**
+   * 新增聚合类型条目（追加到数组末尾）
+   * @param section 原始 section
+   * @param newContent 新内容
+   * @returns 新增后的整个数组 JSON 字符串
+   */
+  function addAggregatedItem(
+    section: ResumeSection,
+    newContent: Record<string, unknown>
+  ): string {
+    const items = parseAggregatedContent(section)
+    items.push(newContent)
+    return JSON.stringify(items)
+  }
+
+  /**
+   * 删除聚合类型中的某一条记录
+   * @param section 原始 section
+   * @param index 条目索引
+   * @returns 删除后的整个数组 JSON 字符串
+   */
+  function deleteAggregatedItem(
+    section: ResumeSection,
+    index: number
+  ): string {
+    const items = parseAggregatedContent(section)
+    if (index < 0 || index >= items.length) {
+      throw new Error(`索引 ${index} 超出范围`)
+    }
+    items.splice(index, 1)
+    return JSON.stringify(items)
+  }
+
+  /**
+   * 获取聚合类型条目的索引（通过虚拟 ID）
+   * 虚拟 ID 格式：type_index（如 work_0, education_1）
+   */
+  function getAggregatedItemIndex(virtualId: string): number {
+    const parts = virtualId.split('_')
+    if (parts.length < 2) {
+      return -1
+    }
+    const index = parseInt(parts[parts.length - 1], 10)
+    return isNaN(index) ? -1 : index
+  }
+
   return {
     sectionIcons,
     fieldLabels,
@@ -323,6 +389,11 @@ export function useSectionHelper() {
     getCustomItemPreview,
     getScoreClass,
     getFieldLabel,
-    getOrderedBasicInfoFields
+    getOrderedBasicInfoFields,
+    // 聚合类型条目操作
+    updateAggregatedItem,
+    addAggregatedItem,
+    deleteAggregatedItem,
+    getAggregatedItemIndex
   }
 }

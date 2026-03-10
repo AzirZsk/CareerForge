@@ -17,7 +17,7 @@ export function useSectionEdit(
   // 编辑状态
   const isEditModalVisible = ref<boolean>(false)
   const isSaving = ref<boolean>(false)
-  const editItemId = ref<string | null>(null)
+  const editItemIndex = ref<number | null>(null)
   const isNewItem = ref<boolean>(false)
 
   // 判断当前模块是否为聚合类型
@@ -36,26 +36,27 @@ export function useSectionEdit(
     if (!currentSectionDetail.value) {
       return
     }
-    // 对于 CUSTOM_ITEM 类型，设置 editItemId
+    // 对于 CUSTOM_ITEM 类型，设置 editItemIndex
     if (currentSectionDetail.value.type === 'CUSTOM_ITEM') {
-      editItemId.value = currentSectionDetail.value.id
+      // CUSTOM_ITEM 不需要索引，直接设置为 0 表示编辑
+      editItemIndex.value = 0
     } else {
-      editItemId.value = null
+      editItemIndex.value = null
     }
     isNewItem.value = false
     isEditModalVisible.value = true
   }
 
   // 打开编辑弹窗（聚合类型 - 编辑某条记录）
-  function openEditItemModal(itemId: string): void {
-    editItemId.value = itemId
+  function openEditItemModal(index: number): void {
+    editItemIndex.value = index
     isNewItem.value = false
     isEditModalVisible.value = true
   }
 
   // 打开新增弹窗（聚合类型 - 新增记录）
   function openAddItemModal(): void {
-    editItemId.value = null
+    editItemIndex.value = null
     isNewItem.value = true
     isEditModalVisible.value = true
   }
@@ -63,25 +64,25 @@ export function useSectionEdit(
   // 关闭编辑弹窗
   function closeEditModal(): void {
     isEditModalVisible.value = false
-    editItemId.value = null
+    editItemIndex.value = null
     isNewItem.value = false
   }
 
   // 保存编辑
-  async function handleSave(data: { content: Record<string, unknown>; itemId?: string; isNew: boolean }): Promise<void> {
+  async function handleSave(data: { content: Record<string, unknown>; itemIndex?: number; isNew: boolean }): Promise<void> {
     if (!resumeId.value || !activeSection.value) {
       return
     }
     isSaving.value = true
     try {
       if (isAggregateSection.value) {
-        // 聚合类型：新增或编辑条目
+        // 聚合类型：新增或编辑条目，需要更新整个数组
         if (data.isNew) {
-          // 新增条目
+          // 新增条目：追加到数组末尾
           await store.addResumeSectionItem(resumeId.value, activeSection.value, data.content)
-        } else if (data.itemId) {
-          // 编辑条目
-          await store.updateResumeSectionItem(resumeId.value, data.itemId, data.content)
+        } else if (data.itemIndex !== undefined && data.itemIndex !== null) {
+          // 编辑条目：找到索引，修改该条目
+          await store.updateResumeSectionItem(resumeId.value, activeSection.value, data.itemIndex, data.content)
         }
       } else {
         // 单条类型：直接更新
@@ -97,12 +98,12 @@ export function useSectionEdit(
   }
 
   // 删除条目
-  async function deleteItem(itemId: string): Promise<void> {
+  async function deleteItem(index: number): Promise<void> {
     if (!confirm('确定要删除这条记录吗？')) {
       return
     }
     try {
-      await store.deleteResumeSectionItem(resumeId.value, itemId)
+      await store.deleteResumeSectionItem(resumeId.value, activeSection.value, index)
     } catch (error) {
       console.error('删除失败', error)
       alert('删除失败，请重试')
@@ -113,7 +114,7 @@ export function useSectionEdit(
     // 状态
     isEditModalVisible,
     isSaving,
-    editItemId,
+    editItemIndex,
     isNewItem,
     // 计算属性
     isAggregateSection,

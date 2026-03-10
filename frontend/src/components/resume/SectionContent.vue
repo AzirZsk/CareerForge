@@ -106,9 +106,9 @@ const props = defineProps<{
 
 defineEmits<{
   edit: []
-  'edit-item': [itemId: string]
+  'edit-item': [index: number]
   'add-item': []
-  'delete-item': [itemId: string]
+  'delete-item': [index: number]
 }>()
 
 const {

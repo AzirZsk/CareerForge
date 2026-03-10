@@ -206,13 +206,23 @@ export const useAppStore = defineStore('app', () => {
     content: Record<string, unknown>
   ): Promise<void> {
     try {
-      // 从当前简历中获取父模块的类型
+      // 从当前简历中获取父模块
       const parentSection = currentResume.value.sections.find((s) => s.id === parentSectionId)
       if (!parentSection) {
         throw new Error('找不到父模块')
       }
-      const type = parentSection.type
-      const result = await resumeApi.createSectionItem(resumeId, type, content)
+      // 解析现有数组，追加新条目，然后更新整个数组
+      const existingContent = parentSection.content
+      let items: Record<string, unknown>[] = []
+      if (existingContent) {
+        const parsed = typeof existingContent === 'string' ? JSON.parse(existingContent) : existingContent
+        if (Array.isArray(parsed)) {
+          items = parsed
+        }
+      }
+      items.push(content)
+      const newContent = { content: JSON.stringify(items) }
+      const result = await resumeApi.updateSection(resumeId, parentSectionId, newContent)
       currentResume.value = result
     } catch (error) {
       console.error('新增条目失败', error)
@@ -223,11 +233,31 @@ export const useAppStore = defineStore('app', () => {
   // 更新聚合类型条目
   async function updateResumeSectionItem(
     resumeId: string,
-    itemId: string,
+    parentSectionId: string,
+    itemIndex: number,
     content: Record<string, unknown>
   ): Promise<void> {
     try {
-      const result = await resumeApi.updateSection(resumeId, itemId, content)
+      // 从当前简历中获取父模块
+      const parentSection = currentResume.value.sections.find((s) => s.id === parentSectionId)
+      if (!parentSection) {
+        throw new Error('找不到父模块')
+      }
+      // 解析现有数组，更新指定索引的条目，然后更新整个数组
+      const existingContent = parentSection.content
+      let items: Record<string, unknown>[] = []
+      if (existingContent) {
+        const parsed = typeof existingContent === 'string' ? JSON.parse(existingContent) : existingContent
+        if (Array.isArray(parsed)) {
+          items = parsed
+        }
+      }
+      if (itemIndex < 0 || itemIndex >= items.length) {
+        throw new Error(`索引 ${itemIndex} 超出范围`)
+      }
+      items[itemIndex] = content
+      const newContent = { content: JSON.stringify(items) }
+      const result = await resumeApi.updateSection(resumeId, parentSectionId, newContent)
       currentResume.value = result
     } catch (error) {
       console.error('更新条目失败', error)
@@ -236,9 +266,32 @@ export const useAppStore = defineStore('app', () => {
   }
 
   // 删除聚合类型条目
-  async function deleteResumeSectionItem(resumeId: string, itemId: string): Promise<void> {
+  async function deleteResumeSectionItem(
+    resumeId: string,
+    parentSectionId: string,
+    itemIndex: number
+  ): Promise<void> {
     try {
-      const result = await resumeApi.deleteSection(resumeId, itemId)
+      // 从当前简历中获取父模块
+      const parentSection = currentResume.value.sections.find((s) => s.id === parentSectionId)
+      if (!parentSection) {
+        throw new Error('找不到父模块')
+      }
+      // 解析现有数组，删除指定索引的条目，然后更新整个数组
+      const existingContent = parentSection.content
+      let items: Record<string, unknown>[] = []
+      if (existingContent) {
+        const parsed = typeof existingContent === 'string' ? JSON.parse(existingContent) : existingContent
+        if (Array.isArray(parsed)) {
+          items = parsed
+        }
+      }
+      if (itemIndex < 0 || itemIndex >= items.length) {
+        throw new Error(`索引 ${itemIndex} 超出范围`)
+      }
+      items.splice(itemIndex, 1)
+      const newContent = { content: JSON.stringify(items) }
+      const result = await resumeApi.updateSection(resumeId, parentSectionId, newContent)
       currentResume.value = result
     } catch (error) {
       console.error('删除条目失败', error)
