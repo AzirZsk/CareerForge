@@ -46,6 +46,7 @@
           :analyzed="store.currentResume.analyzed"
           @update:active-section="activeSection = $event"
           @add-section="showAddSectionModal = true"
+          @delete-section="handleDeleteSection"
         />
 
         <!-- 详情面板 -->
@@ -294,6 +295,23 @@ function exportResume(): void {
 // 选择要添加的模块类型
 function handleSelectSectionType(type: SectionType): void {
   openNewSectionModal(type)
+}
+
+// 删除整个区块（仅 CUSTOM 类型）
+async function handleDeleteSection(sectionId: string): Promise<void> {
+  if (!resumeId.value || !sectionId) return
+
+  try {
+    await store.deleteResumeSection(resumeId.value, sectionId)
+    // 删除后选中第一个模块
+    if (store.currentResume.sections.length > 0) {
+      activeSection.value = String(store.currentResume.sections[0].id)
+    } else {
+      activeSection.value = ''
+    }
+  } catch (error) {
+    console.error('删除区块失败:', error)
+  }
 }
 
 // 优化完成后刷新简历详情

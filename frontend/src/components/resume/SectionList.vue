@@ -33,8 +33,21 @@
                 <span class="section-icon">{{ getSectionIcon(section.type) }}</span>
                 <span class="section-name">{{ item.content?.title || '自定义区块' }}</span>
               </div>
-              <div class="section-score" :class="analyzed && item.score != null ? getScoreClass(item.score!) : ''">
-                {{ analyzed ? (item.score ?? '~') : '~' }}
+              <div class="section-actions">
+                <div class="section-score" :class="analyzed && item.score != null ? getScoreClass(item.score!) : ''">
+                  {{ analyzed ? (item.score ?? '~') : '~' }}
+                </div>
+                <!-- CUSTOM 类型显示删除按钮 -->
+                <button
+                  class="delete-btn"
+                  @click.stop="$emit('delete-section', section.id)"
+                  title="删除区块"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                </button>
               </div>
             </div>
             <p class="section-preview">{{ getCustomItemPreview({ content: JSON.stringify(item.content) }) }}</p>
@@ -85,6 +98,7 @@ defineProps<{
 defineEmits<{
   'update:activeSection': [id: string]
   'add-section': []
+  'delete-section': [sectionId: string]
 }>()
 
 const {
@@ -160,6 +174,34 @@ const {
   justify-content: space-between;
   align-items: center;
   margin-bottom: $spacing-xs;
+}
+
+.section-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: $color-text-tertiary;
+  background: transparent;
+  border-radius: $radius-sm;
+  opacity: 0;
+  transition: all $transition-fast;
+
+  &:hover {
+    color: $color-error;
+    background: rgba(248, 113, 113, 0.1);
+  }
+}
+
+.section-card:hover .delete-btn {
+  opacity: 1;
 }
 
 .section-info {
