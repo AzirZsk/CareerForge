@@ -13,8 +13,21 @@
 
     <div v-else class="resume-content">
       <template v-for="section in sections" :key="section.id">
+        <!-- 基本信息 -->
+        <div v-if="section.type === 'BASIC_INFO'" class="resume-section basic-info-section">
+          <h3>{{ section.title }}</h3>
+          <div class="info-grid">
+            <template v-for="{ key, value } in getOrderedBasicInfoFields(parseContent(section.content))" :key="key">
+              <div class="info-item" :class="getChangeClass(section.type, key)">
+                <span class="info-label">{{ getFieldLabel(key) }}</span>
+                <span class="info-value">{{ value }}</span>
+              </div>
+            </template>
+          </div>
+        </div>
+
         <!-- 教育经历 -->
-        <div v-if="section.type === 'EDUCATION'" class="resume-section">
+        <div v-else-if="section.type === 'EDUCATION'" class="resume-section">
           <h3>{{ section.title }}</h3>
           <div v-for="(item, idx) in getEducationList(section)" :key="idx" class="experience-item">
             <div class="exp-header">
@@ -43,9 +56,14 @@
               {{ item.description }}
             </p>
             <!-- 工作经历新增的 achievements 字段 -->
-            <div v-if="item.achievements" class="exp-achievements">
-              <div class="achievement-item" :class="getChangeClass(section.type, 'work[' + idx + '].achievements')">
-                {{ item.achievements }}
+            <div v-if="item.achievements?.length" class="exp-achievements">
+              <div
+                v-for="(ach, achIdx) in item.achievements"
+                :key="achIdx"
+                class="achievement-item"
+                :class="getChangeClass(section.type, 'work[' + idx + '].achievements[' + achIdx + ']')"
+              >
+                {{ ach }}
               </div>
             </div>
           </div>
@@ -121,6 +139,34 @@
           </div>
         </div>
 
+        <!-- 自定义区块 -->
+        <div v-else-if="section.type === 'CUSTOM'" class="resume-section">
+          <h3>{{ section.title }}</h3>
+          <template v-for="(customBlock, blockIdx) in getCustomList(section)" :key="blockIdx">
+            <div v-if="customBlock.items?.length" class="custom-block">
+              <div v-if="customBlock.title" class="custom-block-title">{{ customBlock.title }}</div>
+              <div v-for="(item, itemIdx) in customBlock.items" :key="itemIdx" class="experience-item">
+                <div class="exp-header">
+                  <span class="exp-title">{{ item.name }}</span>
+                  <span v-if="item.period" class="exp-period">{{ item.period }}</span>
+                </div>
+                <div v-if="item.role" class="exp-role">{{ item.role }}</div>
+                <p v-if="item.description" class="exp-description">{{ item.description }}</p>
+                <div v-if="item.highlights?.length" class="exp-achievements">
+                  <div
+                    v-for="(highlight, hIdx) in item.highlights"
+                    :key="hIdx"
+                    class="achievement-item"
+                    :class="getChangeClass(section.type, `custom[${blockIdx}].items[${itemIdx}].highlights[${hIdx}]`)"
+                  >
+                    {{ highlight }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+
         <!-- 默认渲染 -->
         <div v-else class="resume-section">
           <h3>{{ section.title }}</h3>
@@ -146,12 +192,16 @@ interface Props {
 const props = defineProps<Props>()
 
 const {
+  parseContent,
   getWorkList,
   getProjectList,
   getEducationList,
   getSkillsList,
   getCertificateList,
-  getOpenSourceList
+  getOpenSourceList,
+  getCustomList,
+  getFieldLabel,
+  getOrderedBasicInfoFields
 } = useSectionHelper()
 
 const isEmpty = computed(() => !props.sections || props.sections.length === 0)
@@ -463,5 +513,52 @@ function getChangeClass(sectionType: string, fieldPath: string): string {
 .highlight-removed {
   background: rgba(248, 113, 113, 0.15);
   color: $color-error;
+}
+
+// 自定义区块样式
+.custom-block {
+  margin-bottom: $spacing-md;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.custom-block-title {
+  font-size: $text-sm;
+  font-weight: $weight-medium;
+  color: $color-accent;
+  margin-bottom: $spacing-sm;
+  padding-bottom: $spacing-xs;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+// 基本信息区块特殊样式
+.basic-info-section {
+  .info-grid {
+    grid-template-columns: repeat(2, 1fr);
+
+    @media (max-width: 600px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .info-item {
+    padding: $spacing-xs 0;
+
+    &.highlight-added .info-value {
+      background: rgba(52, 211, 153, 0.15);
+      color: $color-success;
+    }
+
+    &.highlight-removed .info-value {
+      background: rgba(248, 113, 113, 0.15);
+      color: $color-error;
+    }
+  }
+
+  .info-value {
+    word-break: break-word;
+  }
 }
 </style>

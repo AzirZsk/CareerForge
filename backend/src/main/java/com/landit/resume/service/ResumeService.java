@@ -102,6 +102,11 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
         // 设置评分默认值
         setDefaultScoresIfNeeded(vo);
 
+        // 设置目标岗位默认值
+        if (vo.getTargetPosition() == null || vo.getTargetPosition().isBlank()) {
+            vo.setTargetPosition("暂无目标岗位");
+        }
+
         return vo;
     }
 
