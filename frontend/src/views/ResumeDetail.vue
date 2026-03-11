@@ -53,14 +53,6 @@
           <div class="panel-header">
             <h2 class="panel-title">{{ currentSectionDetail?.title }}</h2>
             <div class="panel-actions">
-              <!-- 删除按钮：除了基本信息之外都可以删除 -->
-              <button v-if="canDeleteSection" class="panel-btn danger" @click="handleDeleteSection">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="3 6 5 6 21 6"></polyline>
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                </svg>
-                删除
-              </button>
               <!-- 单条类型或 CUSTOM_ITEM：显示编辑按钮 -->
               <button v-if="!isAggregateSection || isCustomItem" class="panel-btn" @click="openEditModal">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -76,6 +68,14 @@
                   <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
                 添加
+              </button>
+              <!-- 删除按钮：除了基本信息之外都可以删除 -->
+              <button v-if="canDeleteSection" class="panel-btn danger" @click="handleDeleteSection">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                删除
               </button>
             </div>
           </div>
