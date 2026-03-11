@@ -31,6 +31,7 @@
               >
                 <span class="type-icon">{{ typeInfo.icon }}</span>
                 <span class="type-label">{{ typeInfo.label }}</span>
+                <span v-if="typeInfo.tooltip" class="tooltip">{{ typeInfo.tooltip }}</span>
               </button>
             </div>
           </div>
@@ -45,14 +46,14 @@ import { computed } from 'vue'
 import type { SectionType } from '@/types'
 
 // 模块类型配置
-const SECTION_TYPE_CONFIG: Array<{ type: SectionType; label: string; icon: string }> = [
+const SECTION_TYPE_CONFIG: Array<{ type: SectionType; label: string; icon: string; tooltip?: string }> = [
   { type: 'EDUCATION', label: '教育经历', icon: '🎓' },
   { type: 'WORK', label: '工作经历', icon: '💼' },
   { type: 'PROJECT', label: '项目经历', icon: '📦' },
   { type: 'SKILLS', label: '专业技能', icon: '⚡' },
   { type: 'CERTIFICATE', label: '证书荣誉', icon: '🏆' },
   { type: 'OPEN_SOURCE', label: '开源贡献', icon: '🔧' },
-  { type: 'CUSTOM', label: '自定义区块', icon: '📝' }
+  { type: 'CUSTOM', label: '自定义区块', icon: '📝', tooltip: '适用于游戏经历、志愿者活动、竞赛经历等' }
 ]
 
 const props = defineProps<{
@@ -141,6 +142,7 @@ function handleSelectType(type: SectionType): void {
 }
 
 .type-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -156,6 +158,12 @@ function handleSelectType(type: SectionType): void {
     background: rgba(255, 255, 255, 0.06);
     border-color: rgba(212, 168, 83, 0.3);
     transform: translateY(-2px);
+
+    .tooltip {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(-50%) translateY(0);
+    }
   }
 }
 
@@ -167,6 +175,26 @@ function handleSelectType(type: SectionType): void {
   font-size: $text-sm;
   color: $color-text-secondary;
   font-weight: $weight-medium;
+}
+
+.tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  padding: $spacing-sm $spacing-md;
+  background: $color-bg-elevated;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: $radius-sm;
+  font-size: $text-xs;
+  color: $color-text-secondary;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all $transition-fast;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 10;
+  pointer-events: none;
 }
 
 .empty-hint {
