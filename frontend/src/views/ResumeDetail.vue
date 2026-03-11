@@ -80,6 +80,7 @@
             @edit-item="openEditItemModal"
             @add-item="openAddItemModal"
             @delete-item="deleteItem"
+            @delete-section="handleDeleteCustomItem"
           />
 
           <!-- 优化建议 -->
@@ -311,6 +312,38 @@ async function handleDeleteSection(sectionId: string): Promise<void> {
     }
   } catch (error) {
     console.error('删除区块失败:', error)
+  }
+}
+
+// 删除 CUSTOM_ITEM（自定义区块的单个 item）
+async function handleDeleteCustomItem(): Promise<void> {
+  if (!resumeId.value || !activeSection.value) return
+
+  // 从 activeSection 中解析 itemIndex（格式：custom_${index}）
+  const match = activeSection.value.match(/^custom_(\d+)$/)
+  if (!match) return
+
+  const itemIndex = parseInt(match[1], 10)
+
+  // 找到父 CUSTOM section
+  const customSection = store.currentResume.sections.find((s: ResumeSection) => s.type === 'CUSTOM')
+  if (!customSection) return
+
+  if (!confirm('确定要删除这个自定义区块吗？')) {
+    return
+  }
+
+  try {
+    await store.deleteResumeSectionItem(resumeId.value, customSection.id, itemIndex)
+    // 删除后选中第一个模块
+    if (store.currentResume.sections.length > 0) {
+      activeSection.value = String(store.currentResume.sections[0].id)
+    } else {
+      activeSection.value = ''
+    }
+  } catch (error) {
+    console.error('删除自定义区块失败:', error)
+    alert('删除失败，请重试')
   }
 }
 

@@ -7,6 +7,16 @@
   <div class="content-block custom-block">
     <!-- 自定义区块 item（从侧边栏选中） -->
     <div class="custom-content-items" v-if="isSingleItem">
+      <!-- 删除按钮 -->
+      <div class="single-item-header">
+        <button class="delete-section-btn" @click="$emit('delete-section')" title="删除区块">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+          删除区块
+        </button>
+      </div>
       <div
         class="content-item"
         v-for="(contentItem, idx) in contentItems"
@@ -89,6 +99,7 @@ const { parseContent } = useSectionHelper()
 defineEmits<{
   'edit-item': [index: number]
   'delete-item': [index: number]
+  'delete-section': []
 }>()
 
 // 单条 item 的内容项
@@ -106,6 +117,29 @@ const contentItems = computed<ContentItem[]>(() => {
   background: rgba(255, 255, 255, 0.02);
   border-radius: $radius-md;
   padding: $spacing-lg;
+}
+
+.single-item-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: $spacing-md;
+}
+
+.delete-section-btn {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-xs $spacing-md;
+  font-size: $text-sm;
+  color: $color-text-tertiary;
+  background: transparent;
+  border-radius: $radius-sm;
+  transition: all $transition-fast;
+
+  &:hover {
+    color: $color-error;
+    background: rgba(248, 113, 113, 0.1);
+  }
 }
 
 .custom-section-list {

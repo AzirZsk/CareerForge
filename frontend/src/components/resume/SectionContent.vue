@@ -11,6 +11,7 @@
       v-if="section?.type === 'CUSTOM_ITEM'"
       :content="section.content ?? undefined"
       :is-single-item="true"
+      @delete-section="$emit('delete-section')"
     />
 
     <!-- 基本信息（单条） -->
@@ -109,6 +110,7 @@ defineEmits<{
   'edit-item': [index: number]
   'add-item': []
   'delete-item': [index: number]
+  'delete-section': []
 }>()
 
 const {
