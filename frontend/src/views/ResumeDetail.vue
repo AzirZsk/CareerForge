@@ -54,6 +54,14 @@
           <div class="panel-header">
             <h2 class="panel-title">{{ currentSectionDetail?.title }}</h2>
             <div class="panel-actions">
+              <!-- CUSTOM_ITEM：显示删除按钮 -->
+              <button v-if="isCustomItem" class="panel-btn danger" @click="handleDeleteCustomItem">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                删除
+              </button>
               <!-- 单条类型或 CUSTOM_ITEM：显示编辑按钮 -->
               <button v-if="!isAggregateSection || isCustomItem" class="panel-btn" @click="openEditModal">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -80,7 +88,6 @@
             @edit-item="openEditItemModal"
             @add-item="openAddItemModal"
             @delete-item="deleteItem"
-            @delete-section="handleDeleteCustomItem"
           />
 
           <!-- 优化建议 -->
@@ -128,6 +135,16 @@
       @toggle-expand="toggleStageExpanded"
       @complete="handleOptimizeComplete"
     />
+
+    <!-- 删除确认弹窗 -->
+    <ConfirmModal
+      v-model:visible="showDeleteConfirmModal"
+      title="删除确认"
+      :message="deleteConfirmMessage"
+      confirm-text="删除"
+      :danger="true"
+      @confirm="confirmDeleteCustomItem"
+    />
   </div>
 </template>
 
@@ -138,6 +155,7 @@ import { useAppStore } from '@/stores'
 import EditSectionModal from '@/components/resume/EditSectionModal.vue'
 import AddSectionModal from '@/components/resume/AddSectionModal.vue'
 import OptimizeProgressModal from '@/components/resume/OptimizeProgressModal.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import ResumeHeader from '@/components/resume/ResumeHeader.vue'
 import MetricsSection from '@/components/resume/MetricsSection.vue'
 import SectionList from '@/components/resume/SectionList.vue'
@@ -155,6 +173,9 @@ const resumeId = ref<string>('')
 
 // 优化相关状态
 const showOptimizeModal = ref<boolean>(false)
+
+// 删除确认弹窗状态
+const showDeleteConfirmModal = ref<boolean>(false)
 
 // 添加模块相关状态
 const showAddSectionModal = ref<boolean>(false)
@@ -259,6 +280,12 @@ const hasSuggestions = computed<boolean>(() => {
   return (currentSectionDetail.value?.suggestions?.length ?? 0) > 0
 })
 
+// 删除确认弹窗消息（包含自定义区块标题）
+const deleteConfirmMessage = computed<string>(() => {
+  const title = currentSectionDetail.value?.title || '自定义区块'
+  return `确定要删除「${title}」吗？此操作不可撤销。`
+})
+
 // 页面加载时获取简历详情
 onMounted(async () => {
   const id = route.params.id as string
@@ -316,10 +343,21 @@ async function handleDeleteSection(sectionId: string): Promise<void> {
 }
 
 // 删除 CUSTOM_ITEM（自定义区块的单个 item）
-async function handleDeleteCustomItem(): Promise<void> {
+function handleDeleteCustomItem(): void {
   if (!resumeId.value || !activeSection.value) return
 
   // 从 activeSection 中解析 itemIndex（格式：custom_${index}）
+  const match = activeSection.value.match(/^custom_(\d+)$/)
+  if (!match) return
+
+  // 显示确认弹窗
+  showDeleteConfirmModal.value = true
+}
+
+// 确认删除自定义区块
+async function confirmDeleteCustomItem(): Promise<void> {
+  if (!resumeId.value || !activeSection.value) return
+
   const match = activeSection.value.match(/^custom_(\d+)$/)
   if (!match) return
 
@@ -328,10 +366,6 @@ async function handleDeleteCustomItem(): Promise<void> {
   // 找到父 CUSTOM section
   const customSection = store.currentResume.sections.find((s: ResumeSection) => s.type === 'CUSTOM')
   if (!customSection) return
-
-  if (!confirm('确定要删除这个自定义区块吗？')) {
-    return
-  }
 
   try {
     await store.deleteResumeSectionItem(resumeId.value, customSection.id, itemIndex)
@@ -432,6 +466,12 @@ async function handleOptimizeComplete(): Promise<void> {
     color: $color-accent;
     &:hover {
       background: rgba(212, 168, 83, 0.2);
+    }
+  }
+  &.danger {
+    color: $color-error;
+    &:hover {
+      background: rgba(248, 113, 113, 0.1);
     }
   }
 }
