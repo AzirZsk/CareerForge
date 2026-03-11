@@ -46,7 +46,6 @@
           :analyzed="store.currentResume.analyzed"
           @update:active-section="activeSection = $event"
           @add-section="showAddSectionModal = true"
-          @delete-section="handleDeleteSection"
         />
 
         <!-- 详情面板 -->
@@ -54,8 +53,8 @@
           <div class="panel-header">
             <h2 class="panel-title">{{ currentSectionDetail?.title }}</h2>
             <div class="panel-actions">
-              <!-- CUSTOM_ITEM：显示删除按钮 -->
-              <button v-if="isCustomItem" class="panel-btn danger" @click="handleDeleteCustomItem">
+              <!-- 删除按钮：除了基本信息之外都可以删除 -->
+              <button v-if="canDeleteSection" class="panel-btn danger" @click="handleDeleteSection">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="3 6 5 6 21 6"></polyline>
                   <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -262,6 +261,7 @@ const {
   pendingSectionType,
   isAggregateSection,
   isCustomItem,
+  canDeleteSection,
   openEditModal,
   openEditItemModal,
   openAddItemModal,
@@ -280,9 +280,9 @@ const hasSuggestions = computed<boolean>(() => {
   return (currentSectionDetail.value?.suggestions?.length ?? 0) > 0
 })
 
-// 删除确认弹窗消息（包含自定义区块标题）
+// 删除确认弹窗消息
 const deleteConfirmMessage = computed<string>(() => {
-  const title = currentSectionDetail.value?.title || '自定义区块'
+  const title = currentSectionDetail.value?.title || '模块'
   return `确定要删除「${title}」吗？此操作不可撤销。`
 })
 
@@ -325,50 +325,33 @@ function handleSelectSectionType(type: SectionType): void {
   openNewSectionModal(type)
 }
 
-// 删除整个区块（仅 CUSTOM 类型）
-async function handleDeleteSection(sectionId: string): Promise<void> {
-  if (!resumeId.value || !sectionId) return
-
-  try {
-    await store.deleteResumeSection(resumeId.value, sectionId)
-    // 删除后选中第一个模块
-    if (store.currentResume.sections.length > 0) {
-      activeSection.value = String(store.currentResume.sections[0].id)
-    } else {
-      activeSection.value = ''
-    }
-  } catch (error) {
-    console.error('删除区块失败:', error)
-  }
-}
-
-// 删除 CUSTOM_ITEM（自定义区块的单个 item）
-function handleDeleteCustomItem(): void {
+// 删除模块（除了基本信息之外都可以删除）
+function handleDeleteSection(): void {
   if (!resumeId.value || !activeSection.value) return
-
-  // 从 activeSection 中解析 itemIndex（格式：custom_${index}）
-  const match = activeSection.value.match(/^custom_(\d+)$/)
-  if (!match) return
-
-  // 显示确认弹窗
   showDeleteConfirmModal.value = true
 }
 
-// 确认删除自定义区块
+// 确认删除模块
 async function confirmDeleteCustomItem(): Promise<void> {
   if (!resumeId.value || !activeSection.value) return
 
-  const match = activeSection.value.match(/^custom_(\d+)$/)
-  if (!match) return
-
-  const itemIndex = parseInt(match[1], 10)
-
-  // 找到父 CUSTOM section
-  const customSection = store.currentResume.sections.find((s: ResumeSection) => s.type === 'CUSTOM')
-  if (!customSection) return
-
   try {
-    await store.deleteResumeSectionItem(resumeId.value, customSection.id, itemIndex)
+    // 判断是 CUSTOM_ITEM 还是普通 section
+    if (isCustomItem.value) {
+      // CUSTOM_ITEM：删除单个 item
+      const match = activeSection.value.match(/^custom_(\d+)$/)
+      if (!match) return
+
+      const itemIndex = parseInt(match[1], 10)
+      const customSection = store.currentResume.sections.find((s: ResumeSection) => s.type === 'CUSTOM')
+      if (!customSection) return
+
+      await store.deleteResumeSectionItem(resumeId.value, customSection.id, itemIndex)
+    } else {
+      // 普通 section：删除整个模块
+      await store.deleteResumeSection(resumeId.value, activeSection.value)
+    }
+
     // 删除后选中第一个模块
     if (store.currentResume.sections.length > 0) {
       activeSection.value = String(store.currentResume.sections[0].id)
@@ -376,7 +359,7 @@ async function confirmDeleteCustomItem(): Promise<void> {
       activeSection.value = ''
     }
   } catch (error) {
-    console.error('删除自定义区块失败:', error)
+    console.error('删除失败:', error)
     alert('删除失败，请重试')
   }
 }
@@ -445,6 +428,12 @@ async function handleOptimizeComplete(): Promise<void> {
   font-size: $text-xl;
   font-weight: $weight-semibold;
   color: $color-text-primary;
+}
+
+.panel-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
 }
 
 .panel-btn {

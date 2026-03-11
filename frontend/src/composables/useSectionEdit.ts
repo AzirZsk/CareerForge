@@ -47,6 +47,17 @@ export function useSectionEdit(
     return currentSectionDetail.value?.type === 'CUSTOM_ITEM'
   })
 
+  // 判断当前模块是否可以删除（除了基本信息之外都可以删除）
+  const canDeleteSection = computed<boolean>(() => {
+    const type = currentSectionDetail.value?.type
+    // BASIC_INFO 和 CUSTOM_ITEM（自定义区块的子项）不能删除整个区块
+    // CUSTOM_ITEM 需要单独处理
+    if (type === 'BASIC_INFO') {
+      return false
+    }
+    return true
+  })
+
   // 打开编辑弹窗（单条类型）
   function openEditModal(): void {
     if (!currentSectionDetail.value) {
@@ -205,6 +216,7 @@ export function useSectionEdit(
     // 计算属性
     isAggregateSection,
     isCustomItem,
+    canDeleteSection,
     // 方法
     openEditModal,
     openEditItemModal,
