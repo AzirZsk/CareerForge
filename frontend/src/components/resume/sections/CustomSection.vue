@@ -31,9 +31,14 @@
     </div>
     <!-- 自定义区块列表 -->
     <div v-else class="custom-section-list">
-      <div class="custom-section-item" v-for="(item, index) in items" :key="item.id">
-        <div class="custom-section-header">
-          <h4 class="custom-section-title">{{ item.content.title }}</h4>
+      <div
+        class="content-item"
+        v-for="(item, index) in flatContentItems"
+        :key="index"
+      >
+        <div class="content-item-header">
+          <span class="content-item-name">{{ item.name }}</span>
+          <span class="content-item-period" v-if="item.period">{{ item.period }}</span>
           <div class="exp-actions">
             <button class="item-btn edit" @click="$emit('edit-item', index)" title="编辑">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -49,22 +54,10 @@
             </button>
           </div>
         </div>
-        <div class="custom-content-items">
-          <div
-            class="content-item"
-            v-for="(contentItem, idx) in item.content.items"
-            :key="idx"
-          >
-            <div class="content-item-header">
-              <span class="content-item-name">{{ contentItem.name }}</span>
-              <span class="content-item-period" v-if="contentItem.period">{{ contentItem.period }}</span>
-            </div>
-            <p class="exp-position" v-if="contentItem.role">{{ contentItem.role }}</p>
-            <p class="exp-desc" v-if="contentItem.description">{{ contentItem.description }}</p>
-            <div v-if="contentItem.highlights?.length" class="content-item-highlights">
-              <span v-for="h in contentItem.highlights" :key="h" class="highlight-tag">{{ h }}</span>
-            </div>
-          </div>
+        <p class="exp-position" v-if="item.role">{{ item.role }}</p>
+        <p class="exp-desc" v-if="item.description">{{ item.description }}</p>
+        <div v-if="item.highlights?.length" class="content-item-highlights">
+          <span v-for="h in item.highlights" :key="h" class="highlight-tag">{{ h }}</span>
         </div>
       </div>
     </div>
@@ -101,6 +94,23 @@ const contentItems = computed<ContentItem[]>(() => {
     return parseContent<ContentItem[]>(props.content)
   }
   return []
+})
+
+// 列表模式：将 items 展平为 ContentItem[]
+// items 格式: [{ id, title, content: { name, role, period, ... } }]
+const flatContentItems = computed<ContentItem[]>(() => {
+  if (props.isSingleItem) return []
+  // items 中每个 item.content 直接就是 ContentItem
+  return props.items.map(item => {
+    // item.content 可能是 ContentItem 或 { title, items } 结构
+    const content = item.content as unknown as Record<string, unknown>
+    // 如果有 items 字段，说明是嵌套结构，取第一个 item（或展开所有）
+    if (Array.isArray(content?.items)) {
+      return content.items as ContentItem[]
+    }
+    // 否则直接当作 ContentItem
+    return content as unknown as ContentItem
+  }).flat()
 })
 </script>
 

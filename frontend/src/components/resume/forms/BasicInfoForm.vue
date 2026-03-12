@@ -80,6 +80,44 @@
         placeholder="请输入个人简介"
       ></textarea>
     </div>
+    <div class="form-group">
+      <label class="form-label">所在地</label>
+      <input
+        v-model="localData.location"
+        type="text"
+        class="form-input"
+        placeholder="如 北京、上海、深圳"
+      />
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">LinkedIn</label>
+        <input
+          v-model="localData.linkedin"
+          type="text"
+          class="form-input"
+          placeholder="LinkedIn 主页链接"
+        />
+      </div>
+      <div class="form-group">
+        <label class="form-label">GitHub</label>
+        <input
+          v-model="localData.github"
+          type="text"
+          class="form-input"
+          placeholder="GitHub 主页链接"
+        />
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">个人网站</label>
+      <input
+        v-model="localData.website"
+        type="text"
+        class="form-input"
+        placeholder="个人网站或博客链接"
+      />
+    </div>
   </div>
 </template>
 
@@ -110,7 +148,11 @@ function initData(): void {
     phone: '',
     email: '',
     targetPosition: '',
-    summary: ''
+    summary: '',
+    location: '',
+    linkedin: '',
+    github: '',
+    website: ''
   }
   for (const [key, value] of Object.entries(props.modelValue)) {
     if (typeof value === 'string') {
