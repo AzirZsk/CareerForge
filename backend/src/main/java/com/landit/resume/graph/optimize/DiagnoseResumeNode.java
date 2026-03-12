@@ -1,4 +1,4 @@
-package com.landit.resume.graph;
+package com.landit.resume.graph.optimize;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
+import static com.landit.resume.graph.optimize.ResumeOptimizeGraphConstants.*;
 
 /**
  * 简历诊断节点
@@ -147,25 +147,27 @@ public class DiagnoseResumeNode implements NodeAction {
         for (ResumeDetailVO.ResumeSectionVO section : sections) {
             String type = section.getType() != null ? section.getType() : "section";
 
-            // CUSTOM 类型特殊处理：展开每个 item 作为独立评分单元
+            // CUSTOM 类型特殊处理：每个 CUSTOM 区块独立一条记录， content 直接是 items 数组
             if (SectionType.CUSTOM.getCode().equals(type)) {
-                List<ResumeStructuredData.CustomSection> customItems = JsonParseHelper.parseToEntity(
+                // content 直接是 items 数组
+                List<ResumeStructuredData.ContentItem> items = JsonParseHelper.parseToEntity(
                     section.getContent(),
-                    new TypeReference<List<ResumeStructuredData.CustomSection>>() {}
+                    new TypeReference<List<ResumeStructuredData.ContentItem>>() {}
                 );
-                if (customItems != null && !customItems.isEmpty()) {
-                    for (int i = 0; i < customItems.size(); i++) {
-                        String shortId = "custom_" + customIndex++;
-                        // 映射格式：sectionId:itemIndex（用于后续更新 item 的 score）
-                        shortIdToRealIdMap.put(shortId, section.getId() + ":" + i);
-                        // 构建单个 custom item 的 JSON
-                        Map<String, Object> jsonMap = new LinkedHashMap<>();
-                        jsonMap.put("id", shortId);
-                        jsonMap.put("type", "CUSTOM");
-                        jsonMap.put("title", customItems.get(i).getTitle());
-                        jsonMap.put("content", customItems.get(i).getItems());
-                        sb.append(JsonParseHelper.toJsonString(jsonMap)).append("\n\n");
-                    }
+                if (items != null && !items.isEmpty()) {
+                    // 每个 CUSTOM 区块独立一条记录，直接使用 section.id
+                    String shortId = "custom_" + customIndex++;
+                    // 映射格式：sectionId（当前区块独立，无需 itemIndex）
+                    shortIdToRealIdMap.put(shortId, section.getId());
+                    // title 从 section.getTitle() 获取
+                    String title = section.getTitle();
+                    // 构建单个 custom item 的 JSON
+                    Map<String, Object> jsonMap = new LinkedHashMap<>();
+                    jsonMap.put("id", shortId);
+                    jsonMap.put("type", "CUSTOM");
+                    jsonMap.put("title", title);
+                    jsonMap.put("content", items);
+                    sb.append(JsonParseHelper.toJsonString(jsonMap)).append("\n\n");
                 }
             } else {
                 // 其他类型按 section 级别处理

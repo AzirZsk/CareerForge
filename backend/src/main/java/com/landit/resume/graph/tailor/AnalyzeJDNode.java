@@ -1,4 +1,4 @@
-package com.landit.resume.graph;
+package com.landit.resume.graph.tailor;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static com.landit.resume.graph.TailorResumeGraphConstants.*;
+import static com.landit.resume.graph.tailor.TailorResumeGraphConstants.*;
 
 /**
  * 分析 JD 节点

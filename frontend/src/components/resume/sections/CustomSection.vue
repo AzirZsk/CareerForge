@@ -5,6 +5,8 @@
 
 <template>
   <div class="content-block custom-block">
+    <!-- 单条模式标题 -->
+    <h4 v-if="isSingleItem && title" class="custom-section-title">{{ title }}</h4>
     <!-- 自定义区块 item（从侧边栏选中） -->
     <div class="custom-content-items" v-if="isSingleItem">
       <div
@@ -78,6 +80,7 @@ const props = withDefaults(defineProps<{
   items?: ResumeSectionItem<CustomSection>[]
   // content 可能是解析后的对象，也可能是 JSON 字符串（来自后端）
   content?: string
+  title?: string  // 新增：区块标题
   isSingleItem?: boolean
 }>(), {
   items: () => [],
@@ -91,11 +94,11 @@ defineEmits<{
   'delete-item': [index: number]
 }>()
 
-// 单条 item 的内容项
+// 单条 item 的内容项（content 直接是 items 数组）
 const contentItems = computed<ContentItem[]>(() => {
   if (props.isSingleItem && props.content) {
-    const parsedContent = parseContent<CustomSection>(props.content)
-    return parsedContent.items ?? []
+    // content 直接是 ContentItem[] 数组
+    return parseContent<ContentItem[]>(props.content)
   }
   return []
 })
@@ -106,6 +109,13 @@ const contentItems = computed<ContentItem[]>(() => {
   background: rgba(255, 255, 255, 0.02);
   border-radius: $radius-md;
   padding: $spacing-lg;
+}
+
+.custom-section-title {
+  font-size: $text-base;
+  font-weight: $weight-medium;
+  color: $color-text-primary;
+  margin-bottom: $spacing-md;
 }
 
 .custom-section-list {

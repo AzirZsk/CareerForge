@@ -1,4 +1,4 @@
-package com.landit.resume.graph;
+package com.landit.resume.graph.optimize;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
@@ -25,7 +25,7 @@ import java.util.Map;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
-import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
+import static com.landit.resume.graph.optimize.ResumeOptimizeGraphConstants.*;
 
 /**
  * 简历优化工作流 Graph 配置

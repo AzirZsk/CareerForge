@@ -4,7 +4,7 @@ import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.landit.resume.dto.OptimizeProgressEvent;
 import com.landit.resume.dto.ResumeDetailVO;
-import com.landit.resume.graph.TailorResumeGraphService;
+import com.landit.resume.graph.tailor.TailorResumeGraphService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import static com.landit.resume.graph.TailorResumeGraphConstants.*;
+import static com.landit.resume.graph.tailor.TailorResumeGraphConstants.*;
 
 /**
  * 职位适配工作流业务处理器

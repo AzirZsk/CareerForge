@@ -1,4 +1,6 @@
-package com.landit.resume.graph;
+package com.landit.resume.graph.optimize;
+
+import com.landit.resume.graph.BaseGraphConstants;
 
 /**
  * 简历优化工作流常量定义

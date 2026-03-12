@@ -5,7 +5,7 @@ import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.landit.common.util.JsonParseHelper;
 import com.landit.resume.dto.OptimizeProgressEvent;
 import com.landit.resume.dto.ResumeDetailVO;
-import com.landit.resume.graph.ResumeOptimizeGraphService;
+import com.landit.resume.graph.optimize.ResumeOptimizeGraphService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
+import static com.landit.resume.graph.optimize.ResumeOptimizeGraphConstants.*;
 
 /**
  * 简历优化工作流业务处理器

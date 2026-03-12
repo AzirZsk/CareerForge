@@ -3,7 +3,7 @@
 // @author Azir
 // =====================================================
 
-import type { ResumeSection, ResumeSectionItem, BasicInfoContent, WorkExperience, ProjectExperience, EducationContent, Skill, CertificateContent, OpenSourceContribution, CustomSection } from '@/types'
+import type { ResumeSection, ResumeSectionItem, BasicInfoContent, WorkExperience, ProjectExperience, EducationContent, Skill, CertificateContent, OpenSourceContribution, CustomSection, ContentItem } from '@/types'
 
 // 模块图标映射（后端大写格式）
 const sectionIcons: Record<string, string> = {
@@ -256,10 +256,10 @@ export function useSectionHelper() {
 
   // 获取自定义区块 item 的预览文本
   function getCustomItemPreview(item: { content: string | Record<string, unknown> }): string {
-    // content 可能是 JSON 字符串，需要先解析
-    const parsedContent = parseContent<{ items?: Array<Record<string, unknown>> }>(item.content)
-    if (parsedContent.items?.length) {
-      return `${parsedContent.items.length} 条记录`
+    // content 直接是 ContentItem[] 数组
+    const items = parseContent<ContentItem[]>(item.content)
+    if (items?.length) {
+      return `${items.length} 条记录`
     }
     return '暂无内容'
   }

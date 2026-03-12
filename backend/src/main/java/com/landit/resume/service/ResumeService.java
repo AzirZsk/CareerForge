@@ -326,7 +326,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
         createAggregateSection(resumeId, SectionType.SKILLS, data.getSkills());
         createAggregateSection(resumeId, SectionType.CERTIFICATE, data.getCertificates());
         createAggregateSection(resumeId, SectionType.OPEN_SOURCE, data.getOpenSource());
-        createAggregateSection(resumeId, SectionType.CUSTOM, data.getCustomSections());
+        createCustomSections(resumeId, data.getCustomSections());
 
         log.info("简历模块创建完成: resumeId={}", resumeId);
     }
@@ -339,6 +339,20 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
             return;
         }
         createSection(resumeId, SectionType.BASIC_INFO, SectionType.BASIC_INFO.getDescription(), toJsonString(info));
+    }
+
+    /**
+     * 创建自定义区块（每个区块独立一条记录）
+     * content 只存 items 数组，title 存在表字段中
+     */
+    private void createCustomSections(String resumeId, List<ResumeStructuredData.CustomSection> customSections) {
+        if (customSections == null || customSections.isEmpty()) {
+            return;
+        }
+        for (ResumeStructuredData.CustomSection section : customSections) {
+            // title 存在表字段，content 只存 items 数组
+            createSection(resumeId, SectionType.CUSTOM, section.getTitle(), toJsonString(section.getItems()));
+        }
     }
 
     /**

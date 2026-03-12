@@ -10,6 +10,7 @@
     <CustomSection
       v-if="section?.type === 'CUSTOM_ITEM'"
       :content="section.content ?? undefined"
+      :title="section.title"
       :is-single-item="true"
     />
 

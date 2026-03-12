@@ -1,4 +1,4 @@
-package com.landit.resume.graph;
+package com.landit.resume.graph.optimize;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
@@ -17,7 +17,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import java.util.List;
 import java.util.Map;
 
-import static com.landit.resume.graph.ResumeOptimizeGraphConstants.*;
+import static com.landit.resume.graph.optimize.ResumeOptimizeGraphConstants.*;
 
 /**
  * 简历内容优化节点

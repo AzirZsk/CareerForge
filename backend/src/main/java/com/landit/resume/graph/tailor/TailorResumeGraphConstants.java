@@ -1,4 +1,6 @@
-package com.landit.resume.graph;
+package com.landit.resume.graph.tailor;
+
+import com.landit.resume.graph.BaseGraphConstants;
 
 /**
  * 职位适配工作流常量定义

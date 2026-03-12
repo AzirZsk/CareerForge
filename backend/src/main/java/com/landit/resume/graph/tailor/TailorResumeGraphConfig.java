@@ -1,4 +1,4 @@
-package com.landit.resume.graph;
+package com.landit.resume.graph.tailor;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
@@ -23,7 +23,7 @@ import java.util.Map;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
-import static com.landit.resume.graph.TailorResumeGraphConstants.*;
+import static com.landit.resume.graph.tailor.TailorResumeGraphConstants.*;
 
 /**
  * 职位适配工作流 Graph 配置

@@ -199,26 +199,22 @@ public class ChangeFieldTranslator {
     }
 
     /**
-     * 获取区块名称标签（对于 customSections 动态获取 title）
+     * 获取区块名称标签（对于 customSections 直接从 section.title 获取）
      */
     @SuppressWarnings("unchecked")
     private static String getSectionLabel(String section, int index, List<Map<String, Object>> sections) {
-        // 对于 customSections，尝试从 sections 数据中获取 title
+        // 对于 customSections，直接从 section.title 获取（每个 CUSTOM 区块独立一条记录）
         if ("customSections".equals(section) && sections != null) {
-            Map<String, Object> customSection = findSectionByType(sections, "CUSTOM");
-            if (customSection != null) {
-                List<Map<String, Object>> items = (List<Map<String, Object>>) customSection.get("items");
-                if (items != null && index < items.size()) {
-                    Map<String, Object> item = items.get(index);
-                    Object contentObj = item.get("content");
-                    // content 可能是 String（JSON 字符串）或 Map（已解析对象）
-                    Map<String, Object> content = resolveContentToMap(contentObj);
-                    if (content != null) {
-                        String title = (String) content.get("title");
-                        if (title != null && !title.isEmpty()) {
-                            return title;
-                        }
-                    }
+            // 查找所有 CUSTOM 类型的区块
+            List<Map<String, Object>> customSections = sections.stream()
+                .filter(s -> "CUSTOM".equals(s.get("type")))
+                .toList();
+            if (customSections != null && index < customSections.size()) {
+                Map<String, Object> customSection = customSections.get(index);
+                // 直接从 section.title 获取
+                String title = (String) customSection.get("title");
+                if (title != null && !title.isEmpty()) {
+                    return title;
                 }
             }
         }
