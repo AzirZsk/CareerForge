@@ -6,12 +6,15 @@ import com.landit.common.config.AIPromptProperties;
 import com.landit.common.schema.GraphSchemaRegistry;
 import com.landit.common.util.ChatClientHelper;
 import com.landit.common.util.JsonParseHelper;
+import com.landit.resume.dto.DiagnoseResumeResponse;
 import com.landit.resume.dto.ResumeDetailVO;
+import com.landit.resume.service.ResumeSuggestionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -30,6 +33,7 @@ public class GenerateSuggestionsNode implements NodeAction {
 
     private final ChatClient chatClient;
     private final AIPromptProperties aiPromptProperties;
+    private final ResumeSuggestionService resumeSuggestionService;
 
     @Override
     public Map<String, Object> apply(OverAllState state) {
@@ -59,6 +63,25 @@ public class GenerateSuggestionsNode implements NodeAction {
 
         List<?> suggestions = response.getSuggestions() != null ? response.getSuggestions() : List.of();
         int suggestionCount = suggestions.size();
+
+        // 保存建议到数据库
+        String resumeId = resumeDetail != null ? resumeDetail.getId() : null;
+        @SuppressWarnings("unchecked")
+        Map<String, String> shortIdToRealIdMap = (Map<String, String>) state
+                .value(STATE_SECTION_ID_MAP)
+                .orElse(Map.of());
+
+        if (resumeId != null && !suggestions.isEmpty()) {
+            try {
+                @SuppressWarnings("unchecked")
+                List<DiagnoseResumeResponse.Suggestion> suggestionList =
+                        (List<DiagnoseResumeResponse.Suggestion>) suggestions;
+                resumeSuggestionService.saveSuggestions(resumeId, suggestionList, shortIdToRealIdMap);
+                log.info("优化建议已保存到数据库: resumeId={}, count={}", resumeId, suggestionCount);
+            } catch (Exception e) {
+                log.error("保存优化建议失败: resumeId={}", resumeId, e);
+            }
+        }
 
         List<String> messages = new ArrayList<>();
         messages.add("生成优化建议完成");

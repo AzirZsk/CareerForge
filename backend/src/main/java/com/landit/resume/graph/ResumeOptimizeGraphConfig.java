@@ -13,6 +13,7 @@ import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.landit.common.config.AIPromptProperties;
 import com.landit.resume.service.ResumeService;
+import com.landit.resume.service.ResumeSuggestionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -46,6 +47,7 @@ public class ResumeOptimizeGraphConfig {
     private final ChatClient chatClient;
     private final AIPromptProperties aiPromptProperties;
     private final ResumeService resumeService;
+    private final ResumeSuggestionService resumeSuggestionService;
 
     /**
      * 定义状态键策略
@@ -73,6 +75,9 @@ public class ResumeOptimizeGraphConfig {
             // 消息日志
             strategies.put(STATE_MESSAGES, new AppendStrategy());
 
+            // ID映射表
+            strategies.put(STATE_SECTION_ID_MAP, new ReplaceStrategy());
+
             return strategies;
         };
     }
@@ -93,7 +98,7 @@ public class ResumeOptimizeGraphConfig {
 
         // 创建节点（注入已配置的 ChatClient Bean）
         DiagnoseResumeNode diagnoseNode = new DiagnoseResumeNode(chatClient, aiPromptProperties, resumeService);
-        GenerateSuggestionsNode generateSuggestionsNode = new GenerateSuggestionsNode(chatClient, aiPromptProperties);
+        GenerateSuggestionsNode generateSuggestionsNode = new GenerateSuggestionsNode(chatClient, aiPromptProperties, resumeSuggestionService);
         OptimizeSectionNode optimizeSectionNode = new OptimizeSectionNode(chatClient, aiPromptProperties);
 
         // 构建工作流图

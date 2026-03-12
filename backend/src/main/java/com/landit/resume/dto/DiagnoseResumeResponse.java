@@ -112,16 +112,28 @@ public class DiagnoseResumeResponse {
     @AllArgsConstructor
     public static class Suggestion {
         /**
-         * 优先级：high/medium/low
+         * 建议类型：critical（关键问题）/improvement（改进建议）/enhancement（增强建议）
          */
-        @SchemaField(value = "优先级", enumValues = {"high", "medium", "low"})
-        private String priority;
+        @SchemaField(value = "建议类型", enumValues = {"critical", "improvement", "enhancement"})
+        private String type;
+
+        /**
+         * 影响程度：high/medium/low
+         */
+        @SchemaField(value = "影响程度", enumValues = {"high", "medium", "low"})
+        private String impact;
 
         /**
          * 分类：work/project/skills/education/summary
          */
         @SchemaField(value = "建议分类", enumValues = {"work", "project", "skills", "education", "summary", "other"})
         private String category;
+
+        /**
+         * 关联的简历模块ID（使用简短标识符，如 work_1, project_2）
+         */
+        @SchemaField(value = "建议对应的简历模块ID")
+        private String sectionId;
 
         /**
          * 位置标识
@@ -148,10 +160,10 @@ public class DiagnoseResumeResponse {
         private String suggestion;
 
         /**
-         * 影响说明
+         * 对求职的实际价值
          */
-        @SchemaField(value = "改进后的预期影响")
-        private String impact;
+        @SchemaField(value = "对求职的实际价值")
+        private String value;
     }
 
     /**

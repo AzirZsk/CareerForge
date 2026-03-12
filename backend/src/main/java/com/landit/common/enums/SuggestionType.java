@@ -23,4 +23,21 @@ public enum SuggestionType {
     @JsonValue
     private final String description;
 
+    /**
+     * 根据 value 解析枚举
+     *
+     * @param value 字符串值
+     * @return 对应的枚举，未匹配返回 ENHANCEMENT
+     */
+    public static SuggestionType fromValue(String value) {
+        if (value == null) {
+            return ENHANCEMENT;
+        }
+        for (SuggestionType type : values()) {
+            if (type.value.equals(value)) {
+                return type;
+            }
+        }
+        return ENHANCEMENT;
+    }
 }

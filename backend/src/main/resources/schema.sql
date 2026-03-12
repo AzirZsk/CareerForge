@@ -91,6 +91,7 @@ CREATE TABLE IF NOT EXISTS t_resume_section (
 CREATE TABLE IF NOT EXISTS t_resume_suggestion (
     id VARCHAR(64) PRIMARY KEY,              -- 主键ID（雪花ID字符串）
     resume_id VARCHAR(64),                   -- 所属简历ID
+    section_id VARCHAR(64),                  -- 关联的简历模块ID
     type VARCHAR(20),                       -- 建议类型（critical-关键 improvement-改进 enhancement-增强）
     category VARCHAR(50),                   -- 建议分类
     title VARCHAR(200),                     -- 建议标题
@@ -101,6 +102,10 @@ CREATE TABLE IF NOT EXISTS t_resume_suggestion (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 更新时间
     deleted INTEGER DEFAULT 0               -- 逻辑删除标记
 );
+
+-- 为 section_id 添加索引
+-- 注意：SQLite 不支持 IF NOT EXISTS 用于 CREATE INDEX，需要使用更安全的方式
+-- ALTER TABLE t_resume_suggestion ADD COLUMN section_id VARCHAR(64);
 
 -- ----------------------------------------------------------------------------
 -- 面试记录表
@@ -261,3 +266,4 @@ CREATE INDEX IF NOT EXISTS idx_interview_user_id ON t_interview(user_id);
 CREATE INDEX IF NOT EXISTS idx_review_interview_id ON t_interview_review(interview_id);
 CREATE INDEX IF NOT EXISTS idx_session_user_id ON t_interview_session(user_id);
 CREATE INDEX IF NOT EXISTS idx_conversation_session_id ON t_conversation(session_id);
+CREATE INDEX IF NOT EXISTS idx_suggestion_section_id ON t_resume_suggestion(section_id);

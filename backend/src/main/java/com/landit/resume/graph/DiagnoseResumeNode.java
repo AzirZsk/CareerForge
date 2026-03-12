@@ -118,7 +118,8 @@ public class DiagnoseResumeNode implements NodeAction {
                 STATE_DIMENSIONS, response.getDimensionScores(),
                 STATE_ISSUES, response.getWeaknesses(),
                 STATE_HIGHLIGHTS, response.getStrengths(),
-                STATE_QUICK_WINS, response.getQuickWins()
+                STATE_QUICK_WINS, response.getQuickWins(),
+                STATE_SECTION_ID_MAP, shortIdToRealIdMap
         );
     }
 

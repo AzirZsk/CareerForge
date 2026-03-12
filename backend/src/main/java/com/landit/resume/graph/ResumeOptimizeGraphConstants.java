@@ -158,6 +158,13 @@ public final class ResumeOptimizeGraphConstants {
      */
     public static final String STATE_THREAD_ID = "thread_id";
 
+    /**
+     * 简短标识符到真实ID的映射
+     * Key: 简短标识符（如 work_1, project_2）
+     * Value: 真实的雪花ID 或 custom section 的 sectionId:itemIndex
+     */
+    public static final String STATE_SECTION_ID_MAP = "section_id_map";
+
     // ==================== 诊断模式 ====================
 
     /**

@@ -18,6 +18,11 @@ public class ResumeSuggestion extends BaseEntity {
 
     private String resumeId;
 
+    /**
+     * 关联的简历模块ID
+     */
+    private String sectionId;
+
     private SuggestionType type;
 
     private String category;

@@ -326,11 +326,12 @@ public class AIPromptProperties {
                     在输出前，请逐项确认：
                     1. overallScore是四个维度的合理综合（非简单平均，应反映整体水平）
                     2. 每个维度评分有对应的suggestions支撑
-                    3. suggestions的priority与问题严重程度匹配（high≤3条）
+                    3. suggestions的impact与问题严重程度匹配（high≤3条）
                     4. strengths和weaknesses各有2-4条，且与评分一致
                     5. quickWins是3-5个可快速执行的改进项
                     6. sectionScores 必须包含 <resume_sections> 中所有区块的 id（使用简短标识符，如 work_1, project_1）
-                    7. 只返回JSON，不要返回其他内容
+                    7. suggestions 中的 sectionId 必须使用简短标识符
+                    8. 只返回JSON，不要返回其他内容
 
                     ---
 
@@ -361,18 +362,20 @@ public class AIPromptProperties {
 
                     | 字段 | 类型 | 必填 | 说明 |
                     |------|------|------|------|
-                    | priority | string | 是 | 优先级：high/medium/low（high≤3条） |
+                    | type | string | 是 | 建议类型：critical（关键问题）/improvement（改进建议）/enhancement（增强建议） |
+                    | impact | string | 是 | 影响程度：high/medium/low（high≤3条） |
                     | category | string | 是 | 分类：work/project/skills/education/summary/other |
+                    | sectionId | string | 是 | 建议对应的简历模块ID（使用简短标识符，如 work_1, project_2） |
                     | position | string | 否 | 建议对应的简历位置标识 |
                     | title | string | 是 | 建议标题 |
                     | current | string | 是 | 当前问题的具体描述（与原文一致） |
                     | suggestion | string | 是 | 具体改进建议 |
-                    | impact | string | 是 | 改进后的预期影响 |
+                    | value | string | 是 | 改进后的预期价值，站在HR视角说明 |
 
                     ---
 
                     ## 输出格式示例（严格JSON，单行压缩格式）
-                    {"overallScore":72,"dimensionScores":{"content":68,"structure":80,"matching":70,"competitiveness":75},"sectionScores":{"work_1":85,"project_1":60},"suggestions":[{"priority":"high","category":"work","position":"XX公司-XX职位","title":"工作成果需要量化","current":"负责后端系统开发和维护","suggestion":"补充成果数据：主导核心接口优化，响应时间从500ms降至80ms","impact":"量化数据让HR快速评估你的实际贡献"}],"strengths":["教育背景对口","项目经历完整"],"weaknesses":["缺少量化数据","技能描述不够具体"],"quickWins":["在工作经历中加入2-3个量化成果","技能模块补充岗位核心关键词","项目描述补充技术选型和性能指标"]}
+                    {"overallScore":72,"dimensionScores":{"content":68,"structure":80,"matching":70,"competitiveness":75},"sectionScores":{"work_1":85,"project_1":60},"suggestions":[{"type":"critical","impact":"high","category":"work","sectionId":"work_1","position":"XX公司-XX职位","title":"工作成果需要量化","current":"负责后端系统开发和维护","suggestion":"补充成果数据：主导核心接口优化，响应时间从500ms降至80ms","value":"量化数据让HR快速评估你的实际贡献"}],"strengths":["教育背景对口","项目经历完整"],"weaknesses":["缺少量化数据","技能描述不够具体"],"quickWins":["在工作经历中加入2-3个量化成果","技能模块补充岗位核心关键词","项目描述补充技术选型和性能指标"]}
                     """,
                     // userPromptTemplate
                     """
@@ -472,18 +475,20 @@ public class AIPromptProperties {
 
                     | 字段 | 类型 | 必填 | 说明 |
                     |------|------|------|------|
-                    | priority | string | 是 | 优先级：high/medium/low（high≤3条） |
+                    | type | string | 是 | 建议类型：critical（关键问题）/improvement（改进建议）/enhancement（增强建议） |
+                    | impact | string | 是 | 影响程度：high/medium/low（high≤3条） |
                     | category | string | 是 | 分类：work/project/skills/education/summary/other |
-                    | position | string | 否 | 建议对应的简历位置标识 |
+                    | sectionId | string | 是 | 建议对应的简历模块ID（使用简短标识符，如 work_1, project_2） |
+                    | position | string | 否 | 建议对应的简历位置描述（如 "XX公司-XX职位"） |
                     | title | string | 是 | 建议标题 |
                     | current | string | 是 | 当前问题的具体描述（与原文完全一致） |
                     | suggestion | string | 是 | 具体优化文本（非抽象建议） |
-                    | impact | string | 是 | 对求职的实际价值，站在HR视角说明 |
+                    | value | string | 是 | 对求职的实际价值，站在HR视角说明 |
 
                     ---
 
                     ## 输出格式示例（严格JSON，单行压缩格式）
-                    {"suggestions":[{"priority":"high","category":"project","position":"XX项目","title":"补充量化成果数据","current":"负责后端系统开发，提升了性能","suggestion":"主导核心API优化，响应时间从500ms降至80ms，QPS提升300%","impact":"量化数据让HR快速评估你的实际贡献，提高简历竞争力"},{"priority":"high","category":"work","position":"XX公司-后端开发","title":"强化技术栈描述","current":"使用Java开发","suggestion":"基于Spring Boot + MyBatis Plus构建微服务架构，支持日均50万请求","impact":"技术栈具体化展示你的专业深度"}],"quickWins":["在所有项目经历末尾补充1-2个关键性能指标","技能模块添加目标岗位的核心关键词","将'负责'改为'主导'等强动词"],"estimatedImprovement":15}
+                    {"suggestions":[{"type":"critical","impact":"high","category":"project","sectionId":"project_1","position":"订单系统项目","title":"补充量化成果数据","current":"负责后端系统开发，提升了性能","suggestion":"主导核心API优化，响应时间从500ms降至80ms，QPS提升300%","value":"量化数据让HR快速评估你的实际贡献，提高简历竞争力"},{"type":"improvement","impact":"high","category":"work","sectionId":"work_1","position":"XX公司-后端开发","title":"强化技术栈描述","current":"使用Java开发","suggestion":"基于Spring Boot + MyBatis Plus构建微服务架构，支持日均50万请求","value":"技术栈具体化展示你的专业深度"}],"quickWins":["在所有项目经历末尾补充1-2个关键性能指标","技能模块添加目标岗位的核心关键词","将'负责'改为'主导'等强动词"],"estimatedImprovement":15}
 
                     ---
 
@@ -491,13 +496,14 @@ public class AIPromptProperties {
 
                     在输出前，请逐项确认：
                     1. suggestions数量在6-10条
-                    2. high优先级建议不超过3条
-                    3. 每条建议的current与原文完全一致（包括标点）
-                    4. suggestion是具体的优化文本，非抽象建议
-                    5. impact说明了对求职的实际价值，站在HR视角
-                    6. quickWins是3-5个可快速执行的改进项（纯字符串数组）
-                    7. estimatedImprovement是合理的预估分数（0-30分）
-                    8. 只返回JSON，不要返回其他内容
+                    2. high影响程度建议不超过3条
+                    3. 每条建议的sectionId使用简短标识符（如 work_1, project_2）
+                    4. 每条建议的current与原文完全一致（包括标点）
+                    5. suggestion是具体的优化文本，非抽象建议
+                    6. value说明了对求职的实际价值，站在HR视角
+                    7. quickWins是3-5个可快速执行的改进项（纯字符串数组）
+                    8. estimatedImprovement是合理的预估分数（0-30分）
+                    9. 只返回JSON，不要返回其他内容
                     """,
                     // userPromptTemplate
                     """
