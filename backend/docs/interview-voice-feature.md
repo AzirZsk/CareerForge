@@ -1,6 +1,6 @@
 # 虚拟面试语音交互功能 - 技术方案
 
-> 版本：1.1.0
+> 版本：1.3.0
 > 创建日期：2026-03-12
 > 状态：设计阶段
 
@@ -56,6 +56,8 @@
 
 ### 2.1 架构图
 
+采用 **ASR + LLM + TTS 分开调用**的架构，实现更精细的控制和更好的灵活性：
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                              前端 (Vue 3)                                │
@@ -70,7 +72,7 @@
 │                    │  (音频采集/播放管理) │                              │
 │                    └──────────┬──────────┘                              │
 └───────────────────────────────┼─────────────────────────────────────────┘
-                                │ WebSocket
+                                │ WebSocket / SSE
                                 ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                            后端 (Spring Boot)                            │
@@ -92,82 +94,168 @@
 └──────────┼───────────────────┼───────────────────────────────────────────┘
            │                   │
            └─────────┬─────────┘
-                     │ WebSocket
-                     ▼
+                     │
+    ┌────────────────┼────────────────┐
+    │                │                │
+    ▼                ▼                ▼
+┌─────────┐    ┌─────────┐     ┌───────────┐
+│   ASR   │    │   LLM   │     │    TTS    │
+│ 语音识别 │    │ 大模型  │     │ 语音合成  │
+└────┬────┘    └────┬────┘     └─────┬─────┘
+     │              │                │
+     └──────────────┼────────────────┘
+                    │ WebSocket / HTTP
+                    ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                       阿里云百炼语音服务                                  │
-│  ┌─────────────────────────────────────────────────────────────────┐    │
-│  │            EndToEndRealTimeDialog API                            │    │
-│  │   (实时语音识别 + LLM 推理 + 实时语音合成)                         │    │
-│  └─────────────────────────────────────────────────────────────────┘    │
+│                       阿里云百炼服务                                      │
 │                                                                         │
-│  备选方案（分开调用）：                                                    │
-│  ┌──────────────────┐    ┌──────────────────┐                          │
-│  │ Paraformer (ASR) │    │  CosyVoice (TTS) │                          │
-│  │  实时语音识别     │    │   实时语音合成    │                          │
-│  └──────────────────┘    └──────────────────┘                          │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐       │
+│  │   Paraformer     │  │   通义千问        │  │   CosyVoice      │       │
+│  │  实时语音识别     │  │  (Qwen)          │  │   流式语音合成   │       │
+│  │  WebSocket API   │  │  流式文本生成     │  │   WebSocket API  │       │
+│  └──────────────────┘  └──────────────────┘  └──────────────────┘       │
+│                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 2.2 核心流程
+### 2.2 技术选型
 
-#### 流式语音对话流程（关键）
+| 组件 | 服务 | API 类型 | 说明 |
+|------|------|----------|------|
+| **ASR** | Paraformer | WebSocket | 实时语音识别，支持流式输入输出 |
+| **LLM** | 通义千问 (Qwen) | HTTP/SSE | 流式文本生成，可复用现有 OpenAI 配置 |
+| **TTS** | CosyVoice | WebSocket | 流式语音合成，支持实时输出 |
+
+### 2.3 核心流程
+
+#### 实时语音对话流程（ASR + LLM + TTS）
 
 ```
-候选人说话         阿里云百炼              后端处理              前端展示
-    │                 │                     │                    │
-    │  ── 音频流 ───▶ │                     │                    │
-    │                 │  ── 文字(实时) ───▶ │                    │
-    │                 │                     │  ── 显示候选人说话 ─▶│
-    │                 │                     │                    │
-    │                 │  ◀─ 提示词+上下文 ──│                    │
-    │                 │                     │                    │
-    │                 │                     │                    │
-    │                 │  ═══ 流式响应开始 ═══                    │
-    │                 │                     │                    │
-    │                 │  ── 文本片段1 ────▶ │  ── SSE推送 ──────▶│ 显示文字
-    │                 │  ── 音频片段1 ────▶ │  ── SSE推送 ──────▶│ 🎵 播放
-    │                 │                     │                    │
-    │                 │  ── 文本片段2 ────▶ │  ── SSE推送 ──────▶│ 显示文字
-    │                 │  ── 音频片段2 ────▶ │  ── SSE推送 ──────▶│ 🎵 播放
-    │                 │                     │                    │
-    │                 │  ── 文本片段3 ────▶ │  ── SSE推送 ──────▶│ 显示文字
-    │                 │  ── 音频片段3 ────▶ │  ── SSE推送 ──────▶│ 🎵 播放
-    │                 │                     │                    │
-    │                 │  ═══ 流式响应结束 ═══                    │
-    │                 │                     │                    │
-    │                                                              │
-    │  用户几乎无感知延迟，边生成边播放                              │
-    │                                                              │
+候选人说话        后端处理              阿里云服务              前端展示
+    │               │                     │                    │
+    │  ── 音频流 ──▶│                     │                    │
+    │               │  ── 音频流 ────────▶│                    │
+    │               │                     │  (Paraformer ASR)  │
+    │               │  ◀─ 文字(实时) ─────│                    │
+    │               │                     │                    │
+    │               │  ── 显示候选人说话 ─────────────────────▶│
+    │               │                     │                    │
+    │               │  ═══ LLM 推理 ═══   │                    │
+    │               │                     │                    │
+    │               │  ── 提示词+上下文 ─▶│                    │
+    │               │                     │  (通义千问)        │
+    │               │  ◀─ 文本片段1 ─────│                    │
+    │               │  ── SSE推送 ───────────────────────────▶│ 显示文字
+    │               │                     │                    │
+    │               │  ═══ TTS 合成 ═══   │                    │
+    │               │  ── 文本片段1 ────▶│                    │
+    │               │                     │  (CosyVoice TTS)   │
+    │               │  ◀─ 音频片段1 ─────│                    │
+    │               │  ── SSE推送 ───────────────────────────▶│ 🎵 播放
+    │               │                     │                    │
+    │               │  ◀─ 文本片段2 ─────│                    │
+    │               │  ── SSE推送 ───────────────────────────▶│ 显示文字
+    │               │  ── 文本片段2 ────▶│                    │
+    │               │  ◀─ 音频片段2 ─────│                    │
+    │               │  ── SSE推送 ───────────────────────────▶│ 🎵 播放
+    │               │                     │                    │
+    │  用户几乎无感知延迟，边生成边播放    │                    │
+    │                                                             │
 ```
 
 #### 流式求助助手流程
 
 ```
-点击求助按钮         后端处理              阿里云百炼            前端展示
-    │                  │                     │                    │
-    │  ── POST请求 ──▶ │                     │                    │
-    │                  │  ── 建立SSE连接 ──▶ │                    │
-    │                  │                     │                    │
-    │                  │  ◀─ 提示词+上下文 ──│                    │
-    │                  │                     │                    │
-    │                  │                     │  ═══ 流式生成 ═══  │
-    │                  │                     │                    │
-    │                  │  ◀── 文本片段1 ──── │                    │
-    │                  │  ── SSE事件 ───────────────────────────▶ │ 显示文字
-    │                  │                     │                    │
-    │                  │  ◀── 音频片段1 ──── │                    │
-    │                  │  ── SSE事件 ───────────────────────────▶ │ 🎵 播放
-    │                  │                     │                    │
-    │                  │  ◀── 文本片段2 ──── │                    │
-    │                  │  ── SSE事件 ───────────────────────────▶ │ 显示文字
-    │                  │                     │                    │
-    │                  │  ◀── 音频片段2 ──── │                    │
-    │                  │  ── SSE事件 ───────────────────────────▶ │ 🎵 播放
-    │                  │                     │                    │
-    │                  │                     │  ═══ 生成完成 ═══  │
-    │                  │  ── SSE完成事件 ───────────────────────▶ │ 面板就绪
-    │                                                              │
+点击求助按钮        后端处理              阿里云服务           前端展示
+    │                │                     │                   │
+    │  ── SSE请求 ─▶│                     │                   │
+    │                │                     │                   │
+    │                │  ═══ LLM 流式生成 ═══                   │
+    │                │  ── 提示词+上下文 ─▶│                   │
+    │                │                     │ (通义千问)        │
+    │                │  ◀─ 文本片段1 ─────│                   │
+    │                │  ── SSE事件 ─────────────────────────▶ │ 显示文字
+    │                │                     │                   │
+    │                │  ═══ TTS 流式合成 ═══                   │
+    │                │  ── 文本片段1 ────▶│                   │
+    │                │                     │ (CosyVoice)       │
+    │                │  ◀─ 音频片段1 ─────│                   │
+    │                │  ── SSE事件 ─────────────────────────▶ │ 🎵 播放
+    │                │                     │                   │
+    │                │  ◀─ 文本片段2 ─────│                   │
+    │                │  ── SSE事件 ─────────────────────────▶ │ 显示文字
+    │                │  ── 文本片段2 ────▶│                   │
+    │                │  ◀─ 音频片段2 ─────│                   │
+    │                │  ── SSE事件 ─────────────────────────▶ │ 🎵 播放
+    │                │                     │                   │
+    │                │  ═══ 生成完成 ═══   │                   │
+    │                │  ── SSE完成事件 ─────────────────────▶ │ 面板就绪
+    │                                                             │
+```
+
+### 2.4 数据流向图
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           语音对话数据流                                  │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│   候选人语音                                                            │
+│       │                                                                 │
+│       ▼                                                                 │
+│   ┌─────────┐      WebSocket       ┌─────────────┐                     │
+│   │  前端   │ ──────────────────▶ │   后端      │                     │
+│   │ 音频采集│    (PCM 16kHz)      │  Gateway    │                     │
+│   └─────────┘                     └──────┬──────┘                     │
+│                                          │                              │
+│                        ┌─────────────────┼─────────────────┐           │
+│                        │                 │                 │           │
+│                        ▼                 │                 ▼           │
+│                  ┌──────────┐            │           ┌──────────┐      │
+│                  │  Paraformer          │           │ CosyVoice│      │
+│                  │   (ASR)  │            │           │   (TTS)  │      │
+│                  │ WebSocket│            │           │ WebSocket│      │
+│                  └────┬─────┘            │           └────┬─────┘      │
+│                       │                  │                │            │
+│                       ▼                  │                │            │
+│                  ┌──────────┐            │                │            │
+│                  │  文字流   │            │                │            │
+│                  │ "Vue的..."│            │                │            │
+│                  └────┬─────┘            │                │            │
+│                       │                  │                │            │
+│                       ▼                  ▼                ▼            │
+│                  ┌──────────────────────────────────────────┐          │
+│                  │              LLM (通义千问)               │          │
+│                  │                                          │          │
+│                  │  输入: 候选人回答 + 面试上下文 + 提示词    │          │
+│                  │  输出: AI 回复文本（流式）                │          │
+│                  └──────────────────┬───────────────────────┘          │
+│                                     │                                   │
+│                                     ▼                                   │
+│                              ┌─────────────┐                           │
+│                              │  文本片段   │                           │
+│                              │ "很好..."   │                           │
+│                              └──────┬──────┘                           │
+│                                     │                                   │
+│                                     ▼                                   │
+│                              ┌─────────────┐                           │
+│                              │ CosyVoice   │                           │
+│                              │ 流式TTS     │                           │
+│                              └──────┬──────┘                           │
+│                                     │                                   │
+│                                     ▼                                   │
+│                              ┌─────────────┐                           │
+│                              │  音频片段   │                           │
+│                              │  (PCM/WAV)  │                           │
+│                              └──────┬──────┘                           │
+│                                     │                                   │
+│                                     ▼                                   │
+│   ┌─────────┐      SSE/WS       ┌─────────────┐                       │
+│   │  前端   │ ◀──────────────── │   后端      │                       │
+│   │ 音频播放│   (Base64 Audio)  │  Gateway    │                       │
+│   └─────────┘                   └─────────────┘                       │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 #### 求助助手流程（冻结机制）
@@ -689,171 +777,379 @@ export interface TranscriptEntry {
 # application.yml
 spring:
   ai:
+    # LLM 配置（复用现有 OpenAI 协议配置，或切换为阿里云）
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+      chat:
+        options:
+          model: ${AI_MODEL:gpt-4o}
+          temperature: 0.7
+
+    # 阿里云语音服务配置
     alibaba:
       api-key: ${ALIBABA_API_KEY}
       voice:
-        # 实时语音对话
-        realtime-dialog:
-          enabled: true
-          asr-model: paraformer-realtime-v2    # 语音识别模型
-          tts-model: cosyvoice-v2              # 语音合成模型
-          input-format: pcm
-          output-format: wav
+        # ASR 配置
+        asr:
+          model: paraformer-realtime-v2    # 实时语音识别模型
+          format: pcm
           sample-rate: 16000
+          enable-punctuation: true
+          enable-inverse-text-normalization: true
+
+        # TTS 配置
+        tts:
+          model: cosyvoice-v2              # 流式语音合成模型
+          format: wav
+          sample-rate: 16000
+
         # 音色配置
         voices:
-          interviewer: longxiaochun_v2         # 面试官音色
-          assistant: zhimiao_emo_v2            # 助手音色（更亲切）
+          interviewer: longxiaochun_v2     # 面试官音色
+          assistant: zhimiao_emo_v2        # 助手音色（更亲切）
 ```
 
-### 7.3 流式语音合成实现
+### 7.3 ASR 服务（Paraformer）
 
-#### 方案一：使用 EndToEndRealTimeDialog（推荐）
-
-阿里云百炼的 `EndToEndRealTimeDialog` API 天然支持流式语音合成：
+#### 实时语音识别客户端
 
 ```java
 @Service
 @RequiredArgsConstructor
-public class AliyunStreamVoiceService {
+public class ParaformerASRClient {
+
+    @Value("${spring.ai.alibaba.api-key}")
+    private String apiKey;
 
     /**
-     * 流式语音对话（边生成边播放）
-     * 通过 WebSocket 连接阿里云，实现：
-     * 1. 接收用户音频流
-     * 2. 实时语音识别
-     * 3. LLM 生成回复
-     * 4. 流式语音合成
-     * 5. 返回音频流
+     * 建立实时语音识别连接
+     * 通过 WebSocket 接收音频流，实时返回识别文字
      */
-    public Flux<VoiceChunk> streamVoiceDialog(
-        String sessionId,
-        Flux<byte[]> audioInput,
-        AgentConfig config
-    ) {
-        // 建立 WebSocket 连接
-        WebSocketClient client = new StandardWebSocketClient();
-
+    public Flux<ASRResult> streamRecognize(Flux<byte[]> audioStream, ASRConfig config) {
         return Flux.create(emitter -> {
-            // 连接阿里云实时语音对话 API
+            // 构建 WebSocket URL
+            String wsUrl = buildASRWebSocketUrl(config);
+
+            WebSocketClient client = new StandardWebSocketClient();
+            AtomicReference<WebSocketSession> sessionRef = new AtomicReference<>();
+
             client.doHandshake(new WebSocketHandler() {
+                @Override
+                public void afterConnectionEstablished(WebSocketSession session) {
+                    sessionRef.set(session);
+                    emitter.onDispose(() -> {
+                        try {
+                            session.close();
+                        } catch (Exception ignored) {}
+                    });
+                }
+
                 @Override
                 public void handleMessage(WebSocketSession session, WebSocketMessage<?> message) {
                     JsonNode response = parseResponse(message);
 
-                    // 解析流式响应
-                    if (response.has("text")) {
-                        // 文本片段 - 立即推送给前端显示
-                        emitter.next(new VoiceChunk(
-                            ChunkType.TEXT,
-                            response.get("text").asText()
-                        ));
-                    }
+                    ASRResult result = ASRResult.builder()
+                        .text(response.path("text").asText())
+                        .isFinal(response.path("is_final").asBoolean(false))
+                        .confidence(response.path("confidence").asDouble(0.0))
+                        .build();
 
-                    if (response.has("audio")) {
-                        // 音频片段 - 立即推送给前端播放
-                        emitter.next(new VoiceChunk(
-                            ChunkType.AUDIO,
-                            response.get("audio").asText()  // Base64
-                        ));
-                    }
+                    emitter.next(result);
 
-                    if (response.has("done") && response.get("done").asBoolean()) {
+                    if (result.isFinal()) {
                         emitter.complete();
                     }
                 }
-            }, buildWsUrl(config));
+            }, wsUrl);
+
+            // 发送音频流
+            audioStream.subscribe(audioData -> {
+                WebSocketSession session = sessionRef.get();
+                if (session != null && session.isOpen()) {
+                    session.sendMessage(new BinaryMessage(audioData));
+                }
+            });
         });
+    }
+
+    private String buildASRWebSocketUrl(ASRConfig config) {
+        return UriComponentsBuilder.fromHttpUrl("wss://dashscope.aliyuncs.com/api-ws/v1/inference")
+            .path("/asr/paraformer-realtime-v2")
+            .queryParam("format", config.getFormat())
+            .queryParam("sample_rate", config.getSampleRate())
+            .queryParam("enable_punctuation_prediction", config.isEnablePunctuation())
+            .queryParam("enable_inverse_text_normalization", config.isEnableITN())
+            .build()
+            .toUriString();
+    }
+}
+
+@Data
+@Builder
+public class ASRResult {
+    private String text;          // 识别文字
+    private boolean isFinal;      // 是否最终结果
+    private double confidence;    // 置信度
+}
+```
+
+### 7.4 TTS 服务（CosyVoice）
+
+#### 流式语音合成客户端
+
+```java
+@Service
+@RequiredArgsConstructor
+public class CosyVoiceTTSClient {
+
+    @Value("${spring.ai.alibaba.api-key}")
+    private String apiKey;
+
+    /**
+     * 流式语音合成
+     * 输入文本，流式输出音频片段
+     */
+    public Flux<byte[]> streamSynthesize(String text, TTSConfig config) {
+        return Flux.create(emitter -> {
+            String wsUrl = buildTTSWebSocketUrl(config);
+
+            WebSocketClient client = new StandardWebSocketClient();
+
+            client.doHandshake(new WebSocketHandler() {
+                @Override
+                public void afterConnectionEstablished(WebSocketSession session) {
+                    // 发送合成请求
+                    JsonObject request = new JsonObject();
+                    request.addProperty("text", text);
+                    request.addProperty("voice", config.getVoice());
+                    request.addProperty("format", config.getFormat());
+                    request.addProperty("sample_rate", config.getSampleRate());
+
+                    try {
+                        session.sendMessage(new TextMessage(request.toString()));
+                    } catch (Exception e) {
+                        emitter.error(e);
+                    }
+                }
+
+                @Override
+                public void handleMessage(WebSocketSession session, WebSocketMessage<?> message) {
+                    JsonNode response = parseResponse(message);
+
+                    if (response.has("audio")) {
+                        // Base64 解码音频
+                        String audioBase64 = response.get("audio").asText();
+                        byte[] audioData = Base64.getDecoder().decode(audioBase64);
+                        emitter.next(audioData);
+                    }
+
+                    if (response.path("done").asBoolean(false)) {
+                        emitter.complete();
+                    }
+                }
+            }, wsUrl);
+        });
+    }
+
+    /**
+     * 分句流式合成（用于长文本）
+     * 将文本按句子分割，逐句合成，实现边生成边播放
+     */
+    public Flux<TTSChunk> streamSynthesizeBySentence(Flux<String> textStream, TTSConfig config) {
+        StringBuilder sentenceBuffer = new StringBuilder();
+
+        return textStream.flatMap(delta -> {
+            sentenceBuffer.append(delta);
+
+            // 检测句子结束
+            if (isSentenceEnd(delta)) {
+                String sentence = sentenceBuffer.toString();
+                sentenceBuffer.setLength(0);
+
+                // 流式合成这个句子
+                return streamSynthesize(sentence, config)
+                    .map(audio -> new TTSChunk(sentence, audio));
+            }
+
+            return Flux.empty();
+        });
+    }
+
+    private boolean isSentenceEnd(String text) {
+        return text.matches(".*[。！？.!?]$");
+    }
+
+    private String buildTTSWebSocketUrl(TTSConfig config) {
+        return UriComponentsBuilder.fromHttpUrl("wss://dashscope.aliyuncs.com/api-ws/v1/inference")
+            .path("/tts/cosyvoice-v2")
+            .build()
+            .toUriString();
     }
 }
 
 @Data
 @AllArgsConstructor
-public class VoiceChunk {
-    private ChunkType type;     // TEXT / AUDIO
-    private String content;     // 文本或 Base64 音频
-}
-
-public enum ChunkType {
-    TEXT, AUDIO
+public class TTSChunk {
+    private String text;    // 对应的文本
+    private byte[] audio;   // 音频数据
 }
 ```
 
-#### 方案二：分开调用 LLM + 流式 TTS
+### 7.5 LLM 服务（通义千问）
 
-如果需要更精细控制，可以分开调用：
+可以使用现有的 OpenAI 协议配置，或切换为阿里云通义千问：
 
 ```java
 @Service
 @RequiredArgsConstructor
-public class StreamAssistService {
+public class StreamLLMService {
 
-    private final ChatClient chatClient;
-    private final CosyVoiceTTSClient ttsClient;
+    private final ChatClient.Builder chatClientBuilder;
 
     /**
-     * 流式求助响应
-     * 1. LLM 流式生成文本
-     * 2. 文本分块送入 TTS 流式合成
-     * 3. 音频流实时返回
+     * 流式生成回复
      */
-    public Flux<AssistSSEEvent> streamAssist(AssistRequest request, InterviewContext context) {
-        // 构建提示词
-        String systemPrompt = buildSystemPrompt(request.getType());
-        String userPrompt = buildUserPrompt(request, context);
-
-        // 文本缓冲区（用于分句合成）
-        StringBuilder textBuffer = new StringBuilder();
-
-        return chatClient.stream()
+    public Flux<String> streamGenerate(String systemPrompt, String userPrompt) {
+        return chatClientBuilder.build()
+            .prompt()
             .system(systemPrompt)
             .user(userPrompt)
             .stream()
-            .flatMap(chunk -> {
-                String delta = chunk.getContent();
-                textBuffer.append(delta);
+            .content();
+    }
+}
+```
 
-                // 检测到句子结束，触发语音合成
-                if (isSentenceEnd(delta)) {
-                    String sentence = textBuffer.toString();
-                    textBuffer.setLength(0);
+### 7.6 组合服务（ASR + LLM + TTS）
 
-                    // 先返回文本事件
-                    Mono<AssistSSEEvent> textEvent = Mono.just(
-                        new AssistSSEEvent("text", new TextEventData(sentence, false))
-                    );
+```java
+@Service
+@RequiredArgsConstructor
+public class VoiceDialogService {
 
-                    // 流式合成语音
-                    Flux<AssistSSEEvent> audioEvents = ttsClient.streamSynthesize(sentence)
-                        .map(audio -> new AssistSSEEvent("audio", new AudioEventData(
-                            audio,
-                            "pcm",
-                            16000
-                        )));
+    private final ParaformerASRClient asrClient;
+    private final StreamLLMService llmService;
+    private final CosyVoiceTTSClient ttsClient;
 
-                    return Flux.concat(textEvent, audioEvents);
-                } else {
-                    // 返回增量文本
-                    return Flux.just(new AssistSSEEvent("text", new TextEventData(delta, true)));
-                }
-            })
-            .concatWith(Mono.just(new AssistSSEEvent("done", new DoneEventData(0, 0))));
+    /**
+     * 完整的语音对话流程
+     * 1. ASR: 音频 -> 文字
+     * 2. LLM: 文字 -> 回复文字
+     * 3. TTS: 回复文字 -> 音频
+     */
+    public Flux<VoiceDialogEvent> streamVoiceDialog(
+        Flux<byte[]> audioInput,
+        String systemPrompt,
+        InterviewContext context
+    ) {
+        // 文本缓冲区（用于记录完整的候选人回答）
+        StringBuilder candidateText = new StringBuilder();
+
+        // Step 1: ASR 识别
+        Flux<ASRResult> asrStream = asrClient.streamRecognize(audioInput, defaultASRConfig());
+
+        // Step 2 & 3: 当 ASR 完成后，调用 LLM + TTS
+        return asrStream
+            // 收集候选人说的所有话
+            .doOnNext(asr -> candidateText.append(asr.getText()))
+            // 转发 ASR 中间结果
+            .map(asr -> VoiceDialogEvent.transcript(asr.getText(), asr.isFinal()))
+            // ASR 完成后，开始 LLM + TTS
+            .concatWith(
+                asrStream
+                    .filter(ASRResult::isFinal)
+                    .take(1)
+                    .flatMapMany(finalAsr -> {
+                        // 构建 LLM 输入
+                        String userPrompt = buildUserPrompt(candidateText.toString(), context);
+
+                        // LLM 流式生成
+                        Flux<String> llmStream = llmService.streamGenerate(systemPrompt, userPrompt);
+
+                        // 并行处理：返回文本 + TTS 合成
+                        return processLLMStream(llmStream);
+                    })
+            );
+    }
+
+    /**
+     * 处理 LLM 流式输出
+     * 同时返回文本事件和音频事件
+     */
+    private Flux<VoiceDialogEvent> processLLMStream(Flux<String> llmStream) {
+        StringBuilder textBuffer = new StringBuilder();
+
+        return llmStream.flatMap(delta -> {
+            textBuffer.append(delta);
+
+            // 检测句子结束，触发 TTS
+            if (isSentenceEnd(delta)) {
+                String sentence = textBuffer.toString();
+                textBuffer.setLength(0);
+
+                // 返回文本事件
+                Mono<VoiceDialogEvent> textEvent = Mono.just(
+                    VoiceDialogEvent.text(sentence)
+                );
+
+                // TTS 合成
+                Flux<VoiceDialogEvent> audioEvents = ttsClient.streamSynthesize(sentence, defaultTTSConfig())
+                    .map(audio -> VoiceDialogEvent.audio(audio));
+
+                return Flux.concat(textEvent, audioEvents);
+            }
+
+            // 非句子结束，只返回增量文本
+            return Flux.just(VoiceDialogEvent.textDelta(delta));
+        });
     }
 
     private boolean isSentenceEnd(String text) {
         return text.matches(".*[。！？.!?]$");
     }
 }
+
+// 事件类型
+@Data
+@AllArgsConstructor
+public class VoiceDialogEvent {
+    private EventType type;
+    private Object data;
+
+    public enum EventType {
+        TRANSCRIPT,    // ASR 识别结果
+        TEXT_DELTA,    // LLM 增量文本
+        TEXT,          // 完整句子文本
+        AUDIO          // 音频片段
+    }
+
+    public static VoiceDialogEvent transcript(String text, boolean isFinal) {
+        return new VoiceDialogEvent(EventType.TRANSCRIPT, Map.of("text", text, "isFinal", isFinal));
+    }
+
+    public static VoiceDialogEvent textDelta(String delta) {
+        return new VoiceDialogEvent(EventType.TEXT_DELTA, Map.of("content", delta));
+    }
+
+    public static VoiceDialogEvent text(String text) {
+        return new VoiceDialogEvent(EventType.TEXT, Map.of("content", text));
+    }
+
+    public static VoiceDialogEvent audio(byte[] audio) {
+        return new VoiceDialogEvent(EventType.AUDIO, Map.of("audio", Base64.getEncoder().encodeToString(audio)));
+    }
+}
 ```
 
-### 7.4 API 参考
+### 7.7 API 参考
 
 | API | 说明 | 文档链接 |
 |-----|------|----------|
-| EndToEndRealTimeDialog | 端到端实时语音对话（推荐） | https://help.aliyun.com/zh/model-studio/api-dianjin-2024-06-28-endtoendrealtimedialog |
-| Paraformer | 实时语音识别 | https://help.aliyun.com/zh/model-studio/real-time-speech-recognition |
+| Paraformer | 实时语音识别（WebSocket） | https://help.aliyun.com/zh/model-studio/websocket-for-paraformer-real-time-service |
 | CosyVoice | 流式语音合成 | https://help.aliyun.com/zh/model-studio/cosyvoice-clone-design-api |
 | Qwen-TTS | 实时语音合成 | https://help.aliyun.com/zh/model-studio/interactive-process-of-qwen-tts-realtime-synthesis |
+| 通义千问 | 大语言模型 | https://help.aliyun.com/zh/model-studio/developer-reference/api-details |
 
 ---
 
@@ -1290,5 +1586,7 @@ frontend/src/
 
 | 日期 | 版本 | 变更内容 |
 |------|------|----------|
+| 2026-03-12 | 1.3.0 | 改为 ASR + LLM + TTS 分开调用架构，删除端到端方案，更新为 Paraformer + 通义千问 + CosyVoice |
+| 2026-03-12 | 1.2.0 | 改为 ASR + LLM + TTS 分开调用架构，删除端到端方案，新增完整的数据流向图 |
 | 2026-03-12 | 1.1.0 | 新增流式语音合成方案、SSE 接口设计、前端流式播放实现 |
 | 2026-03-12 | 1.0.0 | 初始版本：完整技术方案 |
