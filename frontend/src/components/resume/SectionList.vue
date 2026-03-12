@@ -17,53 +17,29 @@
       </button>
     </div>
     <div class="sections-list">
-      <template v-for="(section, index) in sections" :key="section.id">
-        <!-- CUSTOM 类型：展开显示每个 item -->
-        <template v-if="section.type === 'CUSTOM'">
-          <div
-            v-for="(item, itemIndex) in getCustomItems(section)"
-            :key="item.id"
-            class="section-card"
-            :class="{ active: activeSection === item.id }"
-            :style="{ '--index': index + itemIndex }"
-            @click="$emit('update:activeSection', item.id)"
-          >
-            <div class="section-header">
-              <div class="section-info">
-                <span class="section-icon">{{ getSectionIcon(section.type) }}</span>
-                <span class="section-name">{{ item.content?.title || '自定义区块' }}</span>
-              </div>
-              <div class="section-score" :class="analyzed && item.score != null ? getScoreClass(item.score!) : ''">
-                {{ analyzed ? (item.score ?? '~') : '~' }}
-              </div>
-            </div>
-            <p class="section-preview">{{ getCustomItemPreview({ content: JSON.stringify(item.content) }) }}</p>
+      <div
+        v-for="(section, index) in sections"
+        :key="section.id"
+        class="section-card"
+        :class="{ active: activeSection === section.id }"
+        :style="{ '--index': index }"
+        @click="$emit('update:activeSection', section.id)"
+      >
+        <div class="section-header">
+          <div class="section-info">
+            <span class="section-icon">{{ getSectionIcon(section.type) }}</span>
+            <span class="section-name">{{ section.title }}</span>
           </div>
-        </template>
-        <!-- 非 CUSTOM 类型：正常显示 -->
-        <div
-          v-else
-          class="section-card"
-          :class="{ active: activeSection === section.id }"
-          :style="{ '--index': index }"
-          @click="$emit('update:activeSection', section.id)"
-        >
-          <div class="section-header">
-            <div class="section-info">
-              <span class="section-icon">{{ getSectionIcon(section.type) }}</span>
-              <span class="section-name">{{ section.title }}</span>
-            </div>
-            <div class="section-score" :class="analyzed ? getScoreClass(section.score) : ''">
-              {{ analyzed ? section.score : '~' }}
-            </div>
-          </div>
-          <p class="section-preview">{{ getSectionPreview(section) }}</p>
-          <div v-if="section.suggestions?.length" class="section-hint" :class="getHighestPriorityClass(section.suggestions)">
-            <span class="hint-icon">{{ getSuggestionIcon(section.suggestions) }}</span>
-            {{ section.suggestions.length }} 条建议
+          <div class="section-score" :class="analyzed ? getScoreClass(section.score) : ''">
+            {{ analyzed ? section.score : '~' }}
           </div>
         </div>
-      </template>
+        <p class="section-preview">{{ getSectionPreview(section) }}</p>
+        <div v-if="section.suggestions?.length" class="section-hint" :class="getHighestPriorityClass(section.suggestions)">
+          <span class="hint-icon">{{ getSuggestionIcon(section.suggestions) }}</span>
+          {{ section.suggestions.length }} 条建议
+        </div>
+      </div>
     </div>
   </section>
 </template>
@@ -87,9 +63,7 @@ defineEmits<{
 const {
   getSectionIcon,
   getSectionPreview,
-  getCustomItemPreview,
-  getScoreClass,
-  getCustomItems
+  getScoreClass
 } = useSectionHelper()
 
 // 根据最高优先级获取图标
