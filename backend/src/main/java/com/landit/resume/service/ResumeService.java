@@ -127,8 +127,8 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
      * @return SectionVO
      */
     private ResumeDetailVO.ResumeSectionVO buildSectionVO(ResumeSection section, List<ResumeSuggestion> suggestions) {
-        SectionType sectionType = SectionType.fromCode(section.getType());
-        String title = sectionType != null ? sectionType.getDescription() : section.getTitle();
+        // 直接使用数据库中存储的 title
+        String title = section.getTitle();
 
         // 转换建议列表为 VO
         List<ResumeDetailVO.ResumeSuggestionItemVO> suggestionVOs = null;
