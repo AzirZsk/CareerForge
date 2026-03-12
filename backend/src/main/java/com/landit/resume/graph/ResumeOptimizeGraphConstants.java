@@ -6,7 +6,7 @@ package com.landit.resume.graph;
  *
  * @author Azir
  */
-public final class ResumeOptimizeGraphConstants {
+public final class ResumeOptimizeGraphConstants extends BaseGraphConstants {
 
     private ResumeOptimizeGraphConstants() {
         // 私有构造函数，防止实例化
@@ -36,12 +36,7 @@ public final class ResumeOptimizeGraphConstants {
      */
     public static final String NODE_OPTIMIZE_SECTION = "optimize_section";
 
-    // ==================== 状态键 - 简历相关 ====================
-
-    /**
-     * 简历内容（JSON格式）
-     */
-    public static final String STATE_RESUME_CONTENT = "resume_content";
+    // ==================== 状态键 - 诊断相关（特有） ====================
 
     // ==================== 状态键 - 诊断相关 ====================
 
@@ -112,29 +107,12 @@ public final class ResumeOptimizeGraphConstants {
      */
     public static final String STATE_IMPROVEMENT_SCORE = "improvement_score";
 
-    // ==================== 状态键 - 流程控制 ====================
-
-    /**
-     * 当前步骤
-     */
-    public static final String STATE_CURRENT_STEP = "current_step";
+    // ==================== 状态键 - 流程控制（特有） ====================
 
     /**
      * 下一个节点
      */
     public static final String STATE_NEXT_NODE = "next_node";
-
-    // ==================== 状态键 - 消息与输出 ====================
-
-    /**
-     * 消息日志
-     */
-    public static final String STATE_MESSAGES = "messages";
-
-    /**
-     * 节点输出（用于SSE）
-     */
-    public static final String STATE_NODE_OUTPUT = "node_output";
 
     /**
      * 最后执行的节点
@@ -188,27 +166,5 @@ public final class ResumeOptimizeGraphConstants {
      * 默认空JSON数组
      */
     public static final String DEFAULT_EMPTY_ARRAY = "[]";
-
-    // ==================== 节点输出字段 ====================
-
-    /**
-     * 节点输出 - 节点名称
-     */
-    public static final String OUTPUT_NODE = "node";
-
-    /**
-     * 节点输出 - 进度
-     */
-    public static final String OUTPUT_PROGRESS = "progress";
-
-    /**
-     * 节点输出 - 消息
-     */
-    public static final String OUTPUT_MESSAGE = "message";
-
-    /**
-     * 节点输出 - 数据
-     */
-    public static final String OUTPUT_DATA = "data";
 
 }

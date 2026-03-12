@@ -16,4 +16,10 @@ public class DeriveResumeRequest {
 
     private String resumeName;
 
+    /**
+     * 职位描述（Job Description），用于定制简历
+     */
+    @NotBlank(message = "职位描述不能为空")
+    private String jobDescription;
+
 }

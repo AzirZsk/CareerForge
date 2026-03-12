@@ -89,6 +89,29 @@ public class OptimizeProgressEvent {
     }
 
     /**
+     * 创建开始事件（简单版本，用于职位适配等场景）
+     *
+     * @param resumeId       简历ID
+     * @param threadId       线程ID
+     * @param targetPosition 目标岗位
+     * @param mode           模式
+     * @return 开始事件
+     */
+    public static OptimizeProgressEvent start(String resumeId, String threadId,
+                                               String targetPosition, String mode) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("resumeId", resumeId);
+        data.put("targetPosition", targetPosition);
+        data.put("mode", mode);
+
+        return new OptimizeProgressEvent("start", "start", 0,
+                "开始处理 - " + targetPosition,
+                threadId,
+                data,
+                System.currentTimeMillis());
+    }
+
+    /**
      * 从节点输出创建进度事件
      *
      * @param nodeId     节点ID

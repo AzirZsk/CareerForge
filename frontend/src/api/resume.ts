@@ -4,6 +4,7 @@
 // =====================================================
 
 import type { ApiResponse, PrimaryResumeVO, ResumeDetail } from '@/types'
+import type { DeriveResumeRequest } from '@/types/resume-tailor'
 
 // API 基础路径
 const API_BASE = '/landit'
@@ -119,4 +120,45 @@ export async function createSectionItem(
     throw new Error(result.message || '新增条目失败')
   }
   return result.data
+}
+
+/**
+ * 派生岗位定制简历
+ * @param sourceResumeId 源简历ID
+ * @param data 派生请求参数
+ */
+export async function deriveResume(
+  sourceResumeId: string,
+  data: DeriveResumeRequest
+): Promise<ResumeDetail> {
+  const response = await fetch(`${API_BASE}/resumes/${sourceResumeId}/derive`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+  const result: ApiResponse<ResumeDetail> = await response.json()
+  if (result.code !== 200) {
+    throw new Error(result.message || '派生简历失败')
+  }
+  return result.data
+}
+
+/**
+ * 创建职位适配 SSE 连接
+ * @param resumeId 简历ID
+ * @param targetPosition 目标职位
+ * @param jobDescription 职位描述
+ * @returns EventSource 实例
+ */
+export function createTailorResumeStream(
+  resumeId: string,
+  targetPosition: string,
+  jobDescription: string
+): EventSource {
+  const params = new URLSearchParams({
+    targetPosition,
+    jobDescription
+  })
+  const url = `${API_BASE}/resumes/${resumeId}/tailor/stream?${params.toString()}`
+  return new EventSource(url)
 }

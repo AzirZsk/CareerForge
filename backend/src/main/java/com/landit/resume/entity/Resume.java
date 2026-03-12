@@ -67,4 +67,9 @@ public class Resume extends BaseEntity {
      */
     private Integer competitivenessScore;
 
+    /**
+     * 职位描述（Job Description）
+     */
+    private String jobDescription;
+
 }

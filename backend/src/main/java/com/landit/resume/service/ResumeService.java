@@ -235,6 +235,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
         derivedResume.setScore(0);
         derivedResume.setCompleteness(0);
         derivedResume.setIsPrimary(false);
+        derivedResume.setJobDescription(request.getJobDescription());
         save(derivedResume);
         return derivedResume;
     }

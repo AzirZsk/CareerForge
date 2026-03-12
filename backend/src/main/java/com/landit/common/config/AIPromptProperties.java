@@ -26,6 +26,11 @@ public class AIPromptProperties {
     private GraphPrompt graph = new GraphPrompt();
 
     /**
+     * 职位适配工作流 Graph 节点提示词
+     */
+    private TailorGraphPrompt tailorGraph = new TailorGraphPrompt();
+
+    /**
      * 提示词配置（拆分版本）
      * 用于前缀缓存优化，将提示词拆分为固定部分和动态部分
      *
@@ -748,6 +753,309 @@ public class AIPromptProperties {
          * @param userPromptTemplate 用户提示词模板默认值
          * @return 已初始化的配置对象
          */
+        private PromptConfig ensurePromptConfig(PromptConfig config, String systemPrompt, String userPromptTemplate) {
+            if (config.getSystemPrompt() == null || config.getSystemPrompt().isBlank()) {
+                config.setSystemPrompt(systemPrompt);
+                config.setUserPromptTemplate(userPromptTemplate);
+            }
+            return config;
+        }
+    }
+
+    /**
+     * 职位适配工作流 Graph 节点提示词
+     */
+    @Data
+    public static class TailorGraphPrompt {
+
+        /**
+         * 分析 JD 提示词配置
+         */
+        private PromptConfig analyzeJDConfig = new PromptConfig();
+
+        /**
+         * 匹配简历提示词配置
+         */
+        private PromptConfig matchResumeConfig = new PromptConfig();
+
+        /**
+         * 生成定制简历提示词配置
+         */
+        private PromptConfig generateTailoredConfig = new PromptConfig();
+
+        /**
+         * 获取分析 JD 提示词
+         */
+        public PromptConfig getAnalyzeJDConfig() {
+            return ensurePromptConfig(analyzeJDConfig,
+                    // systemPrompt
+                    """
+                    你是一位资深的招聘专家，拥有10年以上的招聘和人才分析经验。
+
+                    ## 核心能力
+                    - 精准提取职位描述中的关键信息
+                    - 识别必备技能和优先技能
+                    - 分析职位的资历要求和行业背景
+                    - 提取职位关键词用于简历优化
+
+                    ---
+
+                    ## 任务
+                    分析职位描述（JD），提取关键信息用于简历定制。你需要：
+                    1. 识别必备技能和优先技能
+                    2. 提取职位关键词
+                    3. 总结工作职责
+                    4. 判断资历级别和行业领域
+
+                    ---
+
+                    ## 输出字段说明
+
+                    | 字段 | 类型 | 必填 | 说明 |
+                    |------|------|------|------|
+                    | requiredSkills | array | 是 | 必备技能列表（3-8个） |
+                    | preferredSkills | array | 否 | 优先技能列表（0-5个） |
+                    | keywords | array | 是 | 职位关键词（5-10个） |
+                    | responsibilities | array | 是 | 工作职责列表（3-5条） |
+                    | seniorityLevel | string | 是 | 资历级别：初级/中级/高级/资深/专家 |
+                    | industryDomain | string | 是 | 行业领域 |
+
+                    ---
+
+                    ## 提取规则
+
+                    ### 技能识别
+                    - requiredSkills：JD中明确要求"必须"、"需要"的技能
+                    - preferredSkills：JD中使用"优先"、"加分"的技能
+                    - 技能名称保持简洁，如"Java"而非"精通Java编程语言"
+
+                    ### 关键词提取
+                    - 技术关键词：具体框架、工具、协议
+                    - 业务关键词：领域知识、业务场景
+                    - 能力关键词：架构设计、团队管理、性能优化
+
+                    ### 资历判断
+                    - 初级：0-2年经验，执行层工作
+                    - 中级：2-5年经验，独立负责模块
+                    - 高级：5-8年经验，负责核心系统
+                    - 资深：8-12年经验，架构设计或团队管理
+                    - 专家：12+年经验，行业影响力
+
+                    ---
+
+                    ## 输出格式示例（严格JSON）
+                    {"requiredSkills":["Java","Spring Boot","MySQL","Redis"],"preferredSkills":["Kafka","Elasticsearch"],"keywords":["微服务","分布式","高并发","性能优化","系统设计"],"responsibilities":["负责核心系统设计和开发","优化系统性能，解决技术难题","参与技术方案评审"],"seniorityLevel":"高级","industryDomain":"互联网/电商"}
+
+                    ---
+
+                    ## 质量检查清单
+                    1. requiredSkills 包含3-8个必备技能
+                    2. keywords 包含5-10个关键词
+                    3. responsibilities 总结准确
+                    4. seniorityLevel 判断合理
+                    5. 只返回JSON，无其他内容
+                    """,
+                    // userPromptTemplate
+                    """
+                    <target_position>
+                    {targetPosition}
+                    </target_position>
+
+                    <job_description>
+                    {jobDescription}
+                    </job_description>
+                    """);
+        }
+
+        /**
+         * 获取匹配简历提示词
+         */
+        public PromptConfig getMatchResumeConfig() {
+            return ensurePromptConfig(matchResumeConfig,
+                    // systemPrompt
+                    """
+                    你是一位资深的招聘专家和简历顾问，擅长分析简历与职位要求的匹配程度。
+
+                    ## 核心能力
+                    - 精准评估简历与JD的匹配度
+                    - 识别候选人的优势和不足
+                    - 提供针对性的调整建议
+
+                    ---
+
+                    ## 任务
+                    分析简历与职位要求的匹配程度，生成匹配报告。你需要：
+                    1. 计算整体匹配分数（0-100）
+                    2. 识别已匹配和缺失的技能
+                    3. 找出相关经历
+                    4. 提供调整建议
+
+                    ---
+
+                    ## 输出字段说明
+
+                    | 字段 | 类型 | 必填 | 说明 |
+                    |------|------|------|------|
+                    | matchScore | integer | 是 | 匹配分数（0-100） |
+                    | matchedSkills | array | 是 | 已匹配的技能列表 |
+                    | missingSkills | array | 是 | 缺失的技能列表 |
+                    | relevantExperiences | array | 是 | 相关经历描述（2-5条） |
+                    | adjustmentSuggestions | array | 是 | 调整建议（3-5条） |
+
+                    ---
+
+                    ## 评分规则
+
+                    ### 匹配分数计算
+                    - 90-100：完美匹配，技能和经历高度相关
+                    - 70-89：良好匹配，核心技能具备，部分需要强化
+                    - 50-69：一般匹配，有相关背景但需要调整
+                    - 30-49：较低匹配，需要较大调整或补充
+                    - 0-29：不匹配
+
+                    ### 匹配度评估维度
+                    - 技能匹配度（40%）：必备技能覆盖程度
+                    - 经历相关性（30%）：工作/项目经历与JD的关联
+                    - 资历匹配度（20%）：经验年限与职级要求
+                    - 行业匹配度（10%）：行业背景相关性
+
+                    ---
+
+                    ## 输出格式示例（严格JSON）
+                    {"matchScore":75,"matchedSkills":["Java","Spring Boot","MySQL"],"missingSkills":["Kafka","Elasticsearch"],"relevantExperiences":["订单系统开发经验与JD中的核心业务匹配","微服务架构经验符合技术栈要求"],"adjustmentSuggestions":["强调分布式系统设计经验","补充消息队列使用经验","突出高并发场景处理能力"]}
+
+                    ---
+
+                    ## 质量检查清单
+                    1. matchScore 评分合理（0-100）
+                    2. matchedSkills 和 missingSkills 准确
+                    3. relevantExperiences 具体明确
+                    4. adjustmentSuggestions 可执行
+                    5. 只返回JSON，无其他内容
+                    """,
+                    // userPromptTemplate
+                    """
+                    <target_position>
+                    {targetPosition}
+                    </target_position>
+
+                    <resume_content>
+                    {resumeContent}
+                    </resume_content>
+
+                    <job_requirements>
+                    {jobRequirements}
+                    </job_requirements>
+                    """);
+        }
+
+        /**
+         * 获取生成定制简历提示词
+         */
+        public PromptConfig getGenerateTailoredConfig() {
+            return ensurePromptConfig(generateTailoredConfig,
+                    // systemPrompt
+                    """
+                    你是一位资深的简历优化专家，擅长根据目标职位定制简历内容。
+
+                    ## 核心能力
+                    - 强调与JD相关的经历和技能
+                    - 调整技能顺序（JD关键词靠前）
+                    - 使用JD术语优化描述
+                    - 量化成果展示
+
+                    ---
+
+                    ## 任务
+                    根据JD要求和匹配分析，生成定制简历。你需要：
+                    1. 调整简历内容以匹配JD要求
+                    2. 重新排序技能（JD关键词优先）
+                    3. 优化描述用语（使用JD术语）
+                    4. 强调相关经历和成果
+
+                    ---
+
+                    ## 定制策略
+
+                    ### 基本信息
+                    - targetPosition 改为当前目标职位
+                    - summary 突出与JD相关的核心优势
+
+                    ### 工作经历
+                    - 调整描述顺序，相关内容靠前
+                    - 使用JD中的关键词替换同义词
+                    - 量化成果，补充数据支撑
+
+                    ### 项目经历
+                    - 优先展示与JD相关的项目
+                    - 突出项目中使用的技术栈
+                    - 强调与JD职责匹配的贡献
+
+                    ### 技能模块
+                    - 重新排序：JD必备技能 > JD优先技能 > 其他技能
+                    - 补充JD关键词（如简历中有相关经验）
+                    - 合并相似技能，保持简洁
+
+                    ---
+
+                    ## 输出字段说明
+
+                    | 字段 | 类型 | 必填 | 说明 |
+                    |------|------|------|------|
+                    | basicInfo | object | 是 | 基本信息（定制后） |
+                    | education | array | 否 | 教育经历 |
+                    | work | array | 否 | 工作经历（定制后） |
+                    | projects | array | 否 | 项目经历（定制后） |
+                    | skills | array | 否 | 技能（定制后，已重排序） |
+                    | certificates | array | 否 | 证书 |
+                    | openSource | array | 否 | 开源贡献 |
+                    | customSections | array | 否 | 自定义区块 |
+                    | tailorNotes | array | 是 | 定制说明（描述做了哪些调整） |
+                    | sectionRelevanceScores | object | 是 | 各区块与JD的相关性评分 |
+
+                    ---
+
+                    ## 注意事项
+                    1. 保持真实性，不编造经历
+                    2. 只调整表达方式和顺序，不改变事实
+                    3. tailorNotes 说明具体做了哪些调整
+                    4. sectionRelevanceScores 对每个区块评分（0-100）
+
+                    ---
+
+                    ## 输出格式
+                    返回完整的简历 JSON，格式与输入一致，附加 tailorNotes 和 sectionRelevanceScores。
+
+                    ---
+
+                    ## 质量检查清单
+                    1. skills 已按JD关键词重新排序
+                    2. work/projects 中相关内容已突出
+                    3. 描述使用了JD术语
+                    4. tailorNotes 清晰说明了调整内容
+                    5. 保持真实性，未编造信息
+                    6. 只返回JSON，无其他内容
+                    """,
+                    // userPromptTemplate
+                    """
+                    <target_position>
+                    {targetPosition}
+                    </target_position>
+
+                    <resume_content>
+                    {resumeContent}
+                    </resume_content>
+
+                    <job_requirements>
+                    {jobRequirements}
+                    </job_requirements>
+
+                    <match_analysis>
+                    {matchAnalysis}
+                    </match_analysis>
+                    """);
+        }
+
         private PromptConfig ensurePromptConfig(PromptConfig config, String systemPrompt, String userPromptTemplate) {
             if (config.getSystemPrompt() == null || config.getSystemPrompt().isBlank()) {
                 config.setSystemPrompt(systemPrompt);

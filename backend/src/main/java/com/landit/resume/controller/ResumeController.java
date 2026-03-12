@@ -2,9 +2,11 @@ package com.landit.resume.controller;
 
 import com.landit.common.response.ApiResponse;
 import com.landit.resume.dto.AddSectionRequest;
+import com.landit.resume.dto.DeriveResumeRequest;
 import com.landit.resume.dto.PrimaryResumeVO;
 import com.landit.resume.dto.ResumeDetailVO;
 import com.landit.resume.dto.UpdateSectionRequest;
+import com.landit.resume.entity.Resume;
 import com.landit.resume.handler.ResumeHandler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -68,6 +70,14 @@ public class ResumeController {
             @PathVariable String id,
             @PathVariable String sectionId) {
         return ApiResponse.success(resumeHandler.deleteResumeSection(id, sectionId));
+    }
+
+    @Operation(summary = "派生岗位定制简历")
+    @PostMapping("/{id}/derive")
+    public ApiResponse<Resume> deriveResume(
+            @PathVariable String id,
+            @Valid @RequestBody DeriveResumeRequest request) {
+        return ApiResponse.success(resumeHandler.deriveResume(id, request));
     }
 
 }

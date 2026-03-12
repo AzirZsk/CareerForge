@@ -50,6 +50,11 @@ ALTER TABLE t_resume ADD COLUMN matching_score INTEGER DEFAULT 0;
 ALTER TABLE t_resume ADD COLUMN competitiveness_score INTEGER DEFAULT 0;
 
 -- ----------------------------------------------------------------------------
+-- 简历职位描述字段（用于定制简历）
+-- ----------------------------------------------------------------------------
+ALTER TABLE t_resume ADD COLUMN job_description TEXT;
+
+-- ----------------------------------------------------------------------------
 -- 简历历史版本表
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS t_resume_version (

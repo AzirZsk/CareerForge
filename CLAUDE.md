@@ -199,6 +199,48 @@ npm run preview              # 预览构建结果
 | `optimized_sections` | Replace | 优化后的简历内容 |
 | `messages` | Append | 消息日志 |
 
+### 职位适配工作流 Graph（Resume Tailor Workflow）
+
+职位适配功能基于 **Spring AI Alibaba Agent Framework** 构建状态机工作流：
+
+```
++------------------------------------------------------------------------------+
+|                        TailorResumeGraph                                      |
++------------------------------------------------------------------------------+
+|                                                                              |
+|   START --> AnalyzeJD --> MatchResume --> GenerateTailored --> END          |
+|              (分析JD)     (匹配简历)       (生成定制简历)                      |
+|                                                                              |
++------------------------------------------------------------------------------+
+```
+
+**关键组件：**
+
+| 组件 | 位置 | 职责 |
+|------|------|------|
+| `TailorResumeGraphConfig` | `resume/graph/` | 定义工作流节点、边、状态策略 |
+| `TailorResumeGraphService` | `resume/graph/` | 执行、恢复、状态管理工作流 |
+| `TailorResumeGraphConstants` | `resume/graph/` | 统一管理状态键、节点名称等常量 |
+| `AnalyzeJDNode` | `resume/graph/` | 分析职位描述，提取必备技能、关键词等 |
+| `MatchResumeNode` | `resume/graph/` | 匹配简历与 JD，计算匹配度 |
+| `GenerateTailoredResumeNode` | `resume/graph/` | 根据匹配分析生成定制简历 |
+
+**工作流特性：**
+- **智能定制**：根据 JD 自动调整简历内容
+- **流式执行**：支持 SSE 实时推送节点输出
+- **状态持久化**：MemorySaver 存储工作流状态
+
+**状态键定义：**
+
+| 状态键 | 类型 | 描述 |
+|--------|------|------|
+| `resume_content` | Replace | 简历内容（JSON格式） |
+| `target_position` | Replace | 目标职位 |
+| `job_description` | Replace | 职位描述 |
+| `job_requirements` | Replace | JD 分析结果 |
+| `match_analysis` | Replace | 匹配分析结果 |
+| `tailored_resume` | Replace | 定制简历结果 |
+
 ### 区块类型系统（Section Type System）
 
 简历模块采用**区块类型系统**实现动态简历结构解析：
