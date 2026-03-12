@@ -85,4 +85,28 @@ public class ResumeSuggestionService extends ServiceImpl<ResumeSuggestionMapper,
             default -> "低";
         };
     }
+
+    /**
+     * 根据简历ID查询所有建议
+     *
+     * @param resumeId 简历ID
+     * @return 建议列表
+     */
+    public List<ResumeSuggestion> getSuggestionsByResumeId(String resumeId) {
+        return list(new LambdaQueryWrapper<ResumeSuggestion>()
+                .eq(ResumeSuggestion::getResumeId, resumeId));
+    }
+
+    /**
+     * 按模块ID分组查询建议
+     *
+     * @param resumeId 简历ID
+     * @return 模块ID -> 建议列表的映射
+     */
+    public Map<String, List<ResumeSuggestion>> getSuggestionsGroupedBySection(String resumeId) {
+        List<ResumeSuggestion> suggestions = getSuggestionsByResumeId(resumeId);
+        return suggestions.stream()
+                .filter(s -> s.getSectionId() != null)
+                .collect(Collectors.groupingBy(ResumeSuggestion::getSectionId));
+    }
 }

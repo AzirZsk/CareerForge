@@ -18,6 +18,7 @@ import com.landit.resume.dto.ResumeVersionVO;
 import com.landit.resume.dto.UpdateResumeRequest;
 import com.landit.resume.entity.Resume;
 import com.landit.resume.entity.ResumeSection;
+import com.landit.resume.entity.ResumeSuggestion;
 import com.landit.resume.entity.ResumeVersion;
 import com.landit.resume.mapper.ResumeMapper;
 import com.landit.resume.mapper.ResumeSectionMapper;
@@ -50,6 +51,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
     private final ResumeVersionMapper resumeVersionMapper;
     private final ResumeSectionMapper resumeSectionMapper;
     private final ResumeConvertor resumeConvertor;
+    private final ResumeSuggestionService resumeSuggestionService;
 
     /**
      * 获取主简历
@@ -93,8 +95,14 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
 
         // 查询简历模块列表（非版本快照）
         List<ResumeSection> sections = getResumeSections(id);
+
+        // 获取按模块ID分组的优化建议
+        Map<String, List<ResumeSuggestion>> suggestionsBySection = resumeSuggestionService.getSuggestionsGroupedBySection(id);
+
         // 每种类型一条记录，直接映射
-        vo.setSections(sections.stream().map(this::buildSectionVO).collect(Collectors.toList()));
+        vo.setSections(sections.stream()
+                .map(section -> buildSectionVO(section, suggestionsBySection.get(section.getId())))
+                .collect(Collectors.toList()));
 
         // 设置是否已完成分析
         vo.setAnalyzed(isResumeAnalyzed(resume));
@@ -114,12 +122,21 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
      * 构建单个SectionVO
      * 统一返回 content 字段（JSON 字符串），不再生成 items
      *
-     * @param section 简历模块实体
+     * @param section     简历模块实体
+     * @param suggestions 该模块的优化建议列表（可为null）
      * @return SectionVO
      */
-    private ResumeDetailVO.ResumeSectionVO buildSectionVO(ResumeSection section) {
+    private ResumeDetailVO.ResumeSectionVO buildSectionVO(ResumeSection section, List<ResumeSuggestion> suggestions) {
         SectionType sectionType = SectionType.fromCode(section.getType());
         String title = sectionType != null ? sectionType.getDescription() : section.getTitle();
+
+        // 转换建议列表为 VO
+        List<ResumeDetailVO.ResumeSuggestionItemVO> suggestionVOs = null;
+        if (suggestions != null && !suggestions.isEmpty()) {
+            suggestionVOs = suggestions.stream()
+                    .map(this::toSuggestionItemVO)
+                    .collect(Collectors.toList());
+        }
 
         return ResumeDetailVO.ResumeSectionVO.builder()
             .id(section.getId())
@@ -128,8 +145,25 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
             .title(title)
             .content(section.getContent())
             .score(section.getScore())
-            .suggestions(null)
+            .suggestions(suggestionVOs)
             .build();
+    }
+
+    /**
+     * 将 ResumeSuggestion 实体转换为 ResumeSuggestionItemVO
+     *
+     * @param suggestion 建议实体
+     * @return 建议VO
+     */
+    private ResumeDetailVO.ResumeSuggestionItemVO toSuggestionItemVO(ResumeSuggestion suggestion) {
+        return ResumeDetailVO.ResumeSuggestionItemVO.builder()
+                .id(String.valueOf(suggestion.getId()))
+                .type(suggestion.getType() != null ? suggestion.getType().getValue() : null)
+                .category(suggestion.getCategory())
+                .title(suggestion.getTitle())
+                .description(suggestion.getDescription())
+                .impact(suggestion.getImpact())
+                .build();
     }
 
     /**

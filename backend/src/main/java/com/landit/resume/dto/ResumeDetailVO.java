@@ -100,6 +100,7 @@ public class ResumeDetailVO {
 
     /**
      * 简历建议项VO
+     * 关联到 t_resume_suggestion 表
      */
     @Data
     @Builder
@@ -107,9 +108,35 @@ public class ResumeDetailVO {
     @AllArgsConstructor
     public static class ResumeSuggestionItemVO {
 
+        /**
+         * 建议ID
+         */
+        private String id;
+
+        /**
+         * 建议类型：critical, improvement, enhancement
+         */
         private String type;
 
-        private String content;
+        /**
+         * 建议分类（如：内容完整性、内容丰富度等）
+         */
+        private String category;
+
+        /**
+         * 建议标题
+         */
+        private String title;
+
+        /**
+         * 建议描述（详细说明）
+         */
+        private String description;
+
+        /**
+         * 影响程度：高、中、低
+         */
+        private String impact;
 
     }
 

@@ -50,6 +50,14 @@
 
         <!-- 详情面板 -->
         <section class="detail-panel animate-in" style="--delay: 4">
+          <!-- 优化建议区块（头部） -->
+          <SuggestionsBlock
+            v-if="currentSectionDetail"
+            :suggestions="sectionSuggestions"
+            @apply="handleApplySuggestion"
+            @ignore="handleIgnoreSuggestion"
+          />
+
           <div class="panel-header">
             <h2 class="panel-title">{{ currentSectionDetail?.title }}</h2>
             <div class="panel-actions">
@@ -88,21 +96,6 @@
             @add-item="openAddItemModal"
             @delete-item="deleteItem"
           />
-
-          <!-- 优化建议 -->
-          <div v-if="hasSuggestions" class="suggestions-block">
-            <h4 class="suggestions-title">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-              </svg>
-              优化建议
-            </h4>
-            <div v-for="sug in sectionSuggestions" :key="sug.content" class="suggestion-item" :class="sug.type">
-              <span class="sug-icon">{{ sug.type === 'critical' ? '⚠️' : sug.type === 'improvement' ? '💡' : '✨' }}</span>
-              <p class="sug-text">{{ sug.content }}</p>
-              <button class="apply-sug-btn">应用</button>
-            </div>
-          </div>
         </section>
       </div>
     </div>
@@ -159,6 +152,7 @@ import ResumeHeader from '@/components/resume/ResumeHeader.vue'
 import MetricsSection from '@/components/resume/MetricsSection.vue'
 import SectionList from '@/components/resume/SectionList.vue'
 import SectionContent from '@/components/resume/SectionContent.vue'
+import SuggestionsBlock from '@/components/resume/SuggestionsBlock.vue'
 import { useResumeOptimize } from '@/composables/useResumeOptimize'
 import { useSectionEdit } from '@/composables/useSectionEdit'
 import { useSectionHelper } from '@/composables/useSectionHelper'
@@ -276,9 +270,19 @@ const sectionSuggestions = computed<ResumeSuggestionItem[]>(() => {
   return currentSectionDetail.value?.suggestions ?? []
 })
 
-const hasSuggestions = computed<boolean>(() => {
-  return (currentSectionDetail.value?.suggestions?.length ?? 0) > 0
-})
+// 应用建议（占位实现）
+function handleApplySuggestion(suggestion: ResumeSuggestionItem): void {
+  console.log('应用建议:', suggestion)
+  // TODO: 实现应用建议功能（需要后端 API 支持）
+  alert(`应用建议功能开发中...`)
+}
+
+// 忽略建议（占位实现）
+function handleIgnoreSuggestion(suggestion: ResumeSuggestionItem): void {
+  console.log('忽略建议:', suggestion)
+  // TODO: 实现忽略建议功能（需要后端 API 支持）
+  alert(`忽略建议功能开发中...`)
+}
 
 // 删除确认弹窗消息
 const deleteConfirmMessage = computed<string>(() => {
@@ -462,68 +466,6 @@ async function handleOptimizeComplete(): Promise<void> {
     &:hover {
       background: rgba(248, 113, 113, 0.1);
     }
-  }
-}
-
-// 优化建议
-.suggestions-block {
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: $radius-md;
-  padding: $spacing-lg;
-}
-
-.suggestions-title {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  font-size: $text-base;
-  font-weight: $weight-medium;
-  color: $color-text-primary;
-  margin-bottom: $spacing-lg;
-}
-
-.suggestion-item {
-  display: flex;
-  align-items: flex-start;
-  gap: $spacing-md;
-  padding: $spacing-md;
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: $radius-md;
-  margin-bottom: $spacing-sm;
-  border-left: 3px solid;
-  &.critical {
-    border-color: $color-error;
-  }
-  &.improvement {
-    border-color: $color-warning;
-  }
-  &.enhancement {
-    border-color: $color-info;
-  }
-}
-
-.sug-icon {
-  font-size: $text-lg;
-}
-
-.sug-text {
-  flex: 1;
-  font-size: $text-sm;
-  color: $color-text-secondary;
-  line-height: $leading-relaxed;
-}
-
-.apply-sug-btn {
-  padding: $spacing-xs $spacing-md;
-  background: $color-accent-glow;
-  color: $color-accent;
-  font-size: $text-xs;
-  font-weight: $weight-medium;
-  border-radius: $radius-sm;
-  transition: all $transition-fast;
-  white-space: nowrap;
-  &:hover {
-    background: rgba(212, 168, 83, 0.2);
   }
 }
 

@@ -103,8 +103,12 @@ export const resumeDetail: ResumeDetail = {
       score: 95,
       suggestions: [
         {
+          id: 'sug_work_001',
           type: 'improvement',
-          content: '建议在字节跳动经历中增加具体的项目成果数据，如：DAU提升、用户满意度等量化指标'
+          category: '内容丰富度',
+          title: '增加量化成果',
+          description: '建议在字节跳动经历中增加具体的项目成果数据，如：DAU提升、用户满意度等量化指标',
+          impact: '中'
         }
       ]
     },
@@ -125,8 +129,12 @@ export const resumeDetail: ResumeDetail = {
       score: 88,
       suggestions: [
         {
+          id: 'sug_project_001',
           type: 'enhancement',
-          content: '可以补充技术栈详情，突出技术选型的合理性'
+          category: '技术展示',
+          title: '补充技术栈详情',
+          description: '可以补充技术栈详情，突出技术选型的合理性',
+          impact: '低'
         }
       ]
     },
@@ -166,8 +174,12 @@ export const resumeDetail: ResumeDetail = {
       score: 85,
       suggestions: [
         {
+          id: 'sug_skills_001',
           type: 'enhancement',
-          content: '建议按技能熟练度分级展示，并补充具体应用场景'
+          category: '内容组织',
+          title: '优化技能展示',
+          description: '建议按技能熟练度分级展示，并补充具体应用场景',
+          impact: '低'
         }
       ]
     }

@@ -58,13 +58,9 @@
             </div>
           </div>
           <p class="section-preview">{{ getSectionPreview(section) }}</p>
-          <div v-if="section.suggestions?.length" class="section-hint">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="16" x2="12" y2="12"></line>
-              <line x1="12" y1="8" x2="12.01" y2="8"></line>
-            </svg>
-            {{ section.suggestions.length }} 条优化建议
+          <div v-if="section.suggestions?.length" class="section-hint" :class="getHighestPriorityClass(section.suggestions)">
+            <span class="hint-icon">{{ getSuggestionIcon(section.suggestions) }}</span>
+            {{ section.suggestions.length }} 条建议
           </div>
         </div>
       </template>
@@ -74,7 +70,7 @@
 
 <script setup lang="ts">
 import { useSectionHelper } from '@/composables/useSectionHelper'
-import type { ResumeSection } from '@/types'
+import type { ResumeSection, ResumeSuggestionItem } from '@/types'
 
 defineProps<{
   sections: ResumeSection[]
@@ -95,6 +91,24 @@ const {
   getScoreClass,
   getCustomItems
 } = useSectionHelper()
+
+// 根据最高优先级获取图标
+function getSuggestionIcon(suggestions: ResumeSuggestionItem[]): string {
+  const hasCritical = suggestions.some(s => s.type === 'critical')
+  const hasImprovement = suggestions.some(s => s.type === 'improvement')
+  if (hasCritical) return '⚠️'
+  if (hasImprovement) return '💡'
+  return '✨'
+}
+
+// 根据最高优先级获取样式类
+function getHighestPriorityClass(suggestions: ResumeSuggestionItem[]): string {
+  const hasCritical = suggestions.some(s => s.type === 'critical')
+  const hasImprovement = suggestions.some(s => s.type === 'improvement')
+  if (hasCritical) return 'critical'
+  if (hasImprovement) return 'improvement'
+  return 'enhancement'
+}
 </script>
 
 <style lang="scss" scoped>
@@ -209,7 +223,28 @@ const {
   align-items: center;
   gap: $spacing-xs;
   font-size: $text-xs;
-  color: $color-warning;
+  padding: 2px $spacing-sm;
+  border-radius: $radius-sm;
+  width: fit-content;
+
+  &.critical {
+    background: rgba(248, 113, 113, 0.1);
+    color: $color-error;
+  }
+
+  &.improvement {
+    background: rgba(251, 191, 36, 0.1);
+    color: $color-warning;
+  }
+
+  &.enhancement {
+    background: rgba(96, 165, 250, 0.1);
+    color: $color-info;
+  }
+}
+
+.hint-icon {
+  font-size: 12px;
 }
 
 .animate-in {
