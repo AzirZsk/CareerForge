@@ -24,8 +24,28 @@
           </button>
         </div>
       </div>
-      <p class="exp-position" v-if="item.content.position">{{ item.content.position }}</p>
+      <div class="exp-meta">
+        <span class="exp-position" v-if="item.content.position">{{ item.content.position }}</span>
+        <span class="exp-location" v-if="item.content.location">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+          {{ item.content.location }}
+        </span>
+        <span class="exp-industry" v-if="item.content.industry">{{ item.content.industry }}</span>
+      </div>
       <p class="exp-desc" v-if="item.content.description">{{ item.content.description }}</p>
+      <div v-if="item.content.achievements?.length" class="exp-achievements">
+        <span v-for="a in item.content.achievements" :key="a" class="achievement-tag">{{ a }}</span>
+      </div>
+      <div v-if="item.content.technologies?.length" class="exp-technologies">
+        <span v-for="tech in item.content.technologies" :key="tech" class="tech-tag">{{ tech }}</span>
+      </div>
+      <div v-if="item.content.products?.length" class="exp-products">
+        <span class="products-label">代表产品:</span>
+        <span v-for="p in item.content.products" :key="p" class="product-tag">{{ p }}</span>
+      </div>
     </div>
   </div>
 </template>
@@ -86,10 +106,33 @@ defineEmits<{
   color: $color-text-tertiary;
 }
 
+.exp-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-sm;
+}
+
 .exp-position {
   font-size: $text-sm;
   color: $color-accent;
-  margin-bottom: $spacing-sm;
+}
+
+.exp-location {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+}
+
+.exp-industry {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+  padding: 2px $spacing-sm;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: $radius-sm;
 }
 
 .exp-desc {
@@ -99,6 +142,57 @@ defineEmits<{
   margin-bottom: $spacing-sm;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.exp-achievements {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-sm;
+}
+
+.achievement-tag {
+  width: fit-content;
+  padding: $spacing-xs $spacing-sm;
+  background: $color-success-bg;
+  color: $color-success;
+  font-size: $text-xs;
+  border-radius: $radius-sm;
+}
+
+.exp-technologies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-sm;
+}
+
+.tech-tag {
+  padding: $spacing-xs $spacing-sm;
+  background: rgba(96, 165, 250, 0.1);
+  color: $color-info;
+  font-size: $text-xs;
+  border-radius: $radius-sm;
+}
+
+.exp-products {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-xs;
+}
+
+.products-label {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+}
+
+.product-tag {
+  padding: $spacing-xs $spacing-sm;
+  background: rgba(212, 168, 83, 0.15);
+  color: $color-accent;
+  font-size: $text-xs;
+  border-radius: $radius-sm;
 }
 
 .item-btn {

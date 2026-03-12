@@ -24,9 +24,17 @@
           </button>
         </div>
       </div>
-      <p class="exp-position" v-if="item.content.major || item.content.degree">
-        {{ item.content.degree }}<span v-if="item.content.major"> · {{ item.content.major }}</span>
-      </p>
+      <div class="exp-meta">
+        <span class="exp-degree" v-if="item.content.degree">{{ item.content.degree }}</span>
+        <span class="exp-major" v-if="item.content.major">{{ item.content.major }}</span>
+        <span class="exp-gpa" v-if="item.content.gpa">GPA: {{ item.content.gpa }}</span>
+      </div>
+      <div v-if="item.content.courses?.length" class="exp-courses">
+        <span v-for="course in item.content.courses" :key="course" class="course-tag">{{ course }}</span>
+      </div>
+      <div v-if="item.content.honors?.length" class="exp-honors">
+        <span v-for="honor in item.content.honors" :key="honor" class="honor-tag">{{ honor }}</span>
+      </div>
     </div>
   </div>
 </template>
@@ -87,10 +95,65 @@ defineEmits<{
   color: $color-text-tertiary;
 }
 
-.exp-position {
+.exp-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-sm;
+}
+
+.exp-degree {
   font-size: $text-sm;
   color: $color-accent;
+}
+
+.exp-major {
+  font-size: $text-sm;
+  color: $color-text-secondary;
+  &::before {
+    content: '·';
+    margin-right: $spacing-xs;
+    color: $color-text-tertiary;
+  }
+}
+
+.exp-gpa {
+  font-size: $text-xs;
+  color: $color-success;
+  background: $color-success-bg;
+  padding: 2px $spacing-sm;
+  border-radius: $radius-sm;
+}
+
+.exp-courses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
   margin-bottom: $spacing-sm;
+}
+
+.course-tag {
+  padding: $spacing-xs $spacing-sm;
+  background: rgba(96, 165, 250, 0.1);
+  color: $color-info;
+  font-size: $text-xs;
+  border-radius: $radius-sm;
+}
+
+.exp-honors {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.honor-tag {
+  padding: $spacing-xs $spacing-sm;
+  background: $color-success-bg;
+  color: $color-success;
+  font-size: $text-xs;
+  border-radius: $radius-sm;
+  width: fit-content;
 }
 
 .item-btn {

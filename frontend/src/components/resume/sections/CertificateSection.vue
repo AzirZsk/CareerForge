@@ -7,7 +7,16 @@
   <div class="content-block certificate-block">
     <div class="experience-item" v-for="(item, index) in items" :key="item.id">
       <div class="exp-header">
-        <h4 class="exp-title">{{ item.content.name }}</h4>
+        <h4 class="exp-title">
+          {{ item.content.name }}
+          <a v-if="item.content.url" :href="item.content.url" target="_blank" class="exp-link" title="查看证书">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+          </a>
+        </h4>
         <div class="exp-actions">
           <span class="exp-period" v-if="item.content.date">{{ item.content.date }}</span>
           <button class="item-btn edit" @click="$emit('edit-item', index)" title="编辑">
@@ -23,6 +32,12 @@
             </svg>
           </button>
         </div>
+      </div>
+      <div class="exp-meta">
+        <span class="exp-issuer" v-if="item.content.issuer">{{ item.content.issuer }}</span>
+        <span class="exp-credential" v-if="item.content.credentialId">
+          编号: {{ item.content.credentialId }}
+        </span>
       </div>
     </div>
   </div>
@@ -70,6 +85,9 @@ defineEmits<{
   font-size: $text-base;
   font-weight: $weight-medium;
   color: $color-text-primary;
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
 }
 
 .exp-actions {
@@ -81,6 +99,38 @@ defineEmits<{
 .exp-period {
   font-size: $text-xs;
   color: $color-text-tertiary;
+}
+
+.exp-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-top: $spacing-xs;
+}
+
+.exp-issuer {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+}
+
+.exp-credential {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px $spacing-sm;
+  border-radius: $radius-sm;
+}
+
+.exp-link {
+  display: inline-flex;
+  align-items: center;
+  color: $color-text-tertiary;
+  margin-left: $spacing-xs;
+  transition: color $transition-fast;
+  &:hover {
+    color: $color-accent;
+  }
 }
 
 .item-btn {

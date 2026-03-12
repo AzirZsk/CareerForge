@@ -7,7 +7,16 @@
   <div class="content-block project-block">
     <div class="experience-item" v-for="(item, index) in items" :key="item.id">
       <div class="exp-header">
-        <h4 class="exp-title">{{ item.content.name }}</h4>
+        <h4 class="exp-title">
+          {{ item.content.name }}
+          <a v-if="item.content.url" :href="item.content.url" target="_blank" class="exp-link" title="访问项目">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+          </a>
+        </h4>
         <div class="exp-actions">
           <span class="exp-period" v-if="item.content.period">{{ item.content.period }}</span>
           <button class="item-btn edit" @click="$emit('edit-item', index)" title="编辑">
@@ -26,6 +35,9 @@
       </div>
       <p class="exp-position" v-if="item.content.role">{{ item.content.role }}</p>
       <p class="exp-desc" v-if="item.content.description">{{ item.content.description }}</p>
+      <div v-if="item.content.technologies?.length" class="exp-technologies">
+        <span v-for="tech in item.content.technologies" :key="tech" class="tech-tag">{{ tech }}</span>
+      </div>
       <div v-if="item.content.achievements?.length" class="exp-achievements">
         <span v-for="a in item.content.achievements" :key="a" class="achievement-tag">{{ a }}</span>
       </div>
@@ -76,6 +88,19 @@ defineEmits<{
   font-size: $text-base;
   font-weight: $weight-medium;
   color: $color-text-primary;
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.exp-link {
+  display: inline-flex;
+  align-items: center;
+  color: $color-text-tertiary;
+  transition: color $transition-fast;
+  &:hover {
+    color: $color-accent;
+  }
 }
 
 .exp-actions {
@@ -102,6 +127,21 @@ defineEmits<{
   margin-bottom: $spacing-sm;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.exp-technologies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-sm;
+}
+
+.tech-tag {
+  padding: $spacing-xs $spacing-sm;
+  background: rgba(96, 165, 250, 0.1);
+  color: $color-info;
+  font-size: $text-xs;
+  border-radius: $radius-sm;
 }
 
 .exp-achievements {
