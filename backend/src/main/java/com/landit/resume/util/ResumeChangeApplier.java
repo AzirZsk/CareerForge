@@ -259,28 +259,82 @@ public final class ResumeChangeApplier {
         int index = pathInfo.getArrayIndex();
         String property = pathInfo.getPropertyPath();
 
+        // 尝试将 value 解析为 JSON 对象或数组
+        Object resolvedValue = resolveValueToJsonStructure(value);
+
         if ("added".equals(type)) {
             // 新增：直接添加到数组
-            if (value instanceof Map) {
-                items.add(value);
-            } else if (value instanceof String && property == null) {
+            if (resolvedValue instanceof Map) {
+                items.add(resolvedValue);
+            } else if (resolvedValue instanceof String && property == null) {
+                // 简单字符串值，创建 {name: value} 结构
                 Map<String, Object> contentMap = new LinkedHashMap<>();
-                contentMap.put("name", value);
+                contentMap.put("name", resolvedValue);
                 items.add(contentMap);
             }
         } else if ("removed".equals(type) && index >= 0 && index < items.size()) {
             items.remove(index);
         } else if (index >= 0 && index < items.size()) {
-            // 修改：更新指定索引的元素
+            // 修改场景
             Object item = items.get(index);
-            if (item instanceof Map && property != null) {
-                Map<String, Object> itemMap = (Map<String, Object>) item;
-                applyPropertyChange(itemMap, property, type, value);
+            if (property != null) {
+                // 修改指定属性
+                if (item instanceof Map) {
+                    Map<String, Object> itemMap = (Map<String, Object>) item;
+                    applyPropertyChange(itemMap, property, type, resolvedValue);
+                }
+            } else if (resolvedValue instanceof Map) {
+                // 无属性路径，替换整个元素
+                items.set(index, resolvedValue);
             }
         }
 
         // 修改后将数组序列化回 JSON 字符串
         section.setContent(JsonParseHelper.toJsonString(items));
+    }
+
+    /**
+     * 尝试将值解析为 JSON 结构（Map 或 List）
+     * 如果不是有效的 JSON，返回原值
+     *
+     * @param value 待解析的值
+     * @return 解析后的 Map/List，或原值
+     */
+    private static Object resolveValueToJsonStructure(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Map || value instanceof List) {
+            return value;
+        }
+        if (value instanceof String str) {
+            String trimmed = str.trim();
+            // 快速检查是否可能是 JSON 对象或数组
+            if ((trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+                (trimmed.startsWith("[") && trimmed.endsWith("]"))) {
+                try {
+                    // 先尝试解析为 Map
+                    Map<String, Object> map = JsonParseHelper.parseToMap(trimmed);
+                    if (map != null) {
+                        return map;
+                    }
+                } catch (Exception e) {
+                    // 不是对象，尝试解析为数组
+                    try {
+                        List<Object> list = JsonParseHelper.parseToEntity(
+                            trimmed,
+                            new TypeReference<List<Object>>() {}
+                        );
+                        if (list != null) {
+                            return list;
+                        }
+                    } catch (Exception ignored) {
+                        // 解析失败，返回原值
+                    }
+                }
+            }
+        }
+        return value;
     }
 
     /**

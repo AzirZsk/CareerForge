@@ -135,10 +135,10 @@ class ResumeChangeApplierTest {
             List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
             ResumeDetailVO.ResumeSectionVO skillsSection = findSectionByType(result, "SKILLS");
             assertNotNull(skillsSection);
-            Map<String, Object> content = parseContent(skillsSection.getContent());
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> skills = (List<Map<String, Object>>) content.get("skills");
+            // content 是数组 JSON，直接解析为数组
+            List<Map<String, Object>> skills = parseContentArray(skillsSection.getContent());
             assertFalse(skills.isEmpty());
+            assertEquals("社交媒体运营（精通）", skills.get(0).get("name"));
         }
 
         @Test
@@ -152,10 +152,133 @@ class ResumeChangeApplierTest {
             );
             List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(testSections, changes);
             ResumeDetailVO.ResumeSectionVO skillsSection = findSectionByType(result, "SKILLS");
-            Map<String, Object> content = parseContent(skillsSection.getContent());
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> skills = (List<Map<String, Object>>) content.get("skills");
+            // content 是数组 JSON，直接解析为数组
+            List<Map<String, Object>> skills = parseContentArray(skillsSection.getContent());
             assertTrue(skills.size() >= 3);
+        }
+    }
+
+    @Nested
+    @DisplayName("JSON字符串格式变更测试")
+    class JsonStringChangeTests {
+
+        @Test
+        @DisplayName("修改聚合类型 - 整体替换元素（JSON字符串格式）")
+        void testModifyAggregateSection_ReplaceEntireItem_JsonString() {
+            // 准备数据：创建一个 SKILLS 区块
+            List<Map<String, Object>> skillsItems = new ArrayList<>();
+            Map<String, Object> skill1 = new LinkedHashMap<>();
+            skill1.put("name", "测试技术");
+            skill1.put("description", "自动化测试");
+            skill1.put("level", "熟练");
+            skillsItems.add(skill1);
+
+            ResumeDetailVO.ResumeSectionVO skillsSection = ResumeDetailVO.ResumeSectionVO.builder()
+                    .type("SKILLS")
+                    .title("专业技能")
+                    .content(JsonParseHelper.toJsonString(skillsItems))
+                    .build();
+
+            // 确保 SKILLS 区块存在
+            testSections.removeIf(s -> "SKILLS".equals(s.getType()));
+            testSections.add(skillsSection);
+
+            // 变更：整体替换 skills[0]，值为 JSON 字符串格式
+            String afterValue = "{\"name\":\"测试技术\",\"description\":\"自动化测试框架、兼容性测试、性能测试\",\"level\":\"熟练\",\"category\":\"工具\"}";
+            OptimizeSectionResponse.Change change = createChange(
+                    "modified", "skills[0]", "string",
+                    null, afterValue
+            );
+
+            // 执行
+            List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
+
+            // 验证
+            ResumeDetailVO.ResumeSectionVO resultSection = findSectionByType(result, "SKILLS");
+            List<Map<String, Object>> skills = parseContentArray(resultSection.getContent());
+            assertEquals(1, skills.size());
+            assertEquals("测试技术", skills.get(0).get("name"));
+            assertEquals("自动化测试框架、兼容性测试、性能测试", skills.get(0).get("description"));
+            assertEquals("熟练", skills.get(0).get("level"));
+            assertEquals("工具", skills.get(0).get("category"));
+        }
+
+        @Test
+        @DisplayName("新增聚合类型 - 添加完整对象（JSON字符串格式）")
+        void testAddAggregateSection_AddFullObject_JsonString() {
+            // 准备数据：创建一个 SKILLS 区块
+            List<Map<String, Object>> skillsItems = new ArrayList<>();
+            Map<String, Object> skill1 = new LinkedHashMap<>();
+            skill1.put("name", "Java");
+            skill1.put("description", "后端开发");
+            skill1.put("level", "精通");
+            skillsItems.add(skill1);
+
+            ResumeDetailVO.ResumeSectionVO skillsSection = ResumeDetailVO.ResumeSectionVO.builder()
+                    .type("SKILLS")
+                    .title("专业技能")
+                    .content(JsonParseHelper.toJsonString(skillsItems))
+                    .build();
+
+            // 确保 SKILLS 区块存在
+            testSections.removeIf(s -> "SKILLS".equals(s.getType()));
+            testSections.add(skillsSection);
+
+            // 变更：新增 skills[1]，值为 JSON 字符串格式
+            String afterValue = "{\"name\":\"AutoGen框架\",\"description\":\"Microsoft AutoGen多智能体协作框架\",\"level\":\"了解\",\"category\":\"技术方向\"}";
+            OptimizeSectionResponse.Change change = createChange(
+                    "added", "skills[1]", "string",
+                    null, afterValue
+            );
+
+            // 执行
+            List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
+
+            // 验证
+            ResumeDetailVO.ResumeSectionVO resultSection = findSectionByType(result, "SKILLS");
+            List<Map<String, Object>> skills = parseContentArray(resultSection.getContent());
+            assertEquals(2, skills.size());
+            assertEquals("AutoGen框架", skills.get(1).get("name"));
+            assertEquals("Microsoft AutoGen多智能体协作框架", skills.get(1).get("description"));
+            assertEquals("了解", skills.get(1).get("level"));
+            assertEquals("技术方向", skills.get(1).get("category"));
+        }
+
+        @Test
+        @DisplayName("修改聚合类型 - 普通字段修改不受影响")
+        void testModifyAggregateSection_PropertyChange_StillWorks() {
+            // 准备数据
+            List<Map<String, Object>> skillsItems = new ArrayList<>();
+            Map<String, Object> skill1 = new LinkedHashMap<>();
+            skill1.put("name", "Java");
+            skill1.put("description", "后端开发");
+            skill1.put("level", "了解");
+            skillsItems.add(skill1);
+
+            ResumeDetailVO.ResumeSectionVO skillsSection = ResumeDetailVO.ResumeSectionVO.builder()
+                    .type("SKILLS")
+                    .title("专业技能")
+                    .content(JsonParseHelper.toJsonString(skillsItems))
+                    .build();
+
+            testSections.removeIf(s -> "SKILLS".equals(s.getType()));
+            testSections.add(skillsSection);
+
+            // 变更：只修改 level 属性
+            OptimizeSectionResponse.Change change = createChange(
+                    "modified", "skills[0].level", "string",
+                    "了解", "精通"
+            );
+
+            // 执行
+            List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
+
+            // 验证
+            ResumeDetailVO.ResumeSectionVO resultSection = findSectionByType(result, "SKILLS");
+            List<Map<String, Object>> skills = parseContentArray(resultSection.getContent());
+            assertEquals(1, skills.size());
+            assertEquals("Java", skills.get(0).get("name"));
+            assertEquals("精通", skills.get(0).get("level"));
         }
     }
 
@@ -350,7 +473,7 @@ class ResumeChangeApplierTest {
             ResumeDetailVO.ResumeSectionVO skillsSection = ResumeDetailVO.ResumeSectionVO.builder()
                     .type("SKILLS")
                     .title("专业技能")
-                    .content("{\"skills\":[]}")
+                    .content("[]")  // 聚合类型的 content 是数组 JSON
                     .build();
             testSections.add(skillsSection);
         }
