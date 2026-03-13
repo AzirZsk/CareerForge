@@ -30,6 +30,13 @@ public final class JsonSchemaBuilder {
     }
 
     /**
+     * 创建字符串类型 Schema（无描述）
+     */
+    public static Map<String, Object> stringSchema() {
+        return Map.of("type", "string");
+    }
+
+    /**
      * 创建整数类型 Schema
      */
     public static Map<String, Object> integerSchema(String description) {
@@ -48,6 +55,17 @@ public final class JsonSchemaBuilder {
      */
     public static Map<String, Object> arraySchema(Map<String, Object> items) {
         return Map.of("type", "array", "items", items);
+    }
+
+    /**
+     * 创建数组类型 Schema（含描述）
+     */
+    public static Map<String, Object> arraySchema(Map<String, Object> items, String description) {
+        Map<String, Object> schema = new LinkedHashMap<>();
+        schema.put("type", "array");
+        schema.put("description", description);
+        schema.put("items", items);
+        return Map.copyOf(schema);
     }
 
     /**

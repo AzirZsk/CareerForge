@@ -134,15 +134,15 @@ public final class SchemaGenerator {
         Class<?> itemType = (Class<?>) genericType.getActualTypeArguments()[0];
         // 处理 List<String> 类型
         if (String.class.equals(itemType)) {
-            return JsonSchemaBuilder.arraySchema(JsonSchemaBuilder.stringSchema(description));
+            return JsonSchemaBuilder.arraySchema(JsonSchemaBuilder.stringSchema(), description);
         }
-        // 处理 List<嵌套对象> 类型，传递 description 给 items
+        // 处理 List<嵌套对象> 类型，传递 description 给数组本身
         if (isNestedObject(itemType)) {
-            Map<String, Object> itemSchema = fromClass(itemType, description);
-            return JsonSchemaBuilder.arraySchema(itemSchema);
+            Map<String, Object> itemSchema = fromClass(itemType);
+            return JsonSchemaBuilder.arraySchema(itemSchema, description);
         }
         // 默认返回字符串数组
-        return JsonSchemaBuilder.arraySchema(JsonSchemaBuilder.stringSchema(description));
+        return JsonSchemaBuilder.arraySchema(JsonSchemaBuilder.stringSchema(), description);
     }
 
     /**
