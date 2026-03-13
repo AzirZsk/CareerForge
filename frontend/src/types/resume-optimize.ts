@@ -102,15 +102,23 @@ export interface QuickWinItem {
   example: string
 }
 
+/** 建议类型 */
+export type SuggestionType = 'critical' | 'improvement' | 'enhancement'
+
+/** 影响程度 */
+export type SuggestionImpact = 'high' | 'medium' | 'low'
+
 /** 优化建议项（适配后端实际返回结构） */
 export interface SuggestionItem {
-  priority: 'high' | 'medium' | 'low'
+  type: SuggestionType           // 建议类型：critical/improvement/enhancement
+  impact: SuggestionImpact       // 影响程度：high/medium/low
   category: string
-  position: string  // 后端使用 position 而非 section
+  sectionId: string              // 关联的区块ID
+  position: string               // 位置描述
   title: string
-  current: string
-  suggestion: string
-  impact: string
+  current: string                // 当前问题
+  suggestion: string             // 改进建议
+  value: string                  // 价值说明
 }
 
 /** 生成建议数据 */

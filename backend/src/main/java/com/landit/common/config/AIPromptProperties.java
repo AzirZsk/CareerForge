@@ -643,29 +643,98 @@ public class AIPromptProperties {
 
                     ### 各区块属性列表
 
-                    #### basicInfo 属性
-                    name, gender, birthday, age, phone, email, targetPosition, summary, location, linkedin, github, website
+                    #### basicInfo 属性（单对象）
+                    | 字段 | 类型 | 说明 |
+                    |------|------|------|
+                    | name | string | 姓名 |
+                    | gender | string | 性别：男/女/未知 |
+                    | birthday | string | 出生日期，如 1995-03 或 1995-03-15 |
+                    | age | string | 年龄 |
+                    | phone | string | 联系电话 |
+                    | email | string | 邮箱地址 |
+                    | targetPosition | string | 求职意向/目标岗位 |
+                    | summary | string | 个人简介/自我评价 |
+                    | location | string | 所在地（城市） |
+                    | linkedin | string | LinkedIn 主页链接 |
+                    | github | string | GitHub 主页链接 |
+                    | website | string | 个人网站链接 |
 
-                    #### education 属性
-                    school, degree, major, period, gpa, courses（数组）, honors（数组）
+                    #### education 属性（数组）
+                    | 字段 | 类型 | 说明 |
+                    |------|------|------|
+                    | school | string | 学校名称 |
+                    | degree | string | 学历：本科/硕士/博士/大专/高中/中专/其他 |
+                    | major | string | 专业名称 |
+                    | period | string | 时间段，格式：YYYY.MM-YYYY.MM |
+                    | gpa | string | 绩点（如 3.8/4.0） |
+                    | courses | array | 主修课程列表 |
+                    | honors | array | 校内荣誉列表 |
 
-                    #### work 属性
-                    company, position, period, description, location, achievements（数组）, technologies（数组）, industry, products（数组）
+                    #### work 属性（数组）
+                    | 字段 | 类型 | 说明 |
+                    |------|------|------|
+                    | company | string | 公司名称 |
+                    | position | string | 职位名称 |
+                    | period | string | 时间段 |
+                    | description | string | 工作描述，多行内容用换行符连接 |
+                    | location | string | 工作地点（城市） |
+                    | achievements | array | 工作成果列表 |
+                    | technologies | array | 使用的技术栈 |
+                    | industry | string | 公司行业（如：电商、金融科技、在线教育） |
+                    | products | array | 代表产品列表 |
 
-                    #### projects 属性
-                    name, role, period, description, achievements（数组）, technologies（数组）, url
+                    #### projects 属性（数组）
+                    | 字段 | 类型 | 说明 |
+                    |------|------|------|
+                    | name | string | 项目名称 |
+                    | role | string | 项目角色 |
+                    | period | string | 时间段 |
+                    | description | string | 项目描述 |
+                    | achievements | array | 项目成果/亮点列表 |
+                    | technologies | array | 使用的技术栈 |
+                    | url | string | 项目链接 |
 
-                    #### skills 属性
-                    name, description, level, category
+                    #### skills 属性（数组）
+                    | 字段 | 类型 | 说明 |
+                    |------|------|------|
+                    | name | string | 技能名称 |
+                    | description | string | 技能描述（关键经验、应用场景） |
+                    | level | string | 熟练度：了解/熟悉/熟练/精通 |
+                    | category | string | 技能分类：编程语言/框架/工具/软技能等 |
 
-                    #### certificates 属性
-                    name, date, issuer, credentialId, url
+                    #### certificates 属性（数组）
+                    | 字段 | 类型 | 说明 |
+                    |------|------|------|
+                    | name | string | 证书/荣誉名称 |
+                    | date | string | 获得日期 |
+                    | issuer | string | 颁发机构 |
+                    | credentialId | string | 证书编号 |
+                    | url | string | 证书链接 |
 
-                    #### openSource 属性
-                    projectName, url, role, period, description, achievements（数组）
+                    #### openSource 属性（数组）
+                    | 字段 | 类型 | 说明 |
+                    |------|------|------|
+                    | projectName | string | 项目名称 |
+                    | url | string | 项目地址（GitHub/GitLab等） |
+                    | role | string | 角色：核心贡献者/文档贡献者/Issue贡献者等 |
+                    | period | string | 时间段 |
+                    | description | string | 贡献描述 |
+                    | achievements | array | 贡献成果列表 |
 
-                    #### customSections 属性
-                    title, items（数组，每个 item 包含 name, role, period, description, highlights）
+                    #### customSections 属性（数组）
+                    | 字段 | 类型 | 说明 |
+                    |------|------|------|
+                    | title | string | 区块标题，如"游戏经历"、"志愿者经历" |
+                    | items | array | 内容项列表，每个 item 结构如下 |
+
+                    customSections.items 子项属性：
+                    | 字段 | 类型 | 说明 |
+                    |------|------|------|
+                    | name | string | 内容项名称 |
+                    | role | string | 角色或职位（可选） |
+                    | period | string | 时间段（可选） |
+                    | description | string | 详细描述（可选） |
+                    | highlights | array | 成果或要点列表（可选） |
 
                     ---
 

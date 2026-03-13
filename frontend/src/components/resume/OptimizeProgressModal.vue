@@ -150,13 +150,14 @@
                     <div class="suggestions-list" v-if="item.data.suggestions?.length">
                       <div class="suggestion-item" v-for="(sug, idx) in item.data.suggestions" :key="idx">
                         <div class="sug-header">
-                          <span class="sug-priority" :class="sug.priority">{{ sug.priority }}</span>
+                          <span class="sug-type" :class="sug.type">{{ getSuggestionTypeLabel(sug.type) }}</span>
+                          <span class="sug-impact-badge" :class="sug.impact">{{ getSuggestionImpactLabel(sug.impact) }}</span>
                           <span class="sug-title">{{ sug.title }}</span>
                         </div>
                         <div class="sug-section">位置: {{ sug.position || sug.category }}</div>
                         <div class="sug-current" v-if="sug.current">当前: {{ sug.current }}</div>
                         <div class="sug-suggestion">建议：{{ sug.suggestion }}</div>
-                        <div class="sug-impact" v-if="sug.impact">影响: {{ sug.impact }}</div>
+                        <div class="sug-value" v-if="sug.value">价值: {{ sug.value }}</div>
                       </div>
                     </div>
                     <div class="quickwins-section" v-if="item.data.quickWins?.length">
@@ -398,6 +399,28 @@ function getWeaknessContent(weakness: string | { content: string }): string {
 
 function getWeaknessSeverity(weakness: string | { severity?: string }): string {
   return typeof weakness === 'string' ? 'medium' : (weakness.severity || 'medium')
+}
+
+// 建议类型标签映射
+const SUGGESTION_TYPE_LABELS: Record<string, string> = {
+  critical: '严重',
+  improvement: '改进',
+  enhancement: '优化'
+}
+
+function getSuggestionTypeLabel(type: string): string {
+  return SUGGESTION_TYPE_LABELS[type] || type
+}
+
+// 建议影响程度标签映射
+const SUGGESTION_IMPACT_LABELS: Record<string, string> = {
+  high: '高影响',
+  medium: '中影响',
+  low: '低影响'
+}
+
+function getSuggestionImpactLabel(impact: string): string {
+  return SUGGESTION_IMPACT_LABELS[impact] || impact
 }
 
 // 判断是否为数组
@@ -861,7 +884,47 @@ function isArray(value: unknown): value is string[] {
   border-radius: $radius-sm;
   font-size: $text-xs;
   text-transform: uppercase;
-  
+
+  &.high {
+    background: rgba(248, 113, 113, 0.15);
+    color: $color-error;
+  }
+  &.medium {
+    background: rgba(251, 191, 36, 0.15);
+    color: $color-warning;
+  }
+  &.low {
+    background: rgba(96, 165, 250, 0.15);
+    color: $color-info;
+  }
+}
+
+// 建议类型标签
+.sug-type {
+  padding: 2px 6px;
+  border-radius: $radius-sm;
+  font-size: $text-xs;
+
+  &.critical {
+    background: rgba(248, 113, 113, 0.15);
+    color: $color-error;
+  }
+  &.improvement {
+    background: rgba(251, 191, 36, 0.15);
+    color: $color-warning;
+  }
+  &.enhancement {
+    background: rgba(96, 165, 250, 0.15);
+    color: $color-info;
+  }
+}
+
+// 建议影响程度标签
+.sug-impact-badge {
+  padding: 2px 6px;
+  border-radius: $radius-sm;
+  font-size: $text-xs;
+
   &.high {
     background: rgba(248, 113, 113, 0.15);
     color: $color-error;
@@ -903,6 +966,13 @@ function isArray(value: unknown): value is string[] {
 }
 
 .sug-impact {
+  font-size: $text-xs;
+  color: $color-success;
+  padding-left: $spacing-sm;
+  font-style: italic;
+}
+
+.sug-value {
   font-size: $text-xs;
   color: $color-success;
   padding-left: $spacing-sm;
