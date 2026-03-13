@@ -201,13 +201,36 @@ const {
 
 const isEmpty = computed(() => !props.sections || props.sections.length === 0)
 
+// 区块类型到驼峰命名的映射（与后端 AI 生成的路径格式一致）
+const SECTION_TYPE_TO_CAMEL: Record<string, string> = {
+  BASIC_INFO: 'basicInfo',
+  EDUCATION: 'education',
+  WORK: 'work',
+  PROJECT: 'projects',      // 注意：项目是复数形式
+  SKILLS: 'skills',
+  CERTIFICATE: 'certificates',
+  OPEN_SOURCE: 'openSource',
+  CUSTOM: 'customSections'
+}
+
 // 判断字段是否有变更
 function getChangeClass(sectionType: string, fieldPath: string): string {
   if (!props.changes?.length) return ''
 
-  // 构建完整路径
-  const typePrefix = sectionType.toLowerCase()
-  const fullPath = `${typePrefix}.${fieldPath}`
+  // 使用驼峰命名的区块前缀（与后端 AI 路径格式一致）
+  const typePrefix = SECTION_TYPE_TO_CAMEL[sectionType] || sectionType.toLowerCase()
+
+  // 判断 fieldPath 是否已经包含区块前缀（如 work[0].description）
+  // 如果包含数组索引格式 [n]，说明已经是完整路径
+  let fullPath: string
+  if (fieldPath.includes('[')) {
+    // 已经是完整路径，但可能需要修正区块名称
+    // 例如：project[0] -> projects[0]
+    fullPath = fieldPath
+  } else {
+    // 只是字段名，需要添加区块前缀
+    fullPath = `${typePrefix}.${fieldPath}`
+  }
 
   // 检查是否有匹配的变更
   const hasChange = props.changes.some(change => {
@@ -216,14 +239,17 @@ function getChangeClass(sectionType: string, fieldPath: string): string {
     // 精确匹配
     if (change.field === fullPath || change.field === fieldPath) return true
 
-    // 处理不同的路径格式
-    const normalizedChangeField = change.field
-      .replace(/\[(\d+)\]/g, '[$1]')
-      .toLowerCase()
+    // 尝试修正路径格式后匹配（如 project -> projects）
+    const correctedPath = fullPath.replace(/^project\[/, 'projects[')
+    if (change.field === correctedPath) return true
 
+    // 处理不同的路径格式（统一转为小写比较）
+    const normalizedChangeField = change.field.toLowerCase()
     const normalizedFullPath = fullPath.toLowerCase()
+    const normalizedCorrectedPath = correctedPath.toLowerCase()
 
     return normalizedChangeField === normalizedFullPath ||
+           normalizedChangeField === normalizedCorrectedPath ||
            normalizedChangeField.endsWith('.' + normalizedFullPath)
   })
 
