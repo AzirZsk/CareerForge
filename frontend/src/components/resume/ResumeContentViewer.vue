@@ -18,9 +18,15 @@
           <h3>{{ section.title }}</h3>
           <div class="info-grid">
             <template v-for="{ key, value } in getOrderedBasicInfoFields(parseContent(section.content))" :key="key">
-              <div class="info-item" :class="getChangeClass(section.type, key)">
+              <div
+                class="info-item"
+                :class="[
+                  getChangeClass(section.type, key),
+                  { 'full-width': key === 'summary' }
+                ]"
+              >
                 <span class="info-label">{{ getFieldLabel(key) }}</span>
-                <span class="info-value">{{ value }}</span>
+                <span class="info-value" :class="{ 'summary-text': key === 'summary' }">{{ value }}</span>
               </div>
             </template>
           </div>
@@ -34,8 +40,13 @@
               <span class="exp-title">{{ item.school }}</span>
               <span class="exp-period">{{ item.period }}</span>
             </div>
-            <div class="exp-details">
-              {{ item.degree }}<span v-if="item.major"> · {{ item.major }}</span>
+            <div class="exp-meta">
+              <span class="exp-degree" v-if="item.degree">{{ item.degree }}</span>
+              <span class="exp-major" v-if="item.major">{{ item.major }}</span>
+              <span class="exp-gpa" v-if="item.gpa">GPA: {{ item.gpa }}</span>
+            </div>
+            <div v-if="item.courses?.length" class="exp-courses">
+              <span v-for="course in item.courses" :key="course" class="course-tag">{{ course }}</span>
             </div>
             <div v-if="item.honors?.length" class="exp-honors">
               <span v-for="honor in item.honors" :key="honor" class="honor-tag">{{ honor }}</span>
@@ -51,7 +62,17 @@
               <span class="exp-title">{{ item.company }}</span>
               <span class="exp-period">{{ item.period }}</span>
             </div>
-            <div class="exp-role">{{ item.position }}</div>
+            <div class="exp-meta">
+              <span class="exp-position" v-if="item.position">{{ item.position }}</span>
+              <span class="exp-location" v-if="item.location">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                  <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+                {{ item.location }}
+              </span>
+              <span class="exp-industry" v-if="item.industry">{{ item.industry }}</span>
+            </div>
             <p v-if="item.description" class="exp-description" :class="getChangeClass(section.type, 'work[' + idx + '].description')">
               {{ item.description }}
             </p>
@@ -66,6 +87,13 @@
                 {{ ach }}
               </div>
             </div>
+            <div v-if="item.technologies?.length" class="exp-technologies">
+              <span v-for="tech in item.technologies" :key="tech" class="tech-tag">{{ tech }}</span>
+            </div>
+            <div v-if="item.products?.length" class="exp-products">
+              <span class="products-label">代表产品:</span>
+              <span v-for="p in item.products" :key="p" class="product-tag">{{ p }}</span>
+            </div>
           </div>
         </div>
 
@@ -74,13 +102,25 @@
           <h3>{{ section.title }}</h3>
           <div v-for="(item, idx) in getProjectList(section)" :key="idx" class="experience-item">
             <div class="exp-header">
-              <span class="exp-title">{{ item.name }}</span>
+              <span class="exp-title">
+                {{ item.name }}
+                <a v-if="item.url" :href="item.url" target="_blank" class="exp-link" title="访问项目">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                  </svg>
+                </a>
+              </span>
               <span class="exp-period">{{ item.period }}</span>
             </div>
             <div class="exp-role">{{ item.role }}</div>
             <p v-if="item.description" class="exp-description">
               {{ item.description }}
             </p>
+            <div v-if="item.technologies?.length" class="exp-technologies">
+              <span v-for="tech in item.technologies" :key="tech" class="tech-tag">{{ tech }}</span>
+            </div>
             <div v-if="item.achievements?.length" class="exp-achievements">
               <div
                 v-for="(ach, achIdx) in item.achievements"
@@ -118,10 +158,23 @@
         <div v-else-if="section.type === 'CERTIFICATE'" class="resume-section">
           <h3>{{ section.title }}</h3>
           <div v-for="(item, idx) in getCertificateList(section)" :key="idx" class="certificate-item">
-            <span class="cert-name" :class="getChangeClass(section.type, 'certificate[' + idx + '].name')">
-              {{ item.name }}
-            </span>
-            <span v-if="item.date" class="cert-date">{{ item.date }}</span>
+            <div class="cert-header">
+              <span class="cert-name" :class="getChangeClass(section.type, 'certificate[' + idx + '].name')">
+                {{ item.name }}
+                <a v-if="item.url" :href="item.url" target="_blank" class="cert-link" title="查看证书">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                  </svg>
+                </a>
+              </span>
+              <span v-if="item.date" class="cert-date">{{ item.date }}</span>
+            </div>
+            <div class="cert-meta" v-if="item.issuer || item.credentialId">
+              <span class="cert-issuer" v-if="item.issuer">{{ item.issuer }}</span>
+              <span class="cert-credential" v-if="item.credentialId">编号: {{ item.credentialId }}</span>
+            </div>
           </div>
         </div>
 
@@ -130,12 +183,25 @@
           <h3>{{ section.title }}</h3>
           <div v-for="(item, idx) in getOpenSourceList(section)" :key="idx" class="experience-item">
             <div class="exp-header">
-              <span class="exp-title">{{ item.projectName }}</span>
-              <span class="exp-period">{{ item.url }}</span>
+              <span class="exp-title">
+                {{ item.projectName }}
+                <a v-if="item.url" :href="item.url" target="_blank" class="exp-link" title="访问项目">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                  </svg>
+                </a>
+              </span>
+              <span class="exp-period" v-if="item.period">{{ item.period }}</span>
             </div>
+            <p class="exp-position" v-if="item.role">{{ item.role }}</p>
             <p v-if="item.description" class="exp-description">
               {{ item.description }}
             </p>
+            <div v-if="item.achievements?.length" class="exp-achievements">
+              <span v-for="a in item.achievements" :key="a" class="achievement-tag">{{ a }}</span>
+            </div>
           </div>
         </div>
 
@@ -304,6 +370,10 @@ function getChangeClass(sectionType: string, fieldPath: string): string {
   display: flex;
   flex-direction: column;
   gap: $spacing-xs;
+
+  &.full-width {
+    grid-column: span 2;
+  }
 }
 
 .info-label {
@@ -318,6 +388,14 @@ function getChangeClass(sectionType: string, fieldPath: string): string {
   padding: 2px 4px;
   border-radius: $radius-sm;
   transition: background-color 0.2s;
+
+  &.summary-text {
+    font-weight: $weight-normal;
+    line-height: $leading-relaxed;
+    white-space: pre-wrap;
+    padding: $spacing-sm;
+    background: rgba(255, 255, 255, 0.02);
+  }
 }
 
 .extra-field {
@@ -367,6 +445,20 @@ function getChangeClass(sectionType: string, fieldPath: string): string {
   font-size: $text-base;
   font-weight: $weight-medium;
   color: $color-text-primary;
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.exp-link {
+  display: inline-flex;
+  align-items: center;
+  color: $color-text-tertiary;
+  transition: color $transition-fast;
+
+  &:hover {
+    color: $color-accent;
+  }
 }
 
 .exp-period {
@@ -379,10 +471,129 @@ function getChangeClass(sectionType: string, fieldPath: string): string {
   color: $color-text-secondary;
 }
 
+.exp-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-sm;
+}
+
+.exp-degree {
+  font-size: $text-sm;
+  color: $color-accent;
+}
+
+.exp-major {
+  font-size: $text-sm;
+  color: $color-text-secondary;
+
+  &::before {
+    content: '·';
+    margin-right: $spacing-xs;
+    color: $color-text-tertiary;
+  }
+}
+
+.exp-gpa {
+  font-size: $text-xs;
+  color: $color-success;
+  background: $color-success-bg;
+  padding: 2px $spacing-sm;
+  border-radius: $radius-sm;
+}
+
+.exp-courses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-sm;
+}
+
+.course-tag {
+  padding: $spacing-xs $spacing-sm;
+  background: rgba(96, 165, 250, 0.1);
+  color: $color-info;
+  font-size: $text-xs;
+  border-radius: $radius-sm;
+}
+
+.exp-honors {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.honor-tag {
+  padding: $spacing-xs $spacing-sm;
+  background: $color-success-bg;
+  color: $color-success;
+  font-size: $text-xs;
+  border-radius: $radius-sm;
+  width: fit-content;
+}
+
 .exp-role {
   font-size: $text-sm;
   color: $color-accent;
   margin-bottom: $spacing-sm;
+}
+
+.exp-position {
+  font-size: $text-sm;
+  color: $color-accent;
+  margin-bottom: $spacing-sm;
+}
+
+.exp-location {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+}
+
+.exp-industry {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+  padding: 2px $spacing-sm;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: $radius-sm;
+}
+
+.exp-technologies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-sm;
+}
+
+.tech-tag {
+  padding: $spacing-xs $spacing-sm;
+  background: rgba(96, 165, 250, 0.1);
+  color: $color-info;
+  font-size: $text-xs;
+  border-radius: $radius-sm;
+}
+
+.exp-products {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-xs;
+}
+
+.products-label {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+}
+
+.product-tag {
+  padding: $spacing-xs $spacing-sm;
+  background: rgba(212, 168, 83, 0.15);
+  color: $color-accent;
+  font-size: $text-xs;
+  border-radius: $radius-sm;
 }
 
 .exp-description {
@@ -407,6 +618,15 @@ function getChangeClass(sectionType: string, fieldPath: string): string {
     padding-top: $spacing-sm;
     border-top: 1px dashed rgba(52, 211, 153, 0.2);
   }
+}
+
+.achievement-tag {
+  width: fit-content;
+  padding: $spacing-xs $spacing-sm;
+  background: $color-success-bg;
+  color: $color-success;
+  font-size: $text-xs;
+  border-radius: $radius-sm;
 }
 
 .achievement-item {
@@ -491,10 +711,7 @@ function getChangeClass(sectionType: string, fieldPath: string): string {
 }
 
 .certificate-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: $spacing-sm 0;
+  padding: $spacing-md 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 
   &:last-child {
@@ -502,17 +719,59 @@ function getChangeClass(sectionType: string, fieldPath: string): string {
   }
 }
 
+.cert-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .cert-name {
-  font-size: $text-sm;
+  font-size: $text-base;
+  font-weight: $weight-medium;
   color: $color-text-primary;
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
   padding: 2px 4px;
   border-radius: $radius-sm;
   transition: background-color 0.2s;
 }
 
+.cert-link {
+  display: inline-flex;
+  align-items: center;
+  color: $color-text-tertiary;
+  transition: color $transition-fast;
+
+  &:hover {
+    color: $color-accent;
+  }
+}
+
 .cert-date {
   font-size: $text-xs;
   color: $color-text-tertiary;
+}
+
+.cert-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-top: $spacing-xs;
+}
+
+.cert-issuer {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+}
+
+.cert-credential {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px $spacing-sm;
+  border-radius: $radius-sm;
 }
 
 .raw-content {
