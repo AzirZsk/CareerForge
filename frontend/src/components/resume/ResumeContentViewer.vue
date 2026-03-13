@@ -390,7 +390,7 @@ function getChangeClass(sectionType: string, fieldPath: string): string {
   transition: background-color 0.2s;
 
   &.summary-text {
-    font-weight: $weight-normal;
+    font-weight: $weight-regular;
     line-height: $leading-relaxed;
     white-space: pre-wrap;
     padding: $spacing-sm;
