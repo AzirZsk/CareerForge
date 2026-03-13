@@ -239,10 +239,12 @@
                       <ResumeComparison
                         v-if="item.data.beforeSection?.length || item.data.beforeResume"
                         :before-section="item.data.beforeSection"
-                        :after-section="item.data.afterSection"
+                        :after-section="getDisplayAfterSection(item)"
                         :changes="item.data.changes || []"
                         :improvement-score="item.data.improvementScore"
                         :before-resume="item.data.beforeResume"
+                        :editable="state.isCompleted && item.stage === 'optimize_section'"
+                        @edit-section="handleEditSection"
                       />
                       <div v-else class="no-comparison-data">
                         <p>暂无对比数据</p>
@@ -280,6 +282,13 @@
               </button>
             </template>
             <template v-else-if="state.isCompleted">
+              <button v-if="hasEdits" class="footer-btn secondary" @click="resetEdits">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="1 4 1 10 7 10"></polyline>
+                  <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                </svg>
+                重置
+              </button>
               <button class="footer-btn secondary" @click="handleClose">
                 退出
               </button>
@@ -305,15 +314,25 @@
         </div>
       </div>
     </Transition>
+
+    <!-- 编辑区块弹窗 -->
+    <EditSectionModal
+      v-model:visible="showEditModal"
+      :section="editingSection"
+      :item-index="editingItemIndex ?? undefined"
+      @save="handleEditSave"
+      @cancel="handleEditCancel"
+    />
   </Teleport>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useScrollLock } from '@vueuse/core'
-import type { OptimizeState, OptimizeStage } from '@/types/resume-optimize'
+import type { OptimizeState, OptimizeStage, ResumeSection, ComparisonEditEvent } from '@/types/resume-optimize'
 import { getStageLabel, getDimensionLabel } from '@/types/resume-optimize'
 import ResumeComparison from './ResumeComparison.vue'
+import EditSectionModal from './EditSectionModal.vue'
 
 const props = defineProps<{
   visible: boolean
@@ -340,6 +359,117 @@ const emit = defineEmits<{
   'apply': []
   'toggleExpand': [stage: OptimizeStage]
 }>()
+
+// ==================== 编辑功能 ====================
+
+// 可编辑的 afterSection 副本（优化内容阶段的数据）
+const editedAfterSection = ref<ResumeSection[] | null>(null)
+
+// 原始 afterSection 的深拷贝（用于比较是否有编辑）
+const originalAfterSection = ref<string>('')
+
+// 编辑弹窗状态
+const showEditModal = ref(false)
+const editingSection = ref<ResumeSection | null>(null)
+const editingSectionIndex = ref<number | null>(null)
+const editingItemIndex = ref<number | null>(null)
+
+// 监听 stageHistory 变化，初始化编辑数据
+watch(
+  () => props.state.stageHistory,
+  (history) => {
+    const optimizeStage = history.find(h => h.stage === 'optimize_section')
+    if (optimizeStage?.data?.afterSection) {
+      // 深拷贝数据
+      const afterSectionCopy = JSON.parse(JSON.stringify(optimizeStage.data.afterSection))
+      editedAfterSection.value = afterSectionCopy
+      originalAfterSection.value = JSON.stringify(afterSectionCopy)
+    }
+  },
+  { deep: true, immediate: true }
+)
+
+// 是否有编辑
+const hasEdits = computed(() => {
+  if (!editedAfterSection.value) return false
+  return JSON.stringify(editedAfterSection.value) !== originalAfterSection.value
+})
+
+// 获取当前显示的 afterSection（可能是编辑后的）
+function getDisplayAfterSection(item: { data?: { afterSection?: ResumeSection[] } }): ResumeSection[] | undefined {
+  if (editedAfterSection.value) {
+    return editedAfterSection.value
+  }
+  return item.data?.afterSection
+}
+
+// 处理编辑事件
+function handleEditSection(payload: ComparisonEditEvent) {
+  if (!editedAfterSection.value) return
+
+  editingSectionIndex.value = payload.sectionIndex
+  editingItemIndex.value = payload.itemIndex ?? null
+
+  // 获取要编辑的区块
+  const section = editedAfterSection.value[payload.sectionIndex]
+  if (!section) return
+
+  // 对于聚合类型，需要创建一个虚拟 section 用于编辑单个项
+  if (payload.itemIndex !== undefined) {
+    const items = JSON.parse(section.content || '[]')
+    const item = items[payload.itemIndex]
+    if (item) {
+      // 创建虚拟 section，类型设为 section.type，但 content 只包含单个项
+      editingSection.value = {
+        ...section,
+        content: JSON.stringify(item)
+      }
+    }
+  } else {
+    // 单对象类型，直接使用整个 section
+    editingSection.value = JSON.parse(JSON.stringify(section))
+  }
+
+  showEditModal.value = true
+}
+
+// 保存编辑
+function handleEditSave(data: { content: Record<string, unknown>; itemIndex?: number }) {
+  if (!editedAfterSection.value || editingSectionIndex.value === null) return
+
+  const section = editedAfterSection.value[editingSectionIndex.value]
+
+  if (editingItemIndex.value !== null && editingItemIndex.value !== undefined) {
+    // 更新聚合类型中的特定项
+    const items = JSON.parse(section.content || '[]')
+    items[editingItemIndex.value] = data.content
+    section.content = JSON.stringify(items)
+  } else {
+    // 更新整个内容（单对象类型）
+    section.content = JSON.stringify(data.content)
+  }
+
+  showEditModal.value = false
+  editingSection.value = null
+  editingSectionIndex.value = null
+  editingItemIndex.value = null
+}
+
+// 取消编辑
+function handleEditCancel() {
+  showEditModal.value = false
+  editingSection.value = null
+  editingSectionIndex.value = null
+  editingItemIndex.value = null
+}
+
+// 重置编辑
+function resetEdits() {
+  const optimizeStage = props.state.stageHistory.find(h => h.stage === 'optimize_section')
+  if (optimizeStage?.data?.afterSection) {
+    editedAfterSection.value = JSON.parse(JSON.stringify(optimizeStage.data.afterSection))
+  }
+}
 
 // 头部图标类
 const headerIconClass = computed(() => ({

@@ -3,6 +3,10 @@
 // @author Azir
 // =====================================================
 
+// 从主类型文件导入并重新导出
+import type { ResumeSection } from './index'
+export type { ResumeSection }
+
 // ==================== SSE 事件类型 ====================
 
 /** SSE 事件类型 */
@@ -176,8 +180,8 @@ export type ResumeSectionType =
   | 'CERTIFICATE'
   | 'OPEN_SOURCE'
 
-/** 简历区块 - 统一使用 content 字段 */
-export interface ResumeSection {
+/** 简历区块（优化流程专用）- 统一使用 content 字段 */
+export interface OptimizeResumeSection {
   id: string
   resumeId: string
   type: ResumeSectionType
@@ -295,4 +299,24 @@ export function getStageLabel(stage: OptimizeStage): string {
 /** 获取维度标签 */
 export function getDimensionLabel(key: string): string {
   return DIMENSION_LABELS[key] || key
+}
+
+// ==================== 对比视图编辑类型 ====================
+
+/** 对比视图区块编辑事件 */
+export interface ComparisonEditEvent {
+  /** 在 afterSection 数组中的索引 */
+  sectionIndex: number
+  /** 被编辑的区块（使用通用 ResumeSection 类型，避免循环依赖） */
+  section: {
+    id: string
+    resumeId: string
+    type: string
+    title: string
+    content: string | null
+    score: number
+    suggestions: unknown[] | null
+  }
+  /** 聚合类型：在 content 数组中的索引 */
+  itemIndex?: number
 }

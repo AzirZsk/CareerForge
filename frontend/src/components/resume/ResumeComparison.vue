@@ -38,6 +38,8 @@
           :sections="afterSection"
           side="after"
           :changes="changes"
+          :editable="editable"
+          @edit="handleEdit"
         />
         <div v-else class="empty-state">
           <p>暂无对比数据</p>
@@ -50,7 +52,7 @@
 <script setup lang="ts">
 import ResumeContentViewer from './ResumeContentViewer.vue'
 import type { ResumeSection } from '@/types'
-import type { ChangeItem } from '@/types/resume-optimize'
+import type { ChangeItem, ComparisonEditEvent } from '@/types/resume-optimize'
 
 interface Props {
   /** 优化前的区块数据（新格式） */
@@ -63,9 +65,23 @@ interface Props {
   improvementScore?: number
   /** 兼容旧格式 */
   beforeResume?: Record<string, unknown>
+  /** 是否可编辑 */
+  editable?: boolean
 }
 
-defineProps<Props>()
+withDefaults(defineProps<Props>(), {
+  editable: false
+})
+
+const emit = defineEmits<{
+  /** 编辑区块事件 */
+  (e: 'edit-section', payload: ComparisonEditEvent): void
+}>()
+
+// 向上传递编辑事件
+function handleEdit(payload: ComparisonEditEvent) {
+  emit('edit-section', payload)
+}
 </script>
 
 <style lang="scss" scoped>

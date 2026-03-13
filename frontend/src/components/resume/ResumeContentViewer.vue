@@ -12,10 +12,18 @@
     </div>
 
     <div v-else class="resume-content">
-      <template v-for="section in sections" :key="section.id">
+      <template v-for="(section, sectionIdx) in sections" :key="section.id">
         <!-- 基本信息 -->
-        <div v-if="section.type === 'BASIC_INFO'" class="resume-section basic-info-section">
-          <h3>{{ section.title }}</h3>
+        <div v-if="section.type === 'BASIC_INFO'" class="resume-section basic-info-section" :class="{ editable: showEdit }">
+          <div class="section-header">
+            <h3>{{ section.title }}</h3>
+            <button v-if="showEdit" class="section-edit-btn" @click="handleEditSection(sectionIdx)" title="编辑">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </button>
+          </div>
           <div class="info-grid">
             <template v-for="{ key, value } in getOrderedBasicInfoFields(parseContent(section.content))" :key="key">
               <div
@@ -33,9 +41,15 @@
         </div>
 
         <!-- 教育经历 -->
-        <div v-else-if="section.type === 'EDUCATION'" class="resume-section">
+        <div v-else-if="section.type === 'EDUCATION'" class="resume-section" :class="{ editable: showEdit }">
           <h3>{{ section.title }}</h3>
-          <div v-for="(item, idx) in getEducationList(section)" :key="idx" class="experience-item">
+          <div v-for="(item, idx) in getEducationList(section)" :key="idx" class="experience-item" :class="{ 'has-edit-btn': showEdit }">
+            <button v-if="showEdit" class="item-edit-btn" @click="handleEditSection(sectionIdx, idx)" title="编辑">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </button>
             <div class="exp-header">
               <span class="exp-title">{{ item.school }}</span>
               <span class="exp-period">{{ item.period }}</span>
@@ -55,9 +69,15 @@
         </div>
 
         <!-- 工作经历 -->
-        <div v-else-if="section.type === 'WORK'" class="resume-section">
+        <div v-else-if="section.type === 'WORK'" class="resume-section" :class="{ editable: showEdit }">
           <h3>{{ section.title }}</h3>
-          <div v-for="(item, idx) in getWorkList(section)" :key="idx" class="experience-item">
+          <div v-for="(item, idx) in getWorkList(section)" :key="idx" class="experience-item" :class="{ 'has-edit-btn': showEdit }">
+            <button v-if="showEdit" class="item-edit-btn" @click="handleEditSection(sectionIdx, idx)" title="编辑">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </button>
             <div class="exp-header">
               <span class="exp-title">{{ item.company }}</span>
               <span class="exp-period">{{ item.period }}</span>
@@ -98,9 +118,15 @@
         </div>
 
         <!-- 项目经历 -->
-        <div v-else-if="section.type === 'PROJECT'" class="resume-section">
+        <div v-else-if="section.type === 'PROJECT'" class="resume-section" :class="{ editable: showEdit }">
           <h3>{{ section.title }}</h3>
-          <div v-for="(item, idx) in getProjectList(section)" :key="idx" class="experience-item">
+          <div v-for="(item, idx) in getProjectList(section)" :key="idx" class="experience-item" :class="{ 'has-edit-btn': showEdit }">
+            <button v-if="showEdit" class="item-edit-btn" @click="handleEditSection(sectionIdx, idx)" title="编辑">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </button>
             <div class="exp-header">
               <span class="exp-title">
                 {{ item.name }}
@@ -135,15 +161,21 @@
         </div>
 
         <!-- 专业技能 -->
-        <div v-else-if="section.type === 'SKILLS'" class="resume-section">
+        <div v-else-if="section.type === 'SKILLS'" class="resume-section" :class="{ editable: showEdit }">
           <h3>{{ section.title }}</h3>
           <div class="skills-container">
             <div
               v-for="(skill, idx) in getSkillsList(section)"
               :key="idx"
               class="skill-item"
-              :class="getChangeClass(section.type, 'skills[' + idx + ']')"
+              :class="[getChangeClass(section.type, 'skills[' + idx + ']'), { 'has-edit-btn': showEdit }]"
             >
+              <button v-if="showEdit" class="item-edit-btn" @click="handleEditSection(sectionIdx, idx)" title="编辑">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+              </button>
               <div class="skill-header">
                 <span class="skill-name">{{ skill.name }}</span>
                 <span v-if="skill.level" class="skill-level">{{ skill.level }}</span>
@@ -155,9 +187,15 @@
         </div>
 
         <!-- 证书荣誉 -->
-        <div v-else-if="section.type === 'CERTIFICATE'" class="resume-section">
+        <div v-else-if="section.type === 'CERTIFICATE'" class="resume-section" :class="{ editable: showEdit }">
           <h3>{{ section.title }}</h3>
-          <div v-for="(item, idx) in getCertificateList(section)" :key="idx" class="certificate-item">
+          <div v-for="(item, idx) in getCertificateList(section)" :key="idx" class="certificate-item" :class="{ 'has-edit-btn': showEdit }">
+            <button v-if="showEdit" class="item-edit-btn" @click="handleEditSection(sectionIdx, idx)" title="编辑">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </button>
             <div class="cert-header">
               <span class="cert-name" :class="getChangeClass(section.type, 'certificate[' + idx + '].name')">
                 {{ item.name }}
@@ -179,9 +217,15 @@
         </div>
 
         <!-- 开源贡献 -->
-        <div v-else-if="section.type === 'OPEN_SOURCE'" class="resume-section">
+        <div v-else-if="section.type === 'OPEN_SOURCE'" class="resume-section" :class="{ editable: showEdit }">
           <h3>{{ section.title }}</h3>
-          <div v-for="(item, idx) in getOpenSourceList(section)" :key="idx" class="experience-item">
+          <div v-for="(item, idx) in getOpenSourceList(section)" :key="idx" class="experience-item" :class="{ 'has-edit-btn': showEdit }">
+            <button v-if="showEdit" class="item-edit-btn" @click="handleEditSection(sectionIdx, idx)" title="编辑">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </button>
             <div class="exp-header">
               <span class="exp-title">
                 {{ item.projectName }}
@@ -206,9 +250,15 @@
         </div>
 
         <!-- 自定义区块（扁平结构：ContentItem[]） -->
-        <div v-else-if="section.type === 'CUSTOM'" class="resume-section">
+        <div v-else-if="section.type === 'CUSTOM'" class="resume-section" :class="{ editable: showEdit }">
           <h3>{{ section.title }}</h3>
-          <div v-for="(item, itemIdx) in getCustomList(section)" :key="itemIdx" class="experience-item">
+          <div v-for="(item, itemIdx) in getCustomList(section)" :key="itemIdx" class="experience-item" :class="{ 'has-edit-btn': showEdit }">
+            <button v-if="showEdit" class="item-edit-btn" @click="handleEditSection(sectionIdx, itemIdx)" title="编辑">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </button>
             <div class="exp-header">
               <span class="exp-title">{{ item.name }}</span>
               <span v-if="item.period" class="exp-period">{{ item.period }}</span>
@@ -241,16 +291,25 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { ResumeSection } from '@/types'
-import type { ChangeItem } from '@/types/resume-optimize'
+import type { ChangeItem, ComparisonEditEvent } from '@/types/resume-optimize'
 import { useSectionHelper } from '@/composables/useSectionHelper'
 
 interface Props {
   sections: ResumeSection[]
   side: 'before' | 'after'
   changes?: ChangeItem[]
+  /** 是否可编辑（仅对 after 侧生效） */
+  editable?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  editable: false
+})
+
+const emit = defineEmits<{
+  /** 编辑事件 */
+  (e: 'edit', payload: ComparisonEditEvent): void
+}>()
 
 const {
   parseContent,
@@ -265,7 +324,21 @@ const {
   getOrderedBasicInfoFields
 } = useSectionHelper()
 
+// 是否显示编辑功能（仅 after 侧且 editable 为 true）
+const showEdit = computed(() => props.editable && props.side === 'after')
+
 const isEmpty = computed(() => !props.sections || props.sections.length === 0)
+
+// 处理编辑区块
+function handleEditSection(sectionIndex: number, itemIndex?: number) {
+  if (!showEdit.value || !props.sections[sectionIndex]) return
+
+  emit('edit', {
+    sectionIndex,
+    section: props.sections[sectionIndex],
+    itemIndex
+  })
+}
 
 // 区块类型到驼峰命名的映射（与后端 AI 生成的路径格式一致）
 const SECTION_TYPE_TO_CAMEL: Record<string, string> = {
@@ -357,6 +430,87 @@ function getChangeClass(sectionType: string, fieldPath: string): string {
     margin-bottom: $spacing-md;
     padding-bottom: $spacing-sm;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  // 区块头部（带编辑按钮）
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: $spacing-md;
+    padding-bottom: $spacing-sm;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+    h3 {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+  }
+
+  // 区块编辑按钮（基本信息）
+  .section-edit-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: $radius-sm;
+    color: $color-text-tertiary;
+    background: rgba(255, 255, 255, 0.05);
+    transition: all $transition-fast;
+
+    &:hover {
+      background: rgba(212, 168, 83, 0.15);
+      color: $color-accent;
+    }
+  }
+}
+
+// 可编辑状态下的区块
+.resume-section.editable {
+  .experience-item,
+  .skill-item,
+  .certificate-item {
+    position: relative;
+  }
+}
+
+// 带编辑按钮的项目
+.experience-item.has-edit-btn,
+.skill-item.has-edit-btn,
+.certificate-item.has-edit-btn {
+  position: relative;
+  padding-right: $spacing-xl;
+
+  &:hover {
+    .item-edit-btn {
+      opacity: 1;
+    }
+  }
+}
+
+// 项目编辑按钮（聚合类型）
+.item-edit-btn {
+  position: absolute;
+  top: $spacing-sm;
+  right: $spacing-sm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: $radius-sm;
+  color: $color-text-tertiary;
+  background: rgba(255, 255, 255, 0.05);
+  opacity: 0;
+  transition: all $transition-fast;
+  z-index: 1;
+
+  &:hover {
+    background: rgba(212, 168, 83, 0.15);
+    color: $color-accent;
+    opacity: 1;
   }
 }
 
