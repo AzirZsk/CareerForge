@@ -163,7 +163,6 @@ watch(
         return
       }
       // 聚合类型（包括 CUSTOM）：根据 itemIndex 找到对应的 item
-      // CUSTOM 类型现在也是扁平的 ContentItem[] 数组
       if (newSection.content && newItemIndex !== null && newItemIndex !== undefined) {
         // 从 content 解析数组
         const items = parseAggregatedContent(newSection)
@@ -172,7 +171,17 @@ watch(
           const item = items[newItemIndex]
           // 去除 id 字段，只保留内容
           const { id, ...content } = item as Record<string, unknown>
-          formData.value = JSON.parse(JSON.stringify(content))
+
+          // CUSTOM 类型需要包装成 { title, items: [content] } 格式
+          // 因为 ExperienceForm 的 initData 期望这种结构
+          if (sectionType.value === 'CUSTOM') {
+            formData.value = {
+              title: newSection.title || '',
+              items: [JSON.parse(JSON.stringify(content))]
+            }
+          } else {
+            formData.value = JSON.parse(JSON.stringify(content))
+          }
           return
         }
       }
@@ -191,8 +200,18 @@ function handleCancel(): void {
 
 // 保存
 function handleSave(): void {
+  // CUSTOM 类型：从 items 数组中提取单个 item
+  // ExperienceForm 返回的是 { title, items: [...] } 格式，需要提取 items[0]
+  let contentToSave = formData.value
+  if (sectionType.value === 'CUSTOM' && formData.value.items) {
+    const { items } = formData.value
+    if (Array.isArray(items) && items.length > 0) {
+      contentToSave = items[0] as Record<string, unknown>
+    }
+  }
+
   emit('save', {
-    content: formData.value,
+    content: contentToSave,
     itemIndex: props.itemIndex ?? undefined,
     isNew: props.isNew
   })
