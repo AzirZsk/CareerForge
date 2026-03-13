@@ -1,0 +1,256 @@
+<!--=====================================================
+  LandIt 自定义区块内容项表单
+  用于添加/编辑自定义区块的单个内容项（不含区块标题）
+  @author Azir
+=====================================================-->
+
+<template>
+  <div class="custom-item-form">
+    <div class="form-group">
+      <label class="form-label required">名称</label>
+      <input
+        v-model="localData.name"
+        type="text"
+        class="form-input"
+        placeholder="请输入名称"
+      />
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">角色/职位</label>
+        <input
+          v-model="localData.role"
+          type="text"
+          class="form-input"
+          placeholder="请输入角色或职位"
+        />
+      </div>
+      <div class="form-group">
+        <label class="form-label">时间段</label>
+        <input
+          v-model="localData.period"
+          type="text"
+          class="form-input"
+          placeholder="例如：2023.01 - 2023.06"
+        />
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">详细描述</label>
+      <textarea
+        v-model="localData.description"
+        class="form-textarea"
+        rows="3"
+        placeholder="请输入详细描述"
+      ></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">成果/要点</label>
+      <div class="highlights-input">
+        <div
+          v-for="(_, hIndex) in localHighlights"
+          :key="hIndex"
+          class="highlight-item"
+        >
+          <input
+            v-model="localHighlights[hIndex]"
+            type="text"
+            class="form-input"
+            placeholder="请输入成果或要点"
+          />
+          <button class="remove-btn" @click="removeHighlight(hIndex)" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <button class="add-highlight-btn" @click="addHighlight" type="button">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          添加要点
+        </button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, watch } from 'vue'
+
+interface Props {
+  modelValue: Record<string, unknown>
+}
+
+interface Emits {
+  (e: 'update:modelValue', value: Record<string, unknown>): void
+}
+
+const props = defineProps<Props>()
+const emit = defineEmits<Emits>()
+
+// 本地数据
+const localData = ref<Record<string, string>>({})
+const localHighlights = ref<string[]>([])
+
+// 初始化数据
+function initData(): void {
+  const data: Record<string, string> = {}
+  for (const [key, value] of Object.entries(props.modelValue)) {
+    // 排除 highlights 数组
+    if (key !== 'highlights' && typeof value === 'string') {
+      data[key] = value
+    }
+  }
+  localData.value = data
+
+  // 处理 highlights 数组
+  const highlights = props.modelValue?.highlights
+  localHighlights.value = Array.isArray(highlights) ? [...highlights] : []
+}
+
+// 标记是否正在同步，避免无限循环
+let isSyncing = false
+
+// 监听外部变化
+watch(
+  () => props.modelValue,
+  () => {
+    if (!isSyncing) {
+      initData()
+    }
+  },
+  { immediate: true, deep: true }
+)
+
+// 监听本地数据变化，同步到父组件
+watch(
+  [localData, localHighlights],
+  () => {
+    const data: Record<string, unknown> = {
+      ...localData.value,
+      highlights: localHighlights.value.filter((h) => h.trim())
+    }
+    isSyncing = true
+    emit('update:modelValue', data)
+    // 使用 nextTick 确保 Vue 完成更新后再重置标志
+    setTimeout(() => {
+      isSyncing = false
+    }, 0)
+  },
+  { deep: true }
+)
+
+// 添加要点
+function addHighlight(): void {
+  localHighlights.value.push('')
+}
+
+// 删除要点
+function removeHighlight(index: number): void {
+  localHighlights.value.splice(index, 1)
+}
+</script>
+
+<style lang="scss" scoped>
+.custom-item-form {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $spacing-lg;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.form-label {
+  font-size: $text-sm;
+  font-weight: $weight-medium;
+  color: $color-text-secondary;
+  &.required::after {
+    content: '*';
+    color: $color-error;
+    margin-left: 4px;
+  }
+}
+
+.form-input,
+.form-textarea {
+  padding: $spacing-sm $spacing-md;
+  font-size: $text-sm;
+  font-family: $font-body;
+  color: $color-text-primary;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: $radius-sm;
+  transition: all $transition-fast;
+  &:focus {
+    outline: none;
+    border-color: $color-accent;
+    background: rgba(255, 255, 255, 0.05);
+  }
+  &::placeholder {
+    color: $color-text-tertiary;
+  }
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.highlights-input {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.highlight-item {
+  display: flex;
+  gap: $spacing-sm;
+  .form-input {
+    flex: 1;
+  }
+}
+
+.remove-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $color-text-tertiary;
+  border-radius: $radius-sm;
+  transition: all $transition-fast;
+  &:hover {
+    background: rgba(248, 113, 113, 0.1);
+    color: $color-error;
+  }
+}
+
+.add-highlight-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-xs $spacing-sm;
+  font-size: $text-xs;
+  color: $color-accent;
+  background: transparent;
+  border-radius: $radius-sm;
+  transition: all $transition-fast;
+  align-self: flex-start;
+  &:hover {
+    background: $color-accent-glow;
+  }
+}
+</style>

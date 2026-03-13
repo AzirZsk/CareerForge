@@ -29,7 +29,12 @@
               v-else-if="sectionType === 'SKILLS'"
               v-model="formData"
             />
-            <!-- 经历类（教育/工作/项目/证书） -->
+            <!-- 自定义区块内容项（添加/编辑模式） -->
+            <CustomItemForm
+              v-else-if="sectionType === 'CUSTOM' && isCustomItemMode"
+              v-model="formData"
+            />
+            <!-- 其他经历类（教育/工作/项目/证书/开源贡献/新建自定义区块） -->
             <ExperienceForm
               v-else
               v-model="formData"
@@ -53,6 +58,7 @@ import { ref, computed, watch, onUnmounted } from 'vue'
 import BasicInfoForm from './forms/BasicInfoForm.vue'
 import SkillsForm from './forms/SkillsForm.vue'
 import ExperienceForm from './forms/ExperienceForm.vue'
+import CustomItemForm from './forms/CustomItemForm.vue'
 import type { ResumeSection } from '@/types'
 import { useSectionHelper } from '@/composables/useSectionHelper'
 
@@ -94,6 +100,23 @@ const sectionType = computed(() => {
 // 是否为聚合类型
 const isAggregate = computed(() => {
   return isAggregateType(sectionType.value)
+})
+
+// 判断是否为自定义区块内容项模式（添加或编辑单个内容项）
+const isCustomItemMode = computed<boolean>(() => {
+  // 只处理 CUSTOM 类型
+  if (sectionType.value !== 'CUSTOM') return false
+
+  // 如果 section 的原始类型是 CUSTOM_ITEM，说明是内容项模式
+  if (props.section?.type === 'CUSTOM_ITEM') return true
+
+  // 新建整个区块时（isNew=true 但 itemIndex=null），使用 ExperienceForm
+  if (props.isNew && (props.itemIndex === null || props.itemIndex === undefined)) {
+    return false
+  }
+
+  // 其他情况（添加/编辑内容项）使用 CustomItemForm
+  return true
 })
 
 // 弹窗标题
@@ -200,10 +223,14 @@ function handleCancel(): void {
 
 // 保存
 function handleSave(): void {
-  // CUSTOM 类型：从 items 数组中提取单个 item
-  // ExperienceForm 返回的是 { title, items: [...] } 格式，需要提取 items[0]
   let contentToSave = formData.value
-  if (sectionType.value === 'CUSTOM' && formData.value.items) {
+
+  // CUSTOM 类型且使用 CustomItemForm 时，数据直接就是内容项
+  if (sectionType.value === 'CUSTOM' && isCustomItemMode.value) {
+    // 数据已经是正确的格式，无需转换
+    contentToSave = formData.value
+  } else if (sectionType.value === 'CUSTOM' && formData.value.items) {
+    // 新建自定义区块模式：从 items 数组中提取
     const { items } = formData.value
     if (Array.isArray(items) && items.length > 0) {
       contentToSave = items[0] as Record<string, unknown>
