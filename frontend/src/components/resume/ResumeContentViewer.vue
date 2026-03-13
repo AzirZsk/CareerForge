@@ -139,32 +139,27 @@
           </div>
         </div>
 
-        <!-- 自定义区块 -->
+        <!-- 自定义区块（扁平结构：ContentItem[]） -->
         <div v-else-if="section.type === 'CUSTOM'" class="resume-section">
           <h3>{{ section.title }}</h3>
-          <template v-for="(customBlock, blockIdx) in getCustomList(section)" :key="blockIdx">
-            <div v-if="customBlock.items?.length" class="custom-block">
-              <div v-if="customBlock.title" class="custom-block-title">{{ customBlock.title }}</div>
-              <div v-for="(item, itemIdx) in customBlock.items" :key="itemIdx" class="experience-item">
-                <div class="exp-header">
-                  <span class="exp-title">{{ item.name }}</span>
-                  <span v-if="item.period" class="exp-period">{{ item.period }}</span>
-                </div>
-                <div v-if="item.role" class="exp-role">{{ item.role }}</div>
-                <p v-if="item.description" class="exp-description">{{ item.description }}</p>
-                <div v-if="item.highlights?.length" class="exp-achievements">
-                  <div
-                    v-for="(highlight, hIdx) in item.highlights"
-                    :key="hIdx"
-                    class="achievement-item"
-                    :class="getChangeClass(section.type, `custom[${blockIdx}].items[${itemIdx}].highlights[${hIdx}]`)"
-                  >
-                    {{ highlight }}
-                  </div>
-                </div>
+          <div v-for="(item, itemIdx) in getCustomList(section)" :key="itemIdx" class="experience-item">
+            <div class="exp-header">
+              <span class="exp-title">{{ item.name }}</span>
+              <span v-if="item.period" class="exp-period">{{ item.period }}</span>
+            </div>
+            <div v-if="item.role" class="exp-role">{{ item.role }}</div>
+            <p v-if="item.description" class="exp-description">{{ item.description }}</p>
+            <div v-if="item.highlights?.length" class="exp-achievements">
+              <div
+                v-for="(highlight, hIdx) in item.highlights"
+                :key="hIdx"
+                class="achievement-item"
+                :class="getChangeClass(section.type, `custom[${itemIdx}].highlights[${hIdx}]`)"
+              >
+                {{ highlight }}
               </div>
             </div>
-          </template>
+          </div>
         </div>
 
         <!-- 默认渲染 -->

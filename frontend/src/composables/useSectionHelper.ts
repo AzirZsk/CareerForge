@@ -3,7 +3,7 @@
 // @author Azir
 // =====================================================
 
-import type { ResumeSection, ResumeSectionItem, BasicInfoContent, WorkExperience, ProjectExperience, EducationContent, Skill, CertificateContent, OpenSourceContribution, CustomSection, ContentItem } from '@/types'
+import type { ResumeSection, ResumeSectionItem, BasicInfoContent, WorkExperience, ProjectExperience, EducationContent, Skill, CertificateContent, OpenSourceContribution, ContentItem } from '@/types'
 
 // 模块图标映射（后端大写格式）
 const sectionIcons: Record<string, string> = {
@@ -201,20 +201,19 @@ export function useSectionHelper() {
   /**
    * 获取自定义区块列表
    */
-  function getCustomList(section: ResumeSection): CustomSection[] {
-    return parseAggregatedContent<CustomSection>(section)
+  function getCustomList(section: ResumeSection): ContentItem[] {
+    return parseAggregatedContent<ContentItem>(section)
   }
 
   /**
    * 获取自定义区块列表（ResumeSectionItem 格式）
+   * 新数据结构：扁平的 ContentItem[] 数组
    */
-  function getCustomItems(section: ResumeSection): ResumeSectionItem<CustomSection>[] {
-    const items = parseAggregatedContent<CustomSection & { id?: string; score?: number }>(section)
+  function getCustomItems(section: ResumeSection): ResumeSectionItem<ContentItem>[] {
+    const items = parseAggregatedContent<ContentItem & { id?: string; score?: number }>(section)
     return items.map((item, index) => ({
       id: item.id || `custom_${index}`,
-      title: item.title || '自定义区块',
-      content: item,
-      score: item.score
+      content: item
     }))
   }
 

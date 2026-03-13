@@ -70,8 +70,8 @@
     <CustomSection
       v-else-if="section?.type === 'CUSTOM' && customItems.length"
       :items="customItems"
-      @edit-item="(id) => $emit('edit-item', id)"
-      @delete-item="(id) => $emit('delete-item', id)"
+      @edit-item="(index) => $emit('edit-item', index)"
+      @delete-item="(index) => $emit('delete-item', index)"
     />
 
     <!-- 聚合类型无数据提示 -->

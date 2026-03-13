@@ -66,14 +66,14 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { ResumeSectionItem, CustomSection, ContentItem } from '@/types'
+import type { ResumeSectionItem, ContentItem } from '@/types'
 import { useSectionHelper } from '@/composables/useSectionHelper'
 
 const props = withDefaults(defineProps<{
-  items?: ResumeSectionItem<CustomSection>[]
+  items?: ResumeSectionItem<ContentItem>[]
   // content 可能是解析后的对象，也可能是 JSON 字符串（来自后端）
   content?: string
-  title?: string  // 新增：区块标题
+  title?: string  // 区块标题
   isSingleItem?: boolean
 }>(), {
   items: () => [],
@@ -96,21 +96,11 @@ const contentItems = computed<ContentItem[]>(() => {
   return []
 })
 
-// 列表模式：将 items 展平为 ContentItem[]
-// items 格式: [{ id, title, content: { name, role, period, ... } }]
+// 列表模式：直接从 items 获取 ContentItem
+// 新数据结构：每个 item.content 直接就是 ContentItem
 const flatContentItems = computed<ContentItem[]>(() => {
   if (props.isSingleItem) return []
-  // items 中每个 item.content 直接就是 ContentItem
-  return props.items.map(item => {
-    // item.content 可能是 ContentItem 或 { title, items } 结构
-    const content = item.content as unknown as Record<string, unknown>
-    // 如果有 items 字段，说明是嵌套结构，取第一个 item（或展开所有）
-    if (Array.isArray(content?.items)) {
-      return content.items as ContentItem[]
-    }
-    // 否则直接当作 ContentItem
-    return content as unknown as ContentItem
-  }).flat()
+  return props.items.map(item => item.content as ContentItem)
 })
 </script>
 

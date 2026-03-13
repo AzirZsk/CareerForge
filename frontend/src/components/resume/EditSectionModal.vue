@@ -162,7 +162,8 @@ watch(
         formData.value = JSON.parse(JSON.stringify(parsed))
         return
       }
-      // 聚合类型：根据 itemIndex 找到对应的 item
+      // 聚合类型（包括 CUSTOM）：根据 itemIndex 找到对应的 item
+      // CUSTOM 类型现在也是扁平的 ContentItem[] 数组
       if (newSection.content && newItemIndex !== null && newItemIndex !== undefined) {
         // 从 content 解析数组
         const items = parseAggregatedContent(newSection)
