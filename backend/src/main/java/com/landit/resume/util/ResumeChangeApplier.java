@@ -46,6 +46,10 @@ public final class ResumeChangeApplier {
 
     /**
      * 将变更列表应用到原始简历数据，生成优化后的简历
+     * <p>
+     * 执行顺序优化：
+     * - 删除操作按索引降序执行，避免连续删除时索引偏移问题
+     * - 其他操作按原始顺序执行
      *
      * @param sections 原始简历的 sections
      * @param changes  变更列表
@@ -64,7 +68,11 @@ public final class ResumeChangeApplier {
         if (changes == null || changes.isEmpty()) {
             return sectionsCopy;
         }
-        for (OptimizeSectionResponse.Change change : changes) {
+
+        // 按区块分组变更，并按类型和索引排序
+        List<OptimizeSectionResponse.Change> sortedChanges = sortChangesForExecution(changes);
+
+        for (OptimizeSectionResponse.Change change : sortedChanges) {
             String field = change.getField();
             String type = change.getType();
             Object value = change.getAfterValue();
@@ -75,6 +83,76 @@ public final class ResumeChangeApplier {
             }
         }
         return sectionsCopy;
+    }
+
+    /**
+     * 对变更列表进行排序，确保删除操作从后往前执行
+     * <p>
+     * 排序规则：
+     * 1. 按区块分组
+     * 2. 同一区块内：删除操作按索引降序，其他操作按索引升序
+     * 3. 删除操作优先于修改操作
+     *
+     * @param changes 原始变更列表
+     * @return 排序后的变更列表
+     */
+    private static List<OptimizeSectionResponse.Change> sortChangesForExecution(
+            List<OptimizeSectionResponse.Change> changes) {
+        // 解析每个变更的路径信息并封装
+        List<ChangeWithInfo> changesWithInfo = changes.stream()
+                .map(change -> new ChangeWithInfo(change, parseChangePath(change.getField())))
+                .toList();
+
+        // 按区块分组
+        Map<String, List<ChangeWithInfo>> groupedBySection = changesWithInfo.stream()
+                .collect(Collectors.groupingBy(
+                        cwi -> cwi.pathInfo.getSectionFieldName() != null
+                                ? cwi.pathInfo.getSectionFieldName()
+                                : "unknown",
+                        LinkedHashMap::new,
+                        Collectors.toList()
+                ));
+
+        List<OptimizeSectionResponse.Change> result = new ArrayList<>();
+
+        for (List<ChangeWithInfo> groupChanges : groupedBySection.values()) {
+            // 分离删除操作和其他操作
+            List<ChangeWithInfo> removedChanges = groupChanges.stream()
+                    .filter(cwi -> "removed".equals(cwi.change.getType()) && cwi.pathInfo.getPropertyPath() == null)
+                    .sorted((a, b) -> Integer.compare(
+                            b.pathInfo.getArrayIndex(),  // 降序：大索引先删除
+                            a.pathInfo.getArrayIndex()
+                    ))
+                    .toList();
+
+            List<ChangeWithInfo> otherChanges = groupChanges.stream()
+                    .filter(cwi -> !("removed".equals(cwi.change.getType()) && cwi.pathInfo.getPropertyPath() == null))
+                    .sorted((a, b) -> Integer.compare(
+                            a.pathInfo.getArrayIndex(),  // 升序：小索引先处理
+                            b.pathInfo.getArrayIndex()
+                    ))
+                    .toList();
+
+            // 先添加删除操作（从后往前删除），再添加其他操作
+            removedChanges.forEach(cwi -> result.add(cwi.change));
+            otherChanges.forEach(cwi -> result.add(cwi.change));
+        }
+
+        return result;
+    }
+
+    /**
+     * 变更及其路径信息的封装类
+     */
+    @Data
+    private static class ChangeWithInfo {
+        private final OptimizeSectionResponse.Change change;
+        private final ChangePathInfo pathInfo;
+
+        ChangeWithInfo(OptimizeSectionResponse.Change change, ChangePathInfo pathInfo) {
+            this.change = change;
+            this.pathInfo = pathInfo;
+        }
     }
 
     /**
@@ -272,8 +350,18 @@ public final class ResumeChangeApplier {
                 contentMap.put("name", resolvedValue);
                 items.add(contentMap);
             }
-        } else if ("removed".equals(type) && index >= 0 && index < items.size()) {
-            items.remove(index);
+        } else if ("removed".equals(type)) {
+            if (property != null && index >= 0 && index < items.size()) {
+                // 删除元素的某个属性（如 work[0].description）
+                Object item = items.get(index);
+                if (item instanceof Map) {
+                    Map<String, Object> itemMap = (Map<String, Object>) item;
+                    applyPropertyChange(itemMap, property, type, resolvedValue);
+                }
+            } else if (property == null && index >= 0 && index < items.size()) {
+                // 删除整个数组元素（如 work[0]）
+                items.remove(index);
+            }
         } else if (index >= 0 && index < items.size()) {
             // 修改场景
             Object item = items.get(index);

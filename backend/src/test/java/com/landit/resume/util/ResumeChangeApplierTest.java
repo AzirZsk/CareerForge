@@ -357,6 +357,163 @@ class ResumeChangeApplierTest {
     }
 
     @Nested
+    @DisplayName("删除操作测试")
+    class RemovalTests {
+
+        @Test
+        @DisplayName("删除聚合类型的属性 - 只删除指定属性，不删除整个元素")
+        void testRemovePropertyFromAggregateSection_ShouldOnlyRemoveProperty() {
+            // 原始数据：work[0] 有 company, position, description
+            ResumeDetailVO.ResumeSectionVO workSection = findSectionByType(testSections, "WORK");
+            List<Map<String, Object>> originalItems = parseContentArray(workSection.getContent());
+            assertEquals(4, originalItems.size());
+            assertNotNull(originalItems.get(0).get("description"));
+
+            // 删除 work[0].description（只删除属性，不删除整个 work[0]）
+            OptimizeSectionResponse.Change change = createChange(
+                    "removed", "work[0].description", "string",
+                    "账号从0到1搭建", null
+            );
+
+            List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
+            ResumeDetailVO.ResumeSectionVO resultWorkSection = findSectionByType(result, "WORK");
+            List<Map<String, Object>> items = parseContentArray(resultWorkSection.getContent());
+
+            // 验证：元素数量不变，但 description 属性被删除
+            assertEquals(4, items.size());
+            assertNull(items.get(0).get("description"));
+            assertEquals("自媒体博主", items.get(0).get("company"));  // 其他属性保留
+            assertEquals("游戏博主", items.get(0).get("position"));
+        }
+
+        @Test
+        @DisplayName("删除整个数组元素 - work[0]")
+        void testRemoveEntireArrayElement() {
+            ResumeDetailVO.ResumeSectionVO workSection = findSectionByType(testSections, "WORK");
+            List<Map<String, Object>> originalItems = parseContentArray(workSection.getContent());
+            String originalFirstCompany = (String) originalItems.get(0).get("company");
+            String originalSecondCompany = (String) originalItems.get(1).get("company");
+
+            // 删除 work[0]（删除整个元素）
+            OptimizeSectionResponse.Change change = createChange(
+                    "removed", "work[0]", "string",
+                    null, null
+            );
+
+            List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
+            ResumeDetailVO.ResumeSectionVO resultWorkSection = findSectionByType(result, "WORK");
+            List<Map<String, Object>> items = parseContentArray(resultWorkSection.getContent());
+
+            // 验证：元素数量减少1，原来的 work[1] 变成 work[0]
+            assertEquals(3, items.size());
+            assertEquals(originalSecondCompany, items.get(0).get("company"));
+        }
+
+        @Test
+        @DisplayName("连续删除多个数组元素 - 按索引升序删除 work[0], work[1]")
+        void testRemoveMultipleArrayElements_SequentialDeletion() {
+            // 原始数据：[A(自媒体), B(FPX), C(JDG), D(WBG)]
+            ResumeDetailVO.ResumeSectionVO workSection = findSectionByType(testSections, "WORK");
+            List<Map<String, Object>> originalItems = parseContentArray(workSection.getContent());
+            assertEquals(4, originalItems.size());
+
+            String companyA = (String) originalItems.get(0).get("company"); // 自媒体博主
+            String companyB = (String) originalItems.get(1).get("company"); // FPX
+            String companyC = (String) originalItems.get(2).get("company"); // JDG
+            String companyD = (String) originalItems.get(3).get("company"); // WBG
+
+            // 按升序删除 work[0] 和 work[1]（期望删除 A 和 B）
+            List<OptimizeSectionResponse.Change> changes = List.of(
+                    createChange("removed", "work[0]", "string", null, null),
+                    createChange("removed", "work[1]", "string", null, null)
+            );
+
+            List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(testSections, changes);
+            ResumeDetailVO.ResumeSectionVO resultWorkSection = findSectionByType(result, "WORK");
+            List<Map<String, Object>> items = parseContentArray(resultWorkSection.getContent());
+
+            // 验证：应该只剩下 C(JDG) 和 D(WBG)
+            assertEquals(2, items.size());
+            assertEquals(companyC, items.get(0).get("company")); // JDG
+            assertEquals(companyD, items.get(1).get("company")); // WBG
+        }
+
+        @Test
+        @DisplayName("连续删除三个数组元素 - work[0], work[1], work[2]")
+        void testRemoveThreeArrayElements() {
+            // 原始数据：[A, B, C, D]
+            ResumeDetailVO.ResumeSectionVO workSection = findSectionByType(testSections, "WORK");
+            List<Map<String, Object>> originalItems = parseContentArray(workSection.getContent());
+            String companyD = (String) originalItems.get(3).get("company"); // WBG
+
+            // 按升序删除 work[0], work[1], work[2]（期望只保留 D）
+            List<OptimizeSectionResponse.Change> changes = List.of(
+                    createChange("removed", "work[0]", "string", null, null),
+                    createChange("removed", "work[1]", "string", null, null),
+                    createChange("removed", "work[2]", "string", null, null)
+            );
+
+            List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(testSections, changes);
+            ResumeDetailVO.ResumeSectionVO resultWorkSection = findSectionByType(result, "WORK");
+            List<Map<String, Object>> items = parseContentArray(resultWorkSection.getContent());
+
+            // 验证：应该只剩下 D
+            assertEquals(1, items.size());
+            assertEquals(companyD, items.get(0).get("company"));
+        }
+
+        @Test
+        @DisplayName("混合操作 - 删除元素后修改属性")
+        void testMixedOperations_DeleteThenModify() {
+            // 删除 work[0]，然后修改 work[1].description
+            // 原始：[A(自媒体), B(FPX), C(JDG), D(WBG)]
+            // 期望：[B(FPX-修改后), C(JDG), D(WBG)]
+            ResumeDetailVO.ResumeSectionVO workSection = findSectionByType(testSections, "WORK");
+            List<Map<String, Object>> originalItems = parseContentArray(workSection.getContent());
+            String companyB = (String) originalItems.get(1).get("company"); // FPX
+
+            List<OptimizeSectionResponse.Change> changes = List.of(
+                    createChange("removed", "work[0]", "string", null, null),
+                    createChange("modified", "work[1].description", "string", null, "修改后的描述")
+            );
+
+            List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(testSections, changes);
+            ResumeDetailVO.ResumeSectionVO resultWorkSection = findSectionByType(result, "WORK");
+            List<Map<String, Object>> items = parseContentArray(resultWorkSection.getContent());
+
+            // 验证：3个元素，原来的 work[1](FPX) 现在是 work[0]
+            assertEquals(3, items.size());
+            assertEquals(companyB, items.get(0).get("company"));
+            // work[1] 在删除后指向原来的 work[2](JDG)，其 description 被修改
+            assertEquals("修改后的描述", items.get(1).get("description"));
+        }
+
+        @Test
+        @DisplayName("删除 BASIC_INFO 的属性")
+        void testRemoveBasicInfoProperty() {
+            // 确保基本信息有 summary 字段
+            ResumeDetailVO.ResumeSectionVO basicSection = findSectionByType(testSections, "BASIC_INFO");
+            Map<String, Object> content = parseContent(basicSection.getContent());
+            content.put("summary", "原有的个人简介");
+            basicSection.setContent(JsonParseHelper.toJsonString(content));
+
+            // 删除 summary 属性
+            OptimizeSectionResponse.Change change = createChange(
+                    "removed", "basicInfo.summary", "string",
+                    "原有的个人简介", null
+            );
+
+            List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
+            ResumeDetailVO.ResumeSectionVO resultBasic = findSectionByType(result, "BASIC_INFO");
+            Map<String, Object> resultContent = parseContent(resultBasic.getContent());
+
+            // 验证：summary 被删除，其他属性保留
+            assertNull(resultContent.get("summary"));
+            assertEquals("陈家尧", resultContent.get("name"));
+        }
+    }
+
+    @Nested
     @DisplayName("边界条件测试")
     class EdgeCaseTests {
 
