@@ -263,7 +263,7 @@
           <div class="modal-footer">
             <template v-if="state.hasError">
               <button class="footer-btn secondary" @click="handleClose">
-                关闭
+                退出
               </button>
               <button class="footer-btn primary" @click="handleRetry">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -275,13 +275,30 @@
               </button>
             </template>
             <template v-else-if="state.isOptimizing">
-              <button class="footer-btn danger" @click="handleCancel">
-                取消优化
+              <button class="footer-btn secondary" @click="handleCancel">
+                退出
+              </button>
+            </template>
+            <template v-else-if="state.isCompleted">
+              <button class="footer-btn secondary" @click="handleClose">
+                退出
+              </button>
+              <button
+                class="footer-btn primary"
+                :class="{ loading: state.isApplying }"
+                :disabled="state.isApplying || !hasOptimizedSections"
+                @click="handleApply"
+              >
+                <svg v-if="state.isApplying" class="spinner-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10" stroke-opacity="0.3"/>
+                  <path d="M12 2a10 10 0 0 1 10 10"/>
+                </svg>
+                {{ state.isApplying ? '应用中...' : '应用变更' }}
               </button>
             </template>
             <template v-else>
-              <button class="footer-btn primary" @click="handleClose">
-                {{ state.isCompleted ? '完成' : '关闭' }}
+              <button class="footer-btn secondary" @click="handleClose">
+                关闭
               </button>
             </template>
           </div>
@@ -320,6 +337,7 @@ const emit = defineEmits<{
   'cancel': []
   'retry': []
   'complete': []
+  'apply': []
   'toggleExpand': [stage: OptimizeStage]
 }>()
 
@@ -359,6 +377,13 @@ const sortedStageHistory = computed(() => {
   })
 })
 
+// 是否有优化后的区块数据可应用
+const hasOptimizedSections = computed(() => {
+  const optimizeStage = props.state.stageHistory.find(h => h.stage === 'optimize_section')
+  const data = optimizeStage?.data
+  return data?.beforeSection?.length > 0 && data?.afterSection?.length > 0
+})
+
 function handleClose() {
   // 优化完成时触发 complete 事件，让父组件刷新数据
   if (props.state.isCompleted) {
@@ -373,6 +398,10 @@ function handleCancel() {
 
 function handleRetry() {
   emit('retry')
+}
+
+function handleApply() {
+  emit('apply')
 }
 
 function toggleExpand(stage: OptimizeStage) {
@@ -1233,10 +1262,29 @@ function isArray(value: unknown): value is string[] {
   &.danger {
     background: rgba(248, 113, 113, 0.1);
     color: $color-error;
-    
+
     &:hover {
       background: rgba(248, 113, 113, 0.2);
     }
+  }
+
+  &.loading {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+
+    &:hover {
+      transform: none;
+      box-shadow: none;
+    }
+  }
+
+  .spinner-icon {
+    animation: spin 1s linear infinite;
   }
 }
 

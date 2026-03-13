@@ -7,6 +7,7 @@ import com.landit.common.service.AIService;
 import com.landit.common.service.FileToImageService;
 import com.landit.common.util.JsonParseHelper;
 import com.landit.resume.convertor.ResumeConvertor;
+import com.landit.resume.dto.ApplyOptimizeRequest;
 import com.landit.resume.dto.DeriveResumeRequest;
 import com.landit.resume.dto.DiagnoseResumeRequest;
 import com.landit.resume.dto.DiagnoseResumeResponse;
@@ -326,6 +327,32 @@ public class ResumeHandler {
         // 重新计算简历完整度
         recalculateResumeCompleteness(resumeId);
         // 返回更新后的详情
+        return resumeService.getResumeDetail(resumeId);
+    }
+
+    /**
+     * 批量应用优化变更
+     * 将优化后的区块内容批量更新到简历
+     *
+     * @param resumeId 简历ID
+     * @param request  应用变更请求（包含优化前后的区块数据）
+     * @return 更新后的简历详情
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public ResumeDetailVO applyOptimizeChanges(String resumeId, ApplyOptimizeRequest request) {
+        List<ApplyOptimizeRequest.SectionDataItem> afterSections = request.getAfterSection();
+
+        log.info("批量应用优化变更: resumeId={}, 区块数量={}", resumeId, afterSections.size());
+
+        // 批量更新所有区块
+        for (ApplyOptimizeRequest.SectionDataItem section : afterSections) {
+            resumeService.updateSection(section.getId(), section.getContent());
+        }
+
+        // 重新计算简历评分（只计算一次）
+        recalculateResumeScore(resumeId);
+
+        // 返回更新后的简历详情
         return resumeService.getResumeDetail(resumeId);
     }
 

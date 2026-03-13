@@ -236,6 +236,10 @@ export interface OptimizeState {
   isCompleted: boolean
   hasError: boolean
 
+  // 应用变更状态
+  isApplying: boolean
+  applyError: string | null
+
   // 基本信息
   threadId: string | null
   resumeId: string | null

@@ -162,3 +162,33 @@ export function createTailorResumeStream(
   const url = `${API_BASE}/resumes/${resumeId}/tailor/stream?${params.toString()}`
   return new EventSource(url)
 }
+
+/** 区块数据项（用于应用优化变更） */
+export interface SectionDataItem {
+  id: string
+  type?: string
+  title?: string
+  content: string
+}
+
+/**
+ * 应用优化变更
+ * 批量更新优化后的简历区块内容
+ * @param resumeId 简历ID
+ * @param data 包含 beforeSection 和 afterSection 的数据
+ */
+export async function applyOptimizeChanges(
+  resumeId: string,
+  data: { beforeSection: SectionDataItem[]; afterSection: SectionDataItem[] }
+): Promise<ResumeDetail> {
+  const response = await fetch(`${API_BASE}/resumes/${resumeId}/optimize/apply`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+  const result: ApiResponse<ResumeDetail> = await response.json()
+  if (result.code !== 200) {
+    throw new Error(result.message || '应用变更失败')
+  }
+  return result.data
+}

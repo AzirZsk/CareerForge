@@ -8,9 +8,12 @@ import type {
   OptimizeState,
   OptimizeProgressEvent,
   OptimizeMode,
-  OptimizeStage
+  OptimizeStage,
+  ResumeSection
 } from '@/types/resume-optimize'
 import { STAGE_CONFIG } from '@/types/resume-optimize'
+import { applyOptimizeChanges } from '@/api/resume'
+import type { SectionDataItem } from '@/api/resume'
 
 const API_BASE = '/landit'
 
@@ -21,6 +24,8 @@ export function useResumeOptimize() {
     isOptimizing: false,
     isCompleted: false,
     hasError: false,
+    isApplying: false,
+    applyError: null,
     threadId: null,
     resumeId: null,
     targetPosition: '',
@@ -269,6 +274,8 @@ export function useResumeOptimize() {
     state.isOptimizing = false
     state.isCompleted = false
     state.hasError = false
+    state.isApplying = false
+    state.applyError = null
     state.threadId = null
     state.resumeId = null
     state.targetPosition = ''
@@ -277,6 +284,66 @@ export function useResumeOptimize() {
     state.message = ''
     state.errorMessage = null
     state.stageHistory = []
+  }
+
+  /**
+   * 获取优化后的区块数据
+   * 从 optimize_section 阶段的数据中提取 beforeSection 和 afterSection
+   */
+  function getOptimizedData(): { beforeSection: SectionDataItem[]; afterSection: SectionDataItem[] } | null {
+    const optimizeStage = state.stageHistory.find(h => h.stage === 'optimize_section')
+    if (!optimizeStage?.data) {
+      return null
+    }
+
+    const { beforeSection, afterSection } = optimizeStage.data
+    if (!beforeSection || !afterSection) {
+      return null
+    }
+
+    // 转换为 API 需要的格式
+    return {
+      beforeSection: beforeSection.map((s: ResumeSection) => ({
+        id: s.id,
+        type: s.type,
+        title: s.title,
+        content: s.content || ''
+      })),
+      afterSection: afterSection.map((s: ResumeSection) => ({
+        id: s.id,
+        type: s.type,
+        title: s.title,
+        content: s.content || ''
+      }))
+    }
+  }
+
+  /**
+   * 应用优化变更
+   * 调用后端批量 API 更新所有区块
+   */
+  async function applyChanges(): Promise<boolean> {
+    const optimizedData = getOptimizedData()
+    if (!optimizedData || !state.resumeId) {
+      console.error('[Optimize] 无法应用变更：缺少优化数据或简历ID')
+      return false
+    }
+
+    state.isApplying = true
+    state.applyError = null
+
+    try {
+      await applyOptimizeChanges(state.resumeId, optimizedData)
+      console.log('[Optimize] 应用变更成功')
+      return true
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '应用变更失败'
+      state.applyError = message
+      console.error('[Optimize] 应用变更失败:', message)
+      return false
+    } finally {
+      state.isApplying = false
+    }
   }
 
   // 组件卸载时关闭连接
@@ -294,6 +361,8 @@ export function useResumeOptimize() {
     cancelOptimize,
     retryOptimize,
     resetState,
-    toggleStageExpanded
+    toggleStageExpanded,
+    getOptimizedData,
+    applyChanges
   }
 }

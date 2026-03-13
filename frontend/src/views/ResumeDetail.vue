@@ -124,6 +124,7 @@
       :state="optimizeState"
       @cancel="cancelOptimize"
       @retry="retryOptimize"
+      @apply="handleApplyChanges"
       @toggle-expand="toggleStageExpanded"
       @complete="handleOptimizeComplete"
     />
@@ -182,7 +183,8 @@ const {
   startOptimize,
   cancelOptimize,
   retryOptimize,
-  toggleStageExpanded
+  toggleStageExpanded,
+  applyChanges
 } = useResumeOptimize()
 
 // 当前选中的模块详情
@@ -372,6 +374,22 @@ async function confirmDeleteCustomItem(): Promise<void> {
 async function handleOptimizeComplete(): Promise<void> {
   if (resumeId.value) {
     await store.fetchResumeDetail(resumeId.value)
+  }
+}
+
+// 应用优化变更
+async function handleApplyChanges(): Promise<void> {
+  if (!resumeId.value) return
+
+  const success = await applyChanges()
+  if (success) {
+    // 应用成功，刷新简历详情并关闭弹窗
+    await store.fetchResumeDetail(resumeId.value)
+    showOptimizeModal.value = false
+  } else {
+    // 应用失败，显示错误提示（弹窗保持打开状态）
+    console.error('应用变更失败:', optimizeState.applyError)
+    alert(optimizeState.applyError || '应用变更失败，请重试')
   }
 }
 </script>

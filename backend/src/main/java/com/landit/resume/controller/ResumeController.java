@@ -2,6 +2,7 @@ package com.landit.resume.controller;
 
 import com.landit.common.response.ApiResponse;
 import com.landit.resume.dto.AddSectionRequest;
+import com.landit.resume.dto.ApplyOptimizeRequest;
 import com.landit.resume.dto.DeriveResumeRequest;
 import com.landit.resume.dto.PrimaryResumeVO;
 import com.landit.resume.dto.ResumeDetailVO;
@@ -78,6 +79,14 @@ public class ResumeController {
             @PathVariable String id,
             @Valid @RequestBody DeriveResumeRequest request) {
         return ApiResponse.success(resumeHandler.deriveResume(id, request));
+    }
+
+    @Operation(summary = "应用优化变更")
+    @PostMapping("/{id}/optimize/apply")
+    public ApiResponse<ResumeDetailVO> applyOptimizeChanges(
+            @PathVariable String id,
+            @Valid @RequestBody ApplyOptimizeRequest request) {
+        return ApiResponse.success(resumeHandler.applyOptimizeChanges(id, request));
     }
 
 }
