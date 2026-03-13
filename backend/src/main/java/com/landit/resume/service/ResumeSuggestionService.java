@@ -109,4 +109,15 @@ public class ResumeSuggestionService extends ServiceImpl<ResumeSuggestionMapper,
                 .filter(s -> s.getSectionId() != null)
                 .collect(Collectors.groupingBy(ResumeSuggestion::getSectionId));
     }
+
+    /**
+     * 删除指定简历的所有建议
+     *
+     * @param resumeId 简历ID
+     */
+    public void deleteByResumeId(String resumeId) {
+        remove(new LambdaQueryWrapper<ResumeSuggestion>()
+                .eq(ResumeSuggestion::getResumeId, resumeId));
+        log.info("已删除简历的所有建议: resumeId={}", resumeId);
+    }
 }

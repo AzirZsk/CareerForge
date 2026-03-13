@@ -21,6 +21,8 @@ import com.landit.resume.entity.Resume;
 import com.landit.resume.entity.ResumeSection;
 import com.landit.resume.entity.ResumeVersion;
 import com.landit.resume.service.ResumeService;
+import com.landit.resume.service.ResumeSuggestionService;
+import com.landit.resume.service.ResumeSuggestionService;
 import com.landit.resume.mapper.ResumeSectionMapper;
 import com.landit.resume.mapper.ResumeVersionMapper;
 import lombok.RequiredArgsConstructor;
@@ -51,6 +53,7 @@ public class ResumeHandler {
     private final ResumeVersionMapper resumeVersionMapper;
     private final ResumeSectionMapper resumeSectionMapper;
     private final ResumeConvertor resumeConvertor;
+    private final ResumeSuggestionService resumeSuggestionService;
 
     /**
      * 获取主简历
@@ -348,6 +351,10 @@ public class ResumeHandler {
         for (ApplyOptimizeRequest.SectionDataItem section : afterSections) {
             resumeService.updateSection(section.getId(), section.getContent());
         }
+
+        // 删除该简历的所有优化建议（内容已更新，旧建议不再适用）
+        resumeSuggestionService.deleteByResumeId(resumeId);
+        log.info("已清除简历的优化建议: resumeId={}", resumeId);
 
         // 重新计算简历评分（只计算一次）
         recalculateResumeScore(resumeId);
