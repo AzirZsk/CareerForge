@@ -189,12 +189,9 @@ public final class ResumeChangeApplier {
         SectionType sectionType = pathInfo.getSectionType();
         if (sectionType == SectionType.BASIC_INFO) {
             applyChangeToBasicInfo(targetSection, pathInfo, type, value);
-        } else if (sectionType == SectionType.SKILLS) {
-            applyChangeToSkills(targetSection, pathInfo, type, value);
-        } else if (sectionType == SectionType.CUSTOM) {
-            // CUSTOM 类型：每个区块独立一条记录，content 直接是 items 数组
-            applyChangeToCustomSection(targetSection, pathInfo, type, value);
         } else {
+            // 聚合类型（EDUCATION/WORK/PROJECT/SKILLS/CERTIFICATE/OPEN_SOURCE/CUSTOM）
+            // content = "[{...}]" (数组 JSON 字符串)
             applyChangeToAggregateSection(targetSection, pathInfo, type, value);
         }
     }
@@ -224,89 +221,6 @@ public final class ResumeChangeApplier {
     }
 
     /**
-     * 应用变更到 CUSTOM 类型
-     * CUSTOM 类型结构：content = "[{...}, {...}]" (items 数组 JSON 字符串)
-     * 每个 CUSTOM 区块独立一条记录，title 存储在 section.title
-     */
-    @SuppressWarnings("unchecked")
-    private static void applyChangeToCustomSection(ResumeDetailVO.ResumeSectionVO section,
-                                                    ChangePathInfo pathInfo, String type, Object value) {
-        // content 直接是 items 数组
-        List<Object> items = JsonParseHelper.parseToEntity(section.getContent(), new TypeReference<List<Object>>() {});
-        if (items == null) {
-            items = new ArrayList<>();
-        }
-
-        String property = pathInfo.getPropertyPath();
-
-        if ("added".equals(type)) {
-            // 新增：直接添加到 items 数组
-            if (value instanceof Map) {
-                items.add(value);
-            }
-        } else if ("removed".equals(type)) {
-            // 删除：根据 property 中的索引删除
-            int itemIndex = extractItemIndex(property);
-            if (itemIndex >= 0 && itemIndex < items.size()) {
-                items.remove(itemIndex);
-            }
-        } else {
-            // 修改：根据 property 中的索引和属性名修改
-            int itemIndex = extractItemIndex(property);
-            String itemProperty = extractItemProperty(property);
-            if (itemIndex >= 0 && itemIndex < items.size()) {
-                Object item = items.get(itemIndex);
-                if (item instanceof Map && itemProperty != null) {
-                    Map<String, Object> itemMap = (Map<String, Object>) item;
-                    applyPropertyChange(itemMap, itemProperty, type, value);
-                } else if (value instanceof Map) {
-                    // 整体替换
-                    items.set(itemIndex, value);
-                }
-            }
-        }
-
-        // 修改后将数组序列化回 JSON 字符串
-        section.setContent(JsonParseHelper.toJsonString(items));
-    }
-
-    /**
-     * 从 property 路径中提取 item 索引
-     * 例如 "items[0].description" -> 0
-     */
-    private static int extractItemIndex(String property) {
-        if (property == null) {
-            return -1;
-        }
-        Matcher matcher = ARRAY_INDEX_PATTERN.matcher(property);
-        if (matcher.matches()) {
-            String fieldName = matcher.group(1);
-            if ("items".equals(fieldName)) {
-                String indexStr = matcher.group(2);
-                if (indexStr != null) {
-                    return Integer.parseInt(indexStr);
-                }
-            }
-        }
-        return -1;
-    }
-
-    /**
-     * 从 property 路径中提取 item 内的属性名
-     * 例如 "items[0].description" -> "description"
-     */
-    private static String extractItemProperty(String property) {
-        if (property == null) {
-            return null;
-        }
-        Matcher matcher = ARRAY_INDEX_PATTERN.matcher(property);
-        if (matcher.matches()) {
-            return matcher.group(3);
-        }
-        return null;
-    }
-
-    /**
      * 应用变更到 BASIC_INFO 类型
      * BASIC_INFO 结构：content = "{...}" (JSON 字符串格式)
      */
@@ -330,45 +244,7 @@ public final class ResumeChangeApplier {
     }
 
     /**
-     * 应用变更到 SKILLS 类型
-     * SKILLS 结构：content = "{\"skills\": [{...}]}" (JSON 字符串)
-     */
-    @SuppressWarnings("unchecked")
-    private static void applyChangeToSkills(ResumeDetailVO.ResumeSectionVO section,
-                                             ChangePathInfo pathInfo, String type, Object value) {
-        Map<String, Object> content = resolveContentToMap(section.getContent());
-        if (content == null) {
-            content = new LinkedHashMap<>();
-            content.put("skills", new ArrayList<>());
-        }
-        List<Map<String, Object>> skillsList = (List<Map<String, Object>>) content.get("skills");
-        if (skillsList == null) {
-            skillsList = new ArrayList<>();
-            content.put("skills", skillsList);
-        }
-        int index = pathInfo.getArrayIndex();
-        if ("added".equals(type)) {
-            if (value instanceof Map) {
-                skillsList.add((Map<String, Object>) value);
-            } else if (value instanceof String) {
-                Map<String, Object> skillMap = new LinkedHashMap<>();
-                skillMap.put("name", value);
-                skillMap.put("description", "");
-                skillMap.put("level", "");
-                skillMap.put("category", "");
-                skillsList.add(skillMap);
-            }
-        } else if ("removed".equals(type) && index >= 0 && index < skillsList.size()) {
-            skillsList.remove(index);
-        } else if (index >= 0 && index < skillsList.size() && value instanceof Map) {
-            skillsList.set(index, (Map<String, Object>) value);
-        }
-        // 修改后将 content 序列化回 JSON 字符串
-        section.setContent(JsonParseHelper.toJsonString(content));
-    }
-
-    /**
-     * 应用变更到聚合类型（WORK/PROJECT/EDUCATION/CERTIFICATE/OPEN_SOURCE）
+     * 应用变更到聚合类型（EDUCATION/WORK/PROJECT/SKILLS/CERTIFICATE/OPEN_SOURCE/CUSTOM）
      * 聚合类型结构：content = "[{...}, {...}]" (数组 JSON 字符串)
      */
     @SuppressWarnings("unchecked")
