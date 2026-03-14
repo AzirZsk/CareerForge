@@ -132,16 +132,18 @@ function handleEdit(payload: ComparisonEditEvent) {
   display: flex;
   gap: $spacing-md;
   min-height: 400px;
+  flex: 1;
+  overflow: hidden;
 }
 
 .resume-panel {
   flex: 1;
+  min-width: 0;
   padding: $spacing-md;
   background: rgba(255, 255, 255, 0.02);
   border-radius: $radius-md;
   border: 1px solid rgba(255, 255, 255, 0.05);
   overflow-y: auto;
-  max-height: 500px;
 
   &.before-panel {
     border-color: rgba(248, 113, 113, 0.2);

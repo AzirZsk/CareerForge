@@ -1179,6 +1179,14 @@ function isArray(value: unknown): value is string[] {
   margin-top: $spacing-md;
 }
 
+.comparison-view {
+  .resume-comparison {
+    .comparison-content {
+      min-height: 50vh;
+    }
+  }
+}
+
 .no-comparison-data {
   padding: $spacing-xl;
   text-align: center;
