@@ -195,12 +195,17 @@ watch(
           // 去除 id 字段，只保留内容
           const { id, ...content } = item as Record<string, unknown>
 
-          // CUSTOM 类型需要包装成 { title, items: [content] } 格式
-          // 因为 ExperienceForm 的 initData 期望这种结构
+          // CUSTOM 类型：根据编辑模式决定数据格式
           if (sectionType.value === 'CUSTOM') {
-            formData.value = {
-              title: newSection.title || '',
-              items: [JSON.parse(JSON.stringify(content))]
+            if (isCustomItemMode.value) {
+              // CustomItemForm 需要扁平的内容对象
+              formData.value = JSON.parse(JSON.stringify(content))
+            } else {
+              // ExperienceForm 需要 { title, items: [content] } 格式
+              formData.value = {
+                title: newSection.title || '',
+                items: [JSON.parse(JSON.stringify(content))]
+              }
             }
           } else {
             formData.value = JSON.parse(JSON.stringify(content))

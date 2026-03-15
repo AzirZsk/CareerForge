@@ -51,18 +51,18 @@
               </svg>
             </button>
             <div class="exp-header">
-              <span class="exp-title">{{ item.school }}</span>
-              <span class="exp-period">{{ item.period }}</span>
+              <span class="exp-title" :class="getChangeClass(section.type, 'education[' + idx + '].school')">{{ item.school }}</span>
+              <span class="exp-period" :class="getChangeClass(section.type, 'education[' + idx + '].period')">{{ item.period }}</span>
             </div>
             <div class="exp-meta">
-              <span class="exp-degree" v-if="item.degree">{{ item.degree }}</span>
-              <span class="exp-major" v-if="item.major">{{ item.major }}</span>
-              <span class="exp-gpa" v-if="item.gpa">GPA: {{ item.gpa }}</span>
+              <span class="exp-degree" v-if="item.degree" :class="getChangeClass(section.type, 'education[' + idx + '].degree')">{{ item.degree }}</span>
+              <span class="exp-major" v-if="item.major" :class="getChangeClass(section.type, 'education[' + idx + '].major')">{{ item.major }}</span>
+              <span class="exp-gpa" v-if="item.gpa" :class="getChangeClass(section.type, 'education[' + idx + '].gpa')">GPA: {{ item.gpa }}</span>
             </div>
-            <div v-if="item.courses?.length" class="exp-courses">
+            <div v-if="item.courses?.length" class="exp-courses" :class="getChangeClass(section.type, 'education[' + idx + '].courses')">
               <span v-for="course in item.courses" :key="course" class="course-tag">{{ course }}</span>
             </div>
-            <div v-if="item.honors?.length" class="exp-honors">
+            <div v-if="item.honors?.length" class="exp-honors" :class="getChangeClass(section.type, 'education[' + idx + '].honors')">
               <span v-for="honor in item.honors" :key="honor" class="honor-tag">{{ honor }}</span>
             </div>
           </div>
@@ -79,12 +79,12 @@
               </svg>
             </button>
             <div class="exp-header">
-              <span class="exp-title">{{ item.company }}</span>
-              <span class="exp-period">{{ item.period }}</span>
+              <span class="exp-title" :class="getChangeClass(section.type, 'work[' + idx + '].company')">{{ item.company }}</span>
+              <span class="exp-period" :class="getChangeClass(section.type, 'work[' + idx + '].period')">{{ item.period }}</span>
             </div>
             <div class="exp-meta">
-              <span class="exp-position" v-if="item.position">{{ item.position }}</span>
-              <span class="exp-location" v-if="item.location">
+              <span class="exp-position" v-if="item.position" :class="getChangeClass(section.type, 'work[' + idx + '].position')">{{ item.position }}</span>
+              <span class="exp-location" v-if="item.location" :class="getChangeClass(section.type, 'work[' + idx + '].location')">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                   <circle cx="12" cy="10" r="3"></circle>
@@ -107,10 +107,10 @@
                 {{ ach }}
               </div>
             </div>
-            <div v-if="item.technologies?.length" class="exp-technologies">
+            <div v-if="item.technologies?.length" class="exp-technologies" :class="getChangeClass(section.type, 'work[' + idx + '].technologies')">
               <span v-for="tech in item.technologies" :key="tech" class="tech-tag">{{ tech }}</span>
             </div>
-            <div v-if="item.products?.length" class="exp-products">
+            <div v-if="item.products?.length" class="exp-products" :class="getChangeClass(section.type, 'work[' + idx + '].products')">
               <span class="products-label">代表产品:</span>
               <span v-for="p in item.products" :key="p" class="product-tag">{{ p }}</span>
             </div>
@@ -128,7 +128,7 @@
               </svg>
             </button>
             <div class="exp-header">
-              <span class="exp-title">
+              <span class="exp-title" :class="getChangeClass(section.type, 'project[' + idx + '].name')">
                 {{ item.name }}
                 <a v-if="item.url" :href="item.url" target="_blank" class="exp-link" title="访问项目">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -138,13 +138,13 @@
                   </svg>
                 </a>
               </span>
-              <span class="exp-period">{{ item.period }}</span>
+              <span class="exp-period" :class="getChangeClass(section.type, 'project[' + idx + '].period')">{{ item.period }}</span>
             </div>
-            <div class="exp-role">{{ item.role }}</div>
-            <p v-if="item.description" class="exp-description">
+            <div class="exp-role" :class="getChangeClass(section.type, 'project[' + idx + '].role')">{{ item.role }}</div>
+            <p v-if="item.description" class="exp-description" :class="getChangeClass(section.type, 'project[' + idx + '].description')">
               {{ item.description }}
             </p>
-            <div v-if="item.technologies?.length" class="exp-technologies">
+            <div v-if="item.technologies?.length" class="exp-technologies" :class="getChangeClass(section.type, 'project[' + idx + '].technologies')">
               <span v-for="tech in item.technologies" :key="tech" class="tech-tag">{{ tech }}</span>
             </div>
             <div v-if="item.achievements?.length" class="exp-achievements">
@@ -424,7 +424,7 @@ function getChangeClass(sectionType: string, fieldPath: string): string {
 
 .resume-section {
   h3 {
-    font-size: $text-base;
+    font-size: $text-xl;
     font-weight: $weight-semibold;
     color: $color-text-primary;
     margin-bottom: $spacing-md;
@@ -947,6 +947,26 @@ function getChangeClass(sectionType: string, fieldPath: string): string {
 .highlight-removed {
   background: rgba(248, 113, 113, 0.15);
   color: $color-error;
+}
+
+// 确保高亮样式能覆盖各元素的默认颜色
+.exp-title, .exp-period, .exp-position, .exp-location,
+.exp-degree, .exp-major, .exp-gpa, .exp-role,
+.exp-description, .cert-name,
+.exp-courses, .exp-honors, .exp-technologies, .exp-products {
+  &.highlight-added {
+    background: rgba(52, 211, 153, 0.15);
+    color: $color-success;
+    border-radius: $radius-sm;
+    padding: 2px 4px;
+  }
+
+  &.highlight-removed {
+    background: rgba(248, 113, 113, 0.15);
+    color: $color-error;
+    border-radius: $radius-sm;
+    padding: 2px 4px;
+  }
 }
 
 // 自定义区块样式

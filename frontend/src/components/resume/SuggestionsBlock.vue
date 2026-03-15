@@ -32,49 +32,12 @@
     <!-- 展开内容 -->
     <Transition name="expand">
       <div v-show="isExpanded" class="block-content">
-        <!-- 类型筛选按钮 -->
-        <div class="filter-tabs">
-          <button
-            class="filter-tab"
-            :class="{ active: activeFilter === 'all' }"
-            @click="activeFilter = 'all'"
-          >
-            全部
-          </button>
-          <button
-            v-if="criticalCount > 0"
-            class="filter-tab critical"
-            :class="{ active: activeFilter === 'critical' }"
-            @click="activeFilter = 'critical'"
-          >
-            ⚠️ {{ criticalCount }}
-          </button>
-          <button
-            v-if="improvementCount > 0"
-            class="filter-tab improvement"
-            :class="{ active: activeFilter === 'improvement' }"
-            @click="activeFilter = 'improvement'"
-          >
-            💡 {{ improvementCount }}
-          </button>
-          <button
-            v-if="enhancementCount > 0"
-            class="filter-tab enhancement"
-            :class="{ active: activeFilter === 'enhancement' }"
-            @click="activeFilter = 'enhancement'"
-          >
-            ✨ {{ enhancementCount }}
-          </button>
-        </div>
-
         <!-- 建议列表 -->
         <TransitionGroup name="list" tag="div" class="suggestions-list">
           <SuggestionCard
-            v-for="suggestion in filteredSuggestions"
+            v-for="suggestion in suggestions"
             :key="suggestion.id"
             :suggestion="suggestion"
-            @apply="$emit('apply', $event)"
-            @ignore="$emit('ignore', $event)"
           />
         </TransitionGroup>
       </div>
@@ -85,53 +48,26 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import SuggestionCard from './SuggestionCard.vue'
-import type { ResumeSuggestionItem, SuggestionType } from '@/types'
+import type { ResumeSuggestionItem } from '@/types'
 
 const props = defineProps<{
   suggestions: ResumeSuggestionItem[]
 }>()
 
-defineEmits<{
-  apply: [suggestion: ResumeSuggestionItem]
-  ignore: [suggestion: ResumeSuggestionItem]
-}>()
+
 
 // 展开状态
 const isExpanded = ref<boolean>(false)
-
-// 当前筛选类型
-const activeFilter = ref<'all' | SuggestionType>('all')
 
 // 切换展开状态
 function toggleExpand(): void {
   isExpanded.value = !isExpanded.value
 }
 
-// 按类型统计数量
-const criticalCount = computed<number>(() => {
-  return props.suggestions.filter(s => s.type === 'critical').length
-})
-
-const improvementCount = computed<number>(() => {
-  return props.suggestions.filter(s => s.type === 'improvement').length
-})
-
-const enhancementCount = computed<number>(() => {
-  return props.suggestions.filter(s => s.type === 'enhancement').length
-})
-
-// 筛选后的建议列表
-const filteredSuggestions = computed<ResumeSuggestionItem[]>(() => {
-  if (activeFilter.value === 'all') {
-    return props.suggestions
-  }
-  return props.suggestions.filter(s => s.type === activeFilter.value)
-})
-
 // 根据最高优先级显示图标
 const highestPriorityIcon = computed<string>(() => {
-  if (criticalCount.value > 0) return '⚠️'
-  if (improvementCount.value > 0) return '💡'
+  if (props.suggestions.some(s => s.type === 'critical')) return '⚠️'
+  if (props.suggestions.some(s => s.type === 'improvement')) return '💡'
   return '✨'
 })
 </script>
@@ -190,51 +126,10 @@ const highestPriorityIcon = computed<string>(() => {
   padding: 0 $spacing-lg $spacing-lg;
 }
 
-.filter-tabs {
-  display: flex;
-  gap: $spacing-sm;
-  margin-bottom: $spacing-md;
-  flex-wrap: wrap;
-}
-
-.filter-tab {
-  padding: $spacing-xs $spacing-md;
-  font-size: $text-xs;
-  background: rgba(255, 255, 255, 0.05);
-  color: $color-text-tertiary;
-  border-radius: $radius-sm;
-  transition: all $transition-fast;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: $color-text-secondary;
-  }
-
-  &.active {
-    background: $color-accent-glow;
-    color: $color-accent;
-  }
-
-  &.critical.active {
-    background: rgba(248, 113, 113, 0.15);
-    color: $color-error;
-  }
-
-  &.improvement.active {
-    background: rgba(251, 191, 36, 0.15);
-    color: $color-warning;
-  }
-
-  &.enhancement.active {
-    background: rgba(96, 165, 250, 0.15);
-    color: $color-info;
-  }
-}
-
 .suggestions-list {
   display: flex;
   flex-direction: column;
-  gap: $spacing-sm;
+  gap: $spacing-lg;
 }
 
 // 展开动画
