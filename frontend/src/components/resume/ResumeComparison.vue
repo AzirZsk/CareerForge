@@ -26,7 +26,8 @@
           v-if="beforeSection?.length"
           :sections="beforeSection"
           side="before"
-          :changes="changes"
+          :before-sections="beforeSection"
+          :after-sections="afterSection"
         />
         <div v-else class="empty-state">
           <p>暂无对比数据</p>
@@ -37,7 +38,8 @@
           v-if="afterSection?.length"
           :sections="afterSection"
           side="after"
-          :changes="changes"
+          :before-sections="beforeSection"
+          :after-sections="afterSection"
           :editable="editable"
           @edit="handleEdit"
         />

@@ -51,18 +51,18 @@
               </svg>
             </button>
             <div class="exp-header">
-              <span class="exp-title" :class="getChangeClass(section.type, 'education[' + idx + '].school')">{{ item.school }}</span>
-              <span class="exp-period" :class="getChangeClass(section.type, 'education[' + idx + '].period')">{{ item.period }}</span>
+              <span class="exp-title" :class="getChangeClass(section.type, 'school', idx)">{{ item.school }}</span>
+              <span class="exp-period" :class="getChangeClass(section.type, 'period', idx)">{{ item.period }}</span>
             </div>
             <div class="exp-meta">
-              <span class="exp-degree" v-if="item.degree" :class="getChangeClass(section.type, 'education[' + idx + '].degree')">{{ item.degree }}</span>
-              <span class="exp-major" v-if="item.major" :class="getChangeClass(section.type, 'education[' + idx + '].major')">{{ item.major }}</span>
-              <span class="exp-gpa" v-if="item.gpa" :class="getChangeClass(section.type, 'education[' + idx + '].gpa')">GPA: {{ item.gpa }}</span>
+              <span class="exp-degree" v-if="item.degree" :class="getChangeClass(section.type, 'degree', idx)">{{ item.degree }}</span>
+              <span class="exp-major" v-if="item.major" :class="getChangeClass(section.type, 'major', idx)">{{ item.major }}</span>
+              <span class="exp-gpa" v-if="item.gpa" :class="getChangeClass(section.type, 'gpa', idx)">GPA: {{ item.gpa }}</span>
             </div>
-            <div v-if="item.courses?.length" class="exp-courses" :class="getChangeClass(section.type, 'education[' + idx + '].courses')">
+            <div v-if="item.courses?.length" class="exp-courses" :class="getChangeClass(section.type, 'courses', idx)">
               <span v-for="course in item.courses" :key="course" class="course-tag">{{ course }}</span>
             </div>
-            <div v-if="item.honors?.length" class="exp-honors" :class="getChangeClass(section.type, 'education[' + idx + '].honors')">
+            <div v-if="item.honors?.length" class="exp-honors" :class="getChangeClass(section.type, 'honors', idx)">
               <span v-for="honor in item.honors" :key="honor" class="honor-tag">{{ honor }}</span>
             </div>
           </div>
@@ -79,12 +79,12 @@
               </svg>
             </button>
             <div class="exp-header">
-              <span class="exp-title" :class="getChangeClass(section.type, 'work[' + idx + '].company')">{{ item.company }}</span>
-              <span class="exp-period" :class="getChangeClass(section.type, 'work[' + idx + '].period')">{{ item.period }}</span>
+              <span class="exp-title" :class="getChangeClass(section.type, 'company', idx)">{{ item.company }}</span>
+              <span class="exp-period" :class="getChangeClass(section.type, 'period', idx)">{{ item.period }}</span>
             </div>
             <div class="exp-meta">
-              <span class="exp-position" v-if="item.position" :class="getChangeClass(section.type, 'work[' + idx + '].position')">{{ item.position }}</span>
-              <span class="exp-location" v-if="item.location" :class="getChangeClass(section.type, 'work[' + idx + '].location')">
+              <span class="exp-position" v-if="item.position" :class="getChangeClass(section.type, 'position', idx)">{{ item.position }}</span>
+              <span class="exp-location" v-if="item.location" :class="getChangeClass(section.type, 'location', idx)">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                   <circle cx="12" cy="10" r="3"></circle>
@@ -93,24 +93,23 @@
               </span>
               <span class="exp-industry" v-if="item.industry">{{ item.industry }}</span>
             </div>
-            <p v-if="item.description" class="exp-description" :class="getChangeClass(section.type, 'work[' + idx + '].description')">
+            <p v-if="item.description" class="exp-description" :class="getChangeClass(section.type, 'description', idx)">
               {{ item.description }}
             </p>
             <!-- 工作经历新增的 achievements 字段 -->
-            <div v-if="item.achievements?.length" class="exp-achievements">
+            <div v-if="item.achievements?.length" class="exp-achievements" :class="getChangeClass(section.type, 'achievements', idx)">
               <div
                 v-for="(ach, achIdx) in item.achievements"
                 :key="achIdx"
                 class="achievement-item"
-                :class="getChangeClass(section.type, 'work[' + idx + '].achievements[' + achIdx + ']')"
               >
                 {{ ach }}
               </div>
             </div>
-            <div v-if="item.technologies?.length" class="exp-technologies" :class="getChangeClass(section.type, 'work[' + idx + '].technologies')">
+            <div v-if="item.technologies?.length" class="exp-technologies" :class="getChangeClass(section.type, 'technologies', idx)">
               <span v-for="tech in item.technologies" :key="tech" class="tech-tag">{{ tech }}</span>
             </div>
-            <div v-if="item.products?.length" class="exp-products" :class="getChangeClass(section.type, 'work[' + idx + '].products')">
+            <div v-if="item.products?.length" class="exp-products" :class="getChangeClass(section.type, 'products', idx)">
               <span class="products-label">代表产品:</span>
               <span v-for="p in item.products" :key="p" class="product-tag">{{ p }}</span>
             </div>
@@ -128,7 +127,7 @@
               </svg>
             </button>
             <div class="exp-header">
-              <span class="exp-title" :class="getChangeClass(section.type, 'project[' + idx + '].name')">
+              <span class="exp-title" :class="getChangeClass(section.type, 'name', idx)">
                 {{ item.name }}
                 <a v-if="item.url" :href="item.url" target="_blank" class="exp-link" title="访问项目">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -138,21 +137,20 @@
                   </svg>
                 </a>
               </span>
-              <span class="exp-period" :class="getChangeClass(section.type, 'project[' + idx + '].period')">{{ item.period }}</span>
+              <span class="exp-period" :class="getChangeClass(section.type, 'period', idx)">{{ item.period }}</span>
             </div>
-            <div class="exp-role" :class="getChangeClass(section.type, 'project[' + idx + '].role')">{{ item.role }}</div>
-            <p v-if="item.description" class="exp-description" :class="getChangeClass(section.type, 'project[' + idx + '].description')">
+            <div class="exp-role" :class="getChangeClass(section.type, 'role', idx)">{{ item.role }}</div>
+            <p v-if="item.description" class="exp-description" :class="getChangeClass(section.type, 'description', idx)">
               {{ item.description }}
             </p>
-            <div v-if="item.technologies?.length" class="exp-technologies" :class="getChangeClass(section.type, 'project[' + idx + '].technologies')">
+            <div v-if="item.technologies?.length" class="exp-technologies" :class="getChangeClass(section.type, 'technologies', idx)">
               <span v-for="tech in item.technologies" :key="tech" class="tech-tag">{{ tech }}</span>
             </div>
-            <div v-if="item.achievements?.length" class="exp-achievements">
+            <div v-if="item.achievements?.length" class="exp-achievements" :class="getChangeClass(section.type, 'achievements', idx)">
               <div
                 v-for="(ach, achIdx) in item.achievements"
                 :key="achIdx"
                 class="achievement-item"
-                :class="getChangeClass(section.type, 'project[' + idx + '].achievements[' + achIdx + ']')"
               >
                 {{ ach }}
               </div>
@@ -168,7 +166,7 @@
               v-for="(skill, idx) in getSkillsList(section)"
               :key="idx"
               class="skill-item"
-              :class="[getChangeClass(section.type, 'skills[' + idx + ']'), { 'has-edit-btn': showEdit }]"
+              :class="[getChangeClass(section.type, '', idx), { 'has-edit-btn': showEdit }]"
             >
               <button v-if="showEdit" class="item-edit-btn" @click="handleEditSection(sectionIdx, idx)" title="编辑">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -197,7 +195,7 @@
               </svg>
             </button>
             <div class="cert-header">
-              <span class="cert-name" :class="getChangeClass(section.type, 'certificate[' + idx + '].name')">
+              <span class="cert-name" :class="getChangeClass(section.type, 'name', idx)">
                 {{ item.name }}
                 <a v-if="item.url" :href="item.url" target="_blank" class="cert-link" title="查看证书">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -260,17 +258,16 @@
               </svg>
             </button>
             <div class="exp-header">
-              <span class="exp-title">{{ item.name }}</span>
-              <span v-if="item.period" class="exp-period">{{ item.period }}</span>
+              <span class="exp-title" :class="getChangeClass(section.type, 'name', itemIdx)">{{ item.name }}</span>
+              <span v-if="item.period" class="exp-period" :class="getChangeClass(section.type, 'period', itemIdx)">{{ item.period }}</span>
             </div>
-            <div v-if="item.role" class="exp-role">{{ item.role }}</div>
-            <p v-if="item.description" class="exp-description">{{ item.description }}</p>
-            <div v-if="item.highlights?.length" class="exp-achievements">
+            <div v-if="item.role" class="exp-role" :class="getChangeClass(section.type, 'role', itemIdx)">{{ item.role }}</div>
+            <p v-if="item.description" class="exp-description" :class="getChangeClass(section.type, 'description', itemIdx)">{{ item.description }}</p>
+            <div v-if="item.highlights?.length" class="exp-achievements" :class="getChangeClass(section.type, 'highlights', itemIdx)">
               <div
                 v-for="(highlight, hIdx) in item.highlights"
                 :key="hIdx"
                 class="achievement-item"
-                :class="getChangeClass(section.type, `custom[${itemIdx}].highlights[${hIdx}]`)"
               >
                 {{ highlight }}
               </div>
@@ -289,15 +286,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, toRef } from 'vue'
 import type { ResumeSection } from '@/types'
-import type { ChangeItem, ComparisonEditEvent } from '@/types/resume-optimize'
+import type { ComparisonEditEvent } from '@/types/resume-optimize'
 import { useSectionHelper } from '@/composables/useSectionHelper'
+import { useSectionDiff } from '@/composables/useSectionDiff'
 
 interface Props {
   sections: ResumeSection[]
   side: 'before' | 'after'
-  changes?: ChangeItem[]
+  /** 优化前的区块数据（用于差异对比） */
+  beforeSections?: ResumeSection[]
+  /** 优化后的区块数据（用于差异对比） */
+  afterSections?: ResumeSection[]
   /** 是否可编辑（仅对 after 侧生效） */
   editable?: boolean
 }
@@ -324,6 +325,12 @@ const {
   getOrderedBasicInfoFields
 } = useSectionHelper()
 
+// 初始化差异对比
+const { fieldClass, itemFieldClass } = useSectionDiff(
+  toRef(props, 'beforeSections'),
+  toRef(props, 'afterSections')
+)
+
 // 是否显示编辑功能（仅 after 侧且 editable 为 true）
 const showEdit = computed(() => props.editable && props.side === 'after')
 
@@ -340,66 +347,18 @@ function handleEditSection(sectionIndex: number, itemIndex?: number) {
   })
 }
 
-// 区块类型到驼峰命名的映射（与后端 AI 生成的路径格式一致）
-const SECTION_TYPE_TO_CAMEL: Record<string, string> = {
-  BASIC_INFO: 'basicInfo',
-  EDUCATION: 'education',
-  WORK: 'work',
-  PROJECT: 'projects',      // 注意：项目是复数形式
-  SKILLS: 'skills',
-  CERTIFICATE: 'certificates',
-  OPEN_SOURCE: 'openSource',
-  CUSTOM: 'customSections'
-}
-
-// 判断字段是否有变更
-function getChangeClass(sectionType: string, fieldPath: string): string {
-  if (!props.changes?.length) return ''
-
-  // 使用驼峰命名的区块前缀（与后端 AI 路径格式一致）
-  const typePrefix = SECTION_TYPE_TO_CAMEL[sectionType] || sectionType.toLowerCase()
-
-  // 判断 fieldPath 是否已经包含区块前缀（如 work[0].description）
-  // 如果包含数组索引格式 [n]，说明已经是完整路径
-  let fullPath: string
-  if (fieldPath.includes('[')) {
-    // 已经是完整路径，但可能需要修正区块名称
-    // 例如：project[0] -> projects[0]
-    fullPath = fieldPath
-  } else {
-    // 只是字段名，需要添加区块前缀
-    fullPath = `${typePrefix}.${fieldPath}`
+/**
+ * 获取高亮 class（统一入口）
+ * @param sectionType 区块类型，如 'BASIC_INFO', 'WORK'
+ * @param fieldKey 字段名，如 'name', 'summary'
+ * @param itemIndex 数组索引（聚合类型时使用）
+ */
+function getChangeClass(sectionType: string, fieldKey: string, itemIndex?: number): string {
+  if (!props.beforeSections || !props.afterSections) return ''
+  if (itemIndex !== undefined) {
+    return itemFieldClass(sectionType, itemIndex, fieldKey || undefined, props.side)
   }
-
-  // 检查是否有匹配的变更
-  const hasChange = props.changes.some(change => {
-    if (!change.field) return false
-
-    // 精确匹配
-    if (change.field === fullPath || change.field === fieldPath) return true
-
-    // 尝试修正路径格式后匹配（如 project -> projects）
-    const correctedPath = fullPath.replace(/^project\[/, 'projects[')
-    if (change.field === correctedPath) return true
-
-    // 处理不同的路径格式（统一转为小写比较）
-    const normalizedChangeField = change.field.toLowerCase()
-    const normalizedFullPath = fullPath.toLowerCase()
-    const normalizedCorrectedPath = correctedPath.toLowerCase()
-
-    return normalizedChangeField === normalizedFullPath ||
-           normalizedChangeField === normalizedCorrectedPath ||
-           normalizedChangeField.endsWith('.' + normalizedFullPath)
-  })
-
-  if (!hasChange) return ''
-
-  // 根据侧边返回不同的高亮类
-  if (props.side === 'after') {
-    return 'highlight-added'
-  } else {
-    return 'highlight-removed'
-  }
+  return fieldClass(sectionType, fieldKey, props.side)
 }
 </script>
 
