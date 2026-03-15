@@ -79,6 +79,9 @@
                     <div v-else class="dot"></div>
                   </div>
                   <span class="stage-label">{{ getStageLabel(item.stage) }}</span>
+                  <span v-if="item.startTime" class="stage-elapsed" :class="{ running: !item.endTime && item.stage === state.currentStage && state.isOptimizing }">
+                    {{ formatElapsed(item) }}
+                  </span>
                 </div>
                 <div
                   v-if="item.completed && item.data"
@@ -349,9 +352,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onUnmounted } from 'vue'
 import { useScrollLock } from '@vueuse/core'
-import type { OptimizeState, OptimizeStage, ResumeSection, ComparisonEditEvent } from '@/types/resume-optimize'
+import type { OptimizeState, OptimizeStage, StageHistoryItem, ResumeSection, ComparisonEditEvent } from '@/types/resume-optimize'
 import { getStageLabel, getDimensionLabel } from '@/types/resume-optimize'
 import ResumeComparison from './ResumeComparison.vue'
 import EditSectionModal from './EditSectionModal.vue'
@@ -363,6 +366,38 @@ const props = defineProps<{
 
 // 锁定背景滚动，防止滚动穿透
 const isScrollLocked = useScrollLock(document.body)
+
+// ==================== 节点运行计时器 ====================
+const now = ref(Date.now())
+let timerHandle: ReturnType<typeof setInterval> | null = null
+
+// 启动/停止计时器
+watch(
+  () => props.state.isOptimizing,
+  (optimizing) => {
+    if (optimizing) {
+      timerHandle = setInterval(() => { now.value = Date.now() }, 1000)
+    } else if (timerHandle) {
+      clearInterval(timerHandle)
+      timerHandle = null
+    }
+  },
+  { immediate: true }
+)
+
+onUnmounted(() => {
+  if (timerHandle) clearInterval(timerHandle)
+})
+
+/** 格式化耗时为 mm:ss */
+function formatElapsed(item: StageHistoryItem): string {
+  if (!item.startTime) return ''
+  const end = item.endTime ?? now.value
+  const elapsed = Math.max(0, Math.floor((end - item.startTime) / 1000))
+  const m = String(Math.floor(elapsed / 60)).padStart(2, '0')
+  const s = String(elapsed % 60).padStart(2, '0')
+  return `${m}:${s}`
+}
 
 // 退出二次确认状态
 const showCloseConfirm = ref(false)
@@ -851,6 +886,17 @@ function isArray(value: unknown): value is string[] {
 .stage-label {
   font-size: $text-sm;
   color: $color-text-secondary;
+}
+
+.stage-elapsed {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+  font-variant-numeric: tabular-nums;
+  min-width: 40px;
+
+  &.running {
+    color: $color-accent;
+  }
 }
 
 .expand-indicator {

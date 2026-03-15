@@ -230,6 +230,10 @@ export interface StageHistoryItem {
   completed: boolean
   data?: any
   expanded?: boolean
+  /** 节点开始运行的时间戳（ms） */
+  startTime?: number
+  /** 节点结束运行的时间戳（ms），未结束时为 undefined */
+  endTime?: number
 }
 
 /** 优化状态 */

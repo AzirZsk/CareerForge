@@ -167,6 +167,13 @@ export function useResumeOptimize() {
     state.currentStage = 'end'
     state.message = '优化完成'
 
+    // 标记最后一个运行中节点的结束时间
+    const now = Date.now()
+    const runningStage = state.stageHistory.find(h => h.startTime && !h.endTime)
+    if (runningStage) {
+      runningStage.endTime = now
+    }
+
     // 关闭连接
     closeConnection()
   }
@@ -178,6 +185,13 @@ export function useResumeOptimize() {
     state.hasError = true
     state.errorMessage = event.message || '优化失败'
     state.isOptimizing = false
+
+    // 标记当前运行中节点的结束时间
+    const now = Date.now()
+    const runningStage = state.stageHistory.find(h => h.startTime && !h.endTime)
+    if (runningStage) {
+      runningStage.endTime = now
+    }
 
     // 关闭连接
     closeConnection()
@@ -193,6 +207,7 @@ export function useResumeOptimize() {
     completed: boolean,
     data?: any
   ) {
+    const now = Date.now()
     const existingIndex = state.stageHistory.findIndex(h => h.stage === stage)
 
     if (existingIndex >= 0) {
@@ -203,15 +218,25 @@ export function useResumeOptimize() {
       if (data) {
         state.stageHistory[existingIndex].data = data
       }
+      // 节点完成时记录结束时间
+      if (completed && !state.stageHistory[existingIndex].endTime) {
+        state.stageHistory[existingIndex].endTime = now
+      }
     } else {
-      // 添加新记录
+      // 添加新记录，同时标记上一个运行中节点的结束时间
+      const prevRunning = state.stageHistory.find(h => h.startTime && !h.endTime)
+      if (prevRunning) {
+        prevRunning.endTime = now
+      }
       state.stageHistory.push({
         stage,
         message,
         timestamp,
         completed,
         data,
-        expanded: false
+        expanded: false,
+        startTime: now,
+        endTime: completed ? now : undefined
       })
     }
   }
