@@ -268,11 +268,19 @@ const isFormValid = computed(() => {
   return formData.value.targetPosition.trim() && formData.value.jobDescription.trim()
 })
 
-// 排序后的阶段历史
+// 固定显示所有阶段节点（与优化弹窗一致）
 const sortedStageHistory = computed(() => {
-  const order = ['analyze_jd', 'match_resume', 'generate_tailored']
-  return [...tailorState.stageHistory].sort((a, b) => {
-    return order.indexOf(a.stage) - order.indexOf(b.stage)
+  const order = ['analyze_jd', 'match_resume', 'generate_tailored'] as const
+  return order.map(stage => {
+    const historyItem = tailorState.stageHistory.find(h => h.stage === stage)
+    return historyItem || {
+      stage,
+      message: '',
+      timestamp: 0,
+      completed: false,
+      data: null,
+      expanded: false
+    }
   })
 })
 
