@@ -170,27 +170,24 @@
                   
                   <!-- 内容优化数据 -->
                   <div v-else-if="item.stage === 'optimize_section'" class="data-content">
-                    <!-- 对比视图切换 -->
-                    <div class="comparison-toggle">
-                      <button
-                        :class="['toggle-btn', comparisonView === 'changes' ? 'active' : '']"
-                        @click="comparisonView = 'changes'"
-                      >
-                        变更详情
-                      </button>
-                      <button
-                        :class="['toggle-btn', comparisonView === 'comparison' ? 'active' : '']"
-                        @click="comparisonView = 'comparison'"
-                      >
-                        简历对比
-                      </button>
-                    </div>
-
                     <!-- 变更详情视图 -->
-                    <div v-if="comparisonView === 'changes'" class="changes-view">
+                    <div class="changes-view">
                       <div class="changes-summary">
-                        <span class="changes-count">{{ item.data.changeCount || item.data.changes?.length || 0 }} 处变更</span>
-                        <span class="changes-improvement" v-if="item.data.improvementScore">预计提升 {{ item.data.improvementScore }} 分</span>
+                        <div class="changes-summary-left">
+                          <span class="changes-count">{{ item.data.changeCount || item.data.changes?.length || 0 }} 处变更</span>
+                          <span class="changes-improvement" v-if="item.data.improvementScore">预计提升 {{ item.data.improvementScore }} 分</span>
+                        </div>
+                        <button
+                          v-if="item.data.beforeSection?.length || item.data.beforeResume"
+                          class="comparison-btn"
+                          @click="showFullComparison = true"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="3" width="20" height="18" rx="2"/>
+                            <line x1="12" y1="3" x2="12" y2="21"/>
+                          </svg>
+                          对比 & 编辑
+                        </button>
                       </div>
                       <div class="confidence-badge" :class="item.data.confidence || 'medium'" v-if="item.data.confidence">
                         置信度: {{ item.data.confidence }}
@@ -231,23 +228,6 @@
                         <div class="tip-item" v-for="(tip, idx) in item.data.tips" :key="idx">
                           • {{ tip }}
                         </div>
-                      </div>
-                    </div>
-
-                    <!-- 简历对比视图 -->
-                    <div v-else-if="comparisonView === 'comparison'" class="comparison-view">
-                      <ResumeComparison
-                        v-if="item.data.beforeSection?.length || item.data.beforeResume"
-                        :before-section="item.data.beforeSection"
-                        :after-section="getDisplayAfterSection(item)"
-                        :changes="item.data.changes || []"
-                        :improvement-score="item.data.improvementScore"
-                        :before-resume="item.data.beforeResume"
-                        :editable="state.isCompleted && item.stage === 'optimize_section'"
-                        @edit-section="handleEditSection"
-                      />
-                      <div v-else class="no-comparison-data">
-                        <p>暂无对比数据</p>
                       </div>
                     </div>
                   </div>
@@ -314,6 +294,37 @@
         </div>
       </div>
     </Transition>
+
+    <!-- 全屏简历对比 -->
+    <Teleport to="body">
+      <Transition name="fullscreen-comparison">
+        <div v-if="showFullComparison" class="fullscreen-comparison-overlay">
+          <div class="fullscreen-comparison-container">
+            <div class="fullscreen-comparison-header">
+              <h3 class="fullscreen-comparison-title">简历对比</h3>
+              <button class="fullscreen-comparison-close" @click="showFullComparison = false">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            <div class="fullscreen-comparison-body">
+              <ResumeComparison
+                v-if="fullComparisonData"
+                :before-section="fullComparisonData.beforeSection"
+                :after-section="fullComparisonData.afterSection"
+                :changes="fullComparisonData.changes"
+                :improvement-score="fullComparisonData.improvementScore"
+                :before-resume="fullComparisonData.beforeResume"
+                :editable="state.isCompleted"
+                @edit-section="handleEditSection"
+              />
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
 
     <!-- 编辑区块弹窗 -->
     <EditSectionModal
@@ -414,21 +425,8 @@ function handleEditSection(payload: ComparisonEditEvent) {
   const section = editedAfterSection.value[payload.sectionIndex]
   if (!section) return
 
-  // 对于聚合类型，需要创建一个虚拟 section 用于编辑单个项
-  if (payload.itemIndex !== undefined) {
-    const items = JSON.parse(section.content || '[]')
-    const item = items[payload.itemIndex]
-    if (item) {
-      // 创建虚拟 section，类型设为 section.type，但 content 只包含单个项
-      editingSection.value = {
-        ...section,
-        content: JSON.stringify(item)
-      }
-    }
-  } else {
-    // 单对象类型，直接使用整个 section
-    editingSection.value = JSON.parse(JSON.stringify(section))
-  }
+  // 直接传完整 section，让 EditSectionModal 根据 itemIndex 自行解析
+  editingSection.value = JSON.parse(JSON.stringify(section))
 
   showEditModal.value = true
 }
@@ -538,8 +536,21 @@ function toggleExpand(stage: OptimizeStage) {
   emit('toggleExpand', stage)
 }
 
-// 对比视图状态（简化：单阶段视图，因为同时只展示一个阶段）
-const comparisonView = ref<'changes' | 'comparison'>('changes')
+// 全屏简历对比状态
+const showFullComparison = ref(false)
+
+// 全屏对比所需数据
+const fullComparisonData = computed(() => {
+  const optimizeStage = props.state.stageHistory.find(h => h.stage === 'optimize_section')
+  if (!optimizeStage?.data) return null
+  return {
+    beforeSection: optimizeStage.data.beforeSection,
+    afterSection: getDisplayAfterSection(optimizeStage),
+    changes: optimizeStage.data.changes || [],
+    improvementScore: optimizeStage.data.improvementScore,
+    beforeResume: optimizeStage.data.beforeResume
+  }
+})
 
 // 严重性图标映射
 const SEVERITY_ICONS: Record<string, string> = {
@@ -1138,59 +1149,109 @@ function isArray(value: unknown): value is string[] {
   font-style: italic;
 }
 
-// 对比视图切换按钮
-.comparison-toggle {
+// 变更数据样式
+.changes-summary {
   display: flex;
-  gap: $spacing-sm;
-  margin-bottom: $spacing-md;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-sm;
 }
 
-.toggle-btn {
+.changes-summary-left {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+}
+
+.comparison-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
   padding: $spacing-xs $spacing-md;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: $radius-sm;
-  font-size: $text-sm;
+  font-size: $text-xs;
   color: $color-text-secondary;
   cursor: pointer;
+  transition: all $transition-fast;
+  white-space: nowrap;
+
+  &:hover {
+    background: rgba(212, 168, 83, 0.1);
+    border-color: rgba(212, 168, 83, 0.3);
+    color: $color-accent;
+  }
+}
+
+.changes-view {
+  margin-top: $spacing-md;
+}
+
+// 全屏简历对比
+.fullscreen-comparison-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  backdrop-filter: blur(12px);
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+}
+
+.fullscreen-comparison-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+.fullscreen-comparison-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-md $spacing-xl;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.fullscreen-comparison-title {
+  font-size: $text-lg;
+  font-weight: $weight-semibold;
+  color: $color-text-primary;
+}
+
+.fullscreen-comparison-close {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $color-text-tertiary;
+  border-radius: $radius-sm;
   transition: all $transition-fast;
 
   &:hover {
     background: rgba(255, 255, 255, 0.1);
     color: $color-text-primary;
   }
-
-  &.active {
-    background: $gradient-gold;
-    color: $color-bg-deep;
-    border-color: transparent;
-  }
 }
 
-// 变更数据样式
-.changes-summary {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: $spacing-sm;
+.fullscreen-comparison-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: $spacing-lg $spacing-xl;
 }
 
-.changes-view,
-.comparison-view {
-  margin-top: $spacing-md;
+// 全屏对比动画
+.fullscreen-comparison-enter-active,
+.fullscreen-comparison-leave-active {
+  transition: opacity 0.25s ease;
 }
 
-.comparison-view {
-  .resume-comparison {
-    .comparison-content {
-      min-height: 50vh;
-    }
-  }
-}
-
-.no-comparison-data {
-  padding: $spacing-xl;
-  text-align: center;
-  color: $color-text-tertiary;
+.fullscreen-comparison-enter-from,
+.fullscreen-comparison-leave-to {
+  opacity: 0;
 }
 
 .changes-count {
