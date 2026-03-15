@@ -766,8 +766,8 @@ public class AIPromptProperties {
                     | type | string | 是 | 变更类型：added/modified/removed |
                     | field | string | 是 | 字段路径，如 work[0].description |
                     | valueType | string | 是 | 值类型：string 或 string_array |
-                    | before | object | 否 | 修改前的值（ChangeValue对象） |
-                    | after | object | 是 | 修改后的值（ChangeValue对象） |
+                    | before | object | 否 | 修改前的值（ChangeValue对象，type=added或removed时可为null） |
+                    | after | object | 否 | 修改后的值（ChangeValue对象，type=removed时可为null） |
                     | reason | string | 是 | 修改原因说明 |
 
                     ### ChangeValue 对象
@@ -777,10 +777,12 @@ public class AIPromptProperties {
                     | stringValue | string | 字符串值（当valueType=string时使用） |
                     | arrayValue | array | 字符串数组（当valueType=string_array时使用） |
 
+                    **注意**：当 type=added 且新增的是一个结构化对象（如 skills 条目）时，stringValue 中应放入序列化后的 JSON 对象字符串，例如：`{\\"name\\":\\"微服务架构\\",\\"description\\":\\"5年+经验\\",\\"level\\":\\"精通\\",\\"category\\":\\"框架\\"}`。系统会自动将其解析为对象结构。
+
                     ---
 
                     ## 输出格式示例（严格JSON，单行压缩格式）
-                    {"changes":[{"type":"modified","field":"work[0].description","valueType":"string","before":{"stringValue":"负责后端开发"},"after":{"stringValue":"主导核心API开发，支撑日均50万请求，可用性99.9%"},"reason":"使用强动词+补充量化数据"},{"type":"modified","field":"projects[0].achievements[0]","valueType":"string","before":{"stringValue":"完成用户模块"},"after":{"stringValue":"主导用户模块设计，支撑XX万日活"},"reason":"量化项目成果，XX需用户补充具体数值"},{"type":"added","field":"skills[3]","valueType":"string","before":null,"after":{"stringValue":"微服务架构（Spring Cloud）"},"reason":"补充目标岗位核心技能"}],"improvementScore":15,"tips":["建议补充用户模块的具体日活数据","可强调团队规模信息"]}
+                    {"changes":[{"type":"modified","field":"work[0].description","valueType":"string","before":{"stringValue":"负责后端开发"},"after":{"stringValue":"主导核心API开发，支撑日均50万请求，可用性99.9%"},"reason":"使用强动词+补充量化数据"},{"type":"modified","field":"projects[0].achievements[0]","valueType":"string","before":{"stringValue":"完成用户模块"},"after":{"stringValue":"主导用户模块设计，支撑XX万日活"},"reason":"量化项目成果，XX需用户补充具体数值"},{"type":"added","field":"skills[0]","valueType":"string","before":null,"after":{"stringValue":"{\\"name\\":\\"微服务架构\\",\\"description\\":\\"Spring Cloud全家桶，5年+微服务设计与落地经验\\",\\"level\\":\\"精通\\",\\"category\\":\\"框架\\"}"},"reason":"补充目标岗位核心技能"},{"type":"modified","field":"customSections[0].items[0].highlights","valueType":"string_array","before":{"arrayValue":[]},"after":{"arrayValue":["熟悉Z世代用户心理，具备深度游戏体验分析能力","能精准把握玩家痛点提升内容转化率"]},"reason":"将游戏时长转化为可迁移的运营能力描述"},{"type":"removed","field":"work[2]","valueType":"string","before":null,"after":null,"reason":"该段经历与目标岗位无关，删除后简历更聚焦"},{"type":"removed","field":"certificates[1]","valueType":"string","before":null,"after":null,"reason":"证书已过期，保留反而影响专业度"}],"improvementScore":15,"tips":["建议补充用户模块的具体日活数据","可强调团队规模信息"]}
 
                     ---
 

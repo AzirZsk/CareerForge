@@ -262,28 +262,39 @@
               </button>
             </template>
             <template v-else-if="state.isCompleted">
-              <button v-if="hasEdits" class="footer-btn secondary" @click="resetEdits">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="1 4 1 10 7 10"></polyline>
-                  <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
-                </svg>
-                重置
-              </button>
-              <button class="footer-btn secondary" @click="handleClose">
-                退出
-              </button>
-              <button
-                class="footer-btn primary"
-                :class="{ loading: state.isApplying }"
-                :disabled="state.isApplying || !hasOptimizedSections"
-                @click="handleApply"
-              >
-                <svg v-if="state.isApplying" class="spinner-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="10" stroke-opacity="0.3"/>
-                  <path d="M12 2a10 10 0 0 1 10 10"/>
-                </svg>
-                {{ state.isApplying ? '应用中...' : '应用变更' }}
-              </button>
+              <div v-if="showCloseConfirm" class="close-confirm-group">
+                <span class="close-confirm-text">未应用的变更将丢失</span>
+                <button class="footer-btn danger-text" @click="confirmClose">
+                  确认退出
+                </button>
+                <button class="footer-btn secondary" @click="showCloseConfirm = false">
+                  取消
+                </button>
+              </div>
+              <template v-else>
+                <button v-if="hasEdits" class="footer-btn secondary" @click="resetEdits">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="1 4 1 10 7 10"></polyline>
+                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                  </svg>
+                  重置
+                </button>
+                <button class="footer-btn secondary" @click="handleCloseClick">
+                  退出
+                </button>
+                <button
+                  class="footer-btn primary"
+                  :class="{ loading: state.isApplying }"
+                  :disabled="state.isApplying || !hasOptimizedSections"
+                  @click="handleApply"
+                >
+                  <svg v-if="state.isApplying" class="spinner-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" stroke-opacity="0.3"/>
+                    <path d="M12 2a10 10 0 0 1 10 10"/>
+                  </svg>
+                  {{ state.isApplying ? '应用中...' : '应用变更' }}
+                </button>
+              </template>
             </template>
             <template v-else>
               <button class="footer-btn secondary" @click="handleClose">
@@ -353,11 +364,17 @@ const props = defineProps<{
 // 锁定背景滚动，防止滚动穿透
 const isScrollLocked = useScrollLock(document.body)
 
+// 退出二次确认状态
+const showCloseConfirm = ref(false)
+
 // 监听弹窗显示状态，同步锁定/解锁背景滚动
 watch(
   () => props.visible,
   (visible) => {
     isScrollLocked.value = visible
+    if (!visible) {
+      showCloseConfirm.value = false
+    }
   },
   { immediate: true }
 )
@@ -511,6 +528,20 @@ const hasOptimizedSections = computed(() => {
   const data = optimizeStage?.data
   return data?.beforeSection?.length > 0 && data?.afterSection?.length > 0
 })
+
+function handleCloseClick() {
+  // 优化完成且有未应用的优化数据时，需要二次确认
+  if (props.state.isCompleted && hasOptimizedSections.value) {
+    showCloseConfirm.value = true
+    return
+  }
+  handleClose()
+}
+
+function confirmClose() {
+  showCloseConfirm.value = false
+  handleClose()
+}
 
 function handleClose() {
   // 优化完成时触发 complete 事件，让父组件刷新数据
@@ -1423,9 +1454,22 @@ function isArray(value: unknown): value is string[] {
 .modal-footer {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   gap: $spacing-md;
   padding: $spacing-lg;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.close-confirm-group {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.close-confirm-text {
+  font-size: $text-xs;
+  color: $color-error;
+  opacity: 0.8;
 }
 
 .footer-btn {
@@ -1464,6 +1508,16 @@ function isArray(value: unknown): value is string[] {
 
     &:hover {
       background: rgba(248, 113, 113, 0.2);
+    }
+  }
+
+  &.danger-text {
+    background: transparent;
+    color: $color-error;
+    padding: $spacing-sm $spacing-md;
+
+    &:hover {
+      background: rgba(248, 113, 113, 0.1);
     }
   }
 

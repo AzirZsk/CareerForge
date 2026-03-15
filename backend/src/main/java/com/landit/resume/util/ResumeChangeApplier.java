@@ -258,13 +258,27 @@ public final class ResumeChangeApplier {
             return;
         }
         // 2. 定位目标 section
-        ResumeDetailVO.ResumeSectionVO targetSection = findTargetSection(sections, pathInfo.getSectionType(), pathInfo.getArrayIndex());
+        SectionType sectionType = pathInfo.getSectionType();
+        ResumeDetailVO.ResumeSectionVO targetSection = findTargetSection(sections, sectionType, pathInfo.getArrayIndex());
         if (targetSection == null) {
-            log.warn("未找到目标区块: {}", pathInfo.getSectionType());
-            return;
+            if ("added".equals(type)) {
+                // 自动创建缺失的 section
+                targetSection = new ResumeDetailVO.ResumeSectionVO();
+                targetSection.setType(sectionType.getCode());
+                targetSection.setTitle(sectionType.getDescription());
+                if (sectionType == SectionType.BASIC_INFO) {
+                    targetSection.setContent("{}");
+                } else {
+                    targetSection.setContent("[]");
+                }
+                sections.add(targetSection);
+                log.info("自动创建缺失区块: {}", sectionType);
+            } else {
+                log.warn("未找到目标区块: {}", sectionType);
+                return;
+            }
         }
         // 3. 根据区块类型应用变更
-        SectionType sectionType = pathInfo.getSectionType();
         if (sectionType == SectionType.BASIC_INFO) {
             applyChangeToBasicInfo(targetSection, pathInfo, type, value);
         } else {

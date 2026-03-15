@@ -160,7 +160,7 @@ function handleCancel(): void {
     background: $color-error;
 
     &:hover {
-      background: lighten($color-error, 10%);
+      background: color-mix(in srgb, $color-error 80%, white);
     }
   }
 }
