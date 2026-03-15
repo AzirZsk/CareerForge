@@ -65,13 +65,14 @@ export function useSectionDiff(
   beforeSections: Ref<ResumeSection[] | undefined>,
   afterSections: Ref<ResumeSection[] | undefined>
 ) {
-  // 构建 before 数据的索引：sectionType -> parsed content
+  // 构建 before 数据的索引：sectionType -> parsed content + title
   const beforeMap = computed(() => {
-    const map = new Map<string, { content: unknown; exists: boolean }>()
+    const map = new Map<string, { content: unknown; title: string; exists: boolean }>()
     if (!beforeSections.value) return map
     for (const section of beforeSections.value) {
       map.set(section.type, {
         content: parseContent(section.content),
+        title: section.title,
         exists: true
       })
     }
@@ -80,11 +81,12 @@ export function useSectionDiff(
 
   // 构建 after 数据的索引
   const afterMap = computed(() => {
-    const map = new Map<string, { content: unknown; exists: boolean }>()
+    const map = new Map<string, { content: unknown; title: string; exists: boolean }>()
     if (!afterSections.value) return map
     for (const section of afterSections.value) {
       map.set(section.type, {
         content: parseContent(section.content),
+        title: section.title,
         exists: true
       })
     }
@@ -191,6 +193,31 @@ export function useSectionDiff(
   }
 
   /**
+   * 获取区块标题的差异类型
+   * @param sectionType 区块类型
+   */
+  function getTitleDiff(sectionType: string): DiffType {
+    if (isSectionAdded(sectionType)) return 'added'
+    if (isSectionRemoved(sectionType)) return 'removed'
+
+    const beforeTitle = beforeMap.value.get(sectionType)?.title
+    const afterTitle = afterMap.value.get(sectionType)?.title
+
+    if (isEmpty(beforeTitle) && !isEmpty(afterTitle)) return 'added'
+    if (!isEmpty(beforeTitle) && isEmpty(afterTitle)) return 'removed'
+    if (beforeTitle !== afterTitle) return 'modified'
+
+    return ''
+  }
+
+  /**
+   * 便捷方法：获取区块标题的高亮 class
+   */
+  function titleClass(sectionType: string, side: 'before' | 'after'): string {
+    return getDiffClass(getTitleDiff(sectionType), side)
+  }
+
+  /**
    * 便捷方法：获取单条类型字段的高亮 class
    */
   function fieldClass(sectionType: string, fieldKey: string, side: 'before' | 'after'): string {
@@ -209,7 +236,9 @@ export function useSectionDiff(
     isSectionRemoved,
     getFieldDiff,
     getItemFieldDiff,
+    getTitleDiff,
     getDiffClass,
+    titleClass,
     fieldClass,
     itemFieldClass
   }

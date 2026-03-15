@@ -16,7 +16,7 @@
         <!-- 基本信息 -->
         <div v-if="section.type === 'BASIC_INFO'" class="resume-section basic-info-section" :class="{ editable: showEdit }">
           <div class="section-header">
-            <h3>{{ section.title }}</h3>
+            <h3><span class="section-title-text" :class="getTitleChangeClass(section.type)">{{ section.title }}</span></h3>
             <button v-if="showEdit" class="section-edit-btn" @click="handleEditSection(sectionIdx)" title="编辑">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -42,7 +42,7 @@
 
         <!-- 教育经历 -->
         <div v-else-if="section.type === 'EDUCATION'" class="resume-section" :class="{ editable: showEdit }">
-          <h3>{{ section.title }}</h3>
+          <h3><span class="section-title-text" :class="getTitleChangeClass(section.type)">{{ section.title }}</span></h3>
           <div v-for="(item, idx) in getEducationList(section)" :key="idx" class="experience-item" :class="{ 'has-edit-btn': showEdit }">
             <button v-if="showEdit" class="item-edit-btn" @click="handleEditSection(sectionIdx, idx)" title="编辑">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -70,7 +70,7 @@
 
         <!-- 工作经历 -->
         <div v-else-if="section.type === 'WORK'" class="resume-section" :class="{ editable: showEdit }">
-          <h3>{{ section.title }}</h3>
+          <h3><span class="section-title-text" :class="getTitleChangeClass(section.type)">{{ section.title }}</span></h3>
           <div v-for="(item, idx) in getWorkList(section)" :key="idx" class="experience-item" :class="{ 'has-edit-btn': showEdit }">
             <button v-if="showEdit" class="item-edit-btn" @click="handleEditSection(sectionIdx, idx)" title="编辑">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -118,7 +118,7 @@
 
         <!-- 项目经历 -->
         <div v-else-if="section.type === 'PROJECT'" class="resume-section" :class="{ editable: showEdit }">
-          <h3>{{ section.title }}</h3>
+          <h3><span class="section-title-text" :class="getTitleChangeClass(section.type)">{{ section.title }}</span></h3>
           <div v-for="(item, idx) in getProjectList(section)" :key="idx" class="experience-item" :class="{ 'has-edit-btn': showEdit }">
             <button v-if="showEdit" class="item-edit-btn" @click="handleEditSection(sectionIdx, idx)" title="编辑">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -160,7 +160,7 @@
 
         <!-- 专业技能 -->
         <div v-else-if="section.type === 'SKILLS'" class="resume-section" :class="{ editable: showEdit }">
-          <h3>{{ section.title }}</h3>
+          <h3><span class="section-title-text" :class="getTitleChangeClass(section.type)">{{ section.title }}</span></h3>
           <div class="skills-container">
             <div
               v-for="(skill, idx) in getSkillsList(section)"
@@ -186,7 +186,7 @@
 
         <!-- 证书荣誉 -->
         <div v-else-if="section.type === 'CERTIFICATE'" class="resume-section" :class="{ editable: showEdit }">
-          <h3>{{ section.title }}</h3>
+          <h3><span class="section-title-text" :class="getTitleChangeClass(section.type)">{{ section.title }}</span></h3>
           <div v-for="(item, idx) in getCertificateList(section)" :key="idx" class="certificate-item" :class="{ 'has-edit-btn': showEdit }">
             <button v-if="showEdit" class="item-edit-btn" @click="handleEditSection(sectionIdx, idx)" title="编辑">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -216,7 +216,7 @@
 
         <!-- 开源贡献 -->
         <div v-else-if="section.type === 'OPEN_SOURCE'" class="resume-section" :class="{ editable: showEdit }">
-          <h3>{{ section.title }}</h3>
+          <h3><span class="section-title-text" :class="getTitleChangeClass(section.type)">{{ section.title }}</span></h3>
           <div v-for="(item, idx) in getOpenSourceList(section)" :key="idx" class="experience-item" :class="{ 'has-edit-btn': showEdit }">
             <button v-if="showEdit" class="item-edit-btn" @click="handleEditSection(sectionIdx, idx)" title="编辑">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -249,7 +249,7 @@
 
         <!-- 自定义区块（扁平结构：ContentItem[]） -->
         <div v-else-if="section.type === 'CUSTOM'" class="resume-section" :class="{ editable: showEdit }">
-          <h3>{{ section.title }}</h3>
+          <h3><span class="section-title-text" :class="getTitleChangeClass(section.type)">{{ section.title }}</span></h3>
           <div v-for="(item, itemIdx) in getCustomList(section)" :key="itemIdx" class="experience-item" :class="{ 'has-edit-btn': showEdit }">
             <button v-if="showEdit" class="item-edit-btn" @click="handleEditSection(sectionIdx, itemIdx)" title="编辑">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -326,7 +326,7 @@ const {
 } = useSectionHelper()
 
 // 初始化差异对比
-const { fieldClass, itemFieldClass } = useSectionDiff(
+const { titleClass: sectionTitleClass, fieldClass, itemFieldClass } = useSectionDiff(
   toRef(props, 'beforeSections'),
   toRef(props, 'afterSections')
 )
@@ -359,6 +359,15 @@ function getChangeClass(sectionType: string, fieldKey: string, itemIndex?: numbe
     return itemFieldClass(sectionType, itemIndex, fieldKey || undefined, props.side)
   }
   return fieldClass(sectionType, fieldKey, props.side)
+}
+
+/**
+ * 获取区块标题的高亮 class
+ * @param sectionType 区块类型
+ */
+function getTitleChangeClass(sectionType: string): string {
+  if (!props.beforeSections || !props.afterSections) return ''
+  return sectionTitleClass(sectionType, props.side)
 }
 </script>
 
@@ -925,6 +934,23 @@ function getChangeClass(sectionType: string, fieldKey: string, itemIndex?: numbe
     color: $color-error;
     border-radius: $radius-sm;
     padding: 2px 4px;
+  }
+}
+
+// 区块标题高亮（自定义区块标题变更时）
+.section-title-text {
+  border-radius: $radius-sm;
+  padding: 2px 4px;
+  transition: background-color 0.2s;
+
+  &.highlight-added {
+    background: rgba(52, 211, 153, 0.15);
+    color: $color-success;
+  }
+
+  &.highlight-removed {
+    background: rgba(248, 113, 113, 0.15);
+    color: $color-error;
   }
 }
 
