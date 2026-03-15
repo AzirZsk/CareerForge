@@ -309,7 +309,7 @@ class ResumeChangeApplierTest {
     class CustomSectionChangeTests {
 
         @Test
-        @DisplayName("修改自定义区块 - 描述")
+        @DisplayName("修改自定义区块 - items[M].description 路径")
         void testModifyCustomSectionDescription() {
             String newDescription = "游戏时长3000+小时，累计投入5W+用于产品测试";
             OptimizeSectionResponse.Change change = createChange(
@@ -319,10 +319,65 @@ class ResumeChangeApplierTest {
             List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
             ResumeDetailVO.ResumeSectionVO customSection = findSectionByType(result, "CUSTOM");
             List<Map<String, Object>> items = parseContentArray(customSection.getContent());
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> contentItems = (List<Map<String, Object>>) items.get(0).get("items");
-            Map<String, Object> targetItem = contentItems.get(2);
+            Map<String, Object> targetItem = items.get(2);
             assertTrue(targetItem.get("description").toString().contains("产品测试"));
+        }
+
+        @Test
+        @DisplayName("修改自定义区块 - 替换整个 items 数组")
+        void testReplaceCustomSectionItems() {
+            String newItemJson = "{\"name\":\"游戏行业认知\",\"role\":\"\",\"period\":\"\",\"description\":\"深度体验 10+ 款主流游戏\",\"highlights\":[]}";
+            OptimizeSectionResponse.Change change = createArrayChange(
+                    "modified", "customSections[0].items",
+                    List.of(), List.of(newItemJson)
+            );
+            List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
+            ResumeDetailVO.ResumeSectionVO customSection = findSectionByType(result, "CUSTOM");
+            List<Map<String, Object>> items = parseContentArray(customSection.getContent());
+            assertEquals(1, items.size());
+            assertEquals("游戏行业认知", items.get(0).get("name"));
+        }
+
+        @Test
+        @DisplayName("修改自定义区块 - title 路径")
+        void testModifyCustomSectionTitle() {
+            OptimizeSectionResponse.Change change = createChange(
+                    "modified", "customSections[0].title", "string",
+                    "游戏经历", "游戏行业经验"
+            );
+            List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
+            ResumeDetailVO.ResumeSectionVO customSection = findSectionByType(result, "CUSTOM");
+            assertEquals("游戏行业经验", customSection.getTitle());
+        }
+
+        @Test
+        @DisplayName("修改自定义区块 - 删除单个 item")
+        void testRemoveCustomSectionItem() {
+            OptimizeSectionResponse.Change change = createChange(
+                    "removed", "customSections[0].items[2]", "string",
+                    null, null
+            );
+            List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
+            ResumeDetailVO.ResumeSectionVO customSection = findSectionByType(result, "CUSTOM");
+            List<Map<String, Object>> items = parseContentArray(customSection.getContent());
+            assertEquals(2, items.size());
+        }
+
+        @Test
+        @DisplayName("修改自定义区块 - highlights 数组")
+        void testModifyCustomSectionHighlights() {
+            List<String> newHighlights = List.of("熟悉Z世代用户心理", "能精准把握玩家痛点");
+            OptimizeSectionResponse.Change change = createArrayChange(
+                    "modified", "customSections[0].items[0].highlights",
+                    List.of(), newHighlights
+            );
+            List<ResumeDetailVO.ResumeSectionVO> result = ResumeChangeApplier.applyChanges(testSections, List.of(change));
+            ResumeDetailVO.ResumeSectionVO customSection = findSectionByType(result, "CUSTOM");
+            List<Map<String, Object>> items = parseContentArray(customSection.getContent());
+            @SuppressWarnings("unchecked")
+            List<String> highlights = (List<String>) items.get(0).get("highlights");
+            assertEquals(2, highlights.size());
+            assertTrue(highlights.get(0).contains("Z世代"));
         }
     }
 
@@ -711,21 +766,15 @@ class ResumeChangeApplierTest {
                 .content(JsonParseHelper.toJsonString(workItems))
                 .build());
 
-        // 自定义区块 - content 是数组 JSON
-        List<Map<String, Object>> customItems = new ArrayList<>();
-        Map<String, Object> custom1 = new LinkedHashMap<>();
-        custom1.put("id", "custom_1");
-        custom1.put("title", "游戏经历");
+        // 自定义区块 - content 直接存储 items 数组 JSON，title 存在 section 的 title 字段
         List<Map<String, Object>> gameItems = new ArrayList<>();
         gameItems.add(Map.of("name", "三角洲行动", "description", "游戏时长2000+小时"));
         gameItems.add(Map.of("name", "英雄联盟", "description", "游戏时长2000+小时"));
         gameItems.add(Map.of("name", "MMO游戏", "description", "游戏时长 3000+小时，累计充值 5W 左右。"));
-        custom1.put("items", gameItems);
-        customItems.add(custom1);
         sections.add(ResumeDetailVO.ResumeSectionVO.builder()
                 .type("CUSTOM")
-                .title("自定义区块")
-                .content(JsonParseHelper.toJsonString(customItems))
+                .title("游戏经历")
+                .content(JsonParseHelper.toJsonString(gameItems))
                 .build());
 
         return sections;

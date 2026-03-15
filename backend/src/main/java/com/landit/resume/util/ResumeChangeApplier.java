@@ -281,11 +281,85 @@ public final class ResumeChangeApplier {
         // 3. 根据区块类型应用变更
         if (sectionType == SectionType.BASIC_INFO) {
             applyChangeToBasicInfo(targetSection, pathInfo, type, value);
+        } else if (sectionType == SectionType.CUSTOM) {
+            // 自定义区块特殊处理：
+            // CUSTOM 的 content 直接存储 items 数组（如 [{name, role, ...}]），title 存在 section 表字段中
+            // AI 输出的路径格式为 customSections[N].items[M].field 或 customSections[N].title
+            // 需要将 items 层"剥掉"，转换为标准聚合类型操作
+            applyChangeToCustomSection(targetSection, pathInfo, type, value);
         } else {
-            // 聚合类型（EDUCATION/WORK/PROJECT/SKILLS/CERTIFICATE/OPEN_SOURCE/CUSTOM）
+            // 聚合类型（EDUCATION/WORK/PROJECT/SKILLS/CERTIFICATE/OPEN_SOURCE）
             // content = "[{...}]" (数组 JSON 字符串)
             applyChangeToAggregateSection(targetSection, pathInfo, type, value);
         }
+    }
+
+    /**
+     * 应用变更到 CUSTOM 类型区块
+     * <p>
+     * CUSTOM 区块的存储结构：title 存在 section 表字段，content 直接存储 items 数组 JSON
+     * AI 输出的路径格式：
+     * - customSections[N].title → 修改 section 的 title 字段
+     * - customSections[N].items → 替换整个 content 数组
+     * - customSections[N].items[M] → 对 content 数组第 M 个元素整体操作
+     * - customSections[N].items[M].field → 对 content 数组第 M 个元素的属性操作
+     * <p>
+     * 转换策略：将 items 层剥掉后，委托给标准聚合类型处理逻辑
+     */
+    @SuppressWarnings("unchecked")
+    private static void applyChangeToCustomSection(ResumeDetailVO.ResumeSectionVO section,
+                                                    ChangePathInfo pathInfo, String type, Object value) {
+        String property = pathInfo.getPropertyPath();
+
+        // 情况1：修改 title 字段（不在 content 中，直接修改 section 的 title）
+        if ("title".equals(property)) {
+            if (!"removed".equals(type) && value != null) {
+                section.setTitle(String.valueOf(value));
+            }
+            return;
+        }
+
+        // 情况2：propertyPath 为 "items" → 替换整个 content 数组
+        if ("items".equals(property)) {
+            Object resolvedValue = resolveValueToJsonStructure(value);
+            if ("removed".equals(type)) {
+                section.setContent("[]");
+            } else if (resolvedValue instanceof List) {
+                // value 是数组，每个元素可能是 JSON 字符串或 Map
+                List<Object> newItems = new ArrayList<>();
+                for (Object item : (List<?>) resolvedValue) {
+                    Object resolved = resolveValueToJsonStructure(item);
+                    newItems.add(resolved != null ? resolved : item);
+                }
+                section.setContent(JsonParseHelper.toJsonString(newItems));
+            } else {
+                log.warn("CUSTOM items 替换值类型不正确: {}", value != null ? value.getClass() : "null");
+            }
+            return;
+        }
+
+        // 情况3：propertyPath 以 "items[" 开头 → 剥掉 items 层，转换为标准聚合操作
+        if (property != null && property.startsWith("items[")) {
+            // 解析 items[M] 或 items[M].field
+            Matcher itemsMatcher = ARRAY_INDEX_PATTERN.matcher(property);
+            if (itemsMatcher.matches()) {
+                int itemIndex = Integer.parseInt(itemsMatcher.group(2));
+                String subProperty = itemsMatcher.group(3);
+                // 构造转换后的 pathInfo，arrayIndex 指向 content 数组中的元素
+                ChangePathInfo convertedInfo = new ChangePathInfo();
+                convertedInfo.setOriginalPath(pathInfo.getOriginalPath());
+                convertedInfo.setSectionFieldName(pathInfo.getSectionFieldName());
+                convertedInfo.setSectionType(pathInfo.getSectionType());
+                convertedInfo.setArrayIndex(itemIndex);
+                convertedInfo.setPropertyPath(subProperty);
+                applyChangeToAggregateSection(section, convertedInfo, type, value);
+                return;
+            }
+        }
+
+        // 情况4：无 items 前缀的属性路径（兼容直接写 customSections[0].description 等非标准路径）
+        // 按标准聚合类型处理
+        applyChangeToAggregateSection(section, pathInfo, type, value);
     }
 
     /**

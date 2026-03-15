@@ -622,7 +622,7 @@ public class AIPromptProperties {
                     | skills | 数组 | 专业技能 | skills[0].name, skills[0].level |
                     | certificates | 数组 | 证书荣誉 | certificates[0].name |
                     | openSource | 数组 | 开源贡献 | openSource[0].projectName |
-                    | customSections | 数组 | 自定义区块 | customSections[0].title |
+                    | customSections | 特殊数组 | 自定义区块 | customSections[0].items[0].description, customSections[0].title |
 
                     ### 索引规则
                     - 数组索引从 **0** 开始（第一条为 [0]，第二条为 [1]）
@@ -721,13 +721,17 @@ public class AIPromptProperties {
                     | description | string | 贡献描述 |
                     | achievements | array | 贡献成果列表 |
 
-                    #### customSections 属性（数组）
+                    #### customSections 属性（特殊数组）
+                    **重要**：customSections 的索引 [N] 表示第几个自定义区块（如第1个是"游戏经历"，第2个是"志愿者经历"）。
+                    每个自定义区块的内容项通过 items[M] 访问。
+
+                    区块级属性：
                     | 字段 | 类型 | 说明 |
                     |------|------|------|
                     | title | string | 区块标题，如"游戏经历"、"志愿者经历" |
-                    | items | array | 内容项列表，每个 item 结构如下 |
+                    | items | array | 内容项列表（通过 items[M] 访问具体项） |
 
-                    customSections.items 子项属性：
+                    items 子项属性（通过 customSections[N].items[M].字段 访问）：
                     | 字段 | 类型 | 说明 |
                     |------|------|------|
                     | name | string | 内容项名称 |
@@ -735,6 +739,13 @@ public class AIPromptProperties {
                     | period | string | 时间段（可选） |
                     | description | string | 详细描述（可选） |
                     | highlights | array | 成果或要点列表（可选） |
+
+                    customSections 路径示例：
+                    - `customSections[0].title` - 第1个自定义区块的标题
+                    - `customSections[0].items[0].description` - 第1个自定义区块的第1个内容项的描述
+                    - `customSections[0].items[2].highlights` - 第1个自定义区块的第3个内容项的亮点
+                    - `customSections[0].items` - 第1个自定义区块的整个内容项列表（用于替换所有项）
+                    - `customSections[1].items[0].name` - 第2个自定义区块的第1个内容项的名称
 
                     ---
 
