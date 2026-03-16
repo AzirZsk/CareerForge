@@ -145,20 +145,108 @@ export function useResumeOptimize() {
   }
 
   /**
+   * 节点顺序映射：当前节点完成时，下一个要开始计时的节点
+   * __START__ 完成 → diagnose_quick 开始
+   * diagnose_quick 完成 → generate_suggestions 开始
+   * generate_suggestions 完成 → optimize_section 开始
+   */
+  const NEXT_STAGE_MAP: Record<string, OptimizeStage | null> = {
+    '__START__': 'diagnose_quick',
+    'diagnose_quick': 'generate_suggestions',
+    'generate_suggestions': 'optimize_section',
+    '__END__': null
+  }
+
+  /**
+   * 开始某个节点的计时
+   */
+  function startStageTimer(stage: OptimizeStage, now: number) {
+    const existingIndex = state.stageHistory.findIndex(h => h.stage === stage)
+    if (existingIndex >= 0) {
+      // 已存在，只设置开始时间
+      state.stageHistory[existingIndex].startTime = now
+      state.stageHistory[existingIndex].endTime = undefined
+    } else {
+      // 不存在，创建新记录
+      state.stageHistory.push({
+        stage,
+        message: '',
+        timestamp: now,
+        completed: false,
+        expanded: false,
+        startTime: now,
+        endTime: undefined
+      })
+    }
+  }
+
+  /**
+   * 结束当前运行中节点的计时
+   */
+  function endRunningStage(now: number) {
+    const runningStage = state.stageHistory.find(h => h.startTime && !h.endTime)
+    if (runningStage) {
+      runningStage.endTime = now
+      runningStage.completed = true
+    }
+  }
+
+  /**
+   * 更新节点数据（不改变计时状态）
+   */
+  function updateStageData(stage: OptimizeStage, data: any, message?: string) {
+    const item = state.stageHistory.find(h => h.stage === stage)
+    if (item) {
+      if (data) item.data = data
+      if (message) item.message = message
+    }
+  }
+
+  /**
    * 处理进度事件
-   * progress 事件表示节点正在运行，不是已完成
-   * 节点完成时机：
-   * 1. 下一个节点开始时（updateStageHistory 中处理）
-   * 2. 整个工作流完成时（handleCompleteEvent 中处理）
+   *
+   * SSE 事件时序：
+   * 1. nodeId="__START__" → diagnose_quick 开始计时
+   * 2. nodeId="diagnose_quick" → diagnose_quick 结束，generate_suggestions 开始
+   * 3. nodeId="generate_suggestions" → generate_suggestions 结束，optimize_section 开始
+   * 4. nodeId="__END__" → optimize_section 结束
    */
   function handleProgressEvent(event: OptimizeProgressEvent) {
     const nodeId = event.nodeId
     const data = event.data
+    const now = Date.now()
 
-    if (!nodeId || nodeId === 'start' || nodeId === 'end') return
+    if (!nodeId) return
 
-    // 更新或添加阶段历史，completed: false 表示节点正在运行
-    updateStageHistory(nodeId, event.message, event.timestamp, false, data)
+    console.log('[DEBUG] handleProgressEvent nodeId:', nodeId, 'data:', data)
+
+    // 处理 __START__: 开始 diagnose_quick 计时
+    if (nodeId === '__START__') {
+      startStageTimer('diagnose_quick', now)
+      state.currentStage = 'diagnose_quick'
+      return
+    }
+
+    // 处理 __END__: 结束 optimize_section 计时
+    if (nodeId === '__END__') {
+      endRunningStage(now)
+      state.currentStage = 'end'
+      return
+    }
+
+    // 处理节点完成事件：结束当前节点，开始下一个节点
+    const nextStage = NEXT_STAGE_MAP[nodeId]
+    if (nextStage) {
+      // 结束当前运行中的节点
+      endRunningStage(now)
+      // 更新已完成节点的数据
+      updateStageData(nodeId as OptimizeStage, data, event.message)
+      // 开始下一个节点的计时
+      startStageTimer(nextStage, now)
+      state.currentStage = nextStage
+    }
+
+    console.log('[DEBUG] handleProgressEvent 后 stageHistory:', JSON.stringify(state.stageHistory, null, 2))
   }
 
   /**
