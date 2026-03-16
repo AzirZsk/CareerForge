@@ -146,6 +146,10 @@ export function useResumeOptimize() {
 
   /**
    * 处理进度事件
+   * progress 事件表示节点正在运行，不是已完成
+   * 节点完成时机：
+   * 1. 下一个节点开始时（updateStageHistory 中处理）
+   * 2. 整个工作流完成时（handleCompleteEvent 中处理）
    */
   function handleProgressEvent(event: OptimizeProgressEvent) {
     const nodeId = event.nodeId
@@ -153,8 +157,8 @@ export function useResumeOptimize() {
 
     if (!nodeId || nodeId === 'start' || nodeId === 'end') return
 
-    // 更新或添加阶段历史
-    updateStageHistory(nodeId, event.message, event.timestamp, true, data)
+    // 更新或添加阶段历史，completed: false 表示节点正在运行
+    updateStageHistory(nodeId, event.message, event.timestamp, false, data)
   }
 
   /**
