@@ -7,7 +7,6 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import {
   currentUser,
-  resumes,
   resumeDetail,
   resumeSuggestions,
   interviewHistory,
@@ -33,7 +32,9 @@ import type {
   UserUpdateInfo,
   UserStatusResponse,
   Gender,
-  PrimaryResumeVO
+  PrimaryResumeVO,
+  ResumeListItem,
+  CreateResumeRequest
 } from '@/types'
 
 export const useAppStore = defineStore('app', () => {
@@ -43,7 +44,7 @@ export const useAppStore = defineStore('app', () => {
   const isInitialized = ref<boolean>(false)
 
   // 简历相关
-  const resumeList = ref<Resume[]>(resumes)
+  const resumeList = ref<Resume[]>([])
   const currentResume = ref<ResumeDetail>(resumeDetail)
   const suggestions = ref<ResumeSuggestion[]>(resumeSuggestions)
   const primaryResume = ref<PrimaryResumeVO | null>(null)
@@ -88,12 +89,6 @@ export const useAppStore = defineStore('app', () => {
 
   function updateUserInfo(info: UserUpdateInfo): void {
     user.value = { ...user.value, ...info }
-  }
-
-  function setPrimaryResume(resumeId: string): void {
-    resumeList.value.forEach((r: Resume) => {
-      r.isPrimary = r.id === resumeId
-    })
   }
 
   function addInterview(interview: Interview): void {
@@ -147,6 +142,76 @@ export const useAppStore = defineStore('app', () => {
     } catch (error) {
       console.error('获取主简历失败', error)
     }
+  }
+
+  // 获取所有简历列表
+  async function fetchResumes(): Promise<void> {
+    try {
+      const result = await resumeApi.getResumes()
+      resumeList.value = result.map((item: ResumeListItem): Resume => ({
+        id: item.id,
+        name: item.name,
+        targetPosition: item.targetPosition || '未设置',
+        updatedAt: formatDateTime(item.updatedAt),
+        status: item.status,
+        score: item.score || 0,
+        completeness: item.completeness || 0,
+        isPrimary: item.isPrimary
+      }))
+    } catch (error) {
+      console.error('获取简历列表失败', error)
+    }
+  }
+
+  // 创建新简历
+  async function createResume(data: CreateResumeRequest): Promise<string | undefined> {
+    try {
+      const result = await resumeApi.createResume(data)
+      await fetchResumes()
+      await fetchPrimaryResume()
+      return result.id
+    } catch (error) {
+      console.error('创建简历失败', error)
+      throw error
+    }
+  }
+
+  // 删除简历
+  async function deleteResumeFromApi(resumeId: string): Promise<void> {
+    try {
+      await resumeApi.deleteResume(resumeId)
+      resumeList.value = resumeList.value.filter((r: Resume) => r.id !== resumeId)
+    } catch (error) {
+      console.error('删除简历失败', error)
+      throw error
+    }
+  }
+
+  // 设置主简历（调用API）
+  async function setPrimaryResumeApi(resumeId: string): Promise<void> {
+    try {
+      const result = await resumeApi.setPrimaryResume(resumeId)
+      primaryResume.value = result
+      resumeList.value.forEach((r: Resume) => {
+        r.isPrimary = r.id === resumeId
+      })
+    } catch (error) {
+      console.error('设置主简历失败', error)
+      throw error
+    }
+  }
+
+  // 日期格式化辅助函数
+  function formatDateTime(dateStr: string): string {
+    if (!dateStr) return ''
+    const date = new Date(dateStr)
+    return date.toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).replace(/\//g, '-')
   }
 
   // 获取简历详情
@@ -323,11 +388,14 @@ export const useAppStore = defineStore('app', () => {
     setActiveNav,
     toggleSidebar,
     updateUserInfo,
-    setPrimaryResume,
     addInterview,
     checkUserExists,
     initUser,
     fetchPrimaryResume,
+    fetchResumes,
+    createResume,
+    deleteResumeFromApi,
+    setPrimaryResumeApi,
     fetchResumeDetail,
     updateResumeSection,
     addResumeSection,

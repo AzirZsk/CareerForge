@@ -496,6 +496,93 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
         log.info("模块评分已更新: resumeId={}, count={}", resumeId, sectionScores.size());
     }
 
+    // ==================== 简历列表管理方法 ====================
+
+    /**
+     * 获取用户所有简历列表
+     * 按主简历优先、更新时间倒序排列
+     *
+     * @return 简历列表
+     */
+    public List<Resume> getAllResumes() {
+        LambdaQueryWrapper<Resume> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Resume::getUserId, SINGLE_USER_ID)
+               .orderByDesc(Resume::getIsPrimary)
+               .orderByDesc(Resume::getUpdatedAt);
+        return list(wrapper);
+    }
+
+    /**
+     * 创建空白简历
+     *
+     * @param name            简历名称（可选）
+     * @param targetPosition  目标岗位（可选）
+     * @return 创建的简历实体
+     */
+    public Resume createBlankResume(String name, String targetPosition) {
+        Resume resume = new Resume();
+        resume.setUserId(SINGLE_USER_ID);
+        resume.setName(name != null && !name.isBlank() ? name : "新简历");
+        resume.setTargetPosition(targetPosition != null ? targetPosition : "");
+        resume.setResumeType(ResumeType.PRIMARY);
+        resume.setVersion(1);
+        resume.setStatus(ResumeStatus.DRAFT);
+        resume.setIsPrimary(false);
+        resume.setScore(0);
+        resume.setCompleteness(10);
+        save(resume);
+        return resume;
+    }
+
+    /**
+     * 删除简历
+     * 不允许删除主简历，级联删除关联的模块和建议
+     *
+     * @param resumeId 简历ID
+     */
+    public void deleteResume(String resumeId) {
+        Resume resume = getById(resumeId);
+        if (resume == null) {
+            throw BusinessException.notFound("简历不存在");
+        }
+        if (Boolean.TRUE.equals(resume.getIsPrimary())) {
+            throw new BusinessException("不能删除主简历");
+        }
+
+        // 级联删除：删除简历模块
+        resumeSectionMapper.delete(new LambdaQueryWrapper<ResumeSection>()
+                .eq(ResumeSection::getResumeId, resumeId));
+
+        // 级联删除：删除简历建议
+        resumeSuggestionService.deleteByResumeId(resumeId);
+
+        // 删除简历主记录
+        removeById(resumeId);
+    }
+
+    /**
+     * 设置主简历
+     *
+     * @param resumeId 简历ID
+     */
+    public void setPrimaryResume(String resumeId) {
+        Resume resume = getById(resumeId);
+        if (resume == null) {
+            throw BusinessException.notFound("简历不存在");
+        }
+
+        // 取消当前主简历
+        Resume currentPrimary = getPrimaryResume();
+        if (currentPrimary != null) {
+            currentPrimary.setIsPrimary(false);
+            updateById(currentPrimary);
+        }
+
+        // 设置新的主简历
+        resume.setIsPrimary(true);
+        updateById(resume);
+    }
+
     /**
      * 更新自定义区块中每个 item 的评分
      * 评分存储在 content JSON 中每个 item 的 score 字段

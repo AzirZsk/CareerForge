@@ -3,8 +3,10 @@ package com.landit.resume.controller;
 import com.landit.common.response.ApiResponse;
 import com.landit.resume.dto.AddSectionRequest;
 import com.landit.resume.dto.ApplyOptimizeRequest;
+import com.landit.resume.dto.CreateResumeRequest;
 import com.landit.resume.dto.DeriveResumeRequest;
 import com.landit.resume.dto.PrimaryResumeVO;
+import com.landit.resume.dto.ResumeListVO;
 import com.landit.resume.dto.ResumeDetailVO;
 import com.landit.resume.dto.UpdateSectionRequest;
 import com.landit.resume.entity.Resume;
@@ -12,6 +14,7 @@ import com.landit.resume.handler.ResumeHandler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,6 +43,33 @@ public class ResumeController {
     @GetMapping("/primary")
     public ApiResponse<PrimaryResumeVO> getPrimaryResume() {
         return ApiResponse.success(resumeHandler.getPrimaryResume());
+    }
+
+    // ==================== 简历列表管理 API ====================
+
+    @Operation(summary = "获取所有简历列表")
+    @GetMapping
+    public ApiResponse<List<ResumeListVO>> getAllResumes() {
+        return ApiResponse.success(resumeHandler.getAllResumes());
+    }
+
+    @Operation(summary = "创建空白简历")
+    @PostMapping
+    public ApiResponse<ResumeDetailVO> createResume(@Valid @RequestBody CreateResumeRequest request) {
+        return ApiResponse.success(resumeHandler.createBlankResume(request));
+    }
+
+    @Operation(summary = "删除简历")
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> deleteResume(@PathVariable String id) {
+        resumeHandler.deleteResume(id);
+        return ApiResponse.success(null);
+    }
+
+    @Operation(summary = "设置主简历")
+    @PutMapping("/{id}/primary")
+    public ApiResponse<PrimaryResumeVO> setPrimaryResume(@PathVariable String id) {
+        return ApiResponse.success(resumeHandler.setPrimaryResume(id));
     }
 
     @Operation(summary = "获取简历详情")

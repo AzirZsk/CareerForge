@@ -43,6 +43,25 @@ export interface ApiResponse<T> {
 // 简历状态
 export type ResumeStatus = 'OPTIMIZED' | 'DRAFT'
 
+// 简历列表项 VO（与后端 ResumeListVO 对应）
+export interface ResumeListItem {
+  id: string
+  name: string
+  targetPosition: string
+  status: ResumeStatus
+  score: number
+  completeness: number
+  isPrimary: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+// 创建简历请求
+export interface CreateResumeRequest {
+  name?: string
+  targetPosition?: string
+}
+
 // 主简历VO
 export interface PrimaryResumeVO {
   id: string

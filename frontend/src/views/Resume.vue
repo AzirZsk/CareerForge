@@ -255,9 +255,12 @@ const {
   toggleStageExpanded
 } = useResumeOptimize()
 
-// 页面加载时获取主简历信息
+// 页面加载时获取主简历信息和简历列表
 onMounted(async () => {
-  await store.fetchPrimaryResume()
+  await Promise.all([
+    store.fetchPrimaryResume(),
+    store.fetchResumes()
+  ])
 })
 
 const filteredResumes = computed<Resume[]>(() => {
@@ -293,18 +296,41 @@ function optimizeResume(id: string): void {
   })
 }
 
-function createNewResume(): void {
-  // TODO: 实现创建新简历
-  console.log('创建新简历')
+async function createNewResume(): Promise<void> {
+  try {
+    const newResumeId = await store.createResume({
+      name: '新简历',
+      targetPosition: undefined
+    })
+    if (newResumeId) {
+      router.push(`/resume/${newResumeId}`)
+    }
+  } catch (error) {
+    console.error('创建简历失败', error)
+    alert('创建简历失败，请重试')
+  }
 }
 
-function setPrimary(id: string): void {
-  store.setPrimaryResume(id)
+async function setPrimary(id: string): Promise<void> {
+  try {
+    await store.setPrimaryResumeApi(id)
+  } catch (error) {
+    console.error('设置主简历失败', error)
+    alert('设置主简历失败，请重试')
+  }
 }
 
-function deleteResume(id: string): void {
-  // TODO: 实现删除简历
-  console.log('删除简历', id)
+async function deleteResume(id: string): Promise<void> {
+  if (!confirm('确定要删除这份简历吗？此操作不可恢复。')) {
+    return
+  }
+
+  try {
+    await store.deleteResumeFromApi(id)
+  } catch (error) {
+    console.error('删除简历失败', error)
+    alert('删除简历失败，请重试')
+  }
 }
 
 // 优化相关处理

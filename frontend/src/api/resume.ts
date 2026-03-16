@@ -3,11 +3,66 @@
 // @author Azir
 // =====================================================
 
-import type { ApiResponse, PrimaryResumeVO, ResumeDetail } from '@/types'
+import type { ApiResponse, PrimaryResumeVO, ResumeDetail, ResumeListItem, CreateResumeRequest } from '@/types'
 import type { DeriveResumeRequest } from '@/types/resume-tailor'
 
 // API 基础路径
 const API_BASE = '/landit'
+
+/**
+ * 获取所有简历列表
+ */
+export async function getResumes(): Promise<ResumeListItem[]> {
+  const response = await fetch(`${API_BASE}/resumes`)
+  const result: ApiResponse<ResumeListItem[]> = await response.json()
+  if (result.code !== 200) {
+    throw new Error(result.message || '获取简历列表失败')
+  }
+  return result.data
+}
+
+/**
+ * 创建空白简历
+ */
+export async function createResume(data: CreateResumeRequest): Promise<ResumeDetail> {
+  const response = await fetch(`${API_BASE}/resumes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+  const result: ApiResponse<ResumeDetail> = await response.json()
+  if (result.code !== 200) {
+    throw new Error(result.message || '创建简历失败')
+  }
+  return result.data
+}
+
+/**
+ * 删除简历
+ */
+export async function deleteResume(id: string): Promise<void> {
+  const response = await fetch(`${API_BASE}/resumes/${id}`, {
+    method: 'DELETE'
+  })
+  const result: ApiResponse<void> = await response.json()
+  if (result.code !== 200) {
+    throw new Error(result.message || '删除简历失败')
+  }
+}
+
+/**
+ * 设置主简历
+ */
+export async function setPrimaryResume(id: string): Promise<PrimaryResumeVO> {
+  const response = await fetch(`${API_BASE}/resumes/${id}/primary`, {
+    method: 'PUT'
+  })
+  const result: ApiResponse<PrimaryResumeVO> = await response.json()
+  if (result.code !== 200) {
+    throw new Error(result.message || '设置主简历失败')
+  }
+  return result.data
+}
 
 /**
  * 获取主简历信息

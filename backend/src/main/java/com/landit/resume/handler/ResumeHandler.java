@@ -15,7 +15,9 @@ import com.landit.resume.dto.MatchJobRequest;
 import com.landit.resume.dto.MatchJobResponse;
 import com.landit.resume.dto.OptimizeResumeRequest;
 import com.landit.resume.dto.OptimizeResumeResponse;
+import com.landit.resume.dto.CreateResumeRequest;
 import com.landit.resume.dto.PrimaryResumeVO;
+import com.landit.resume.dto.ResumeListVO;
 import com.landit.resume.dto.ResumeDetailVO;
 import com.landit.resume.entity.Resume;
 import com.landit.resume.entity.ResumeSection;
@@ -88,6 +90,74 @@ public class ResumeHandler {
         vo.setUpdatedAt(resume.getUpdatedAt());
 
         return vo;
+    }
+
+    // ==================== 简历列表管理方法 ====================
+
+    /**
+     * 获取所有简历列表
+     *
+     * @return 简历列表
+     */
+    public List<ResumeListVO> getAllResumes() {
+        List<Resume> resumes = resumeService.getAllResumes();
+        return resumes.stream()
+                .map(this::toListVO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 创建空白简历
+     *
+     * @param request 创建请求
+     * @return 创建后的简历详情
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public ResumeDetailVO createBlankResume(CreateResumeRequest request) {
+        Resume resume = resumeService.createBlankResume(
+                request.getName(),
+                request.getTargetPosition()
+        );
+        return resumeService.getResumeDetail(resume.getId());
+    }
+
+    /**
+     * 删除简历
+     *
+     * @param resumeId 简历ID
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteResume(String resumeId) {
+        resumeService.deleteResume(resumeId);
+    }
+
+    /**
+     * 设置主简历
+     *
+     * @param resumeId 简历ID
+     * @return 更新后的主简历信息
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public PrimaryResumeVO setPrimaryResume(String resumeId) {
+        resumeService.setPrimaryResume(resumeId);
+        return getPrimaryResume();
+    }
+
+    /**
+     * 将 Resume 实体转换为 ResumeListVO
+     */
+    private ResumeListVO toListVO(Resume resume) {
+        return ResumeListVO.builder()
+                .id(resume.getId())
+                .name(resume.getName())
+                .targetPosition(resume.getTargetPosition())
+                .status(resume.getStatus())
+                .score(resume.getScore())
+                .completeness(resume.getCompleteness())
+                .isPrimary(resume.getIsPrimary())
+                .createdAt(resume.getCreatedAt())
+                .updatedAt(resume.getUpdatedAt())
+                .build();
     }
 
     /**
