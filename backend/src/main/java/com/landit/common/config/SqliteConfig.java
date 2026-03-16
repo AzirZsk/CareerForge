@@ -12,6 +12,8 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * SQLite数据库初始化器
@@ -60,7 +62,7 @@ public class SqliteConfig implements CommandLineRunner {
 
             // 单次 PRAGMA 调用获取所有现有列
             ResultSet rs = stmt.executeQuery("PRAGMA table_info(t_resume)");
-            java.util.Set<String> existingColumns = new java.util.HashSet<>();
+            Set<String> existingColumns = new HashSet<>();
             while (rs.next()) {
                 existingColumns.add(rs.getString("name").toLowerCase());
             }

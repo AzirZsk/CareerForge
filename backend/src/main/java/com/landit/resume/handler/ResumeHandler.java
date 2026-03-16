@@ -5,8 +5,10 @@ import com.landit.common.service.AIService;
 import com.landit.common.service.FileToImageService;
 import com.landit.common.util.JsonParseHelper;
 import com.landit.resume.convertor.ResumeConvertor;
+import com.landit.resume.dto.AddSectionRequest;
 import com.landit.resume.dto.ApplyOptimizeRequest;
 import com.landit.resume.dto.DeriveResumeRequest;
+import com.landit.resume.dto.UpdateSectionRequest;
 import com.landit.resume.dto.DiagnoseResumeRequest;
 import com.landit.resume.dto.DiagnoseResumeResponse;
 import com.landit.resume.dto.MatchJobRequest;
@@ -357,13 +359,13 @@ public class ResumeHandler {
      *
      * @param resumeId  简历ID
      * @param sectionId 模块ID
-     * @param content   新的模块内容
+     * @param request   更新请求
      * @return 更新后的简历详情
      */
     @Transactional(rollbackFor = Exception.class)
-    public ResumeDetailVO updateResumeSection(String resumeId, String sectionId, String contentJson) {
+    public ResumeDetailVO updateResumeSection(String resumeId, String sectionId, UpdateSectionRequest request) {
         // 更新模块内容
-        resumeService.updateSection(sectionId, contentJson);
+        resumeService.updateSection(sectionId, request.getContent());
         // 重新计算简历评分
         recalculateResumeScore(resumeId);
         // 返回更新后的详情
@@ -375,15 +377,13 @@ public class ResumeHandler {
      * 涉及：创建模块 -> 重新计算完整度
      *
      * @param resumeId 简历ID
-     * @param type     模块类型
-     * @param title    模块标题
-     * @param content  模块内容
+     * @param request  新增请求
      * @return 更新后的简历详情
      */
     @Transactional(rollbackFor = Exception.class)
-    public ResumeDetailVO addResumeSection(String resumeId, String type, String title, String content) {
+    public ResumeDetailVO addResumeSection(String resumeId, AddSectionRequest request) {
         // content 已经是前端序列化好的 JSON 字符串，直接使用
-        resumeService.createSectionPublic(resumeId, type, title, content);
+        resumeService.createSectionPublic(resumeId, request.getType(), request.getTitle(), request.getContent());
         // 重新计算简历完整度
         recalculateResumeCompleteness(resumeId);
         // 返回更新后的详情

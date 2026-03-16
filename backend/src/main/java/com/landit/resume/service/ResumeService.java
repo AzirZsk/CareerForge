@@ -28,6 +28,7 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -599,13 +600,13 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
         }
 
         // 按 sectionId 分组
-        Map<String, Map<Integer, Integer>> sectionItemScores = new java.util.HashMap<>();
+        Map<String, Map<Integer, Integer>> sectionItemScores = new HashMap<>();
         for (Map.Entry<String, Integer> entry : itemScores.entrySet()) {
             String[] parts = entry.getKey().split(":");
             if (parts.length == 2) {
                 String sectionId = parts[0];
                 int itemIndex = Integer.parseInt(parts[1]);
-                sectionItemScores.computeIfAbsent(sectionId, k -> new java.util.HashMap<>())
+                sectionItemScores.computeIfAbsent(sectionId, k -> new HashMap<>())
                     .put(itemIndex, entry.getValue());
             }
         }

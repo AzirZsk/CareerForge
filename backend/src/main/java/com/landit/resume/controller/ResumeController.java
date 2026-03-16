@@ -12,6 +12,7 @@ import com.landit.resume.dto.UpdateSectionRequest;
 import com.landit.resume.entity.Resume;
 import com.landit.resume.handler.ResumeHandler;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -50,8 +52,8 @@ public class ResumeController {
     @Operation(summary = "获取所有简历列表")
     @GetMapping
     public ApiResponse<List<ResumeListVO>> getAllResumes(
-            @io.swagger.v3.oas.annotations.Parameter(description = "简历状态筛选（optimized/draft），不传则返回全部")
-            @org.springframework.web.bind.annotation.RequestParam(required = false) String status) {
+            @Parameter(description = "简历状态筛选（optimized/draft），不传则返回全部")
+            @RequestParam(required = false) String status) {
         return ApiResponse.success(resumeHandler.getAllResumes(status));
     }
 
@@ -86,7 +88,7 @@ public class ResumeController {
             @PathVariable String id,
             @PathVariable String sectionId,
             @Valid @RequestBody UpdateSectionRequest request) {
-        return ApiResponse.success(resumeHandler.updateResumeSection(id, sectionId, request.getContent()));
+        return ApiResponse.success(resumeHandler.updateResumeSection(id, sectionId, request));
     }
 
     @Operation(summary = "新增简历模块")
@@ -94,7 +96,7 @@ public class ResumeController {
     public ApiResponse<ResumeDetailVO> addSection(
             @PathVariable String id,
             @Valid @RequestBody AddSectionRequest request) {
-        return ApiResponse.success(resumeHandler.addResumeSection(id, request.getType(), request.getTitle(), request.getContent()));
+        return ApiResponse.success(resumeHandler.addResumeSection(id, request));
     }
 
     @Operation(summary = "删除简历模块")
