@@ -169,7 +169,7 @@ import { useResumeOptimize } from '@/composables/useResumeOptimize'
 import { useSectionEdit } from '@/composables/useSectionEdit'
 import { useSectionHelper } from '@/composables/useSectionHelper'
 import { useToast } from '@/composables/useToast'
-import type { ResumeSection, ResumeSuggestionItem } from '@/types'
+import type { ResumeSection, ResumeSuggestionItem, SectionType } from '@/types'
 
 const store = useAppStore()
 const { parseContent } = useSectionHelper()
@@ -385,10 +385,10 @@ async function handleOptimizeComplete(): Promise<void> {
 }
 
 // 应用优化变更
-async function handleApplyChanges(): Promise<void> {
+async function handleApplyChanges(editedAfterSection?: ResumeSection[] | null): Promise<void> {
   if (!resumeId.value) return
 
-  const success = await applyChanges()
+  const success = await applyChanges(editedAfterSection ?? undefined)
   if (success) {
     // 应用成功，刷新简历详情并关闭弹窗
     await store.fetchResumeDetail(resumeId.value)

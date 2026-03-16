@@ -11,6 +11,9 @@ import type {
   OptimizeStage,
   ResumeSection
 } from '@/types/resume-optimize'
+
+/** 内部节点 ID 类型（包含工作流控制节点） */
+type InternalNodeId = OptimizeStage | '__START__' | '__END__'
 import { STAGE_CONFIG } from '@/types/resume-optimize'
 import { applyOptimizeChanges } from '@/api/resume'
 import type { SectionDataItem } from '@/api/resume'
@@ -151,12 +154,16 @@ export function useResumeOptimize() {
    * generate_suggestions 完成 → optimize_section 开始
    * optimize_section 完成 → 无下一个节点（等待 __END__）
    */
-  const NEXT_STAGE_MAP: Record<string, OptimizeStage | null> = {
+  const NEXT_STAGE_MAP: Record<InternalNodeId, OptimizeStage | null> = {
     '__START__': 'diagnose_quick',
     'diagnose_quick': 'generate_suggestions',
     'generate_suggestions': 'optimize_section',
     'optimize_section': null,  // 最后一个节点，完成后没有下一个
-    '__END__': null
+    '__END__': null,
+    'start': null,
+    'diagnose_precise': null,
+    'human_review': null,
+    'end': null
   }
 
   /**
@@ -214,7 +221,7 @@ export function useResumeOptimize() {
    * 4. nodeId="__END__" → optimize_section 结束
    */
   function handleProgressEvent(event: OptimizeProgressEvent) {
-    const nodeId = event.nodeId
+    const nodeId = event.nodeId as InternalNodeId | null
     const data = event.data
     const now = Date.now()
 
@@ -296,50 +303,6 @@ export function useResumeOptimize() {
   }
 
   /**
-   * 更新阶段历史
-   */
-  function updateStageHistory(
-    stage: OptimizeStage,
-    message: string,
-    timestamp: number,
-    completed: boolean,
-    data?: any
-  ) {
-    const now = Date.now()
-    const existingIndex = state.stageHistory.findIndex(h => h.stage === stage)
-
-    if (existingIndex >= 0) {
-      // 更新现有记录
-      state.stageHistory[existingIndex].message = message
-      state.stageHistory[existingIndex].timestamp = timestamp
-      state.stageHistory[existingIndex].completed = completed
-      if (data) {
-        state.stageHistory[existingIndex].data = data
-      }
-      // 节点完成时记录结束时间
-      if (completed && !state.stageHistory[existingIndex].endTime) {
-        state.stageHistory[existingIndex].endTime = now
-      }
-    } else {
-      // 添加新记录，同时标记上一个运行中节点的结束时间
-      const prevRunning = state.stageHistory.find(h => h.startTime && !h.endTime)
-      if (prevRunning) {
-        prevRunning.endTime = now
-      }
-      state.stageHistory.push({
-        stage,
-        message,
-        timestamp,
-        completed,
-        data,
-        expanded: false,
-        startTime: now,
-        endTime: completed ? now : undefined
-      })
-    }
-  }
-
-  /**
    * 切换阶段展开状态
    */
   function toggleStageExpanded(stage: OptimizeStage) {
@@ -412,8 +375,9 @@ export function useResumeOptimize() {
   /**
    * 获取优化后的区块数据
    * 从 optimize_section 阶段的数据中提取 beforeSection 和 afterSection
+   * @param editedAfterSection 编辑后的 afterSection 数据（优先使用）
    */
-  function getOptimizedData(): { beforeSection: SectionDataItem[]; afterSection: SectionDataItem[] } | null {
+  function getOptimizedData(editedAfterSection?: ResumeSection[]): { beforeSection: SectionDataItem[]; afterSection: SectionDataItem[] } | null {
     const optimizeStage = state.stageHistory.find(h => h.stage === 'optimize_section')
     if (!optimizeStage?.data) {
       return null
@@ -424,6 +388,9 @@ export function useResumeOptimize() {
       return null
     }
 
+    // 优先使用传入的编辑后数据，否则使用原始数据
+    const finalAfterSection = editedAfterSection || afterSection
+
     // 转换为 API 需要的格式
     return {
       beforeSection: beforeSection.map((s: ResumeSection) => ({
@@ -432,7 +399,7 @@ export function useResumeOptimize() {
         title: s.title,
         content: s.content || ''
       })),
-      afterSection: afterSection.map((s: ResumeSection) => ({
+      afterSection: finalAfterSection.map((s: ResumeSection) => ({
         id: s.id,
         type: s.type,
         title: s.title,
@@ -444,9 +411,10 @@ export function useResumeOptimize() {
   /**
    * 应用优化变更
    * 调用后端批量 API 更新所有区块
+   * @param editedAfterSection 编辑后的 afterSection 数据（优先使用）
    */
-  async function applyChanges(): Promise<boolean> {
-    const optimizedData = getOptimizedData()
+  async function applyChanges(editedAfterSection?: ResumeSection[]): Promise<boolean> {
+    const optimizedData = getOptimizedData(editedAfterSection)
     if (!optimizedData || !state.resumeId) {
       console.error('[Optimize] 无法应用变更：缺少优化数据或简历ID')
       return false

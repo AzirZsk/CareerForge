@@ -419,7 +419,7 @@ const emit = defineEmits<{
   'cancel': []
   'retry': []
   'complete': []
-  'apply': []
+  'apply': [editedAfterSection: ResumeSection[] | null]
   'toggleExpand': [stage: OptimizeStage]
 }>()
 
@@ -595,7 +595,8 @@ function handleRetry() {
 }
 
 function handleApply() {
-  emit('apply')
+  // 传递编辑后的数据（如果有编辑的话）
+  emit('apply', editedAfterSection.value)
 }
 
 function toggleExpand(stage: OptimizeStage) {
