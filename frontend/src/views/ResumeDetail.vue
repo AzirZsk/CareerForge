@@ -25,7 +25,6 @@
         :overall-score="store.currentResume.overallScore"
         :structure-score="store.currentResume.structureScore"
         @optimize="optimizeResume"
-        @export="exportResume"
       />
 
       <!-- 评分指标 -->
@@ -327,12 +326,6 @@ function optimizeResume(): void {
   })
 }
 
-// 导出 PDF
-function exportResume(): void {
-  // TODO: 实现导出 PDF 功能
-  toast.info('导出 PDF 功能开发中...')
-}
-
 // 选择要添加的模块类型
 function handleSelectSectionType(type: SectionType): void {
   openNewSectionModal(type)
@@ -393,6 +386,7 @@ async function handleApplyChanges(editedAfterSection?: ResumeSection[] | null): 
     // 应用成功，刷新简历详情并关闭弹窗
     await store.fetchResumeDetail(resumeId.value)
     showOptimizeModal.value = false
+    toast.success('变更已应用，评分已更新')
   } else {
     // 应用失败，显示错误提示（弹窗保持打开状态）
     console.error('应用变更失败:', optimizeState.applyError)
