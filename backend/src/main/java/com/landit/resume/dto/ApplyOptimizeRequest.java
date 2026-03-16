@@ -32,9 +32,8 @@ public class ApplyOptimizeRequest {
     @Data
     public static class SectionDataItem {
         /**
-         * 区块ID
+         * 区块ID（更新时必填，新增时为空）
          */
-        @NotBlank(message = "区块ID不能为空")
         private String id;
 
         /**

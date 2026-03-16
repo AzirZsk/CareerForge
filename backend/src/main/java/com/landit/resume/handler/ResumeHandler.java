@@ -20,8 +20,8 @@ import com.landit.resume.dto.ResumeDetailVO;
 import com.landit.resume.entity.Resume;
 import com.landit.resume.entity.ResumeSection;
 import com.landit.resume.entity.ResumeVersion;
+import com.landit.resume.service.ResumeSectionService;
 import com.landit.resume.service.ResumeService;
-import com.landit.resume.service.ResumeSuggestionService;
 import com.landit.resume.service.ResumeSuggestionService;
 import com.landit.resume.mapper.ResumeSectionMapper;
 import com.landit.resume.mapper.ResumeVersionMapper;
@@ -48,6 +48,7 @@ import java.util.stream.Collectors;
 public class ResumeHandler {
 
     private final ResumeService resumeService;
+    private final ResumeSectionService resumeSectionService;
     private final AIService aiService;
     private final FileToImageService fileToImageService;
     private final ResumeVersionMapper resumeVersionMapper;
@@ -335,7 +336,7 @@ public class ResumeHandler {
 
     /**
      * 批量应用优化变更
-     * 将优化后的区块内容批量更新到简历
+     * 将优化后的区块内容完全替换简历的区块（完全替换策略）
      *
      * @param resumeId 简历ID
      * @param request  应用变更请求（包含优化前后的区块数据）
@@ -345,21 +346,30 @@ public class ResumeHandler {
     public ResumeDetailVO applyOptimizeChanges(String resumeId, ApplyOptimizeRequest request) {
         List<ApplyOptimizeRequest.SectionDataItem> afterSections = request.getAfterSection();
 
-        log.info("批量应用优化变更: resumeId={}, 区块数量={}", resumeId, afterSections.size());
+        log.info("批量应用优化变更（完全替换）: resumeId={}, 区块数量={}", resumeId, afterSections.size());
 
-        // 批量更新所有区块
+        // 1. 删除该简历的所有现有区块（非版本快照）
+        resumeSectionService.deleteAllByResumeId(resumeId);
+
+        // 2. 根据传入数据创建新区块
         for (ApplyOptimizeRequest.SectionDataItem section : afterSections) {
-            resumeService.updateSection(section.getId(), section.getContent());
+            resumeSectionService.create(
+                resumeId,
+                section.getType(),
+                section.getTitle(),
+                section.getContent()
+            );
         }
 
-        // 删除该简历的所有优化建议（内容已更新，旧建议不再适用）
+        // 3. 删除该简历的所有优化建议（内容已更新，旧建议不再适用）
         resumeSuggestionService.deleteByResumeId(resumeId);
         log.info("已清除简历的优化建议: resumeId={}", resumeId);
 
-        // 重新计算简历评分（只计算一次）
+        // 4. 重新计算简历评分和完整度
         recalculateResumeScore(resumeId);
+        recalculateResumeCompleteness(resumeId);
 
-        // 返回更新后的简历详情
+        // 5. 返回更新后的简历详情
         return resumeService.getResumeDetail(resumeId);
     }
 

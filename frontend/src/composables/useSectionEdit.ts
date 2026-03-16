@@ -5,19 +5,12 @@
 
 import { ref, computed, type Ref } from 'vue'
 import { useAppStore } from '@/stores'
+import { useToast } from '@/composables/useToast'
+import { useConfirm } from '@/composables/useConfirm'
 import type { ResumeSection, SectionType } from '@/types'
 
-// 模块类型标题映射
-const SECTION_TYPE_TITLES: Record<SectionType, string> = {
-  BASIC_INFO: '基本信息',
-  EDUCATION: '教育经历',
-  WORK: '工作经历',
-  PROJECT: '项目经历',
-  SKILLS: '专业技能',
-  CERTIFICATE: '证书荣誉',
-  OPEN_SOURCE: '开源贡献',
-  CUSTOM: '自定义区块'
-}
+// 聚合类型列表
+const AGGREGATE_TYPES = ['EDUCATION', 'WORK', 'PROJECT', 'CERTIFICATE', 'OPEN_SOURCE', 'CUSTOM']
 
 export function useSectionEdit(
   resumeId: Ref<string>,
@@ -25,6 +18,8 @@ export function useSectionEdit(
   currentSectionDetail: Ref<ResumeSection | undefined>
 ) {
   const store = useAppStore()
+  const toast = useToast()
+  const confirm = useConfirm()
 
   // 编辑状态
   const isEditModalVisible = ref<boolean>(false)
@@ -39,7 +34,7 @@ export function useSectionEdit(
   // 判断当前模块是否为聚合类型
   const isAggregateSection = computed<boolean>(() => {
     const type = currentSectionDetail.value?.type
-    return ['EDUCATION', 'WORK', 'PROJECT', 'CERTIFICATE', 'OPEN_SOURCE', 'CUSTOM'].includes(type ?? '')
+    return AGGREGATE_TYPES.includes(type ?? '')
   })
 
   // 判断当前是否为 CUSTOM 类型的单个 item
@@ -114,7 +109,7 @@ export function useSectionEdit(
   }
 
   // 保存编辑
-  async function handleSave(data: { content: Record<string, unknown>; itemIndex?: number; isNew: boolean }): Promise<void> {
+  async function handleSave(data: { content: Record<string, unknown>; itemIndex?: number; isNew: boolean; sectionTitle?: string }): Promise<void> {
     if (!resumeId.value) {
       return
     }
@@ -123,7 +118,7 @@ export function useSectionEdit(
       // 新建模块
       if (isNewSection.value && pendingSectionType.value) {
         const type = pendingSectionType.value
-        const title = SECTION_TYPE_TITLES[type] || '新模块'
+        const title = data.sectionTitle || '新模块'
 
         // CUSTOM 类型：检查是否已存在，存在则追加，不存在则创建
         if (type === 'CUSTOM') {
@@ -151,7 +146,7 @@ export function useSectionEdit(
         }
 
         // 其他聚合类型：正常创建
-        const isAggregate = ['EDUCATION', 'WORK', 'PROJECT', 'CERTIFICATE', 'OPEN_SOURCE'].includes(type)
+        const isAggregate = AGGREGATE_TYPES.includes(type)
         const content = isAggregate ? [data.content] : data.content
         const newSectionId = await store.addResumeSection(resumeId.value, {
           type,
@@ -186,7 +181,7 @@ export function useSectionEdit(
       closeEditModal()
     } catch (error) {
       console.error('保存失败', error)
-      alert('保存失败，请重试')
+      toast.error('保存失败，请重试')
     } finally {
       isSaving.value = false
     }
@@ -194,14 +189,20 @@ export function useSectionEdit(
 
   // 删除条目
   async function deleteItem(index: number): Promise<void> {
-    if (!confirm('确定要删除这条记录吗？')) {
+    const confirmed = await confirm.confirm({
+      title: '删除确认',
+      message: '确定要删除这条记录吗？',
+      confirmText: '删除',
+      danger: true
+    })
+    if (!confirmed) {
       return
     }
     try {
       await store.deleteResumeSectionItem(resumeId.value, activeSection.value, index)
     } catch (error) {
       console.error('删除失败', error)
-      alert('删除失败，请重试')
+      toast.error('删除失败，请重试')
     }
   }
 
@@ -217,6 +218,14 @@ export function useSectionEdit(
     isAggregateSection,
     isCustomItem,
     canDeleteSection,
+    // 确认弹窗状态（供模板绑定）
+    confirmVisible: confirm.visible,
+    confirmTitle: confirm.title,
+    confirmMessage: confirm.message,
+    confirmText: confirm.confirmText,
+    confirmDanger: confirm.danger,
+    handleConfirm: confirm.handleConfirm,
+    handleConfirmCancel: confirm.handleCancel,
     // 方法
     openEditModal,
     openEditItemModal,

@@ -23,11 +23,25 @@
         </transition>
       </router-view>
     </main>
+
+    <!-- 全局 Toast 通知 -->
+    <Toast ref="toastRef" />
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
 import AppNavbar from '@/components/common/AppNavbar.vue'
+import Toast from '@/components/common/Toast.vue'
+import { setToastInstance } from '@/composables/useToast'
+
+const toastRef = ref<InstanceType<typeof Toast> | null>(null)
+
+onMounted(() => {
+  if (toastRef.value) {
+    setToastInstance(toastRef.value)
+  }
+})
 </script>
 
 <style lang="scss" scoped>

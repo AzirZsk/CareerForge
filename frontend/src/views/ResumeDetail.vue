@@ -138,6 +138,17 @@
       :danger="true"
       @confirm="confirmDeleteCustomItem"
     />
+
+    <!-- 删除条目确认弹窗（来自 useSectionEdit） -->
+    <ConfirmModal
+      v-model:visible="confirmVisible"
+      :title="confirmTitle"
+      :message="confirmMessage"
+      :confirm-text="confirmText"
+      :danger="confirmDanger"
+      @confirm="handleConfirm"
+      @cancel="handleConfirmCancel"
+    />
   </div>
 </template>
 
@@ -157,10 +168,12 @@ import SuggestionsBlock from '@/components/resume/SuggestionsBlock.vue'
 import { useResumeOptimize } from '@/composables/useResumeOptimize'
 import { useSectionEdit } from '@/composables/useSectionEdit'
 import { useSectionHelper } from '@/composables/useSectionHelper'
-import type { ResumeSection, ResumeSuggestionItem, SectionType } from '@/types'
+import { useToast } from '@/composables/useToast'
+import type { ResumeSection, ResumeSuggestionItem } from '@/types'
 
 const store = useAppStore()
 const { parseContent } = useSectionHelper()
+const toast = useToast()
 const route = useRoute()
 const activeSection = ref<string>('')
 const resumeId = ref<string>('')
@@ -213,21 +226,8 @@ const currentSectionDetail = computed<ResumeSection | undefined>(() => {
     }
   }
   // 非 CUSTOM 类型：直接匹配 section.id
-  const section = store.currentResume.sections.find((s: ResumeSection) => s.id === activeSection.value)
-  return section
+  return store.currentResume.sections.find((s: ResumeSection) => s.id === activeSection.value)
 })
-
-// 类型标题映射
-const SECTION_TYPE_TITLES: Record<SectionType, string> = {
-  BASIC_INFO: '基本信息',
-  EDUCATION: '教育经历',
-  WORK: '工作经历',
-  PROJECT: '项目经历',
-  SKILLS: '专业技能',
-  CERTIFICATE: '证书荣誉',
-  OPEN_SOURCE: '开源贡献',
-  CUSTOM: '自定义区块'
-}
 
 // 编辑弹窗使用的 section（支持新建模块时的虚拟 section）
 const editingSection = computed<ResumeSection | undefined>(() => {
@@ -237,7 +237,7 @@ const editingSection = computed<ResumeSection | undefined>(() => {
       id: 'new_section',
       resumeId: resumeId.value,
       type: pendingSectionType.value,
-      title: SECTION_TYPE_TITLES[pendingSectionType.value] || '新模块',
+      title: '新模块',
       content: null,
       score: 0,
       suggestions: null
@@ -258,6 +258,13 @@ const {
   isAggregateSection,
   isCustomItem,
   canDeleteSection,
+  confirmVisible,
+  confirmTitle,
+  confirmMessage,
+  confirmText,
+  confirmDanger,
+  handleConfirm,
+  handleConfirmCancel,
   openEditModal,
   openEditItemModal,
   openAddItemModal,
@@ -276,14 +283,14 @@ const sectionSuggestions = computed<ResumeSuggestionItem[]>(() => {
 function handleApplySuggestion(suggestion: ResumeSuggestionItem): void {
   console.log('应用建议:', suggestion)
   // TODO: 实现应用建议功能（需要后端 API 支持）
-  alert(`应用建议功能开发中...`)
+  toast.info('应用建议功能开发中...')
 }
 
 // 忽略建议（占位实现）
 function handleIgnoreSuggestion(suggestion: ResumeSuggestionItem): void {
   console.log('忽略建议:', suggestion)
   // TODO: 实现忽略建议功能（需要后端 API 支持）
-  alert(`忽略建议功能开发中...`)
+  toast.info('忽略建议功能开发中...')
 }
 
 // 删除确认弹窗消息
@@ -323,7 +330,7 @@ function optimizeResume(): void {
 // 导出 PDF
 function exportResume(): void {
   // TODO: 实现导出 PDF 功能
-  alert('导出 PDF 功能开发中...')
+  toast.info('导出 PDF 功能开发中...')
 }
 
 // 选择要添加的模块类型
@@ -366,7 +373,7 @@ async function confirmDeleteCustomItem(): Promise<void> {
     }
   } catch (error) {
     console.error('删除失败:', error)
-    alert('删除失败，请重试')
+    toast.error('删除失败，请重试')
   }
 }
 
@@ -389,7 +396,7 @@ async function handleApplyChanges(): Promise<void> {
   } else {
     // 应用失败，显示错误提示（弹窗保持打开状态）
     console.error('应用变更失败:', optimizeState.applyError)
-    alert(optimizeState.applyError || '应用变更失败，请重试')
+    toast.error(optimizeState.applyError || '应用变更失败，请重试')
   }
 }
 </script>
