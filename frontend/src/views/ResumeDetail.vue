@@ -24,6 +24,7 @@
         :analyzed="store.currentResume.analyzed"
         :overall-score="store.currentResume.overallScore"
         :structure-score="store.currentResume.structureScore"
+        :has-content="hasAnalyzableContent"
         @optimize="optimizeResume"
       />
 
@@ -276,6 +277,18 @@ const {
 // 优化建议
 const sectionSuggestions = computed<ResumeSuggestionItem[]>(() => {
   return currentSectionDetail.value?.suggestions ?? []
+})
+
+// 判断简历是否有可分析的内容（用于控制AI分析按钮的显示）
+const hasAnalyzableContent = computed<boolean>(() => {
+  const sections = store.currentResume.sections
+  if (!sections || sections.length === 0) return false
+  // 至少有一个区块有实际内容
+  return sections.some((s: ResumeSection) => {
+    if (!s.content) return false
+    const content = s.content.trim()
+    return content !== '{}' && content !== '[]' && content !== ''
+  })
 })
 
 // 应用建议（占位实现）

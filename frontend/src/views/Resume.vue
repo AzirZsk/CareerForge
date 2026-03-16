@@ -28,6 +28,10 @@
           主简历
         </div>
         <div class="primary-resume-card">
+          <!-- 主简历飘带标签 -->
+          <div class="primary-ribbon">
+            <span>主简历</span>
+          </div>
           <div class="resume-main">
             <div class="resume-icon">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -264,10 +268,12 @@ onMounted(async () => {
 })
 
 const filteredResumes = computed<Resume[]>(() => {
+  // 只有当 primaryResume 存在时才过滤掉主简历，否则显示所有简历
+  const hasPrimaryResume = !!store.primaryResume
   if (activeFilter.value === 'all') {
-    return store.resumeList.filter((r: Resume) => !r.isPrimary)
+    return store.resumeList.filter((r: Resume) => !hasPrimaryResume || !r.isPrimary)
   }
-  return store.resumeList.filter((r: Resume) => !r.isPrimary && r.status === activeFilter.value)
+  return store.resumeList.filter((r: Resume) => (!hasPrimaryResume || !r.isPrimary) && r.status === activeFilter.value)
 })
 
 function getStatusText(status: ResumeStatus): string {
@@ -439,6 +445,54 @@ function handleTailorComplete(): void {
     inset: 0;
     background: linear-gradient(135deg, rgba(212, 168, 83, 0.05) 0%, transparent 50%);
     pointer-events: none;
+  }
+}
+
+// 主简历飘带标签
+.primary-ribbon {
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  width: 90px;
+  height: 90px;
+  overflow: hidden;
+  z-index: 10;
+
+  span {
+    position: absolute;
+    display: block;
+    width: 130px;
+    padding: 8px 0;
+    background: linear-gradient(135deg, $color-accent 0%, $color-accent-dark 100%);
+    color: $color-bg-deep;
+    font-size: 12px;
+    font-weight: $weight-semibold;
+    text-align: center;
+    left: -28px;
+    top: 26px;
+    transform: rotate(-45deg);
+    box-shadow: 0 3px 10px rgba(212, 168, 83, 0.4);
+
+    // 飘带两端的小三角
+    &::before,
+    &::after {
+      content: '';
+      position: absolute;
+      border: 3px solid transparent;
+      border-bottom-color: darken($color-accent-dark, 15%);
+    }
+
+    &::before {
+      left: 0;
+      top: 100%;
+      border-left-color: darken($color-accent-dark, 15%);
+    }
+
+    &::after {
+      right: 0;
+      top: 100%;
+      border-right-color: darken($color-accent-dark, 15%);
+    }
   }
 }
 

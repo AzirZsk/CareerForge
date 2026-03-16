@@ -22,11 +22,17 @@
         </div>
       </div>
       <div class="header-actions">
-        <button class="action-btn primary" @click="$emit('optimize')">
+        <button
+          class="action-btn primary"
+          :class="{ disabled: !hasContent }"
+          :disabled="!hasContent"
+          :title="hasContent ? '' : '请先填写简历内容'"
+          @click="hasContent && $emit('optimize')"
+        >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
           </svg>
-          {{ analyzed ? '一键优化' : 'AI分析' }}
+          {{ hasContent ? (analyzed ? '一键优化' : 'AI分析') : '请先填写内容' }}
         </button>
       </div>
     </div>
@@ -40,6 +46,7 @@ defineProps<{
   analyzed: boolean
   overallScore: number
   structureScore: number
+  hasContent?: boolean
 }>()
 
 defineEmits<{
@@ -143,12 +150,21 @@ defineEmits<{
   font-weight: $weight-medium;
   border-radius: $radius-md;
   transition: all $transition-fast;
+  cursor: pointer;
   &.primary {
     background: $gradient-gold;
     color: $color-bg-deep;
-    &:hover {
+    &:hover:not(:disabled) {
       transform: translateY(-2px);
       box-shadow: 0 4px 16px rgba(212, 168, 83, 0.3);
+    }
+    &.disabled,
+    &:disabled {
+      background: rgba(255, 255, 255, 0.1);
+      color: $color-text-tertiary;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
     }
   }
   &.secondary {
