@@ -648,8 +648,8 @@ function getTitleChangeClass(sectionType: string): string {
 
 .honor-tag {
   padding: $spacing-xs $spacing-sm;
-  background: $color-success-bg;
-  color: $color-success;
+  background: rgba(212, 168, 83, 0.12);
+  color: $color-accent;
   font-size: $text-xs;
   border-radius: $radius-sm;
   width: fit-content;

@@ -201,27 +201,40 @@
                             <span class="change-type" :class="change.type">{{ change.typeLabel || change.type || '修改' }}</span>
                             <span class="change-field">{{ change.fieldLabel || change.field }}</span>
                           </div>
-                          <div class="change-content" v-if="change.beforeValue !== null || change.afterValue !== null">
-                            <!-- 优化前 -->
-                            <div class="change-before" v-if="change.beforeValue !== null">
-                              <span class="change-label">前:</span>
-                              <!-- 数组类型使用列表展示 -->
+                          <div class="change-content" v-if="hasValueToShow(change)">
+                            <!-- 删除类型：只显示被删除的值 -->
+                            <div class="change-removed" v-if="change.type === 'removed'">
                               <ol v-if="isArray(change.beforeValue)" class="change-value-list">
                                 <li v-for="(val, vIdx) in change.beforeValue" :key="vIdx">{{ val }}</li>
                               </ol>
-                              <!-- 字符串类型直接展示 -->
                               <pre v-else class="change-value-text">{{ change.beforeValue }}</pre>
                             </div>
-                            <!-- 优化后 -->
-                            <div class="change-after" v-if="change.afterValue !== null">
-                              <span class="change-label">后:</span>
-                              <!-- 数组类型使用列表展示 -->
+
+                            <!-- 新增类型：只显示新增的值 -->
+                            <div class="change-added" v-else-if="change.type === 'added'">
                               <ol v-if="isArray(change.afterValue)" class="change-value-list">
                                 <li v-for="(val, vIdx) in change.afterValue" :key="vIdx">{{ val }}</li>
                               </ol>
-                              <!-- 字符串类型直接展示 -->
                               <pre v-else class="change-value-text">{{ change.afterValue }}</pre>
                             </div>
+
+                            <!-- 修改类型：保持前后对比 -->
+                            <template v-else>
+                              <div class="change-before" v-if="change.beforeValue !== null">
+                                <span class="change-label">前:</span>
+                                <ol v-if="isArray(change.beforeValue)" class="change-value-list">
+                                  <li v-for="(val, vIdx) in change.beforeValue" :key="vIdx">{{ val }}</li>
+                                </ol>
+                                <pre v-else class="change-value-text">{{ change.beforeValue }}</pre>
+                              </div>
+                              <div class="change-after" v-if="change.afterValue !== null">
+                                <span class="change-label">后:</span>
+                                <ol v-if="isArray(change.afterValue)" class="change-value-list">
+                                  <li v-for="(val, vIdx) in change.afterValue" :key="vIdx">{{ val }}</li>
+                                </ol>
+                                <pre v-else class="change-value-text">{{ change.afterValue }}</pre>
+                              </div>
+                            </template>
                           </div>
                           <div class="change-reason" v-if="change.reason">{{ change.reason }}</div>
                         </div>
@@ -354,7 +367,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, onUnmounted } from 'vue'
 import { useScrollLock } from '@vueuse/core'
-import type { OptimizeState, OptimizeStage, StageHistoryItem, ResumeSection, ComparisonEditEvent } from '@/types/resume-optimize'
+import type { OptimizeState, OptimizeStage, StageHistoryItem, ResumeSection, ComparisonEditEvent, ChangeItem } from '@/types/resume-optimize'
 import { getStageLabel, getDimensionLabel } from '@/types/resume-optimize'
 import ResumeComparison from './ResumeComparison.vue'
 import EditSectionModal from './EditSectionModal.vue'
@@ -663,6 +676,20 @@ function getSuggestionImpactLabel(impact: string): string {
 // 判断是否为数组
 function isArray(value: unknown): value is string[] {
   return Array.isArray(value)
+}
+
+/**
+ * 判断变更项是否有值需要展示
+ * 删除类型需要 beforeValue，新增类型需要 afterValue，修改类型需要至少一个有值
+ */
+function hasValueToShow(change: ChangeItem): boolean {
+  if (change.type === 'removed') {
+    return change.beforeValue !== null
+  }
+  if (change.type === 'added') {
+    return change.afterValue !== null
+  }
+  return change.beforeValue !== null || change.afterValue !== null
 }
 </script>
 
@@ -1391,7 +1418,7 @@ function isArray(value: unknown): value is string[] {
     background: rgba(52, 211, 153, 0.15);
     color: $color-success;
   }
-  &.deleted {
+  &.removed {
     background: rgba(248, 113, 113, 0.15);
     color: $color-error;
   }
@@ -1427,6 +1454,25 @@ function isArray(value: unknown): value is string[] {
 }
 
 .change-after {
+  color: $color-success;
+  background: rgba(52, 211, 153, 0.05);
+}
+
+// 删除类型和新增类型的单值展示样式
+.change-removed,
+.change-added {
+  font-size: $text-xs;
+  padding: $spacing-xs;
+  border-radius: $radius-sm;
+  margin-bottom: 4px;
+}
+
+.change-removed {
+  color: $color-error;
+  background: rgba(248, 113, 113, 0.05);
+}
+
+.change-added {
   color: $color-success;
   background: rgba(52, 211, 153, 0.05);
 }
