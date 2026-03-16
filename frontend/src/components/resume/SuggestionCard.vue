@@ -47,7 +47,7 @@ const impactClass = computed<string>(() => {
 
 <style lang="scss" scoped>
 .suggestion-card {
-  padding: $spacing-md;
+  padding: $spacing-sm $spacing-md;
   background: rgba(255, 255, 255, 0.02);
   border-radius: $radius-md;
   border-left: 3px solid;

@@ -5,11 +5,10 @@
 =====================================================-->
 
 <template>
-  <div v-if="suggestions.length > 0" class="suggestions-block">
+  <div v-if="suggestions.length > 0" class="suggestions-block" :class="{ 'is-expanded': isExpanded }">
     <!-- 标题栏（可折叠） -->
     <div class="block-header" @click="toggleExpand">
       <div class="header-left">
-        <span class="block-icon">{{ highestPriorityIcon }}</span>
         <span class="block-title">优化建议</span>
         <span class="block-count">({{ suggestions.length }})</span>
       </div>
@@ -30,7 +29,7 @@
     </div>
 
     <!-- 展开内容 -->
-    <Transition name="expand">
+    <Transition @enter="onEnter" @after-enter="onAfterEnter" @leave="onLeave" @after-leave="onAfterLeave">
       <div v-show="isExpanded" class="block-content">
         <!-- 建议列表 -->
         <TransitionGroup name="list" tag="div" class="suggestions-list">
@@ -46,7 +45,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import SuggestionCard from './SuggestionCard.vue'
 import type { ResumeSuggestionItem } from '@/types'
 
@@ -64,20 +63,57 @@ function toggleExpand(): void {
   isExpanded.value = !isExpanded.value
 }
 
-// 根据最高优先级显示图标
-const highestPriorityIcon = computed<string>(() => {
-  if (props.suggestions.some(s => s.type === 'critical')) return '⚠️'
-  if (props.suggestions.some(s => s.type === 'improvement')) return '💡'
-  return '✨'
-})
+// 展开/折叠过渡钩子（用真实高度代替 max-height）
+function onEnter(el: Element): void {
+  const htmlEl = el as HTMLElement
+  htmlEl.style.overflow = 'hidden'
+  htmlEl.style.height = '0'
+  htmlEl.style.opacity = '0'
+  void htmlEl.offsetHeight
+  htmlEl.style.transition = 'height 0.25s ease, opacity 0.25s ease'
+  htmlEl.style.height = htmlEl.scrollHeight + 'px'
+  htmlEl.style.opacity = '1'
+}
+
+function onAfterEnter(el: Element): void {
+  const htmlEl = el as HTMLElement
+  htmlEl.style.height = ''
+  htmlEl.style.overflow = ''
+  htmlEl.style.transition = ''
+}
+
+function onLeave(el: Element): void {
+  const htmlEl = el as HTMLElement
+  htmlEl.style.overflow = 'hidden'
+  htmlEl.style.height = htmlEl.scrollHeight + 'px'
+  htmlEl.style.opacity = '1'
+  void htmlEl.offsetHeight
+  htmlEl.style.transition = 'height 0.25s ease, opacity 0.25s ease'
+  htmlEl.style.height = '0'
+  htmlEl.style.opacity = '0'
+}
+
+function onAfterLeave(el: Element): void {
+  const htmlEl = el as HTMLElement
+  htmlEl.style.height = ''
+  htmlEl.style.overflow = ''
+  htmlEl.style.transition = ''
+  htmlEl.style.opacity = ''
+}
 </script>
 
 <style lang="scss" scoped>
 .suggestions-block {
   background: rgba(255, 255, 255, 0.02);
   border-radius: $radius-md;
-  margin-bottom: $spacing-lg;
+  margin-bottom: $spacing-md;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   overflow: hidden;
+
+  &.is-expanded {
+    margin-bottom: $spacing-lg;
+    padding-bottom: $spacing-md;
+  }
 }
 
 .block-header {
@@ -123,32 +159,13 @@ const highestPriorityIcon = computed<string>(() => {
 }
 
 .block-content {
-  padding: 0 $spacing-lg $spacing-lg;
+  padding: $spacing-md $spacing-lg $spacing-sm;
 }
 
 .suggestions-list {
   display: flex;
   flex-direction: column;
   gap: $spacing-lg;
-}
-
-// 展开动画
-.expand-enter-active,
-.expand-leave-active {
-  transition: all 0.3s ease;
-  overflow: hidden;
-}
-
-.expand-enter-from,
-.expand-leave-to {
-  opacity: 0;
-  max-height: 0;
-}
-
-.expand-enter-to,
-.expand-leave-from {
-  opacity: 1;
-  max-height: 1000px;
 }
 
 // 列表动画
