@@ -2,8 +2,6 @@ package com.landit.resume.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.landit.common.enums.ResumeStatus;
-import com.landit.common.enums.ResumeType;
 import com.landit.common.enums.SectionType;
 import com.landit.common.exception.BusinessException;
 import com.landit.common.util.JsonParseHelper;
@@ -158,7 +156,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
     private ResumeDetailVO.ResumeSuggestionItemVO toSuggestionItemVO(ResumeSuggestion suggestion) {
         return ResumeDetailVO.ResumeSuggestionItemVO.builder()
                 .id(String.valueOf(suggestion.getId()))
-                .type(suggestion.getType() != null ? suggestion.getType().getValue() : null)
+                .type(suggestion.getType() != null ? suggestion.getType() : null)
                 .category(suggestion.getCategory())
                 .title(suggestion.getTitle())
                 .description(suggestion.getDescription())
@@ -228,10 +226,10 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
                 ? request.getResumeName()
                 : sourceResume.getName() + "-" + request.getTargetPosition());
         derivedResume.setTargetPosition(request.getTargetPosition());
-        derivedResume.setResumeType(ResumeType.DERIVED);
+        derivedResume.setResumeType("DERIVED");
         derivedResume.setSourceResumeId(sourceResume.getId());
         derivedResume.setVersion(1);
-        derivedResume.setStatus(ResumeStatus.DRAFT);
+        derivedResume.setStatus("draft");
         derivedResume.setScore(0);
         derivedResume.setCompleteness(0);
         derivedResume.setIsPrimary(false);
@@ -258,9 +256,9 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
         resume.setName(data.getBasicInfo().getName() + "的简历");
         resume.setTargetPosition(targetPosition);
         resume.setMarkdownContent(data.getMarkdownContent());
-        resume.setResumeType(ResumeType.PRIMARY);
+        resume.setResumeType("PRIMARY");
         resume.setVersion(1);
-        resume.setStatus(ResumeStatus.DRAFT);
+        resume.setStatus("optimized");
         resume.setIsPrimary(true);
         resume.setCompleteness(calculateCompleteness(data));
         save(resume);
@@ -502,12 +500,16 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
      * 获取用户所有简历列表
      * 按主简历优先、更新时间倒序排列
      *
+     * @param status 简历状态筛选（可选，传入 value 如 "optimized"/"draft"）
      * @return 简历列表
      */
-    public List<Resume> getAllResumes() {
+    public List<Resume> getAllResumes(String status) {
         LambdaQueryWrapper<Resume> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Resume::getUserId, SINGLE_USER_ID)
-               .orderByDesc(Resume::getIsPrimary)
+        wrapper.eq(Resume::getUserId, SINGLE_USER_ID);
+        if (status != null && !status.isBlank()) {
+            wrapper.eq(Resume::getStatus, status);
+        }
+        wrapper.orderByDesc(Resume::getIsPrimary)
                .orderByDesc(Resume::getUpdatedAt);
         return list(wrapper);
     }
@@ -524,9 +526,9 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
         resume.setUserId(SINGLE_USER_ID);
         resume.setName(name != null && !name.isBlank() ? name : "新简历");
         resume.setTargetPosition(targetPosition != null ? targetPosition : "");
-        resume.setResumeType(ResumeType.PRIMARY);
+        resume.setResumeType("PRIMARY");
         resume.setVersion(1);
-        resume.setStatus(ResumeStatus.DRAFT);
+        resume.setStatus("draft");
         resume.setIsPrimary(false);
         resume.setScore(0);
         resume.setCompleteness(10);

@@ -49,7 +49,7 @@
         />
 
         <!-- 详情面板 -->
-        <section class="detail-panel animate-in" style="--delay: 4">
+        <section v-if="currentSectionDetail" class="detail-panel animate-in" style="--delay: 4">
           <!-- 优化建议区块（头部） -->
           <SuggestionsBlock
             v-if="currentSectionDetail"
@@ -96,6 +96,17 @@
             @add-item="openAddItemModal"
             @delete-item="deleteItem"
           />
+        </section>
+
+        <!-- 空状态提示 -->
+        <section v-else class="detail-panel empty-panel animate-in" style="--delay: 4">
+          <div class="empty-state">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+            <p class="empty-text">暂无简历模块，请在左侧添加</p>
+          </div>
         </section>
       </div>
     </div>
@@ -499,6 +510,26 @@ async function handleApplyChanges(editedAfterSection?: ResumeSection[] | null): 
       background: rgba(248, 113, 113, 0.1);
     }
   }
+}
+
+// 空状态
+.empty-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-md;
+  color: $color-text-tertiary;
+}
+
+.empty-text {
+  font-size: $text-sm;
 }
 
 // 动画

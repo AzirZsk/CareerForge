@@ -1,6 +1,5 @@
 package com.landit.interview.controller;
 
-import com.landit.common.enums.InterviewType;
 import com.landit.common.response.ApiResponse;
 import com.landit.common.response.PageResponse;
 import com.landit.interview.dto.FinishSessionRequest;
@@ -68,7 +67,7 @@ public class InterviewController {
 
     @Operation(summary = "获取面试历史")
     @GetMapping("/history")
-    public ApiResponse<PageResponse<Interview>> getInterviewHistory(@RequestParam(required = false) InterviewType type, @RequestParam(defaultValue = "1") Integer page, @RequestParam(defaultValue = "10") Integer size) {
+    public ApiResponse<PageResponse<Interview>> getInterviewHistory(@RequestParam(required = false) String type, @RequestParam(defaultValue = "1") Integer page, @RequestParam(defaultValue = "10") Integer size) {
         return ApiResponse.success(interviewService.getInterviewHistory(type, page, size));
     }
 
@@ -80,7 +79,7 @@ public class InterviewController {
 
     @Operation(summary = "获取题库")
     @GetMapping("/questions")
-    public ApiResponse<InterviewQuestionsVO> getInterviewQuestions(@RequestParam(required = false) InterviewType type) {
+    public ApiResponse<InterviewQuestionsVO> getInterviewQuestions(@RequestParam(required = false) String type) {
         return ApiResponse.success(interviewService.getInterviewQuestions(type));
     }
 

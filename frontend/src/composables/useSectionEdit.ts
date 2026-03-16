@@ -12,6 +12,18 @@ import type { ResumeSection, SectionType } from '@/types'
 // 聚合类型列表
 const AGGREGATE_TYPES = ['EDUCATION', 'WORK', 'PROJECT', 'CERTIFICATE', 'OPEN_SOURCE', 'CUSTOM']
 
+// 模块类型 → 默认标题映射
+const SECTION_TITLE_MAP: Record<string, string> = {
+  BASIC_INFO: '基本信息',
+  EDUCATION: '教育经历',
+  WORK: '工作经历',
+  PROJECT: '项目经历',
+  SKILLS: '专业技能',
+  CERTIFICATE: '证书荣誉',
+  OPEN_SOURCE: '开源贡献',
+  CUSTOM: '自定义区块'
+}
+
 export function useSectionEdit(
   resumeId: Ref<string>,
   activeSection: Ref<string>,
@@ -118,7 +130,9 @@ export function useSectionEdit(
       // 新建模块
       if (isNewSection.value && pendingSectionType.value) {
         const type = pendingSectionType.value
-        const title = data.sectionTitle || '新模块'
+        const title = type === 'CUSTOM'
+          ? (data.sectionTitle || '自定义区块')
+          : (SECTION_TITLE_MAP[type] || '新模块')
 
         // CUSTOM 类型：检查是否已存在，存在则追加，不存在则创建
         if (type === 'CUSTOM') {

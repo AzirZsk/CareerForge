@@ -47,6 +47,7 @@ import type { SectionType } from '@/types'
 
 // 模块类型配置
 const SECTION_TYPE_CONFIG: Array<{ type: SectionType; label: string; icon: string; tooltip?: string }> = [
+  { type: 'BASIC_INFO', label: '基本信息', icon: '👤' },
   { type: 'EDUCATION', label: '教育经历', icon: '🎓' },
   { type: 'WORK', label: '工作经历', icon: '💼' },
   { type: 'PROJECT', label: '项目经历', icon: '📦' },
@@ -96,7 +97,7 @@ function handleSelectType(type: SectionType): void {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: $z-modal;
 }
 
 .modal-container {

@@ -1,6 +1,5 @@
 package com.landit.interview.dto;
 
-import com.landit.common.enums.InterviewType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,7 +21,7 @@ public class InterviewDetailVO {
 
     private String id;
 
-    private InterviewType type;
+    private String type;
 
     private String position;
 

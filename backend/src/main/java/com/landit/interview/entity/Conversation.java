@@ -2,7 +2,6 @@ package com.landit.interview.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.landit.common.entity.BaseEntity;
-import com.landit.common.enums.ConversationRole;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -20,7 +19,7 @@ public class Conversation extends BaseEntity {
 
     private String sessionId;
 
-    private ConversationRole role;
+    private String role;
 
     private String content;
 

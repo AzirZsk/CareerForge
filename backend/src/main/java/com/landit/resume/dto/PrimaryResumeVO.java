@@ -1,6 +1,5 @@
 package com.landit.resume.dto;
 
-import com.landit.common.enums.ResumeStatus;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -19,7 +18,7 @@ public class PrimaryResumeVO {
 
     private String targetPosition;
 
-    private ResumeStatus status;
+    private String status;
 
     private Integer score;
 

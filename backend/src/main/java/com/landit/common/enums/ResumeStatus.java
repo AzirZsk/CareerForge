@@ -22,4 +22,19 @@ public enum ResumeStatus {
     @JsonValue
     private final String description;
 
+    /**
+     * 根据 value 查找枚举
+     *
+     * @param value 枚举值（如 "optimized"、"draft"）
+     * @return 对应枚举，未找到返回 null
+     */
+    public static ResumeStatus fromValue(String value) {
+        for (ResumeStatus status : values()) {
+            if (status.value.equalsIgnoreCase(value)) {
+                return status;
+            }
+        }
+        return null;
+    }
+
 }

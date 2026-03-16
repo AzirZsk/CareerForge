@@ -1,6 +1,5 @@
 package com.landit.resume.dto;
 
-import com.landit.common.enums.ResumeStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -38,7 +37,7 @@ public class ResumeListVO {
     /**
      * 简历状态
      */
-    private ResumeStatus status;
+    private String status;
 
     /**
      * 简历评分（0-100）

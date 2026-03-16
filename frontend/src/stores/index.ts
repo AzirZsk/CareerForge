@@ -145,13 +145,13 @@ export const useAppStore = defineStore('app', () => {
   }
 
   // 获取所有简历列表
-  async function fetchResumes(): Promise<void> {
+  async function fetchResumes(status?: string): Promise<void> {
     try {
-      const result = await resumeApi.getResumes()
+      const result = await resumeApi.getResumes(status)
       resumeList.value = result.map((item: ResumeListItem): Resume => ({
         id: item.id,
         name: item.name,
-        targetPosition: item.targetPosition || '未设置',
+        targetPosition: item.targetPosition || '暂未设置目标职位',
         updatedAt: formatDateTime(item.updatedAt),
         status: item.status,
         score: item.score || 0,

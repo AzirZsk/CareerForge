@@ -1,6 +1,5 @@
 package com.landit.resume.dto;
 
-import com.landit.common.enums.SuggestionType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,7 +18,7 @@ public class ResumeSuggestionVO {
 
     private String id;
 
-    private SuggestionType type;
+    private String type;
 
     private String category;
 

@@ -49,8 +49,10 @@ public class ResumeController {
 
     @Operation(summary = "获取所有简历列表")
     @GetMapping
-    public ApiResponse<List<ResumeListVO>> getAllResumes() {
-        return ApiResponse.success(resumeHandler.getAllResumes());
+    public ApiResponse<List<ResumeListVO>> getAllResumes(
+            @io.swagger.v3.oas.annotations.Parameter(description = "简历状态筛选（optimized/draft），不传则返回全部")
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String status) {
+        return ApiResponse.success(resumeHandler.getAllResumes(status));
     }
 
     @Operation(summary = "创建空白简历")

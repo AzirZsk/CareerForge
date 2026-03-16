@@ -7,7 +7,7 @@
   <header class="resume-header animate-in" style="--delay: 1">
     <div class="header-left">
       <h1 class="resume-title">{{ name }}</h1>
-      <p class="resume-target">目标岗位：{{ targetPosition }}</p>
+      <p class="resume-target">目标岗位：{{ targetPosition || '暂未设置目标职位' }}</p>
     </div>
     <div class="header-right">
       <div class="score-overview">

@@ -261,7 +261,7 @@ function handleSave(): void {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 3000;
+  z-index: $z-modal;
   backdrop-filter: blur(4px);
 }
 

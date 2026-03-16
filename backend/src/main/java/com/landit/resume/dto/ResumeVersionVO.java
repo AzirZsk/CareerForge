@@ -1,7 +1,5 @@
 package com.landit.resume.dto;
 
-import com.landit.common.enums.ChangeType;
-import com.landit.common.enums.ResumeStatus;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -24,7 +22,7 @@ public class ResumeVersionVO {
 
     private String targetPosition;
 
-    private ResumeStatus status;
+    private String status;
 
     private Integer score;
 
@@ -32,7 +30,7 @@ public class ResumeVersionVO {
 
     private String changeSummary;
 
-    private ChangeType changeType;
+    private String changeType;
 
     private LocalDateTime createdAt;
 

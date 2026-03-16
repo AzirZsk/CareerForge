@@ -4,8 +4,6 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import com.landit.common.entity.BaseEntity;
-import com.landit.common.enums.InterviewType;
-import com.landit.common.enums.QuestionDifficulty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -21,11 +19,11 @@ import java.util.List;
 @TableName(value = "t_interview_question", autoResultMap = true)
 public class InterviewQuestion extends BaseEntity {
 
-    private InterviewType type;
+    private String type;
 
     private String category;
 
-    private QuestionDifficulty difficulty;
+    private String difficulty;
 
     private String question;
 

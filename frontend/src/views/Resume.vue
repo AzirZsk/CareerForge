@@ -28,10 +28,6 @@
           主简历
         </div>
         <div class="primary-resume-card">
-          <!-- 主简历飘带标签 -->
-          <div class="primary-ribbon">
-            <span>主简历</span>
-          </div>
           <div class="resume-main">
             <div class="resume-icon">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -43,7 +39,7 @@
             </div>
             <div class="resume-info">
               <h3 class="resume-name">{{ store.primaryResume.name }}</h3>
-              <p class="resume-target">目标岗位：{{ store.primaryResume.targetPosition || '未设置' }}</p>
+              <p class="resume-target">目标岗位：{{ store.primaryResume.targetPosition || '暂未设置目标职位' }}</p>
             </div>
           </div>
           <div class="resume-stats">
@@ -78,12 +74,7 @@
               </svg>
               定制简历
             </button>
-            <button class="action-btn secondary" @click="optimizeResume(store.primaryResume.id)" :disabled="!store.primaryResume.analyzed">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-              </svg>
-              AI优化
-            </button>
+
           </div>
         </div>
       </section>
@@ -98,7 +89,7 @@
               :key="filter.key"
               class="filter-tab"
               :class="{ active: activeFilter === filter.key }"
-              @click="activeFilter = filter.key"
+              @click="switchFilter(filter.key)"
             >
               {{ filter.label }}
             </button>
@@ -114,8 +105,11 @@
             @click="viewResume(resume.id)"
           >
             <div class="card-header">
-              <div class="resume-badge" :class="resume.status">
-                {{ getStatusText(resume.status) }}
+              <div class="resume-badges">
+                <div class="resume-badge primary-badge" v-if="resume.isPrimary">主简历</div>
+                <div class="resume-badge" :class="getStatusClass(resume.status)">
+                  {{ getStatusText(resume.status) }}
+                </div>
               </div>
               <div class="resume-score">
                 <span class="score-value">{{ resume.score }}</span>
@@ -123,7 +117,7 @@
               </div>
             </div>
             <h4 class="card-title">{{ resume.name }}</h4>
-            <p class="card-target">{{ resume.targetPosition }}</p>
+            <p class="card-target">{{ resume.targetPosition || '暂未设置目标职位' }}</p>
             <div class="card-progress">
               <div class="progress-bar">
                 <div class="progress-fill" :style="{ width: resume.completeness + '%' }"></div>
@@ -218,6 +212,16 @@
       :resume-id="store.primaryResume?.id || ''"
       @complete="handleTailorComplete"
     />
+
+    <!-- 删除确认弹窗 -->
+    <ConfirmModal
+      v-model:visible="showDeleteConfirm"
+      title="删除简历"
+      message="确定要删除这份简历吗？此操作不可恢复。"
+      confirm-text="删除"
+      :danger="true"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>
 
@@ -232,6 +236,7 @@ import type { OptimizeStage } from '@/types/resume-optimize'
 import { useResumeOptimize } from '@/composables/useResumeOptimize'
 import OptimizeProgressModal from '@/components/resume/OptimizeProgressModal.vue'
 import TailorResumeModal from '@/components/resume/TailorResumeModal.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
 interface FilterItem {
   key: string
@@ -244,9 +249,13 @@ const router = useRouter()
 const activeFilter = ref<string>('all')
 const filters: FilterItem[] = [
   { key: 'all', label: '全部' },
-  { key: 'OPTIMIZED', label: '已优化' },
-  { key: 'DRAFT', label: '草稿' }
+  { key: 'optimized', label: '已优化' },
+  { key: 'draft', label: '草稿' }
 ]
+
+// 删除确认弹窗状态
+const showDeleteConfirm = ref(false)
+const pendingDeleteId = ref<string | null>(null)
 
 // 优化相关状态
 const showOptimizeModal = ref(false)
@@ -267,21 +276,29 @@ onMounted(async () => {
   ])
 })
 
-const filteredResumes = computed<Resume[]>(() => {
-  // 只有当 primaryResume 存在时才过滤掉主简历，否则显示所有简历
-  const hasPrimaryResume = !!store.primaryResume
-  if (activeFilter.value === 'all') {
-    return store.resumeList.filter((r: Resume) => !hasPrimaryResume || !r.isPrimary)
-  }
-  return store.resumeList.filter((r: Resume) => (!hasPrimaryResume || !r.isPrimary) && r.status === activeFilter.value)
-})
+const filteredResumes = computed<Resume[]>(() => store.resumeList)
+
+// 切换筛选标签时调用后端接口
+async function switchFilter(key: string): Promise<void> {
+  activeFilter.value = key
+  const status = key === 'all' ? undefined : key
+  await store.fetchResumes(status)
+}
 
 function getStatusText(status: ResumeStatus): string {
-  const statusMap: Record<ResumeStatus, string> = {
-    OPTIMIZED: '已优化',
-    DRAFT: '草稿'
+  const statusMap: Record<string, string> = {
+    optimized: '已优化',
+    draft: '草稿'
   }
   return statusMap[status] || status
+}
+
+function getStatusClass(status: ResumeStatus): string {
+  const classMap: Record<string, string> = {
+    optimized: 'optimized',
+    draft: 'draft'
+  }
+  return classMap[status] || ''
 }
 
 function viewResume(id: string): void {
@@ -326,16 +343,19 @@ async function setPrimary(id: string): Promise<void> {
   }
 }
 
-async function deleteResume(id: string): Promise<void> {
-  if (!confirm('确定要删除这份简历吗？此操作不可恢复。')) {
-    return
-  }
+function deleteResume(id: string): void {
+  pendingDeleteId.value = id
+  showDeleteConfirm.value = true
+}
 
+async function confirmDelete(): Promise<void> {
+  if (!pendingDeleteId.value) return
   try {
-    await store.deleteResumeFromApi(id)
+    await store.deleteResumeFromApi(pendingDeleteId.value)
   } catch (error) {
     console.error('删除简历失败', error)
-    alert('删除简历失败，请重试')
+  } finally {
+    pendingDeleteId.value = null
   }
 }
 
@@ -357,6 +377,8 @@ function handleTailorComplete(): void {
 </script>
 
 <style lang="scss" scoped>
+@use 'sass:color';
+
 .resume-page {
   padding: $spacing-2xl;
   max-width: 1400px;
@@ -448,53 +470,6 @@ function handleTailorComplete(): void {
   }
 }
 
-// 主简历飘带标签
-.primary-ribbon {
-  position: absolute;
-  top: -5px;
-  left: -5px;
-  width: 90px;
-  height: 90px;
-  overflow: hidden;
-  z-index: 10;
-
-  span {
-    position: absolute;
-    display: block;
-    width: 130px;
-    padding: 8px 0;
-    background: linear-gradient(135deg, $color-accent 0%, $color-accent-dark 100%);
-    color: $color-bg-deep;
-    font-size: 12px;
-    font-weight: $weight-semibold;
-    text-align: center;
-    left: -28px;
-    top: 26px;
-    transform: rotate(-45deg);
-    box-shadow: 0 3px 10px rgba(212, 168, 83, 0.4);
-
-    // 飘带两端的小三角
-    &::before,
-    &::after {
-      content: '';
-      position: absolute;
-      border: 3px solid transparent;
-      border-bottom-color: darken($color-accent-dark, 15%);
-    }
-
-    &::before {
-      left: 0;
-      top: 100%;
-      border-left-color: darken($color-accent-dark, 15%);
-    }
-
-    &::after {
-      right: 0;
-      top: 100%;
-      border-right-color: darken($color-accent-dark, 15%);
-    }
-  }
-}
 
 .resume-main {
   display: flex;
@@ -678,6 +653,12 @@ function handleTailorComplete(): void {
   margin-bottom: $spacing-md;
 }
 
+.resume-badges {
+  display: flex;
+  gap: $spacing-xs;
+  align-items: center;
+}
+
 .resume-badge {
   padding: $spacing-xs $spacing-sm;
   font-size: $text-xs;
@@ -690,6 +671,11 @@ function handleTailorComplete(): void {
   &.draft {
     background: $color-warning-bg;
     color: $color-warning;
+  }
+  &.primary-badge {
+    background: $color-accent-glow;
+    color: $color-accent;
+    border: 1px solid rgba(212, 168, 83, 0.3);
   }
 }
 

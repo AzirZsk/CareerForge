@@ -2,7 +2,6 @@ package com.landit.resume.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.landit.common.entity.BaseEntity;
-import com.landit.common.enums.SuggestionType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -23,7 +22,7 @@ public class ResumeSuggestion extends BaseEntity {
      */
     private String sectionId;
 
-    private SuggestionType type;
+    private String type;
 
     private String category;
 

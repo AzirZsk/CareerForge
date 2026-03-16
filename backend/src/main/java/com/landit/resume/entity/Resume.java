@@ -2,8 +2,6 @@ package com.landit.resume.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.landit.common.entity.BaseEntity;
-import com.landit.common.enums.ResumeStatus;
-import com.landit.common.enums.ResumeType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -28,13 +26,13 @@ public class Resume extends BaseEntity {
      */
     private String markdownContent;
 
-    private ResumeType resumeType;
+    private String resumeType;
 
     private String sourceResumeId;
 
     private Integer version;
 
-    private ResumeStatus status;
+    private String status;
 
     private Integer score;
 

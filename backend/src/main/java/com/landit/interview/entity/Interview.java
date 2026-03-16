@@ -2,8 +2,6 @@ package com.landit.interview.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.landit.common.entity.BaseEntity;
-import com.landit.common.enums.InterviewStatus;
-import com.landit.common.enums.InterviewType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -21,7 +19,7 @@ public class Interview extends BaseEntity {
 
     private String userId;
 
-    private InterviewType type;
+    private String type;
 
     private String position;
 
@@ -33,7 +31,7 @@ public class Interview extends BaseEntity {
 
     private Integer score;
 
-    private InterviewStatus status;
+    private String status;
 
     private Integer questions;
 

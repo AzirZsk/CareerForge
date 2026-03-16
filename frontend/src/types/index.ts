@@ -40,8 +40,8 @@ export interface ApiResponse<T> {
   timestamp: number
 }
 
-// 简历状态
-export type ResumeStatus = 'OPTIMIZED' | 'DRAFT'
+// 简历状态（后端返回英文小写）
+export type ResumeStatus = 'optimized' | 'draft'
 
 // 简历列表项 VO（与后端 ResumeListVO 对应）
 export interface ResumeListItem {

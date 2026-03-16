@@ -1,7 +1,6 @@
 package com.landit.interview.service;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.landit.common.enums.InterviewType;
 import com.landit.common.response.PageResponse;
 import com.landit.interview.dto.InterviewDetailVO;
 import com.landit.interview.dto.InterviewQuestionsVO;
@@ -21,7 +20,7 @@ public class InterviewService extends ServiceImpl<InterviewMapper, Interview> {
     /**
      * 获取面试历史
      */
-    public PageResponse<Interview> getInterviewHistory(InterviewType type, Integer page, Integer size) {
+    public PageResponse<Interview> getInterviewHistory(String type, Integer page, Integer size) {
         // TODO: 实现查询逻辑
         return null;
     }
@@ -37,7 +36,7 @@ public class InterviewService extends ServiceImpl<InterviewMapper, Interview> {
     /**
      * 获取题库
      */
-    public InterviewQuestionsVO getInterviewQuestions(InterviewType type) {
+    public InterviewQuestionsVO getInterviewQuestions(String type) {
         // TODO: 实现查询逻辑
         return null;
     }

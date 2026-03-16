@@ -11,9 +11,11 @@ const API_BASE = '/landit'
 
 /**
  * 获取所有简历列表
+ * @param status 简历状态筛选（可选，"optimized"/"draft"）
  */
-export async function getResumes(): Promise<ResumeListItem[]> {
-  const response = await fetch(`${API_BASE}/resumes`)
+export async function getResumes(status?: string): Promise<ResumeListItem[]> {
+  const params = status ? `?status=${status}` : ''
+  const response = await fetch(`${API_BASE}/resumes${params}`)
   const result: ApiResponse<ResumeListItem[]> = await response.json()
   if (result.code !== 200) {
     throw new Error(result.message || '获取简历列表失败')
@@ -124,7 +126,10 @@ export async function createSection(
   const response = await fetch(`${API_BASE}/resumes/${resumeId}/sections`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
+    body: JSON.stringify({
+      ...data,
+      content: JSON.stringify(data.content)
+    })
   })
   const result: ApiResponse<ResumeDetail> = await response.json()
   if (result.code !== 200) {

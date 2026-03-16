@@ -2,8 +2,6 @@ package com.landit.resume.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.landit.common.entity.BaseEntity;
-import com.landit.common.enums.ChangeType;
-import com.landit.common.enums.ResumeStatus;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -25,7 +23,7 @@ public class ResumeVersion extends BaseEntity {
 
     private String targetPosition;
 
-    private ResumeStatus status;
+    private String status;
 
     private Integer score;
 
@@ -33,6 +31,6 @@ public class ResumeVersion extends BaseEntity {
 
     private String changeSummary;
 
-    private ChangeType changeType;
+    private String changeType;
 
 }

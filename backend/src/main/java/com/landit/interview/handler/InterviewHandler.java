@@ -1,6 +1,5 @@
 package com.landit.interview.handler;
 
-import com.landit.common.enums.InterviewType;
 import com.landit.common.service.AIService;
 import com.landit.interview.dto.FinishSessionRequest;
 import com.landit.interview.dto.FinishSessionResponse;

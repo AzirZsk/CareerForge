@@ -1,7 +1,5 @@
 package com.landit.resume.dto;
 
-import com.landit.common.enums.ResumeStatus;
-import com.landit.resume.entity.ResumeSection;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

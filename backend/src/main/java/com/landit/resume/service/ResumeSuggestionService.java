@@ -2,7 +2,6 @@ package com.landit.resume.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.landit.common.enums.SuggestionType;
 import com.landit.resume.dto.DiagnoseResumeResponse;
 import com.landit.resume.entity.ResumeSuggestion;
 import com.landit.resume.mapper.ResumeSuggestionMapper;
@@ -61,8 +60,7 @@ public class ResumeSuggestionService extends ServiceImpl<ResumeSuggestionMapper,
         String realSectionId = shortIdToRealIdMap.get(suggestion.getSectionId());
         entity.setSectionId(realSectionId);
 
-        // 使用枚举的 fromValue 方法
-        entity.setType(SuggestionType.fromValue(suggestion.getType()));
+        entity.setType(suggestion.getType());
         entity.setImpact(mapImpact(suggestion.getImpact()));
 
         entity.setCategory(suggestion.getCategory());

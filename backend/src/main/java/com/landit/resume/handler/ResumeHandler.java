@@ -1,7 +1,5 @@
 package com.landit.resume.handler;
 
-import com.landit.common.enums.ChangeType;
-import com.landit.common.enums.ResumeType;
 import com.landit.common.exception.BusinessException;
 import com.landit.common.service.AIService;
 import com.landit.common.service.FileToImageService;
@@ -97,10 +95,11 @@ public class ResumeHandler {
     /**
      * 获取所有简历列表
      *
+     * @param status 简历状态筛选（可选）
      * @return 简历列表
      */
-    public List<ResumeListVO> getAllResumes() {
-        List<Resume> resumes = resumeService.getAllResumes();
+    public List<ResumeListVO> getAllResumes(String status) {
+        List<Resume> resumes = resumeService.getAllResumes(status);
         return resumes.stream()
                 .map(this::toListVO)
                 .collect(Collectors.toList());
@@ -278,7 +277,7 @@ public class ResumeHandler {
         }
 
         // 创建当前版本快照
-        createVersionSnapshot(resume, "回滚到版本 " + targetVersion, ChangeType.ROLLBACK);
+        createVersionSnapshot(resume, "回滚到版本 " + targetVersion, "ROLLBACK");
 
         // 恢复目标版本数据到主表
         resume.setName(targetVersionEntity.getName());
@@ -310,7 +309,7 @@ public class ResumeHandler {
         }
 
         // 只有主简历才能派生
-        if (sourceResume.getResumeType() != ResumeType.PRIMARY) {
+        if (!"PRIMARY".equals(sourceResume.getResumeType())) {
             throw new BusinessException("只能基于主简历派生");
         }
 
@@ -327,7 +326,7 @@ public class ResumeHandler {
     /**
      * 创建版本快照
      */
-    private void createVersionSnapshot(Resume resume, String changeSummary, ChangeType changeType) {
+    private void createVersionSnapshot(Resume resume, String changeSummary, String changeType) {
         ResumeVersion version = resumeConvertor.toResumeVersion(resume);
         version.setChangeSummary(changeSummary);
         version.setChangeType(changeType);
@@ -382,10 +381,9 @@ public class ResumeHandler {
      * @return 更新后的简历详情
      */
     @Transactional(rollbackFor = Exception.class)
-    public ResumeDetailVO addResumeSection(String resumeId, String type, String title, Map<String, Object> content) {
-        // 创建模块（将Map序列化为JSON字符串）
-        String contentJson = toJsonString(content);
-        resumeService.createSectionPublic(resumeId, type, title, contentJson);
+    public ResumeDetailVO addResumeSection(String resumeId, String type, String title, String content) {
+        // content 已经是前端序列化好的 JSON 字符串，直接使用
+        resumeService.createSectionPublic(resumeId, type, title, content);
         // 重新计算简历完整度
         recalculateResumeCompleteness(resumeId);
         // 返回更新后的详情
