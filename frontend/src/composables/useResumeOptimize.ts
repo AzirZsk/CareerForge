@@ -149,11 +149,13 @@ export function useResumeOptimize() {
    * __START__ 完成 → diagnose_quick 开始
    * diagnose_quick 完成 → generate_suggestions 开始
    * generate_suggestions 完成 → optimize_section 开始
+   * optimize_section 完成 → 无下一个节点（等待 __END__）
    */
   const NEXT_STAGE_MAP: Record<string, OptimizeStage | null> = {
     '__START__': 'diagnose_quick',
     'diagnose_quick': 'generate_suggestions',
     'generate_suggestions': 'optimize_section',
+    'optimize_section': null,  // 最后一个节点，完成后没有下一个
     '__END__': null
   }
 
@@ -235,15 +237,19 @@ export function useResumeOptimize() {
     }
 
     // 处理节点完成事件：结束当前节点，开始下一个节点
-    const nextStage = NEXT_STAGE_MAP[nodeId]
-    if (nextStage) {
+    if (nodeId in NEXT_STAGE_MAP) {
+      const nextStage = NEXT_STAGE_MAP[nodeId]
+
       // 结束当前运行中的节点
       endRunningStage(now)
       // 更新已完成节点的数据
       updateStageData(nodeId as OptimizeStage, data, event.message)
-      // 开始下一个节点的计时
-      startStageTimer(nextStage, now)
-      state.currentStage = nextStage
+
+      // 开始下一个节点的计时（如果有）
+      if (nextStage) {
+        startStageTimer(nextStage, now)
+        state.currentStage = nextStage
+      }
     }
 
     console.log('[DEBUG] handleProgressEvent 后 stageHistory:', JSON.stringify(state.stageHistory, null, 2))
