@@ -33,12 +33,6 @@ public class DiagnoseResumeResponse {
     private DimensionScores dimensionScores;
 
     /**
-     * 优化建议列表
-     */
-    @SchemaField(value = "优化建议列表")
-    private List<Suggestion> suggestions;
-
-    /**
      * 优势列表
      */
     @SchemaField(value = "简历优势列表")
@@ -49,12 +43,6 @@ public class DiagnoseResumeResponse {
      */
     @SchemaField(value = "简历劣势列表")
     private List<String> weaknesses;
-
-    /**
-     * 快速改进项
-     */
-    @SchemaField(value = "快速改进建议列表")
-    private List<String> quickWins;
 
     /**
      * 精准模式额外信息（仅当preciseMode=true时返回）

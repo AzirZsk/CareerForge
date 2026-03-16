@@ -238,10 +238,10 @@ public class AIPromptProperties {
                     - 能给出客观、具体、可执行的改进建议
 
                     ## 任务
-                    分析简历质量，给出评分和改进建议。你需要：
+                    分析简历质量，给出评分和问题识别。你需要：
                     1. 从内容、结构、匹配、竞争力四个维度评估简历
-                    2. 识别核心问题并给出具体优化方向
-                    3. 确保评分客观、建议可执行
+                    2. 识别核心问题并列出优劣势
+                    3. 确保评分客观、问题识别准确
 
                     ---
 
@@ -299,11 +299,11 @@ public class AIPromptProperties {
 
                     | 情况 | 处理方式 |
                     |------|----------|
-                    | 空简历或几乎空白 | overallScore给30分以下，suggestions给出基础搭建建议 |
+                    | 空简历或几乎空白 | overallScore给30分以下，weaknesses指出基础搭建问题 |
                     | 只有基本信息 | structure给50分，其他维度按实际内容评估 |
                     | 过度优化（堆砌关键词） | competitiveness扣分，在weaknesses指出不自然之处 |
-                    | 与目标岗位完全不相关 | matching给低分，在suggestions建议调整求职方向 |
-                    | 简历已经很优秀 | 给出90+高分，suggestions聚焦微调和亮点强化 |
+                    | 与目标岗位完全不相关 | matching给低分，在weaknesses建议调整求职方向 |
+                    | 简历已经很优秀 | 给出90+高分，strengths突出亮点 |
 
                     ---
 
@@ -330,13 +330,9 @@ public class AIPromptProperties {
 
                     在输出前，请逐项确认：
                     1. overallScore是四个维度的合理综合（非简单平均，应反映整体水平）
-                    2. 每个维度评分有对应的suggestions支撑
-                    3. suggestions的impact与问题严重程度匹配（high≤3条）
-                    4. strengths和weaknesses各有2-4条，且与评分一致
-                    5. quickWins是3-5个可快速执行的改进项
-                    6. sectionScores 必须包含 <resume_sections> 中所有区块的 id（使用简短标识符，如 work_1, project_1）
-                    7. suggestions 中的 sectionId 必须使用简短标识符
-                    8. 只返回JSON，不要返回其他内容
+                    2. strengths和weaknesses各有2-4条，且与评分一致
+                    3. sectionScores 必须包含 <resume_sections> 中所有区块的 id（使用简短标识符，如 work_1, project_1）
+                    4. 只返回JSON，不要返回其他内容
 
                     ---
 
@@ -349,10 +345,8 @@ public class AIPromptProperties {
                     | overallScore | integer | 是 | 总体评分（0-100），四个维度的综合评分 |
                     | dimensionScores | object | 是 | 各维度评分详情 |
                     | sectionScores | object | 是 | 各模块评分，Key为模块JSON的id字段值 |
-                    | suggestions | array | 是 | 优化建议列表（8-10条） |
                     | strengths | array | 是 | 简历优势列表（2-4条） |
                     | weaknesses | array | 是 | 简历劣势列表（2-4条） |
-                    | quickWins | array | 是 | 快速改进建议（3-5条） |
 
                     ### dimensionScores 字段
 
@@ -363,24 +357,10 @@ public class AIPromptProperties {
                     | matching | integer | 岗位匹配评分（0-100） |
                     | competitiveness | integer | 竞争力评分（0-100） |
 
-                    ### suggestions 数组元素
-
-                    | 字段 | 类型 | 必填 | 说明 |
-                    |------|------|------|------|
-                    | type | string | 是 | 建议类型：critical（关键问题）/improvement（改进建议）/enhancement（增强建议） |
-                    | impact | string | 是 | 影响程度：high/medium/low（high≤3条） |
-                    | category | string | 是 | 分类：work/project/skills/education/summary/other |
-                    | sectionId | string | 是 | 建议对应的简历模块ID（使用简短标识符，如 work_1, project_2） |
-                    | position | string | 否 | 建议对应的简历位置标识 |
-                    | title | string | 是 | 建议标题 |
-                    | current | string | 是 | 当前问题的具体描述（与原文一致） |
-                    | suggestion | string | 是 | 具体改进建议 |
-                    | value | string | 是 | 改进后的预期价值，站在HR视角说明 |
-
                     ---
 
                     ## 输出格式示例（严格JSON，单行压缩格式）
-                    {"overallScore":72,"dimensionScores":{"content":68,"structure":80,"matching":70,"competitiveness":75},"sectionScores":{"work_1":85,"project_1":60},"suggestions":[{"type":"critical","impact":"high","category":"work","sectionId":"work_1","position":"XX公司-XX职位","title":"工作成果需要量化","current":"负责后端系统开发和维护","suggestion":"补充成果数据：主导核心接口优化，响应时间从500ms降至80ms","value":"量化数据让HR快速评估你的实际贡献"}],"strengths":["教育背景对口","项目经历完整"],"weaknesses":["缺少量化数据","技能描述不够具体"],"quickWins":["在工作经历中加入2-3个量化成果","技能模块补充岗位核心关键词","项目描述补充技术选型和性能指标"]}
+                    {"overallScore":72,"dimensionScores":{"content":68,"structure":80,"matching":70,"competitiveness":75},"sectionScores":{"work_1":85,"project_1":60},"strengths":["教育背景对口","项目经历完整"],"weaknesses":["缺少量化数据","技能描述不够具体"]}
                     """,
                     // userPromptTemplate
                     """
@@ -472,7 +452,7 @@ public class AIPromptProperties {
 
                     | 字段 | 类型 | 必填 | 说明 |
                     |------|------|------|------|
-                    | suggestions | array | 是 | 优化建议列表（6-10条） |
+                    | suggestions | array | 是 | 优化建议列表 |
                     | quickWins | array | 是 | 快速改进建议（3-5条纯字符串） |
                     | estimatedImprovement | integer | 是 | 预估提升分数（0-30分） |
 
@@ -500,15 +480,14 @@ public class AIPromptProperties {
                     ## 质量检查清单
 
                     在输出前，请逐项确认：
-                    1. suggestions数量在6-10条
-                    2. high影响程度建议不超过3条
-                    3. 每条建议的sectionId使用简短标识符（如 work_1, project_2）
-                    4. 每条建议的current与原文完全一致（包括标点）
-                    5. suggestion是具体的优化文本，非抽象建议
-                    6. value说明了对求职的实际价值，站在HR视角
-                    7. quickWins是3-5个可快速执行的改进项（纯字符串数组）
-                    8. estimatedImprovement是合理的预估分数（0-30分）
-                    9. 只返回JSON，不要返回其他内容
+                    1. high影响程度建议不超过3条
+                    2. 每条建议的sectionId使用简短标识符（如 work_1, project_2）
+                    3. 每条建议的current与原文完全一致（包括标点）
+                    4. suggestion是具体的优化文本，非抽象建议
+                    5. value说明了对求职的实际价值，站在HR视角
+                    6. quickWins是3-5个可快速执行的改进项（纯字符串数组）
+                    7. estimatedImprovement是合理的预估分数（0-30分）
+                    8. 只返回JSON，不要返回其他内容
                     """,
                     // userPromptTemplate
                     """
@@ -546,6 +525,27 @@ public class AIPromptProperties {
 
                     ## 优化策略（按区块类型）
 
+                    ### 基本信息 (basicInfo)
+                    **目标**：准确展示个人身份和联系方式
+
+                    **优化策略**：
+                    - 确保联系方式完整有效（手机、邮箱必填）
+                    - 求职意向明确，与目标岗位匹配
+                    - 个人简介（summary）控制在150字以内，突出核心优势（技术栈+年限）、包含目标岗位关键词、添加量化成果摘要
+                    - GitHub/LinkedIn等链接确保可访问
+
+                    **个人简介示例转换**：
+                    - Before: 5年Java开发经验，熟悉各种框架
+                    - After: 5年Java后端开发经验，精通Spring Cloud微服务架构，主导过日均百万级流量系统设计，擅长高并发、分布式技术方案
+
+                    ### 教育经历 (education)
+                    **目标**：展示学术背景（应届生需重点优化）
+
+                    **优化策略**：
+                    - 添加GPA（3.5+/4.0时）
+                    - 列出与岗位相关的核心课程
+                    - 补充奖学金、竞赛获奖
+
                     ### 工作经历 (work)
                     **目标**：展示职业成长轨迹和实际贡献
 
@@ -562,7 +562,7 @@ public class AIPromptProperties {
                     - Before: 负责后端系统开发和维护
                     - After: 主导核心API开发，基于Spring Boot+MyBatis构建微服务，支撑日均50万请求，可用性99.9%
 
-                    ### 项目经历 (project)
+                    ### 项目经历 (projects)
                     **目标**：展示技术深度和解决复杂问题的能力
 
                     **必填要素**：
@@ -576,7 +576,7 @@ public class AIPromptProperties {
                     - Before: 负责订单模块开发，完成了功能
                     - After: 主导订单核心链路设计，基于Spring Cloud+RocketMQ实现分布式事务，订单吞吐量从1000提升至5000/分钟，超时率从3%降至0.1%
 
-                    ### 技能模块 (skills)
+                    ### 专业技能 (skills)
                     **目标**：快速匹配岗位要求，展示技术广度和深度
 
                     **优化策略**：
@@ -588,22 +588,41 @@ public class AIPromptProperties {
                     - Before: Java, Python, MySQL, Redis
                     - After: 精通：Java（5年+，高并发系统设计）| 熟练：Spring Boot/Cloud、MySQL（分库分表）、Redis（集群）| 了解：Python、Elasticsearch
 
-                    ### 教育经历 (education)
-                    **目标**：展示学术背景（应届生需重点优化）
+                    ### 证书荣誉 (certificates)
+                    **目标**：展示专业能力和行业认可
 
                     **优化策略**：
-                    - 添加GPA（3.5+/4.0时）
-                    - 列出与岗位相关的核心课程
-                    - 补充奖学金、竞赛获奖
+                    - 优先列出与目标岗位相关的证书
+                    - 补充证书颁发机构增加可信度
+                    - 技术类证书优先（如云厂商认证、PMP等）
+                    - 竞赛获奖注明级别和名次
 
-                    ### 个人简介 (summary)
-                    **目标**：3-5句话快速建立第一印象
+                    **示例转换**：
+                    - Before: AWS认证
+                    - After: AWS Solutions Architect Professional（2023年，高级认证）
+
+                    ### 开源贡献 (openSource)
+                    **目标**：展示技术热情和协作能力
 
                     **优化策略**：
-                    - 突出核心优势（技术栈+年限）
-                    - 包含目标岗位关键词
-                    - 添加量化成果摘要
-                    - 控制在150字以内
+                    - 突出核心贡献者身份
+                    - 量化贡献（PR数量、代码行数、Star数）
+                    - 说明贡献的技术价值
+
+                    **示例转换**：
+                    - Before: 给Vue提交过代码
+                    - After: Vue.js 核心贡献者，提交PR 12个（已合并8个），主要贡献响应式系统优化，项目Star 45k+
+
+                    ### 自定义区块 (customSections)
+                    **目标**：展示个性化优势和差异化竞争力
+
+                    **优化策略**：
+                    - 区块标题简洁明确
+                    - 内容与目标岗位相关
+                    - 每条内容简洁有力，可适当量化
+                    - 避免与已有区块重复
+
+                    **示例**：专利列表、演讲分享、专利著作、志愿者经历等
 
                     ---
 
@@ -817,13 +836,12 @@ public class AIPromptProperties {
                     {targetPosition}
                     </target_position>
 
-                    <resume_content>
-                    {resumeContent}
-                    </resume_content>
+                    <resume_data>
+                    每个区块的 content 字段包含该区块的简历内容，suggestions 字段包含针对该区块的优化建议。
+                    请根据每个区块的 suggestions 来优化对应的 content。
 
-                    <suggestions>
-                    {suggestions}
-                    </suggestions>
+                    {resumeContent}
+                    </resume_data>
                     """);
         }
 

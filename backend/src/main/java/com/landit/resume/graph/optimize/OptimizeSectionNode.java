@@ -41,7 +41,6 @@ public class OptimizeSectionNode implements NodeAction {
         String targetPosition = resumeDetail.getTargetPosition() != null
                 ? resumeDetail.getTargetPosition()
                 : DEFAULT_TARGET_POSITION;
-        String suggestions = state.value(STATE_SUGGESTIONS).map(v -> (String) v).orElse(DEFAULT_EMPTY_ARRAY);
         // beforeSection: 原始简历的 sections 内容
         List<ResumeDetailVO.ResumeSectionVO> beforeSection = resumeDetail.getSections();
         // 使用拆分提示词调用（前缀缓存优化）
@@ -49,7 +48,7 @@ public class OptimizeSectionNode implements NodeAction {
         String systemPrompt = promptConfig.getSystemPrompt();
         String userPrompt = ChatClientHelper.renderTemplate(
                 promptConfig.getUserPromptTemplate(),
-                Map.of("targetPosition", targetPosition, "resumeContent", resumeContentJson, "suggestions", suggestions)
+                Map.of("targetPosition", targetPosition, "resumeContent", resumeContentJson)
         );
         OptimizeSectionResponse response = ChatClientHelper.callAndParse(
                 chatClient, systemPrompt, userPrompt, OptimizeSectionResponse.class
