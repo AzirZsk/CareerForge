@@ -288,6 +288,15 @@
                 </button>
               </div>
               <template v-else>
+                <!-- 应用变更提示 -->
+                <div v-if="hasOptimizedSections && !state.isApplying" class="apply-hint">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="16" x2="12" y2="12"/>
+                    <line x1="12" y1="8" x2="12.01" y2="8"/>
+                  </svg>
+                  <span>应用后将重新进行 AI 评分</span>
+                </div>
                 <button v-if="hasEdits" class="footer-btn secondary" @click="resetEdits">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="1 4 1 10 7 10"></polyline>
@@ -308,7 +317,7 @@
                     <circle cx="12" cy="12" r="10" stroke-opacity="0.3"/>
                     <path d="M12 2a10 10 0 0 1 10 10"/>
                   </svg>
-                  {{ state.isApplying ? '应用中...' : '应用变更' }}
+                  {{ state.isApplying ? '评分中...' : '应用变更' }}
                 </button>
               </template>
             </template>
@@ -1563,6 +1572,20 @@ function hasValueToShow(change: ChangeItem): boolean {
   font-size: $text-xs;
   color: $color-error;
   opacity: 0.8;
+}
+
+.apply-hint {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  margin-right: auto;
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+
+  svg {
+    flex-shrink: 0;
+    opacity: 0.7;
+  }
 }
 
 .footer-btn {

@@ -48,6 +48,7 @@ public class ResumeOptimizeGraphConfig {
     private final AIPromptProperties aiPromptProperties;
     private final ResumeService resumeService;
     private final ResumeSuggestionService resumeSuggestionService;
+    private final DiagnoseResumeNode diagnoseResumeNode;
 
     /**
      * 定义状态键策略
@@ -97,14 +98,13 @@ public class ResumeOptimizeGraphConfig {
             throws GraphStateException {
 
         // 创建节点（注入已配置的 ChatClient Bean）
-        DiagnoseResumeNode diagnoseNode = new DiagnoseResumeNode(chatClient, aiPromptProperties, resumeService);
         GenerateSuggestionsNode generateSuggestionsNode = new GenerateSuggestionsNode(chatClient, aiPromptProperties, resumeSuggestionService);
         OptimizeSectionNode optimizeSectionNode = new OptimizeSectionNode(chatClient, aiPromptProperties);
 
         // 构建工作流图
         StateGraph workflow = new StateGraph(GRAPH_RESUME_OPTIMIZE, resumeOptimizeKeyStrategyFactory)
                 // 添加节点（使用 AsyncNodeAction.node_async 包装）
-                .addNode(NODE_DIAGNOSE_QUICK, AsyncNodeAction.node_async(diagnoseNode))
+                .addNode(NODE_DIAGNOSE_QUICK, AsyncNodeAction.node_async(diagnoseResumeNode))
                 .addNode(NODE_GENERATE_SUGGESTIONS, AsyncNodeAction.node_async(generateSuggestionsNode))
                 .addNode(NODE_OPTIMIZE_SECTION, AsyncNodeAction.node_async(optimizeSectionNode))
 

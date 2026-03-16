@@ -15,6 +15,7 @@ import com.landit.resume.service.ResumeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,6 +33,7 @@ import static com.landit.resume.graph.optimize.ResumeOptimizeGraphConstants.*;
  * @author Azir
  */
 @Slf4j
+@Component
 @RequiredArgsConstructor
 public class DiagnoseResumeNode implements NodeAction {
 

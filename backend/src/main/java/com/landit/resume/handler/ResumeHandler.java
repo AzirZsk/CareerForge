@@ -20,21 +20,26 @@ import com.landit.resume.dto.ResumeDetailVO;
 import com.landit.resume.entity.Resume;
 import com.landit.resume.entity.ResumeSection;
 import com.landit.resume.entity.ResumeVersion;
+import com.landit.resume.graph.optimize.DiagnoseResumeNode;
 import com.landit.resume.service.ResumeSectionService;
 import com.landit.resume.service.ResumeService;
 import com.landit.resume.service.ResumeSuggestionService;
 import com.landit.resume.mapper.ResumeSectionMapper;
 import com.landit.resume.mapper.ResumeVersionMapper;
+import com.alibaba.cloud.ai.graph.OverAllState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static com.landit.resume.graph.optimize.ResumeOptimizeGraphConstants.STATE_RESUME_CONTENT;
 
 /**
  * 简历业务编排处理器
@@ -55,6 +60,7 @@ public class ResumeHandler {
     private final ResumeSectionMapper resumeSectionMapper;
     private final ResumeConvertor resumeConvertor;
     private final ResumeSuggestionService resumeSuggestionService;
+    private final DiagnoseResumeNode diagnoseResumeNode;
 
     /**
      * 获取主简历
@@ -365,11 +371,13 @@ public class ResumeHandler {
         resumeSuggestionService.deleteByResumeId(resumeId);
         log.info("已清除简历的优化建议: resumeId={}", resumeId);
 
-        // 4. 重新计算简历评分和完整度
-        recalculateResumeScore(resumeId);
+        // 4. 调用诊断节点重新计算评分（AI 诊断）
+        triggerDiagnosis(resumeId);
+
+        // 5. 重新计算简历完整度
         recalculateResumeCompleteness(resumeId);
 
-        // 5. 返回更新后的简历详情
+        // 6. 返回更新后的简历详情
         return resumeService.getResumeDetail(resumeId);
     }
 
@@ -392,6 +400,37 @@ public class ResumeHandler {
         if (resume != null) {
             resume.setScore(avgScore);
             resumeService.updateById(resume);
+        }
+    }
+
+    /**
+     * 触发简历诊断，更新评分
+     * 调用 DiagnoseResumeNode 对简历进行 AI 诊断，获取真实评分
+     *
+     * @param resumeId 简历ID
+     */
+    private void triggerDiagnosis(String resumeId) {
+        try {
+            // 获取简历详情
+            ResumeDetailVO resumeDetail = resumeService.getResumeDetail(resumeId);
+            if (resumeDetail == null) {
+                log.warn("简历不存在，无法诊断: resumeId={}", resumeId);
+                return;
+            }
+
+            // 构建 OverAllState
+            Map<String, Object> initialState = new HashMap<>();
+            initialState.put(STATE_RESUME_CONTENT, resumeDetail);
+
+            OverAllState state = new OverAllState(initialState);
+
+            // 调用诊断节点
+            diagnoseResumeNode.apply(state);
+
+            log.info("应用变更后诊断完成: resumeId={}", resumeId);
+        } catch (Exception e) {
+            // 诊断失败只记录日志，不影响主流程
+            log.error("应用变更后诊断失败: resumeId={}", resumeId, e);
         }
     }
 
