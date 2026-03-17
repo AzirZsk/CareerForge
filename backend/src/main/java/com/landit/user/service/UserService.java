@@ -8,6 +8,7 @@ import com.landit.user.dto.UserInitResponse;
 import com.landit.user.dto.UserUpdateRequest;
 import com.landit.user.entity.User;
 import com.landit.user.mapper.UserMapper;
+import com.landit.common.constant.CommonConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -21,13 +22,11 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class UserService extends ServiceImpl<UserMapper, User> {
 
-    private static final String SINGLE_USER_ID = "1";
-
     /**
      * 获取用户状态
      */
     public UserStatusResponse getUserStatus() {
-        User user = getById(SINGLE_USER_ID);
+        User user = getById(CommonConstants.SINGLE_USER_ID);
         // 用户不存在或未初始化
         if (user == null || user.getName() == null || user.getName().isEmpty()) {
             return UserStatusResponse.notExists();
@@ -42,7 +41,7 @@ public class UserService extends ServiceImpl<UserMapper, User> {
      * @return true 如果用户已初始化
      */
     public boolean isUserInitialized() {
-        User user = getById(SINGLE_USER_ID);
+        User user = getById(CommonConstants.SINGLE_USER_ID);
         return user != null && user.getName() != null && !user.getName().isEmpty();
     }
 
@@ -57,7 +56,7 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         }
         // 创建用户
         User user = new User();
-        user.setId(SINGLE_USER_ID);
+        user.setId(CommonConstants.SINGLE_USER_ID);
         user.setName(request.getName());
         user.setGender(request.getGender());
         save(user);
@@ -72,14 +71,14 @@ public class UserService extends ServiceImpl<UserMapper, User> {
      * 获取当前用户信息
      */
     public User getUserProfile() {
-        return getById(SINGLE_USER_ID);
+        return getById(CommonConstants.SINGLE_USER_ID);
     }
 
     /**
      * 更新用户信息
      */
     public User updateUserProfile(UserUpdateRequest request) {
-        User user = getById(SINGLE_USER_ID);
+        User user = getById(CommonConstants.SINGLE_USER_ID);
         if (user == null) {
             throw BusinessException.notFound("用户不存在");
         }
@@ -95,7 +94,7 @@ public class UserService extends ServiceImpl<UserMapper, User> {
      * @param avatarUrl 头像URL
      */
     public void updateUserAvatar(String avatarUrl) {
-        User user = getById(SINGLE_USER_ID);
+        User user = getById(CommonConstants.SINGLE_USER_ID);
         if (user == null) {
             throw BusinessException.notFound("用户不存在");
         }

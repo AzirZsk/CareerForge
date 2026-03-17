@@ -1,5 +1,6 @@
 package com.landit.resume.handler;
 
+import com.landit.common.enums.ResumeType;
 import com.landit.common.exception.BusinessException;
 import com.landit.common.service.AIService;
 import com.landit.common.service.FileToImageService;
@@ -311,7 +312,7 @@ public class ResumeHandler {
         }
 
         // 只有主简历才能派生
-        if (!"PRIMARY".equals(sourceResume.getResumeType())) {
+        if (!ResumeType.PRIMARY.getValue().equals(sourceResume.getResumeType())) {
             throw new BusinessException("只能基于主简历派生");
         }
 

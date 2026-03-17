@@ -2,6 +2,9 @@ package com.landit.resume.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.landit.common.constant.CommonConstants;
+import com.landit.common.enums.ResumeStatus;
+import com.landit.common.enums.ResumeType;
 import com.landit.common.enums.SectionType;
 import com.landit.common.exception.BusinessException;
 import com.landit.common.util.JsonParseHelper;
@@ -45,8 +48,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
 
-    private static final String SINGLE_USER_ID = "1";
-
     private final ResumeVersionMapper resumeVersionMapper;
     private final ResumeSectionMapper resumeSectionMapper;
     private final ResumeConvertor resumeConvertor;
@@ -59,7 +60,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
      */
     public Resume getPrimaryResume() {
         LambdaQueryWrapper<Resume> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Resume::getUserId, SINGLE_USER_ID)
+        wrapper.eq(Resume::getUserId, CommonConstants.SINGLE_USER_ID)
                 .eq(Resume::getIsPrimary, true);
         return getOne(wrapper);
     }
@@ -227,10 +228,10 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
                 ? request.getResumeName()
                 : sourceResume.getName() + "-" + request.getTargetPosition());
         derivedResume.setTargetPosition(request.getTargetPosition());
-        derivedResume.setResumeType("DERIVED");
+        derivedResume.setResumeType(ResumeType.DERIVED.getValue());
         derivedResume.setSourceResumeId(sourceResume.getId());
         derivedResume.setVersion(1);
-        derivedResume.setStatus("draft");
+        derivedResume.setStatus(ResumeStatus.DRAFT.getValue());
         derivedResume.setScore(0);
         derivedResume.setCompleteness(0);
         derivedResume.setIsPrimary(false);
@@ -257,9 +258,9 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
         resume.setName(data.getBasicInfo().getName() + "的简历");
         resume.setTargetPosition(targetPosition);
         resume.setMarkdownContent(data.getMarkdownContent());
-        resume.setResumeType("PRIMARY");
+        resume.setResumeType(ResumeType.PRIMARY.getValue());
         resume.setVersion(1);
-        resume.setStatus("optimized");
+        resume.setStatus(ResumeStatus.OPTIMIZED.getValue());
         resume.setIsPrimary(true);
         resume.setCompleteness(calculateCompleteness(data));
         save(resume);
@@ -506,7 +507,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
      */
     public List<Resume> getAllResumes(String status) {
         LambdaQueryWrapper<Resume> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Resume::getUserId, SINGLE_USER_ID);
+        wrapper.eq(Resume::getUserId, CommonConstants.SINGLE_USER_ID);
         if (status != null && !status.isBlank()) {
             wrapper.eq(Resume::getStatus, status);
         }
@@ -524,12 +525,12 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
      */
     public Resume createBlankResume(String name, String targetPosition) {
         Resume resume = new Resume();
-        resume.setUserId(SINGLE_USER_ID);
+        resume.setUserId(CommonConstants.SINGLE_USER_ID);
         resume.setName(name != null && !name.isBlank() ? name : "新简历");
         resume.setTargetPosition(targetPosition != null ? targetPosition : "");
-        resume.setResumeType("PRIMARY");
+        resume.setResumeType(ResumeType.PRIMARY.getValue());
         resume.setVersion(1);
-        resume.setStatus("draft");
+        resume.setStatus(ResumeStatus.DRAFT.getValue());
         resume.setIsPrimary(false);
         resume.setScore(0);
         resume.setCompleteness(10);
