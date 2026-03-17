@@ -524,7 +524,7 @@ public class AIPromptProperties {
 
                     ## 任务
                     根据优化策略，改写简历内容。你需要：
-                    1. 阅读每个区块的 strategies（来自 GenerateSuggestions 节点）
+                    1. 阅读每个区块的 strategies
                     2. 根据 strategies 中的 direction 和 example 改写对应内容
                     3. 输出具体的变更记录
 
