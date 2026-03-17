@@ -4,8 +4,11 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.landit.common.config.AIPromptProperties;
+import com.landit.common.schema.GraphSchemaRegistry;
 import com.landit.common.util.ChatClientHelper;
 import com.landit.common.util.JsonParseHelper;
+import com.landit.resume.dto.DiagnoseResumeResponse;
+import com.landit.resume.dto.OptimizeSectionContext;
 import com.landit.resume.dto.OptimizeSectionResponse;
 import com.landit.resume.dto.ResumeDetailVO;
 import com.landit.resume.util.ChangeFieldTranslator;
@@ -18,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.landit.resume.graph.optimize.ResumeOptimizeGraphConstants.*;
 
@@ -46,10 +50,17 @@ public class OptimizeSectionNode implements NodeAction {
         // beforeSection: 原始简历的 sections 内容
         List<ResumeDetailVO.ResumeSectionVO> beforeSection = resumeDetail.getSections();
 
+        // 从状态获取 ID 映射：shortId -> realId
+        @SuppressWarnings("unchecked")
+        Map<String, String> shortIdToRealIdMap = (Map<String, String>) state
+                .value(STATE_SECTION_ID_MAP)
+                .orElse(Map.of());
+
         // 构建包含优化策略的简历区块数据，传递给 AI
         String resumeSectionsWithSuggestions = buildResumeSectionsWithSuggestions(
                 resumeDetail.getSections(),
-                suggestionsJson
+                suggestionsJson,
+                shortIdToRealIdMap
         );
 
         // 使用拆分提示词调用（前缀缓存优化）
@@ -95,58 +106,75 @@ public class OptimizeSectionNode implements NodeAction {
     /**
      * 构建包含优化策略的简历区块数据
      * 将 GenerateSuggestionsNode 输出的 suggestions 合并到对应的简历区块中
+     *
+     * @param sections            简历区块列表
+     * @param suggestionsJson     suggestions JSON 字符串
+     * @param shortIdToRealIdMap  短ID到真实ID的映射
+     * @return 包含优化策略的简历区块 JSON 字符串
      */
     private String buildResumeSectionsWithSuggestions(
             List<ResumeDetailVO.ResumeSectionVO> sections,
-            String suggestionsJson
+            String suggestionsJson,
+            Map<String, String> shortIdToRealIdMap
     ) {
-        // 解析 suggestions JSON
-        Map<String, Object> suggestionsData = JsonParseHelper.parseToEntity(
+        // 使用强类型解析 suggestions
+        GraphSchemaRegistry.SuggestionsResponse response = JsonParseHelper.parseToEntity(
                 suggestionsJson,
-                new TypeReference<>() {}
+                new TypeReference<GraphSchemaRegistry.SuggestionsResponse>() {}
         );
 
-        // 提取 suggestions 列表
-        List<Map<String, Object>> suggestionsList = new ArrayList<>();
-        if (suggestionsData.get("suggestions") instanceof List) {
-            suggestionsList = (List<Map<String, Object>>) suggestionsData.get("suggestions");
+        // 获取建议列表
+        List<DiagnoseResumeResponse.Suggestion> suggestions = response.getSuggestions();
+        if (suggestions == null || suggestions.isEmpty()) {
+            suggestions = List.of();
         }
 
-        // 按 sectionId 分组
-        Map<String, List<Map<String, Object>>> suggestionsBySectionId = new HashMap<>();
-        for (Map<String, Object> suggestion : suggestionsList) {
-            String sectionId = (String) suggestion.get("sectionId");
-            if (sectionId != null) {
-                suggestionsBySectionId.computeIfAbsent(sectionId, k -> new ArrayList<>()).add(suggestion);
-            }
+        // 构建反向映射：realId -> shortId
+        Map<String, String> realIdToShortIdMap = new HashMap<>();
+        for (Map.Entry<String, String> entry : shortIdToRealIdMap.entrySet()) {
+            realIdToShortIdMap.put(entry.getValue(), entry.getKey());
         }
 
-        // 构建结果：将 strategies 合并到每个 section
-        List<Map<String, Object>> result = new ArrayList<>();
+        // 按 shortId 分组建议
+        Map<String, List<DiagnoseResumeResponse.Suggestion>> suggestionsByShortId = suggestions.stream()
+                .filter(s -> s.getSectionId() != null)
+                .collect(Collectors.groupingBy(DiagnoseResumeResponse.Suggestion::getSectionId));
+
+        // 构建结果列表
+        List<OptimizeSectionContext> result = new ArrayList<>();
         for (ResumeDetailVO.ResumeSectionVO section : sections) {
-            Map<String, Object> sectionWithStrategies = new HashMap<>();
-            sectionWithStrategies.put("sectionId", section.getId());
-            sectionWithStrategies.put("type", section.getType());
-            sectionWithStrategies.put("content", section.getContent());
+            String realSectionId = section.getId();
+            String shortId = realIdToShortIdMap.get(realSectionId);
 
-            // 获取该区块对应的优化策略
-            String sectionId = section.getId();
-            List<Map<String, Object>> strategies = suggestionsBySectionId.getOrDefault(sectionId, new ArrayList<>());
+            // 获取该区块对应的建议列表
+            List<DiagnoseResumeResponse.Suggestion> matchedSuggestions = shortId != null
+                    ? suggestionsByShortId.getOrDefault(shortId, List.of())
+                    : List.of();
 
-            // 只提取优化所需的字段：title, problem, direction, example
-            List<Map<String, String>> simplifiedStrategies = new ArrayList<>();
-            for (Map<String, Object> strategy : strategies) {
-                Map<String, String> simplified = new HashMap<>();
-                simplified.put("title", (String) strategy.get("title"));
-                simplified.put("problem", (String) strategy.get("problem"));
-                simplified.put("direction", (String) strategy.get("direction"));
-                simplified.put("example", (String) strategy.get("example"));
-                simplifiedStrategies.add(simplified);
-            }
-            sectionWithStrategies.put("strategies", simplifiedStrategies);
+            // 转换为简化策略
+            List<OptimizeSectionContext.SimplifiedStrategy> simplifiedStrategies = matchedSuggestions.stream()
+                    .map(s -> OptimizeSectionContext.SimplifiedStrategy.builder()
+                            .title(s.getTitle())
+                            .problem(s.getProblem())
+                            .direction(s.getDirection())
+                            .example(s.getExample())
+                            .build())
+                    .collect(Collectors.toList());
 
-            result.add(sectionWithStrategies);
+            // 构建上下文对象
+            OptimizeSectionContext context = OptimizeSectionContext.builder()
+                    .sectionId(realSectionId)
+                    .type(section.getType())
+                    .content(section.getContent())
+                    .strategies(simplifiedStrategies)
+                    .build();
+
+            result.add(context);
         }
+
+        log.info("构建优化上下文完成，共 {} 个区块，其中 {} 个有优化策略",
+                result.size(),
+                result.stream().filter(r -> !r.getStrategies().isEmpty()).count());
 
         return JsonParseHelper.toJsonString(result);
     }

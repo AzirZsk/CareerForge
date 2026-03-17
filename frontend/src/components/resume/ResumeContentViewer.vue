@@ -205,7 +205,7 @@
                   </svg>
                 </a>
               </span>
-              <span v-if="item.date" class="cert-date">{{ item.date }}</span>
+              <span v-if="item.date" class="cert-date" :class="getChangeClass(section.type, 'date', idx)">{{ item.date }}</span>
             </div>
             <div class="cert-meta" v-if="item.issuer || item.credentialId">
               <span class="cert-issuer" v-if="item.issuer">{{ item.issuer }}</span>
@@ -920,7 +920,7 @@ function getTitleChangeClass(sectionType: string): string {
 // 确保高亮样式能覆盖各元素的默认颜色
 .exp-title, .exp-period, .exp-position, .exp-location,
 .exp-degree, .exp-major, .exp-gpa, .exp-role,
-.exp-description, .cert-name,
+.exp-description, .cert-name, .cert-date, .cert-issuer, .cert-credential,
 .exp-courses, .exp-honors, .exp-technologies, .exp-products {
   &.highlight-added {
     background: rgba(52, 211, 153, 0.15);

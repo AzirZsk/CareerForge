@@ -136,16 +136,22 @@ public class DiagnoseResumeResponse {
         private String title;
 
         /**
-         * 当前问题描述
+         * 问题描述（来自诊断的 weaknesses）
          */
-        @SchemaField(value = "当前问题的具体描述")
-        private String current;
+        @SchemaField(value = "问题描述（来自诊断的 weaknesses）", required = true)
+        private String problem;
 
         /**
-         * 改进建议
+         * 优化方向说明
          */
-        @SchemaField(value = "具体改进建议", required = true)
-        private String suggestion;
+        @SchemaField(value = "优化方向说明", required = true)
+        private String direction;
+
+        /**
+         * 优化示例（Before → After）
+         */
+        @SchemaField(value = "优化示例（Before → After）", required = true)
+        private String example;
 
         /**
          * 对求职的实际价值

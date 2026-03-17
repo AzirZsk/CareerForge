@@ -65,7 +65,7 @@ public class ResumeSuggestionService extends ServiceImpl<ResumeSuggestionMapper,
 
         entity.setCategory(suggestion.getCategory());
         entity.setTitle(suggestion.getTitle());
-        entity.setDescription(suggestion.getSuggestion());
+        entity.setDescription(suggestion.getDirection());
         entity.setPosition(suggestion.getPosition());
         return entity;
     }

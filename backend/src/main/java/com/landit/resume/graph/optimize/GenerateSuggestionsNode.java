@@ -61,7 +61,9 @@ public class GenerateSuggestionsNode implements NodeAction {
 
         log.info("优化建议生成完成");
 
-        List<?> suggestions = response.getSuggestions() != null ? response.getSuggestions() : List.of();
+        List<DiagnoseResumeResponse.Suggestion> suggestions = response.getSuggestions() != null
+                ? response.getSuggestions()
+                : List.of();
         int suggestionCount = suggestions.size();
 
         // 保存建议到数据库
@@ -73,10 +75,7 @@ public class GenerateSuggestionsNode implements NodeAction {
 
         if (resumeId != null && !suggestions.isEmpty()) {
             try {
-                @SuppressWarnings("unchecked")
-                List<DiagnoseResumeResponse.Suggestion> suggestionList =
-                        (List<DiagnoseResumeResponse.Suggestion>) suggestions;
-                resumeSuggestionService.saveSuggestions(resumeId, suggestionList, shortIdToRealIdMap);
+                resumeSuggestionService.saveSuggestions(resumeId, suggestions, shortIdToRealIdMap);
                 log.info("优化建议已保存到数据库: resumeId={}, count={}", resumeId, suggestionCount);
             } catch (Exception e) {
                 log.error("保存优化建议失败: resumeId={}", resumeId, e);
