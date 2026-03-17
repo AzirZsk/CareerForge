@@ -22,7 +22,7 @@ public class AIConfig {
     @Bean
     public ChatClient chatClient(ChatModel chatModel) {
         return ChatClient.builder(chatModel)
-                .defaultAdvisors(new SimpleLoggerAdvisor())
+//                .defaultAdvisors(new SimpleLoggerAdvisor())
                 .build();
     }
 

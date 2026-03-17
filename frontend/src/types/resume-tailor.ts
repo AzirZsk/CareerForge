@@ -73,6 +73,9 @@ export interface TailorStageHistoryItem {
   completed: boolean
   data?: any
   expanded?: boolean
+  // 计时相关字段
+  startTime?: number
+  endTime?: number
 }
 
 /** 定制状态 */

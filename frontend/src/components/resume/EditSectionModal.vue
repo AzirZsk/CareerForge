@@ -58,13 +58,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onUnmounted } from 'vue'
+import { ref, computed, watch, onUnmounted, provide } from 'vue'
 import BasicInfoForm from './forms/BasicInfoForm.vue'
 import SkillsForm from './forms/SkillsForm.vue'
 import ExperienceForm from './forms/ExperienceForm.vue'
 import CustomItemForm from './forms/CustomItemForm.vue'
 import type { ResumeSection } from '@/types'
 import { useSectionHelper } from '@/composables/useSectionHelper'
+import { useFormValidation, ValidationKey } from '@/composables/useFormValidation'
+import { useToast } from '@/composables/useToast'
 
 interface Props {
   visible: boolean
@@ -97,6 +99,16 @@ const {
   getSkillsList,
   isAggregateType
 } = useSectionHelper()
+
+// 表单校验
+const { validate, hasError, getFieldError, errors } = useFormValidation()
+
+// 向子表单组件提供校验上下文
+provide(ValidationKey, {
+  hasError,
+  getFieldError,
+  errors
+})
 
 // 模块类型（CUSTOM_ITEM 当作 CUSTOM 处理）
 const sectionType = computed(() => {
@@ -227,6 +239,19 @@ watch(
   { immediate: true }
 )
 
+// Toast 通知
+const toast = useToast()
+
+// 获取用于校验的区块类型
+const validationType = computed(() => {
+  const type = props.section?.type ?? ''
+  // CUSTOM_ITEM 使用单独的校验规则
+  if (type === 'CUSTOM_ITEM') {
+    return 'CUSTOM_ITEM'
+  }
+  return type
+})
+
 // 取消
 function handleCancel(): void {
   emit('cancel')
@@ -235,6 +260,17 @@ function handleCancel(): void {
 
 // 保存
 function handleSave(): void {
+  // 执行校验
+  const typeToValidate = validationType.value || sectionType.value
+  const isValid = validate(typeToValidate, formData.value)
+
+  if (!isValid) {
+    // 获取第一个错误信息
+    const firstError = Object.values(errors.value)[0]
+    toast.error(firstError || '请填写必填字段')
+    return
+  }
+
   let contentToSave = formData.value
 
   // CUSTOM 类型且使用 CustomItemForm 时，数据直接就是内容项

@@ -322,15 +322,26 @@ const deleteConfirmMessage = computed<string>(() => {
   return `确定要删除「${title}」吗？此操作不可撤销。`
 })
 
+// 判断模块是否有实际数据
+function hasSectionData(section: ResumeSection): boolean {
+  if (!section.content) return false
+  const content = section.content.trim()
+  return content !== '{}' && content !== '[]' && content !== ''
+}
+
 // 页面加载时获取简历详情
 onMounted(async () => {
   const id = route.params.id as string
   if (id) {
     resumeId.value = id
     await store.fetchResumeDetail(id)
-    // 默认选中第一个模块
-    if (store.currentResume.sections.length > 0) {
-      activeSection.value = String(store.currentResume.sections[0].id)
+    // 默认选中第一个有数据的模块
+    const sections = store.currentResume.sections
+    if (sections.length > 0) {
+      const firstSectionWithData = sections.find((s: ResumeSection) => hasSectionData(s))
+      activeSection.value = firstSectionWithData
+        ? String(firstSectionWithData.id)
+        : String(sections[0].id)
     }
   }
 })

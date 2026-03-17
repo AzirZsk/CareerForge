@@ -12,6 +12,7 @@
         v-model="localData.name"
         type="text"
         class="form-input"
+        :class="{ 'form-input--error': hasError('name') }"
         placeholder="请输入名称"
       />
     </div>
@@ -79,6 +80,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { useValidationInject } from '@/composables/useFormValidation'
 
 interface Props {
   modelValue: Record<string, unknown>
@@ -90,6 +92,10 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+
+// 获取校验上下文
+const validation = useValidationInject()
+const hasError = (field: string) => validation?.hasError(field) ?? false
 
 // 本地数据
 const localData = ref<Record<string, string>>({})
@@ -201,6 +207,17 @@ function removeHighlight(index: number): void {
   }
   &::placeholder {
     color: $color-text-tertiary;
+  }
+}
+
+// 错误状态样式
+.form-input--error,
+.form-textarea--error {
+  border-color: $color-error !important;
+  background: rgba(248, 113, 113, 0.05) !important;
+  &:focus {
+    border-color: $color-error !important;
+    box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.2);
   }
 }
 

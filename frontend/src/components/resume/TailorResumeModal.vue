@@ -12,7 +12,10 @@
         :class="{ 'modal-overlay--high': overlay || showComparisonView }"
         @click.self="handleClose"
       >
-        <div class="modal-container" :class="{ 'modal-container--wide': showComparisonView }">
+        <div class="modal-container" :class="{
+          'modal-container--wide': showComparisonView,
+          'modal-container--fullscreen': tailorState.isTailoring || tailorState.isCompleted
+        }">
           <!-- 头部 -->
           <div class="modal-header">
             <h3 class="header-title">
@@ -121,6 +124,9 @@
                       <div v-else class="dot"></div>
                     </div>
                     <span class="stage-label">{{ getTailorStageLabel(item.stage) }}</span>
+                    <span v-if="item.startTime" class="stage-elapsed" :class="{ running: !item.endTime && item.stage === tailorState.currentStage && tailorState.isTailoring }">
+                      {{ formatElapsed(item) }}
+                    </span>
                   </div>
                   <div v-if="item.completed && item.data" class="expand-indicator">
                     <svg
@@ -153,6 +159,18 @@
                         <div class="skill-tags">
                           <span v-for="skill in item.data.preferredSkills" :key="skill" class="skill-tag preferred">{{ skill }}</span>
                         </div>
+                      </div>
+                      <div class="skills-section" v-if="item.data.keywords?.length">
+                        <div class="skills-title">关键词</div>
+                        <div class="skill-tags">
+                          <span v-for="keyword in item.data.keywords" :key="keyword" class="skill-tag keyword">{{ keyword }}</span>
+                        </div>
+                      </div>
+                      <div class="responsibilities-section" v-if="item.data.responsibilities?.length">
+                        <div class="skills-title">职位职责</div>
+                        <ul class="responsibilities-list">
+                          <li v-for="(resp, idx) in item.data.responsibilities" :key="idx">{{ resp }}</li>
+                        </ul>
                       </div>
                       <div class="info-grid">
                         <div class="info-item" v-if="item.data.seniorityLevel">
@@ -187,11 +205,48 @@
                             <span v-for="skill in item.data.missingSkills" :key="skill" class="match-tag warning">{{ skill }}</span>
                           </div>
                         </div>
+                        <!-- 相关经验 -->
+                        <div class="match-section" v-if="item.data.relevantExperiences?.length">
+                          <div class="match-title info">相关经验</div>
+                          <ul class="match-list">
+                            <li v-for="(exp, idx) in item.data.relevantExperiences" :key="idx">{{ exp }}</li>
+                          </ul>
+                        </div>
+                        <!-- 优化建议 -->
+                        <div class="match-section" v-if="item.data.adjustmentSuggestions?.length">
+                          <div class="match-title accent">优化建议</div>
+                          <ul class="match-list">
+                            <li v-for="(suggestion, idx) in item.data.adjustmentSuggestions" :key="idx">{{ suggestion }}</li>
+                          </ul>
+                        </div>
                       </div>
                     </div>
 
                     <!-- 定制简历结果 -->
                     <div v-else-if="item.stage === 'generate_tailored'" class="data-content">
+                      <!-- 头部：左边统计，右边操作按钮 -->
+                      <div class="tailor-summary">
+                        <div class="tailor-summary-left">
+                          <span class="tailor-improvement" v-if="item.data.improvementScore">
+                            预计提升 {{ item.data.improvementScore }} 分
+                          </span>
+                          <span class="tailor-match" v-if="item.data.matchScore">
+                            匹配度 {{ item.data.matchScore }}%
+                          </span>
+                        </div>
+                        <button
+                          v-if="canShowComparison"
+                          class="comparison-btn"
+                          @click="showComparisonView = true"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="12" y1="3" x2="12" y2="21"/>
+                          </svg>
+                          对比&编辑
+                        </button>
+                      </div>
+                      <!-- 定制说明 -->
                       <div class="tailor-notes" v-if="item.data.tailorNotes?.length">
                         <div class="notes-title">定制说明</div>
                         <ul class="notes-list">
@@ -213,35 +268,31 @@
               </svg>
               <span>{{ tailorState.errorMessage }}</span>
             </div>
+          </div>
 
-            <!-- 完成操作 -->
-            <div v-if="tailorState.isCompleted" class="complete-actions">
-              <button v-if="canShowComparison" class="btn-compare" @click="showComparisonView = true">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                  <line x1="12" y1="3" x2="12" y2="21"></line>
-                </svg>
-                对比&编辑
-              </button>
-              <button class="btn-view" @click="viewTailoredResume">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                  <circle cx="12" cy="12" r="3"/>
-                </svg>
-                查看定制简历
-              </button>
-            </div>
-
-            <!-- 进行中操作 -->
-            <div v-if="tailorState.isTailoring" class="tailor-actions">
-              <button class="btn-cancel-tailor" @click="handleCancel">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <!-- 底部操作（固定底部） -->
+          <div v-if="tailorState.isTailoring || tailorState.isCompleted" class="modal-footer">
+            <template v-if="tailorState.hasError">
+              <button class="footer-btn secondary" @click="handleClose">退出</button>
+            </template>
+            <template v-else-if="tailorState.isTailoring">
+              <button class="footer-btn secondary" @click="handleCancel">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <line x1="18" y1="6" x2="6" y2="18"/>
                   <line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
                 取消
               </button>
-            </div>
+            </template>
+            <template v-else-if="tailorState.isCompleted">
+              <button class="footer-btn primary" @click="viewTailoredResume">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                查看定制简历
+              </button>
+            </template>
           </div>
 
           <!-- 对比视图（新增） -->
@@ -293,7 +344,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import { useResumeTailor } from '@/composables/useResumeTailor'
 import { getTailorStageLabel, type TailorComparisonData } from '@/types/resume-tailor'
 import type { ResumeSection } from '@/types'
@@ -330,6 +381,38 @@ const {
   cancelTailor,
   toggleStageExpanded
 } = useResumeTailor()
+
+// ==================== 节点运行计时器 ====================
+const now = ref(Date.now())
+let timerHandle: ReturnType<typeof setInterval> | null = null
+
+// 启动/停止计时器
+watch(
+  () => tailorState.isTailoring,
+  (tailoring) => {
+    if (tailoring) {
+      timerHandle = setInterval(() => { now.value = Date.now() }, 1000)
+    } else if (timerHandle) {
+      clearInterval(timerHandle)
+      timerHandle = null
+    }
+  },
+  { immediate: true }
+)
+
+onUnmounted(() => {
+  if (timerHandle) clearInterval(timerHandle)
+})
+
+/** 格式化耗时为 mm:ss */
+function formatElapsed(item: { startTime?: number; endTime?: number; stage: string }): string {
+  if (!item.startTime) return ''
+  const end = item.endTime ?? now.value
+  const elapsed = Math.max(0, Math.floor((end - item.startTime) / 1000))
+  const m = String(Math.floor(elapsed / 60)).padStart(2, '0')
+  const s = String(elapsed % 60).padStart(2, '0')
+  return `${m}:${s}`
+}
 
 // ===== 对比视图相关状态 =====
 const showComparisonView = ref(false)
@@ -411,7 +494,9 @@ const sortedStageHistory = computed(() => {
       timestamp: 0,
       completed: false,
       data: null,
-      expanded: false
+      expanded: false,
+      startTime: undefined,
+      endTime: undefined
     }
   })
 })
@@ -438,11 +523,18 @@ function viewTailoredResume() {
   handleClose()
 }
 
-// 监听完成状态
-watch(() => tailorState.isCompleted, (completed) => {
-  if (completed) {
-    emit('complete')
+// 滚动锁定：弹窗显示时禁止背景滚动
+watch(() => props.visible, (newVal) => {
+  if (newVal) {
+    document.body.style.overflow = 'hidden'
+  } else {
+    document.body.style.overflow = ''
   }
+}, { immediate: true })
+
+// 组件销毁时确保清理滚动锁定
+onUnmounted(() => {
+  document.body.style.overflow = ''
 })
 </script>
 
@@ -479,6 +571,17 @@ watch(() => tailorState.isCompleted, (completed) => {
   &.modal-container--wide {
     max-width: 95vw;
     max-height: 95vh;
+  }
+
+  // 全屏模式（SSE响应阶段）
+  &.modal-container--fullscreen {
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    background: $color-bg-primary;
+    border-radius: $radius-xl;
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
 }
 
@@ -621,6 +724,9 @@ watch(() => tailorState.isCompleted, (completed) => {
   display: flex;
   flex-direction: column;
   gap: $spacing-lg;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .progress-bar-wrapper {
@@ -739,6 +845,17 @@ watch(() => tailorState.isCompleted, (completed) => {
   }
 }
 
+.stage-elapsed {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+  font-variant-numeric: tabular-nums;
+  min-width: 40px;
+
+  &.running {
+    color: $color-accent;
+  }
+}
+
 .expand-indicator svg {
   color: $color-text-tertiary;
   transition: transform 0.2s ease;
@@ -796,6 +913,11 @@ watch(() => tailorState.isCompleted, (completed) => {
     background: rgba(96, 165, 250, 0.15);
     color: $color-info;
   }
+
+  &.keyword {
+    background: rgba(139, 92, 246, 0.15);
+    color: #a78bfa;
+  }
 }
 
 // 信息网格
@@ -804,6 +926,37 @@ watch(() => tailorState.isCompleted, (completed) => {
   grid-template-columns: repeat(2, 1fr);
   gap: $spacing-md;
   margin-top: $spacing-md;
+}
+
+// 职位职责列表
+.responsibilities-section {
+  margin-bottom: $spacing-md;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.responsibilities-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+
+  li {
+    position: relative;
+    padding-left: $spacing-md;
+    font-size: $text-sm;
+    color: $color-text-secondary;
+    margin-bottom: $spacing-xs;
+    line-height: 1.5;
+
+    &::before {
+      content: '•';
+      position: absolute;
+      left: 0;
+      color: $color-accent;
+    }
+  }
 }
 
 .info-item {
@@ -887,6 +1040,45 @@ watch(() => tailorState.isCompleted, (completed) => {
     &.warning {
       color: $color-warning;
     }
+
+    &.info {
+      color: $color-info;
+    }
+
+    &.accent {
+      color: $color-accent;
+    }
+  }
+
+  .match-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+
+    li {
+      position: relative;
+      padding-left: $spacing-md;
+      font-size: $text-sm;
+      color: $color-text-secondary;
+      margin-bottom: $spacing-xs;
+      line-height: 1.5;
+
+      &::before {
+        content: '•';
+        position: absolute;
+        left: 0;
+      }
+    }
+  }
+
+  // 相关经验使用蓝色圆点
+  &:has(.match-title.info) .match-list li::before {
+    color: $color-info;
+  }
+
+  // 优化建议使用金色圆点
+  &:has(.match-title.accent) .match-list li::before {
+    color: $color-accent;
   }
 
   .match-tags {
@@ -909,6 +1101,55 @@ watch(() => tailorState.isCompleted, (completed) => {
       background: rgba(251, 191, 36, 0.15);
       color: $color-warning;
     }
+  }
+}
+
+// 定制简历结果头部
+.tailor-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-md;
+  padding-bottom: $spacing-md;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+
+  .tailor-summary-left {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+  }
+
+  .tailor-improvement {
+    font-size: $text-sm;
+    color: $color-success;
+    font-weight: $weight-medium;
+  }
+
+  .tailor-match {
+    font-size: $text-sm;
+    color: $color-accent;
+    font-weight: $weight-medium;
+  }
+}
+
+.comparison-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-xs $spacing-md;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: $radius-sm;
+  font-size: $text-xs;
+  color: $color-text-secondary;
+  cursor: pointer;
+  transition: all $transition-fast;
+  white-space: nowrap;
+
+  &:hover {
+    background: rgba(212, 168, 83, 0.1);
+    border-color: rgba(212, 168, 83, 0.3);
+    color: $color-accent;
   }
 }
 
@@ -956,47 +1197,43 @@ watch(() => tailorState.isCompleted, (completed) => {
   font-size: $text-sm;
 }
 
-// 完成操作
-.complete-actions,
-.tailor-actions {
+// 底部操作栏（固定底部）
+.modal-footer {
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
+  align-items: center;
   gap: $spacing-md;
-  margin-top: $spacing-md;
+  padding: $spacing-lg;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.btn-view {
+.footer-btn {
   display: flex;
   align-items: center;
   gap: $spacing-sm;
   padding: $spacing-sm $spacing-lg;
-  background: $gradient-gold;
-  color: $color-bg-deep;
   font-size: $text-sm;
   font-weight: $weight-medium;
   border-radius: $radius-md;
   transition: all $transition-fast;
 
-  &:hover {
-    box-shadow: 0 4px 16px rgba(212, 168, 83, 0.3);
+  &.primary {
+    background: $gradient-gold;
+    color: $color-bg-deep;
+
+    &:hover {
+      box-shadow: 0 4px 16px rgba(212, 168, 83, 0.3);
+    }
   }
-}
 
-.btn-cancel-tailor {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  padding: $spacing-sm $spacing-lg;
-  background: rgba(255, 255, 255, 0.05);
-  color: $color-text-secondary;
-  font-size: $text-sm;
-  font-weight: $weight-medium;
-  border-radius: $radius-md;
-  transition: all $transition-fast;
+  &.secondary {
+    background: rgba(255, 255, 255, 0.05);
+    color: $color-text-secondary;
 
-  &:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: $color-text-primary;
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: $color-text-primary;
+    }
   }
 }
 

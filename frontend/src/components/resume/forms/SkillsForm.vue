@@ -16,6 +16,7 @@
             v-model="skill.name"
             type="text"
             class="form-input skill-name"
+            :class="{ 'form-input--error': hasError(`skills.${index}.name`) }"
             placeholder="技能名称"
             @input="syncToParent"
           />
@@ -65,6 +66,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import type { Skill } from '@/types'
+import { useValidationInject } from '@/composables/useFormValidation'
 
 interface Props {
   modelValue: Record<string, unknown>
@@ -76,6 +78,10 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+
+// 获取校验上下文
+const validation = useValidationInject()
+const hasError = (field: string) => validation?.hasError(field) ?? false
 
 // 本地技能列表
 const localSkills = ref<Skill[]>([])
@@ -197,6 +203,18 @@ function removeSkill(index: number): void {
   }
 }
 
+// 错误状态样式
+.form-input--error,
+.form-select--error,
+.form-textarea--error {
+  border-color: $color-error !important;
+  background: rgba(248, 113, 113, 0.05) !important;
+  &:focus {
+    border-color: $color-error !important;
+    box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.2);
+  }
+}
+
 .skill-name {
   flex: 2;
 }
@@ -228,6 +246,7 @@ function removeSkill(index: number): void {
   }
   option {
     background: $color-bg-secondary;
+    color: $color-text-primary;
   }
 }
 

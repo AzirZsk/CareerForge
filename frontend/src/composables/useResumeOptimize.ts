@@ -227,8 +227,6 @@ export function useResumeOptimize() {
 
     if (!nodeId) return
 
-    console.log('[DEBUG] handleProgressEvent nodeId:', nodeId, 'data:', data)
-
     // 处理 __START__: 开始 diagnose_quick 计时
     if (nodeId === '__START__') {
       startStageTimer('diagnose_quick', now)
@@ -259,7 +257,6 @@ export function useResumeOptimize() {
       }
     }
 
-    console.log('[DEBUG] handleProgressEvent 后 stageHistory:', JSON.stringify(state.stageHistory, null, 2))
   }
 
   /**

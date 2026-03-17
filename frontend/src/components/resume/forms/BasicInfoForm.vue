@@ -11,6 +11,7 @@
         v-model="localData.name"
         type="text"
         class="form-input"
+        :class="{ 'form-input--error': hasError('name') }"
         placeholder="请输入姓名"
       />
     </div>
@@ -49,6 +50,7 @@
           v-model="localData.phone"
           type="tel"
           class="form-input"
+          :class="{ 'form-input--error': hasError('phone') }"
           placeholder="请输入手机号"
         />
       </div>
@@ -58,6 +60,7 @@
           v-model="localData.email"
           type="email"
           class="form-input"
+          :class="{ 'form-input--error': hasError('email') }"
           placeholder="请输入邮箱地址"
         />
       </div>
@@ -123,6 +126,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { useValidationInject } from '@/composables/useFormValidation'
 
 interface Props {
   modelValue: Record<string, unknown>
@@ -135,8 +139,25 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
+// 获取校验上下文
+const validation = useValidationInject()
+const hasError = (field: string) => validation?.hasError(field) ?? false
+
 // 本地数据
-const localData = ref<Record<string, string>>({})
+const localData = ref<Record<string, string>>({
+  name: '',
+  gender: '',
+  birthday: '',
+  age: '',
+  phone: '',
+  email: '',
+  targetPosition: '',
+  summary: '',
+  location: '',
+  linkedin: '',
+  github: '',
+  website: ''
+})
 
 // 初始化数据
 function initData(): void {
@@ -162,18 +183,29 @@ function initData(): void {
   localData.value = data
 }
 
+// 标记是否正在同步，避免无限循环
+let isSyncing = false
+
 // 监听外部变化
 watch(
   () => props.modelValue,
-  () => initData(),
+  () => {
+    if (!isSyncing) {
+      initData()
+    }
+  },
   { immediate: true, deep: true }
 )
 
-// 监听本地变化，同步到父组件
+// 监听本地数据变化，同步到父组件
 watch(
   localData,
   (newVal) => {
+    isSyncing = true
     emit('update:modelValue', { ...newVal })
+    setTimeout(() => {
+      isSyncing = false
+    }, 0)
   },
   { deep: true }
 )
@@ -232,8 +264,24 @@ watch(
   }
 }
 
+// 错误状态样式
+.form-input--error,
+.form-select--error,
+.form-textarea--error {
+  border-color: $color-error !important;
+  background: rgba(248, 113, 113, 0.05) !important;
+  &:focus {
+    border-color: $color-error !important;
+    box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.2);
+  }
+}
+
 .form-select {
   cursor: pointer;
+  option {
+    background: $color-bg-secondary;
+    color: $color-text-primary;
+  }
 }
 
 .form-textarea {

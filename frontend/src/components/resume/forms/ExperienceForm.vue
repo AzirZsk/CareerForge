@@ -13,6 +13,7 @@
           v-model="localData.school"
           type="text"
           class="form-input"
+          :class="{ 'form-input--error': hasError('school') }"
           placeholder="请输入学校名称"
         />
       </div>
@@ -118,6 +119,7 @@
           v-model="localData.company"
           type="text"
           class="form-input"
+          :class="{ 'form-input--error': hasError('company') }"
           placeholder="请输入公司名称"
         />
       </div>
@@ -262,6 +264,7 @@
           v-model="localData.name"
           type="text"
           class="form-input"
+          :class="{ 'form-input--error': hasError('name') }"
           placeholder="请输入项目名称"
         />
       </div>
@@ -363,6 +366,7 @@
           v-model="localData.name"
           type="text"
           class="form-input"
+          :class="{ 'form-input--error': hasError('name') }"
           placeholder="请输入证书或荣誉名称"
         />
       </div>
@@ -416,6 +420,7 @@
           v-model="localData.projectName"
           type="text"
           class="form-input"
+          :class="{ 'form-input--error': hasError('projectName') }"
           placeholder="请输入开源项目名称"
         />
       </div>
@@ -499,6 +504,7 @@
           v-model="localData.title"
           type="text"
           class="form-input"
+          :class="{ 'form-input--error': hasError('title') }"
           placeholder="例如：游戏经历、志愿者经历、竞赛经历"
         />
       </div>
@@ -521,7 +527,13 @@
             </div>
             <div class="form-group">
               <label class="form-label required">名称</label>
-              <input v-model="item.name" type="text" class="form-input" placeholder="请输入名称" />
+              <input
+                v-model="item.name"
+                type="text"
+                class="form-input"
+                :class="{ 'form-input--error': hasError(`items.${index}.name`) }"
+                placeholder="请输入名称"
+              />
             </div>
             <div class="form-row">
               <div class="form-group">
@@ -578,6 +590,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { useValidationInject } from '@/composables/useFormValidation'
 
 interface Props {
   modelValue: Record<string, unknown>
@@ -590,6 +603,10 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+
+// 获取校验上下文
+const validation = useValidationInject()
+const hasError = (field: string) => validation?.hasError(field) ?? false
 
 // 本地数据（使用 string 类型以兼容 v-model）
 const localData = ref<Record<string, string>>({})
@@ -874,8 +891,24 @@ function removeHighlight(itemIndex: number, highlightIndex: number): void {
   }
 }
 
+// 错误状态样式
+.form-input--error,
+.form-select--error,
+.form-textarea--error {
+  border-color: $color-error !important;
+  background: rgba(248, 113, 113, 0.05) !important;
+  &:focus {
+    border-color: $color-error !important;
+    box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.2);
+  }
+}
+
 .form-select {
   cursor: pointer;
+  option {
+    background: $color-bg-secondary;
+    color: $color-text-primary;
+  }
 }
 
 .form-textarea {

@@ -533,6 +533,10 @@ function practiceQuestion(question: InterviewQuestion): void {
     outline: none;
     border-color: $color-accent;
   }
+  option {
+    background: $color-bg-secondary;
+    color: $color-text-primary;
+  }
 }
 
 .difficulty-options {
