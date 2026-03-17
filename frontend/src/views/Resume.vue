@@ -64,16 +64,22 @@
               </svg>
               查看详情
             </button>
-            <button class="action-btn secondary" @click="showTailorModal = true" :disabled="!store.primaryResume.analyzed">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <line x1="16" y1="13" x2="8" y2="13"></line>
-                <line x1="16" y1="17" x2="8" y2="17"></line>
-                <polyline points="10 9 9 9 8 9"></polyline>
-              </svg>
-              定制简历
-            </button>
+            <div class="action-btn-wrapper">
+              <button class="action-btn secondary" @click="showTailorModal = true" :disabled="!store.primaryResume.analyzed">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                定制简历
+              </button>
+              <div class="disabled-tooltip" v-if="!store.primaryResume.analyzed">
+                <p class="tooltip-title">简历尚未完成AI诊断分析</p>
+                <p class="tooltip-hint">请先在简历详情页点击"开始优化"</p>
+              </div>
+            </div>
 
           </div>
         </div>
@@ -536,6 +542,60 @@ function handleTailorComplete(): void {
 .resume-actions {
   display: flex;
   gap: $spacing-md;
+}
+
+.action-btn-wrapper {
+  position: relative;
+
+  &:hover .disabled-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.disabled-tooltip {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  padding: $spacing-sm $spacing-md;
+  background: $color-bg-elevated;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: $radius-md;
+  font-size: $text-xs;
+  color: $color-text-secondary;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all $transition-fast;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: $z-tooltip;
+  pointer-events: none;
+  text-align: left;
+  min-width: 180px;
+
+  // 小箭头
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: $color-bg-elevated;
+  }
+}
+
+.tooltip-title {
+  color: $color-warning;
+  font-weight: $weight-medium;
+  margin-bottom: $spacing-xs;
+}
+
+.tooltip-hint {
+  color: $color-text-tertiary;
+  margin: 0;
 }
 
 .action-btn {
