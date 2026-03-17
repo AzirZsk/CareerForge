@@ -204,7 +204,7 @@
                           </div>
                           <div class="change-content" v-if="hasValueToShow(change)">
                             <!-- 新增类型：只显示新增的值 -->
-                            <div class="change-added" v-else-if="change.type === 'added'">
+                            <div class="change-added" v-if="change.type === 'added'">
                               <ol v-if="isArray(change.afterValue)" class="change-value-list">
                                 <li v-for="(val, vIdx) in change.afterValue" :key="vIdx">{{ val }}</li>
                               </ol>
