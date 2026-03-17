@@ -1,5 +1,6 @@
 package com.landit.resume.handler;
 
+import com.landit.common.enums.ResumeStatus;
 import com.landit.common.enums.ResumeType;
 import com.landit.common.exception.BusinessException;
 import com.landit.common.service.AIService;
@@ -446,7 +447,10 @@ public class ResumeHandler {
         // 5. 重新计算简历完整度
         recalculateResumeCompleteness(resumeId);
 
-        // 6. 返回更新后的简历详情
+        // 6. 将简历状态更新为"已优化"（用户已应用优化变更）
+        resumeService.updateStatus(resumeId, ResumeStatus.OPTIMIZED);
+
+        // 7. 返回更新后的简历详情
         return resumeService.getResumeDetail(resumeId);
     }
 

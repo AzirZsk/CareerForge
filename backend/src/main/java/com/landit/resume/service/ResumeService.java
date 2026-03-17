@@ -260,7 +260,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
         resume.setMarkdownContent(data.getMarkdownContent());
         resume.setResumeType(ResumeType.PRIMARY.getValue());
         resume.setVersion(1);
-        resume.setStatus(ResumeStatus.OPTIMIZED.getValue());
+        resume.setStatus(ResumeStatus.DRAFT.getValue());  // 上传简历应为草稿状态，优化后才变为已优化
         resume.setIsPrimary(true);
         resume.setCompleteness(calculateCompleteness(data));
         save(resume);
@@ -636,5 +636,22 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
             }
         }
         log.info("自定义区块 item 评分已更新: resumeId={}, count={}", resumeId, itemScores.size());
+    }
+
+    /**
+     * 更新简历状态
+     *
+     * @param resumeId 简历ID
+     * @param status   目标状态
+     */
+    public void updateStatus(String resumeId, ResumeStatus status) {
+        Resume resume = getById(resumeId);
+        if (resume == null) {
+            log.warn("简历不存在，无法更新状态: resumeId={}", resumeId);
+            return;
+        }
+        resume.setStatus(status.getValue());
+        updateById(resume);
+        log.info("简历状态已更新: resumeId={}, status={}", resumeId, status.getValue());
     }
 }
