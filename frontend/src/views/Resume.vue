@@ -260,10 +260,8 @@ const pendingDeleteId = ref<string | null>(null)
 // 优化相关状态
 const showOptimizeModal = ref(false)
 const showTailorModal = ref(false)
-const currentOptimizeResumeId = ref<string | null>(null)
 const {
   state: optimizeState,
-  startOptimize,
   cancelOptimize,
   toggleStageExpanded
 } = useResumeOptimize()
@@ -303,20 +301,6 @@ function getStatusClass(status: ResumeStatus): string {
 
 function viewResume(id: string): void {
   router.push(`/resume/${id}`)
-}
-
-function optimizeResume(id: string): void {
-  currentOptimizeResumeId.value = id
-  showOptimizeModal.value = true
-
-  // 获取目标岗位
-  const targetPosition = store.primaryResume?.targetPosition || undefined
-
-  // 开始 SSE 优化
-  startOptimize(id, {
-    mode: 'quick',
-    targetPosition
-  })
 }
 
 async function createNewResume(): Promise<void> {

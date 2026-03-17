@@ -158,8 +158,9 @@
                           <span class="sug-title">{{ sug.title }}</span>
                         </div>
                         <div class="sug-section">位置: {{ sug.position || sug.category }}</div>
-                        <div class="sug-current" v-if="sug.current">当前: {{ sug.current }}</div>
-                        <div class="sug-suggestion">建议：{{ sug.suggestion }}</div>
+                        <div class="sug-problem" v-if="sug.problem">问题: {{ sug.problem }}</div>
+                        <div class="sug-direction">方向：{{ sug.direction }}</div>
+                        <div class="sug-example" v-if="sug.example">示例：{{ sug.example }}</div>
                         <div class="sug-value" v-if="sug.value">价值: {{ sug.value }}</div>
                       </div>
                     </div>
@@ -1234,19 +1235,28 @@ function hasValueToShow(change: ChangeItem): boolean {
   margin-bottom: 4px;
 }
 
-.sug-current {
+.sug-problem {
   font-size: $text-xs;
   color: $color-error;
   margin-bottom: 4px;
   padding-left: $spacing-sm;
 }
 
-.sug-suggestion {
+.sug-direction {
   font-size: $text-xs;
   color: $color-text-primary;
   margin-bottom: 4px;
   padding-left: $spacing-sm;
   line-height: 1.4;
+}
+
+.sug-example {
+  font-size: $text-xs;
+  color: $color-accent;
+  margin-bottom: 4px;
+  padding-left: $spacing-sm;
+  line-height: 1.4;
+  font-style: italic;
 }
 
 .sug-impact {

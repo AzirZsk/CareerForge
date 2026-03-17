@@ -34,6 +34,7 @@ export const resumes: Resume[] = [
     targetPosition: '高级前端工程师',
     updatedAt: '2024-02-18 14:30',
     status: 'optimized',
+    score: 85,
     completeness: 95,
     isPrimary: true
   },

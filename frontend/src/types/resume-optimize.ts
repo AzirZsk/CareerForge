@@ -120,8 +120,9 @@ export interface SuggestionItem {
   sectionId: string              // 关联的区块ID
   position: string               // 位置描述
   title: string
-  current: string                // 当前问题
-  suggestion: string             // 改进建议
+  problem: string                // 问题描述
+  direction: string              // 优化方向
+  example?: string               // 优化示例（Before → After）
   value: string                  // 价值说明
 }
 

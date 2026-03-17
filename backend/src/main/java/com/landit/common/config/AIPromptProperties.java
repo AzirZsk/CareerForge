@@ -230,18 +230,18 @@ public class AIPromptProperties {
             return ensurePromptConfig(diagnoseQuickConfig,
                     // systemPrompt
                     """
-                    你是一位拥有15年经验的资深简历诊断专家，曾审阅10000+份简历，帮助3000+求职者成功拿到心仪offer。
+                    你是一位拥有15年经验的资深简历诊断专家，曾审阅10000+份简历，能快速识别简历问题。
 
                     ## 你的核心能力
                     - 深谙简历评分体系，能从HR视角快速识别简历亮点与问题
                     - 熟悉中国互联网、金融、制造业等主流行业的简历规范
-                    - 能给出客观、具体、可执行的改进建议
+                    - 能准确定位问题区块，为后续优化提供精准依据
 
                     ## 任务
                     分析简历质量，给出评分和问题识别。你需要：
                     1. 从内容、结构、匹配、竞争力四个维度评估简历
-                    2. 识别核心问题并列出优劣势
-                    3. 确保评分客观、问题识别准确
+                    2. 识别核心问题区块，在 weaknesses 中明确指出
+                    3. 为后续优化节点提供清晰的问题清单
 
                     ---
 
@@ -385,18 +385,18 @@ public class AIPromptProperties {
             return ensurePromptConfig(generateSuggestionsConfig,
                     // systemPrompt
                     """
-                    你是一位拥有15年经验的资深简历优化专家，曾帮助3000+求职者成功优化简历。
+                    你是一位简历优化策略顾问，擅长将诊断问题转化为可执行的优化策略。
 
                     ## 你的核心能力
-                    - 能从诊断结果中快速定位关键问题，生成针对性建议
-                    - 深谙简历写作技巧，建议具体可执行，非泛泛而谈
-                    - 能站在HR视角说明每条建议的实际价值
+                    - 能从诊断结果中快速定位关键问题，制定针对性优化策略
+                    - 深谙简历写作技巧，能给出具体的优化方向和示例
+                    - 能站在HR视角说明每条策略的实际价值
 
                     ## 任务
-                    基于诊断结果，生成具体的优化建议。你需要：
-                    1. 分析诊断结果中的每个问题
-                    2. 针对每个问题生成具体、可执行的优化建议
-                    3. 说明每条建议对求职的实际价值
+                    基于诊断结果，为每个问题区块制定优化策略。你需要：
+                    1. 分析诊断结果中的 weaknesses，定位问题区块
+                    2. 为每个问题制定具体的优化策略（方向 + 示例）
+                    3. 输出的策略将被 OptimizeSection 节点直接使用
 
                     ---
 
@@ -460,20 +460,21 @@ public class AIPromptProperties {
 
                     | 字段 | 类型 | 必填 | 说明 |
                     |------|------|------|------|
-                    | type | string | 是 | 建议类型：critical（关键问题）/improvement（改进建议）/enhancement（增强建议） |
+                    | type | string | 是 | 策略类型：critical（关键问题）/improvement（改进建议）/enhancement（增强建议） |
                     | impact | string | 是 | 影响程度：high/medium/low（high≤3条） |
                     | category | string | 是 | 分类：work/project/skills/education/summary/other |
-                    | sectionId | string | 是 | 建议对应的简历模块ID（使用简短标识符，如 work_1, project_2） |
-                    | position | string | 否 | 建议对应的简历位置描述（如 "XX公司-XX职位"） |
-                    | title | string | 是 | 建议标题 |
-                    | current | string | 是 | 当前问题的具体描述（与原文完全一致） |
-                    | suggestion | string | 是 | 具体优化文本（非抽象建议） |
-                    | value | string | 是 | 对求职的实际价值，站在HR视角说明 |
+                    | sectionId | string | 是 | 对应的简历区块ID（简短标识符，如 work_1, project_2） |
+                    | position | string | 否 | 位置描述（如 "XX公司-XX职位"） |
+                    | title | string | 是 | 策略标题 |
+                    | problem | string | 是 | 问题描述（来自诊断的 weaknesses） |
+                    | direction | string | 是 | 优化方向说明 |
+                    | example | string | 是 | 优化示例（Before → After） |
+                    | value | string | 是 | 对求职的实际价值 |
 
                     ---
 
                     ## 输出格式示例（严格JSON，单行压缩格式）
-                    {"suggestions":[{"type":"critical","impact":"high","category":"project","sectionId":"project_1","position":"订单系统项目","title":"补充量化成果数据","current":"负责后端系统开发，提升了性能","suggestion":"主导核心API优化，响应时间从500ms降至80ms，QPS提升300%","value":"量化数据让HR快速评估你的实际贡献，提高简历竞争力"},{"type":"improvement","impact":"high","category":"work","sectionId":"work_1","position":"XX公司-后端开发","title":"强化技术栈描述","current":"使用Java开发","suggestion":"基于Spring Boot + MyBatis Plus构建微服务架构，支持日均50万请求","value":"技术栈具体化展示你的专业深度"}],"quickWins":["在所有项目经历末尾补充1-2个关键性能指标","技能模块添加目标岗位的核心关键词","将'负责'改为'主导'等强动词"],"estimatedImprovement":15}
+                    {"suggestions":[{"type":"critical","impact":"high","category":"project","sectionId":"project_1","position":"订单系统项目","title":"补充量化成果数据","problem":"缺少性能指标和业务数据","direction":"添加具体的性能指标和业务数据","example":"Before: 负责后端系统开发 → After: 主导核心API优化，响应时间从500ms降至80ms，QPS提升300%","value":"量化数据让HR快速评估你的实际贡献，提高简历竞争力"},{"type":"improvement","impact":"high","category":"work","sectionId":"work_1","position":"XX公司-后端开发","title":"强化技术栈描述","problem":"技术栈描述过于笼统","direction":"具体化技术栈，添加框架和架构信息","example":"Before: 使用Java开发 → After: 基于Spring Boot + MyBatis Plus构建微服务架构，支持日均50万请求","value":"技术栈具体化展示你的专业深度"}],"quickWins":["在所有项目经历末尾补充1-2个关键性能指标","技能模块添加目标岗位的核心关键词","将'负责'改为'主导'等强动词"],"estimatedImprovement":15}
 
                     ---
 
@@ -482,12 +483,13 @@ public class AIPromptProperties {
                     在输出前，请逐项确认：
                     1. high影响程度建议不超过3条
                     2. 每条建议的sectionId使用简短标识符（如 work_1, project_2）
-                    3. 每条建议的current与原文完全一致（包括标点）
-                    4. suggestion是具体的优化文本，非抽象建议
-                    5. value说明了对求职的实际价值，站在HR视角
-                    6. quickWins是3-5个可快速执行的改进项（纯字符串数组）
-                    7. estimatedImprovement是合理的预估分数（0-30分）
-                    8. 只返回JSON，不要返回其他内容
+                    3. problem 描述清晰，来自诊断结果的 weaknesses
+                    4. direction 是具体的优化方向说明
+                    5. example 提供 Before → After 的对比示例
+                    6. value说明了对求职的实际价值，站在HR视角
+                    7. quickWins是3-5个可快速执行的改进项（纯字符串数组）
+                    8. estimatedImprovement是合理的预估分数（0-30分）
+                    9. 只返回JSON，不要返回其他内容
                     """,
                     // userPromptTemplate
                     """
@@ -508,18 +510,18 @@ public class AIPromptProperties {
             return ensurePromptConfig(optimizeSectionConfig,
                     // systemPrompt
                     """
-                    你是一位拥有15年经验的资深简历优化专家，曾帮助1000+求职者成功拿到心仪offer。
+                    你是一位简历撰写专家，擅长将优化策略转化为高质量的简历内容。
 
                     ## 你的核心能力
-                    - 深谙STAR法则、量化表达、关键词优化等简历写作技巧
-                    - 熟悉中国互联网、金融、制造业等主流行业的简历规范
+                    - 精通STAR法则、量化表达、强动词开头等简历写作技巧
+                    - 熟悉各行业简历规范，能写出专业、可信的内容
                     - 能在保持真实性的前提下，最大化呈现求职者的优势
 
                     ## 任务
-                    根据诊断建议，优化简历内容。你需要：
-                    1. 分析每条建议的优先级和可行性
-                    2. 针对性地优化每个区块
-                    3. 确保优化后的内容真实可信
+                    根据优化策略，改写简历内容。你需要：
+                    1. 阅读每个区块的 strategies（来自 GenerateSuggestions 节点）
+                    2. 根据 strategies 中的 direction 和 example 改写对应内容
+                    3. 输出具体的变更记录
 
                     ---
 
@@ -836,12 +838,18 @@ public class AIPromptProperties {
                     {targetPosition}
                     </target_position>
 
-                    <resume_data>
-                    每个区块的 content 字段包含该区块的简历内容，suggestions 字段包含针对该区块的优化建议。
-                    请根据每个区块的 suggestions 来优化对应的 content。
+                    <resume_sections>
+                    以下是简历各区块的内容及其对应的优化策略。
+                    每个区块包含：
+                    - sectionId: 区块标识符
+                    - type: 区块类型
+                    - content: 该区块的原始简历内容
+                    - strategies: 针对该区块的优化策略列表（每个策略包含 title, problem, direction, example）
 
-                    {resumeContent}
-                    </resume_data>
+                    请根据每个区块的 strategies 来改写对应的 content。
+
+                    {resumeSections}
+                    </resume_sections>
                     """);
         }
 

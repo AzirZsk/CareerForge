@@ -49,7 +49,7 @@ import { ref } from 'vue'
 import SuggestionCard from './SuggestionCard.vue'
 import type { ResumeSuggestionItem } from '@/types'
 
-const props = defineProps<{
+defineProps<{
   suggestions: ResumeSuggestionItem[]
 }>()
 

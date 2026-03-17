@@ -14,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -37,18 +39,25 @@ public class OptimizeSectionNode implements NodeAction {
     public Map<String, Object> apply(OverAllState state) {
         log.info("=== 简历内容优化 ===");
         ResumeDetailVO resumeDetail = (ResumeDetailVO) state.value(STATE_RESUME_CONTENT).orElse(null);
-        String resumeContentJson = JsonParseHelper.toJsonString(resumeDetail.getSections());
+        String suggestionsJson = (String) state.value(STATE_SUGGESTIONS).orElse(DEFAULT_EMPTY_JSON);
         String targetPosition = resumeDetail.getTargetPosition() != null
                 ? resumeDetail.getTargetPosition()
                 : DEFAULT_TARGET_POSITION;
         // beforeSection: 原始简历的 sections 内容
         List<ResumeDetailVO.ResumeSectionVO> beforeSection = resumeDetail.getSections();
+
+        // 构建包含优化策略的简历区块数据，传递给 AI
+        String resumeSectionsWithSuggestions = buildResumeSectionsWithSuggestions(
+                resumeDetail.getSections(),
+                suggestionsJson
+        );
+
         // 使用拆分提示词调用（前缀缓存优化）
         AIPromptProperties.PromptConfig promptConfig = aiPromptProperties.getGraph().getOptimizeSectionConfig();
         String systemPrompt = promptConfig.getSystemPrompt();
         String userPrompt = ChatClientHelper.renderTemplate(
                 promptConfig.getUserPromptTemplate(),
-                Map.of("targetPosition", targetPosition, "resumeContent", resumeContentJson)
+                Map.of("targetPosition", targetPosition, "resumeSections", resumeSectionsWithSuggestions)
         );
         OptimizeSectionResponse response = ChatClientHelper.callAndParse(
                 chatClient, systemPrompt, userPrompt, OptimizeSectionResponse.class
@@ -81,6 +90,65 @@ public class OptimizeSectionNode implements NodeAction {
                 STATE_CHANGES, changes,
                 STATE_IMPROVEMENT_SCORE, response.getImprovementScore()
         );
+    }
+
+    /**
+     * 构建包含优化策略的简历区块数据
+     * 将 GenerateSuggestionsNode 输出的 suggestions 合并到对应的简历区块中
+     */
+    private String buildResumeSectionsWithSuggestions(
+            List<ResumeDetailVO.ResumeSectionVO> sections,
+            String suggestionsJson
+    ) {
+        // 解析 suggestions JSON
+        Map<String, Object> suggestionsData = JsonParseHelper.parseToEntity(
+                suggestionsJson,
+                new TypeReference<>() {}
+        );
+
+        // 提取 suggestions 列表
+        List<Map<String, Object>> suggestionsList = new ArrayList<>();
+        if (suggestionsData.get("suggestions") instanceof List) {
+            suggestionsList = (List<Map<String, Object>>) suggestionsData.get("suggestions");
+        }
+
+        // 按 sectionId 分组
+        Map<String, List<Map<String, Object>>> suggestionsBySectionId = new HashMap<>();
+        for (Map<String, Object> suggestion : suggestionsList) {
+            String sectionId = (String) suggestion.get("sectionId");
+            if (sectionId != null) {
+                suggestionsBySectionId.computeIfAbsent(sectionId, k -> new ArrayList<>()).add(suggestion);
+            }
+        }
+
+        // 构建结果：将 strategies 合并到每个 section
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (ResumeDetailVO.ResumeSectionVO section : sections) {
+            Map<String, Object> sectionWithStrategies = new HashMap<>();
+            sectionWithStrategies.put("sectionId", section.getId());
+            sectionWithStrategies.put("type", section.getType());
+            sectionWithStrategies.put("content", section.getContent());
+
+            // 获取该区块对应的优化策略
+            String sectionId = section.getId();
+            List<Map<String, Object>> strategies = suggestionsBySectionId.getOrDefault(sectionId, new ArrayList<>());
+
+            // 只提取优化所需的字段：title, problem, direction, example
+            List<Map<String, String>> simplifiedStrategies = new ArrayList<>();
+            for (Map<String, Object> strategy : strategies) {
+                Map<String, String> simplified = new HashMap<>();
+                simplified.put("title", (String) strategy.get("title"));
+                simplified.put("problem", (String) strategy.get("problem"));
+                simplified.put("direction", (String) strategy.get("direction"));
+                simplified.put("example", (String) strategy.get("example"));
+                simplifiedStrategies.add(simplified);
+            }
+            sectionWithStrategies.put("strategies", simplifiedStrategies);
+
+            result.add(sectionWithStrategies);
+        }
+
+        return JsonParseHelper.toJsonString(result);
     }
 
     private Map<String, Object> buildNodeOutput(OptimizeSectionResponse response,
