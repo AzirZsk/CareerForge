@@ -112,9 +112,9 @@ public class DiagnoseResumeResponse {
         private String impact;
 
         /**
-         * 分类：work/project/skills/education/summary
+         * 分类：basicInfo/education/work/projects/skills/certificates/openSource/customSections
          */
-        @SchemaField(value = "建议分类", enumValues = {"work", "project", "skills", "education", "summary", "other"})
+        @SchemaField(value = "建议分类", enumValues = {"basicInfo", "education", "work", "projects", "skills", "certificates", "openSource", "customSections"})
         private String category;
 
         /**

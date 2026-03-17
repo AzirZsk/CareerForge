@@ -330,7 +330,7 @@ public class AIPromptProperties {
 
                     在输出前，请逐项确认：
                     1. overallScore是四个维度的合理综合（非简单平均，应反映整体水平）
-                    2. strengths和weaknesses各有2-4条，且与评分一致
+                    2. strengths和weaknesses根据简历实际情况输出（最多8条），且与评分一致
                     3. sectionScores 必须包含 <resume_sections> 中所有区块的 id（使用简短标识符，如 work_1, project_1）
                     4. 只返回JSON，不要返回其他内容
 
@@ -345,8 +345,8 @@ public class AIPromptProperties {
                     | overallScore | integer | 是 | 总体评分（0-100），四个维度的综合评分 |
                     | dimensionScores | object | 是 | 各维度评分详情 |
                     | sectionScores | object | 是 | 各模块评分，Key为模块JSON的id字段值 |
-                    | strengths | array | 是 | 简历优势列表（2-4条） |
-                    | weaknesses | array | 是 | 简历劣势列表（2-4条） |
+                    | strengths | array | 是 | 简历优势列表（最多8条） |
+                    | weaknesses | array | 是 | 简历劣势列表（最多8条） |
 
                     ### dimensionScores 字段
 
@@ -396,7 +396,6 @@ public class AIPromptProperties {
                     基于诊断结果，为每个问题区块制定优化策略。你需要：
                     1. 分析诊断结果中的 weaknesses，定位问题区块
                     2. 为每个问题制定具体的优化策略（方向 + 示例）
-                    3. 输出的策略将被 OptimizeSection 节点直接使用
 
                     ---
 
@@ -404,10 +403,16 @@ public class AIPromptProperties {
 
                     | 诊断问题 | category | 建议方向 | 示例 |
                     |----------|----------|----------|------|
-                    | 缺少量化数据 | work/project | 添加具体数字、百分比、规模 | "优化系统"→"响应时间从500ms降至80ms" |
+                    | 缺少量化数据 | work/projects | 添加具体数字、百分比、规模 | "优化系统"→"响应时间从500ms降至80ms" |
                     | 技能关键词缺失 | skills | 补充目标岗位核心关键词 | 添加"Redis（缓存设计、分布式锁）" |
-                    | 项目描述模糊 | project | 补充技术栈、角色、成果 | "使用Java"→"基于Spring Cloud微服务架构" |
-                    | 个人简介空泛 | summary | 突出核心优势，包含关键词 | 添加"5年经验，擅长高并发系统设计" |
+                    | 项目描述模糊 | projects | 补充技术栈、角色、成果 | "使用Java"→"基于Spring Cloud微服务架构" |
+                    | 个人简介空泛 | basicInfo | 突出核心优势，包含关键词 | 添加"5年经验，擅长高并发系统设计" |
+                    | 教育经历信息不完整 | education | 补充专业、GPA、核心课程 | 添加"主修课程：数据结构、操作系统" |
+                    | 证书描述过于简单 | certificates | 补充获取时间、颁发机构 | "PMP证书"→"2023年PMI颁发PMP认证" |
+                    | 开源贡献描述缺失 | openSource | 补充项目影响、贡献类型 | 添加"Star数500+，贡献PR 20个" |
+                    | 自定义区块内容单薄 | customSections | 丰富内容，增加量化指标 | 补充具体成果和数据 |
+
+                    **注意**：以上示例仅供参考，应根据简历实际领域和目标岗位调整建议内容。对于非技术岗位（如市场、财务、运营等），请使用对应领域的专业术语和量化指标
 
                     **示例转换**：
                     - Before（诊断问题）：项目缺少量化数据
@@ -462,7 +467,7 @@ public class AIPromptProperties {
                     |------|------|------|------|
                     | type | string | 是 | 策略类型：critical（关键问题）/improvement（改进建议）/enhancement（增强建议） |
                     | impact | string | 是 | 影响程度：high/medium/low（high≤3条） |
-                    | category | string | 是 | 分类：work/project/skills/education/summary/other |
+                    | category | string | 是 | 分类：basicInfo/education/work/projects/skills/certificates/openSource/customSections |
                     | sectionId | string | 是 | 对应的简历区块ID（简短标识符，如 work_1, project_2） |
                     | position | string | 否 | 位置描述（如 "XX公司-XX职位"） |
                     | title | string | 是 | 策略标题 |
