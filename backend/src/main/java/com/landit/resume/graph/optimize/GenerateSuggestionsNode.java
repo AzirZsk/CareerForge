@@ -9,12 +9,12 @@ import com.landit.common.util.JsonParseHelper;
 import com.landit.resume.dto.DiagnoseResumeResponse;
 import com.landit.resume.dto.ResumeDetailVO;
 import com.landit.resume.service.ResumeSuggestionService;
+import com.landit.resume.util.ResumeSectionShortener;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -43,7 +43,10 @@ public class GenerateSuggestionsNode implements NodeAction {
         ResumeDetailVO resumeDetail = state.value(STATE_RESUME_CONTENT)
                 .map(v -> (ResumeDetailVO) v)
                 .orElse(null);
-        String resumeContentJson = resumeDetail != null ? JsonParseHelper.toJsonString(resumeDetail) : DEFAULT_EMPTY_JSON;
+        // 使用简短标识符替代雪花 ID，避免 AI 幻觉
+        String resumeContentJson = resumeDetail != null
+                ? ResumeSectionShortener.shorten(resumeDetail).getShortenedContent()
+                : DEFAULT_EMPTY_JSON;
 
         // 使用拆分提示词调用（前缀缓存优化）
         AIPromptProperties.PromptConfig promptConfig = aiPromptProperties.getGraph().getGenerateSuggestionsConfig();
