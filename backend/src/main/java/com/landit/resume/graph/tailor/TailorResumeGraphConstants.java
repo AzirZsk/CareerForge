@@ -81,4 +81,21 @@ public final class TailorResumeGraphConstants extends BaseGraphConstants {
      */
     public static final String STATE_TAILORED_SECTIONS = "tailored_sections";
 
+    // ==================== 状态键 - 对比编辑相关 ====================
+
+    /**
+     * 优化前的区块数据（用于对比视图）
+     */
+    public static final String STATE_BEFORE_SECTION = "before_section";
+
+    /**
+     * 优化后的区块数据（用于对比视图）
+     */
+    public static final String STATE_AFTER_SECTION = "after_section";
+
+    /**
+     * 提升分数（对比视图展示）
+     */
+    public static final String STATE_IMPROVEMENT_SCORE = "improvement_score";
+
 }

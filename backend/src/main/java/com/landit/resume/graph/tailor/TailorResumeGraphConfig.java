@@ -12,6 +12,7 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.landit.common.config.AIPromptProperties;
+import com.landit.resume.util.TailoredResumeToSectionConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -42,6 +43,7 @@ public class TailorResumeGraphConfig {
 
     private final ChatClient chatClient;
     private final AIPromptProperties aiPromptProperties;
+    private final TailoredResumeToSectionConverter sectionConverter;
 
     /**
      * 定义状态键策略
@@ -67,6 +69,11 @@ public class TailorResumeGraphConfig {
             strategies.put(STATE_TAILORED_RESUME, new ReplaceStrategy());
             strategies.put(STATE_TAILORED_SECTIONS, new ReplaceStrategy());
 
+            // 对比编辑相关
+            strategies.put(STATE_BEFORE_SECTION, new ReplaceStrategy());
+            strategies.put(STATE_AFTER_SECTION, new ReplaceStrategy());
+            strategies.put(STATE_IMPROVEMENT_SCORE, new ReplaceStrategy());
+
             // 流程控制
             strategies.put(STATE_CURRENT_STEP, new ReplaceStrategy());
 
@@ -90,7 +97,8 @@ public class TailorResumeGraphConfig {
         // 创建节点
         AnalyzeJDNode analyzeJDNode = new AnalyzeJDNode(chatClient, aiPromptProperties);
         MatchResumeNode matchResumeNode = new MatchResumeNode(chatClient, aiPromptProperties);
-        GenerateTailoredResumeNode generateTailoredNode = new GenerateTailoredResumeNode(chatClient, aiPromptProperties);
+        GenerateTailoredResumeNode generateTailoredNode = new GenerateTailoredResumeNode(
+                chatClient, aiPromptProperties, sectionConverter);
 
         // 构建工作流图
         StateGraph workflow = new StateGraph(GRAPH_TAILOR_RESUME, tailorResumeKeyStrategyFactory)

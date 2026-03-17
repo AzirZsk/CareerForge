@@ -3,6 +3,10 @@
 // @author Azir
 // =====================================================
 
+// 从主类型文件导入并重新导出
+import type { ResumeSection } from './index'
+export type { ResumeSection }
+
 // ==================== SSE 事件类型 ====================
 
 /** 定制阶段 */
@@ -131,4 +135,14 @@ export interface DeriveResumeRequest {
   targetPosition: string
   resumeName?: string
   jobDescription: string
+}
+
+/** 定制简历对比数据 */
+export interface TailorComparisonData {
+  beforeSection: ResumeSection[]
+  afterSection: ResumeSection[]
+  improvementScore: number
+  matchScore: number
+  tailorNotes: string[]
+  sectionRelevanceScores: Record<string, number>
 }

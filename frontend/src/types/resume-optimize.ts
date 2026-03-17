@@ -312,16 +312,8 @@ export function getDimensionLabel(key: string): string {
 export interface ComparisonEditEvent {
   /** 在 afterSection 数组中的索引 */
   sectionIndex: number
-  /** 被编辑的区块（使用通用 ResumeSection 类型，避免循环依赖） */
-  section: {
-    id: string
-    resumeId: string
-    type: string
-    title: string
-    content: string | null
-    score: number
-    suggestions: unknown[] | null
-  }
+  /** 被编辑的区块 */
+  section: ResumeSection
   /** 聚合类型：在 content 数组中的索引 */
   itemIndex?: number
 }
