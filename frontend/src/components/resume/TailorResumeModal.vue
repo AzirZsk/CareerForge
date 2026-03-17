@@ -6,7 +6,12 @@
 <template>
   <Teleport to="body">
     <Transition name="modal">
-      <div v-if="visible" class="modal-overlay" @click.self="handleClose">
+      <div
+        v-if="visible"
+        class="modal-overlay"
+        :class="{ 'modal-overlay--high': overlay }"
+        @click.self="handleClose"
+      >
         <div class="modal-container">
           <!-- 头部 -->
           <div class="modal-header">
@@ -238,10 +243,14 @@ import { ref, computed, watch } from 'vue'
 import { useResumeTailor } from '@/composables/useResumeTailor'
 import { getTailorStageLabel } from '@/types/resume-tailor'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   visible: boolean
   resumeId: string
-}>()
+  /** 是否显示在全屏遮罩层之上 */
+  overlay?: boolean
+}>(), {
+  overlay: false
+})
 
 const emit = defineEmits<{
   'update:visible': [value: boolean]
@@ -325,6 +334,11 @@ watch(() => tailorState.isCompleted, (completed) => {
   justify-content: center;
   z-index: $z-modal;
   padding: $spacing-lg;
+
+  // 高层级模式：显示在全屏遮罩层之上
+  &.modal-overlay--high {
+    z-index: $z-modal-overlay;
+  }
 }
 
 .modal-container {

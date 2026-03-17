@@ -7,7 +7,11 @@
 <template>
   <Teleport to="body">
     <Transition name="modal">
-      <div v-if="visible" class="modal-overlay">
+      <div
+        v-if="visible"
+        class="modal-overlay"
+        :class="{ 'modal-overlay--high': overlay }"
+      >
         <div class="modal-container">
           <div class="modal-header">
             <h3 class="modal-title">{{ modalTitle }}</h3>
@@ -68,6 +72,8 @@ interface Props {
   itemIndex?: number | null
   isNew?: boolean
   saving?: boolean
+  /** 是否显示在全屏遮罩层之上（如全屏对比视图） */
+  overlay?: boolean
 }
 
 interface Emits {
@@ -79,7 +85,8 @@ interface Emits {
 const props = withDefaults(defineProps<Props>(), {
   itemIndex: null,
   isNew: false,
-  saving: false
+  saving: false,
+  overlay: false
 })
 
 const emit = defineEmits<Emits>()
@@ -263,6 +270,11 @@ function handleSave(): void {
   justify-content: center;
   z-index: $z-modal;
   backdrop-filter: blur(4px);
+
+  // 高层级模式：显示在全屏遮罩层之上
+  &.modal-overlay--high {
+    z-index: $z-modal-overlay;
+  }
 }
 
 .modal-container {

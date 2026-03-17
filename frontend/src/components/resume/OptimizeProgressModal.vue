@@ -203,14 +203,6 @@
                             <span class="change-field">{{ change.fieldLabel || change.field }}</span>
                           </div>
                           <div class="change-content" v-if="hasValueToShow(change)">
-                            <!-- 删除类型：只显示被删除的值 -->
-                            <div class="change-removed" v-if="change.type === 'removed'">
-                              <ol v-if="isArray(change.beforeValue)" class="change-value-list">
-                                <li v-for="(val, vIdx) in change.beforeValue" :key="vIdx">{{ val }}</li>
-                              </ol>
-                              <pre v-else class="change-value-text">{{ change.beforeValue }}</pre>
-                            </div>
-
                             <!-- 新增类型：只显示新增的值 -->
                             <div class="change-added" v-else-if="change.type === 'added'">
                               <ol v-if="isArray(change.afterValue)" class="change-value-list">
@@ -368,6 +360,7 @@
       v-model:visible="showEditModal"
       :section="editingSection"
       :item-index="editingItemIndex ?? undefined"
+      :overlay="showFullComparison"
       @save="handleEditSave"
       @cancel="handleEditCancel"
     />
@@ -690,11 +683,11 @@ function isArray(value: unknown): value is string[] {
 
 /**
  * 判断变更项是否有值需要展示
- * 删除类型需要 beforeValue，新增类型需要 afterValue，修改类型需要至少一个有值
+ * 删除类型不展示值，只展示原因；新增类型需要 afterValue，修改类型需要至少一个有值
  */
 function hasValueToShow(change: ChangeItem): boolean {
   if (change.type === 'removed') {
-    return change.beforeValue !== null
+    return false  // 删除类型不展示值，只展示原因
   }
   if (change.type === 'added') {
     return change.afterValue !== null
@@ -1318,7 +1311,7 @@ function hasValueToShow(change: ChangeItem): boolean {
   inset: 0;
   background: rgba(0, 0, 0, 0.92);
   backdrop-filter: blur(12px);
-  z-index: 2000;
+  z-index: $z-overlay;
   display: flex;
   flex-direction: column;
 }

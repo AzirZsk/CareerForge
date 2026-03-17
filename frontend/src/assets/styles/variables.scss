@@ -107,6 +107,8 @@ $breakpoint-2xl: 1536px;
 $z-base: 1;
 $z-dropdown: 100;
 $z-sticky: 200;
-$z-modal: 300;
-$z-toast: 400;
-$z-tooltip: 500;
+$z-modal: 300;              // 普通弹窗
+$z-overlay: 1000;           // 全屏遮罩层（如对比视图）
+$z-modal-overlay: 1100;     // 需要在全屏遮罩之上显示的弹窗
+$z-toast: 1200;
+$z-tooltip: 1300;

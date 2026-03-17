@@ -6,7 +6,12 @@
 <template>
   <Teleport to="body">
     <Transition name="modal">
-      <div v-if="visible" class="modal-overlay" @click.self="handleCancel">
+      <div
+        v-if="visible"
+        class="modal-overlay"
+        :class="{ 'modal-overlay--high': overlay }"
+        @click.self="handleCancel"
+      >
         <div class="modal-container">
           <header class="modal-header">
             <h3 class="modal-title">{{ title }}</h3>
@@ -41,10 +46,13 @@ withDefaults(defineProps<{
   message: string
   confirmText?: string
   danger?: boolean
+  /** 是否显示在全屏遮罩层之上 */
+  overlay?: boolean
 }>(), {
   title: '确认',
   confirmText: '确定',
-  danger: false
+  danger: false,
+  overlay: false
 })
 
 const emit = defineEmits<{
@@ -77,6 +85,11 @@ function handleCancel(): void {
   align-items: center;
   justify-content: center;
   z-index: $z-modal;
+
+  // 高层级模式：显示在全屏遮罩层之上
+  &.modal-overlay--high {
+    z-index: $z-modal-overlay;
+  }
 }
 
 .modal-container {

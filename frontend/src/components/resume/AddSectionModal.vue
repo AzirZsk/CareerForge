@@ -6,7 +6,12 @@
 <template>
   <Teleport to="body">
     <Transition name="modal">
-      <div v-if="visible" class="modal-overlay" @click.self="$emit('update:visible', false)">
+      <div
+        v-if="visible"
+        class="modal-overlay"
+        :class="{ 'modal-overlay--high': overlay }"
+        @click.self="$emit('update:visible', false)"
+      >
         <div class="modal-container">
           <header class="modal-header">
             <h3 class="modal-title">添加模块</h3>
@@ -57,10 +62,14 @@ const SECTION_TYPE_CONFIG: Array<{ type: SectionType; label: string; icon: strin
   { type: 'CUSTOM', label: '自定义区块', icon: '📝', tooltip: '适用于游戏经历、志愿者活动、竞赛经历等' }
 ]
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   visible: boolean
   existingTypes: SectionType[]
-}>()
+  /** 是否显示在全屏遮罩层之上 */
+  overlay?: boolean
+}>(), {
+  overlay: false
+})
 
 const emit = defineEmits<{
   'update:visible': [value: boolean]
@@ -98,6 +107,11 @@ function handleSelectType(type: SectionType): void {
   align-items: center;
   justify-content: center;
   z-index: $z-modal;
+
+  // 高层级模式：显示在全屏遮罩层之上
+  &.modal-overlay--high {
+    z-index: $z-modal-overlay;
+  }
 }
 
 .modal-container {
