@@ -17,27 +17,13 @@
           'modal-container--fullscreen': tailorState.isTailoring || tailorState.isCompleted
         }">
           <!-- 头部 -->
-          <div class="modal-header">
-            <h3 class="header-title">
-              <svg v-if="!showComparisonView" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <line x1="16" y1="13" x2="8" y2="13"></line>
-                <line x1="16" y1="17" x2="8" y2="17"></line>
-              </svg>
-              <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="12" y1="3" x2="12" y2="21"></line>
-              </svg>
-              {{ showComparisonView ? '对比&编辑' : '定制简历' }}
-            </h3>
-            <button class="close-btn" @click="handleClose">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18"/>
-                <line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-            </button>
-          </div>
+          <ModalHeader
+            :is-optimizing="tailorState.isTailoring"
+            :is-completed="tailorState.isCompleted"
+            :has-error="tailorState.hasError"
+            custom-title="定制简历"
+            @close="handleClose"
+          />
 
           <!-- 表单（未开始时显示） -->
           <TailorForm
@@ -50,6 +36,12 @@
 
           <!-- 进度展示（进行中/完成时显示） -->
           <template v-else>
+            <!-- 定制职位 -->
+            <div class="target-info" v-if="formData.targetPosition">
+              <span class="target-label">定制职位</span>
+              <span class="target-value">{{ formData.targetPosition }}</span>
+            </div>
+
             <!-- 进度条 -->
             <ProgressBar
               :progress="tailorState.progress"
@@ -163,6 +155,7 @@ import type { ComparisonEditEvent } from '@/types/resume-optimize'
 import TailorForm from './tailor/TailorForm.vue'
 import TailorStageItem from './tailor/TailorStageItem.vue'
 import ProgressBar from './optimize/ProgressBar.vue'
+import ModalHeader from './optimize/ModalHeader.vue'
 import ResumeComparison from './ResumeComparison.vue'
 import EditSectionModal from './EditSectionModal.vue'
 
@@ -251,6 +244,7 @@ const comparisonData = computed<TailorComparisonData | null>(() => {
 const canShowComparison = computed(() => {
   return tailorState.isCompleted && comparisonData.value !== null
 })
+
 
 // 初始化编辑数据
 watch(comparisonData, (data) => {
@@ -388,43 +382,27 @@ onUnmounted(() => {
   }
 }
 
-.modal-header {
+// 定制职位
+.target-info {
   display: flex;
   align-items: center;
-  gap: $spacing-md;
-  padding: $spacing-lg;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-lg;
+  background: rgba(255, 255, 255, 0.02);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-
-  .header-title {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-    font-size: $text-lg;
-    font-weight: $weight-semibold;
-    color: $color-text-primary;
-
-    svg {
-      color: $color-accent;
-    }
-  }
-
-  .close-btn {
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: $color-text-tertiary;
-    border-radius: $radius-md;
-    transition: all $transition-fast;
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.1);
-      color: $color-text-primary;
-    }
-  }
 }
+
+.target-label {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+}
+
+.target-value {
+  font-size: $text-sm;
+  color: $color-accent;
+  font-weight: $weight-medium;
+}
+
 
 // 阶段列表
 .stages-list {

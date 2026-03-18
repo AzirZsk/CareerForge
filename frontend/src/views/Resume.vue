@@ -139,12 +139,26 @@
                 {{ resume.updatedAt }}
               </span>
               <div class="card-actions">
+                <!-- 定制简历按钮（已优化的简历才显示） -->
+                <button
+                  v-if="resume.status === 'optimized' && !resume.isPrimary"
+                  class="icon-action tailor-action"
+                  @click.stop="openTailorModal(resume.id)"
+                  title="定制简历"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                  </svg>
+                </button>
                 <button class="icon-action" @click.stop="setPrimary(resume.id)" v-if="!resume.isPrimary">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                   </svg>
                 </button>
-                <button class="icon-action" @click.stop="deleteResume(resume.id)">
+                <button class="icon-action delete-action" @click.stop="deleteResume(resume.id)">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="3 6 5 6 21 6"></polyline>
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -215,7 +229,7 @@
     <!-- 定制简历弹窗 -->
     <TailorResumeModal
       v-model:visible="showTailorModal"
-      :resume-id="store.primaryResume?.id || ''"
+      :resume-id="tailorResumeId || store.primaryResume?.id || ''"
       @complete="handleTailorComplete"
     />
 
@@ -266,6 +280,8 @@ const pendingDeleteId = ref<string | null>(null)
 // 优化相关状态
 const showOptimizeModal = ref(false)
 const showTailorModal = ref(false)
+// 当前定制中的简历 ID（用于从列表中点击定制按钮时传递）
+const tailorResumeId = ref<string>('')
 const {
   state: optimizeState,
   cancelOptimize,
@@ -361,8 +377,16 @@ function handleToggleExpand(stage: OptimizeStage): void {
 // 定制完成处理
 function handleTailorComplete(): void {
   showTailorModal.value = false
+  tailorResumeId.value = ''
   // 刷新简历列表
   store.fetchPrimaryResume()
+  store.fetchResumes()
+}
+
+// 打开定制弹窗（从简历列表点击）
+function openTailorModal(resumeId: string): void {
+  tailorResumeId.value = resumeId
+  showTailorModal.value = true
 }
 </script>
 
@@ -804,6 +828,18 @@ function handleTailorComplete(): void {
   &:hover {
     background: rgba(255, 255, 255, 0.1);
     color: $color-text-primary;
+  }
+  &.tailor-action {
+    color: $color-accent;
+    &:hover {
+      background: $color-accent-glow;
+    }
+  }
+  &.delete-action {
+    &:hover {
+      background: rgba(248, 113, 113, 0.15);
+      color: $color-error;
+    }
   }
 }
 

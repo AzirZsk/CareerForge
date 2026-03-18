@@ -37,11 +37,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   isOptimizing: boolean
   isCompleted: boolean
   hasError: boolean
-}>()
+  customTitle?: string
+}>(), {
+  customTitle: ''
+})
 
 defineEmits<{
   close: []
@@ -56,6 +59,8 @@ const iconClass = computed(() => ({
 
 // 标题
 const title = computed(() => {
+  // 如果传入了自定义标题，直接使用
+  if (props.customTitle) return props.customTitle
   if (props.isOptimizing) return 'AI 简历优化中...'
   if (props.isCompleted) return '优化完成'
   if (props.hasError) return '优化失败'

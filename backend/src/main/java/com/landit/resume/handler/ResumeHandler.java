@@ -313,9 +313,9 @@ public class ResumeHandler {
             throw BusinessException.notFound("源简历不存在");
         }
 
-        // 只有主简历才能派生
-        if (!ResumeType.PRIMARY.getValue().equals(sourceResume.getResumeType())) {
-            throw new BusinessException("只能基于主简历派生");
+        // 只有已优化的简历才能定制
+        if (!ResumeStatus.OPTIMIZED.getValue().equals(sourceResume.getStatus())) {
+            throw new BusinessException("只能基于已优化的简历进行定制");
         }
 
         // 创建派生简历
