@@ -1,0 +1,647 @@
+// ResumeContentViewer 共享样式
+// Extracted from ResumeContentViewer.vue for component reuse
+
+// ============================================================
+// 高亮样式（差异对比）
+// ============================================================
+
+.highlight-added {
+  background: rgba(52, 211, 153, 0.15);
+  color: $color-success;
+}
+
+.highlight-removed {
+  background: rgba(248, 113, 113, 0.15);
+  color: $color-error;
+}
+
+// 区块标题高亮
+.section-title-text {
+  border-radius: $radius-sm;
+  padding: 2px 4px;
+  transition: background-color 0.2s;
+
+  &.highlight-added {
+    background: rgba(52, 211, 153, 0.15);
+    color: $color-success;
+  }
+
+  &.highlight-removed {
+    background: rgba(248, 113, 113, 0.15);
+    color: $color-error;
+  }
+}
+
+// 确保高亮样式能覆盖各元素的默认颜色
+.exp-title, .exp-period, .exp-position, .exp-location,
+.exp-degree, .exp-major, .exp-gpa, .exp-role,
+.exp-description, .cert-name, .cert-date, .cert-issuer, .cert-credential,
+.exp-courses, .exp-honors, .exp-technologies, .exp-products {
+  &.highlight-added {
+    background: rgba(52, 211, 153, 0.15);
+    color: $color-success;
+    border-radius: $radius-sm;
+    padding: 2px 4px;
+  }
+
+  &.highlight-removed {
+    background: rgba(248, 113, 113, 0.15);
+    color: $color-error;
+    border-radius: $radius-sm;
+    padding: 2px 4px;
+  }
+}
+
+// ============================================================
+// 编辑按钮样式
+// ============================================================
+
+// 区块编辑按钮（基本信息）
+.section-edit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: $radius-sm;
+  color: $color-text-tertiary;
+  background: rgba(255, 255, 255, 0.05);
+  transition: all $transition-fast;
+
+  &:hover {
+    background: rgba(212, 168, 83, 0.15);
+    color: $color-accent;
+  }
+}
+
+// 项目编辑按钮（聚合类型）
+.item-edit-btn {
+  position: absolute;
+  top: $spacing-sm;
+  right: $spacing-sm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: $radius-sm;
+  color: $color-text-tertiary;
+  background: rgba(255, 255, 255, 0.05);
+  opacity: 0;
+  transition: all $transition-fast;
+  z-index: 1;
+
+  &:hover {
+    background: rgba(212, 168, 83, 0.15);
+    color: $color-accent;
+    opacity: 1;
+  }
+}
+
+// 带编辑按钮的项目
+.has-edit-btn {
+  position: relative;
+  padding-right: $spacing-xl;
+
+  &:hover {
+    .item-edit-btn {
+      opacity: 1;
+    }
+  }
+}
+
+// ============================================================
+// 区块通用样式
+// ============================================================
+
+.resume-section {
+  h3 {
+    font-size: $text-xl;
+    font-weight: $weight-semibold;
+    color: $color-text-primary;
+    margin-bottom: $spacing-md;
+    padding-bottom: $spacing-sm;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  // 区块头部（带编辑按钮）
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: $spacing-md;
+    padding-bottom: $spacing-sm;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+    h3 {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+  }
+}
+
+// 可编辑状态下的区块
+.editable {
+  .experience-item,
+  .skill-item,
+  .certificate-item {
+    position: relative;
+  }
+}
+
+// ============================================================
+// 经历项通用样式
+// ============================================================
+
+.experience-item {
+  padding: $spacing-md 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.exp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-xs;
+}
+
+.exp-title {
+  font-size: $text-base;
+  font-weight: $weight-medium;
+  color: $color-text-primary;
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.exp-link {
+  display: inline-flex;
+  align-items: center;
+  color: $color-text-tertiary;
+  transition: color $transition-fast;
+
+  &:hover {
+    color: $color-accent;
+  }
+}
+
+.exp-period {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+}
+
+.exp-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-sm;
+}
+
+.exp-degree {
+  font-size: $text-sm;
+  color: $color-accent;
+}
+
+.exp-major {
+  font-size: $text-sm;
+  color: $color-text-secondary;
+
+  &::before {
+    content: '·';
+    margin-right: $spacing-xs;
+    color: $color-text-tertiary;
+  }
+}
+
+.exp-gpa {
+  font-size: $text-xs;
+  color: $color-success;
+  background: $color-success-bg;
+  padding: 2px $spacing-sm;
+  border-radius: $radius-sm;
+}
+
+.exp-role {
+  font-size: $text-sm;
+  color: $color-accent;
+  margin-bottom: $spacing-sm;
+}
+
+.exp-position {
+  font-size: $text-sm;
+  color: $color-accent;
+  margin-bottom: $spacing-sm;
+}
+
+.exp-location {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+}
+
+.exp-industry {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+  padding: 2px $spacing-sm;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: $radius-sm;
+}
+
+.exp-description {
+  font-size: $text-sm;
+  color: $color-text-secondary;
+  line-height: $leading-relaxed;
+  margin-bottom: $spacing-sm;
+  white-space: pre-wrap;
+  padding: 2px 4px;
+  border-radius: $radius-sm;
+  transition: background-color 0.2s;
+}
+
+// ============================================================
+// 标签样式
+// ============================================================
+
+// 课程标签
+.exp-courses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-sm;
+}
+
+.course-tag {
+  padding: $spacing-xs $spacing-sm;
+  background: rgba(96, 165, 250, 0.1);
+  color: $color-info;
+  font-size: $text-xs;
+  border-radius: $radius-sm;
+}
+
+// 荣誉标签
+.exp-honors {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.honor-tag {
+  padding: $spacing-xs $spacing-sm;
+  background: rgba(212, 168, 83, 0.12);
+  color: $color-accent;
+  font-size: $text-xs;
+  border-radius: $radius-sm;
+  width: fit-content;
+}
+
+// 技术标签
+.exp-technologies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-sm;
+}
+
+.tech-tag {
+  padding: $spacing-xs $spacing-sm;
+  background: rgba(96, 165, 250, 0.1);
+  color: $color-info;
+  font-size: $text-xs;
+  border-radius: $radius-sm;
+}
+
+// 产品标签
+.exp-products {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-xs;
+}
+
+.products-label {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+}
+
+.product-tag {
+  padding: $spacing-xs $spacing-sm;
+  background: rgba(212, 168, 83, 0.15);
+  color: $color-accent;
+  font-size: $text-xs;
+  border-radius: $radius-sm;
+}
+
+// 成就标签
+.exp-achievements {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  margin-top: $spacing-sm;
+
+  &.extra {
+    margin-top: $spacing-md;
+    padding-top: $spacing-sm;
+    border-top: 1px dashed rgba(52, 211, 153, 0.2);
+  }
+}
+
+.achievement-tag {
+  width: fit-content;
+  padding: $spacing-xs $spacing-sm;
+  background: $color-success-bg;
+  color: $color-success;
+  font-size: $text-xs;
+  border-radius: $radius-sm;
+}
+
+.achievement-item {
+  font-size: $text-sm;
+  color: $color-text-secondary;
+  padding-left: $spacing-md;
+  position: relative;
+
+  &::before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    color: $color-accent;
+  }
+
+  &.highlight {
+    background: rgba(52, 211, 153, 0.1);
+    border-radius: $radius-sm;
+    padding: $spacing-sm $spacing-md;
+    margin-left: -$spacing-md;
+    padding-left: $spacing-md;
+
+    &::before {
+      content: '★';
+      color: $color-success;
+    }
+  }
+}
+
+// ============================================================
+// 基本信息网格
+// ============================================================
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $spacing-md;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+
+  &.full-width {
+    grid-column: span 2;
+  }
+}
+
+.info-label {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+}
+
+.info-value {
+  font-size: $text-sm;
+  color: $color-text-primary;
+  font-weight: $weight-medium;
+  padding: 2px 4px;
+  border-radius: $radius-sm;
+  transition: background-color 0.2s;
+
+  &.summary-text {
+    font-weight: $weight-regular;
+    line-height: $leading-relaxed;
+    white-space: pre-wrap;
+    padding: $spacing-sm;
+    background: rgba(255, 255, 255, 0.02);
+  }
+}
+
+// 基本信息区块特殊样式
+.basic-info-section {
+  .info-grid {
+    grid-template-columns: repeat(2, 1fr);
+
+    @media (max-width: 600px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .info-item {
+    padding: $spacing-xs 0;
+
+    &.highlight-added .info-value {
+      background: rgba(52, 211, 153, 0.15);
+      color: $color-success;
+    }
+
+    &.highlight-removed .info-value {
+      background: rgba(248, 113, 113, 0.15);
+      color: $color-error;
+    }
+  }
+
+  .info-value {
+    word-break: break-word;
+  }
+}
+
+// ============================================================
+// 技能区块
+// ============================================================
+
+.skills-container {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.skill-item {
+  padding: $spacing-md;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: $radius-md;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.skill-header {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-xs;
+}
+
+.skill-name {
+  font-size: $text-sm;
+  font-weight: $weight-medium;
+  color: $color-text-primary;
+}
+
+.skill-level {
+  padding: 2px $spacing-sm;
+  font-size: $text-xs;
+  background: rgba(212, 168, 83, 0.15);
+  color: $color-accent;
+  border-radius: $radius-sm;
+}
+
+.skill-description {
+  font-size: $text-sm;
+  color: $color-text-secondary;
+  line-height: $leading-relaxed;
+  margin-bottom: $spacing-xs;
+}
+
+.skill-category {
+  display: inline-block;
+  padding: 2px $spacing-xs;
+  font-size: $text-xs;
+  background: rgba(255, 255, 255, 0.05);
+  color: $color-text-tertiary;
+  border-radius: $radius-sm;
+}
+
+// ============================================================
+// 证书区块
+// ============================================================
+
+.certificate-item {
+  padding: $spacing-md 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.cert-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cert-name {
+  font-size: $text-base;
+  font-weight: $weight-medium;
+  color: $color-text-primary;
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: 2px 4px;
+  border-radius: $radius-sm;
+  transition: background-color 0.2s;
+}
+
+.cert-link {
+  display: inline-flex;
+  align-items: center;
+  color: $color-text-tertiary;
+  transition: color $transition-fast;
+
+  &:hover {
+    color: $color-accent;
+  }
+}
+
+.cert-date {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+}
+
+.cert-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-top: $spacing-xs;
+}
+
+.cert-issuer {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+}
+
+.cert-credential {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px $spacing-sm;
+  border-radius: $radius-sm;
+}
+
+// ============================================================
+// 其他样式
+// ============================================================
+
+.extra-field {
+  margin-top: $spacing-md;
+  padding-top: $spacing-md;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.extra-label {
+  display: block;
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+  margin-bottom: $spacing-xs;
+}
+
+.extra-value {
+  font-size: $text-sm;
+  color: $color-text-primary;
+  line-height: $leading-relaxed;
+  padding: $spacing-sm;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: $radius-sm;
+  white-space: pre-wrap;
+
+  &.description {
+    white-space: pre-wrap;
+  }
+}
+
+.raw-content {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+  background: rgba(0, 0, 0, 0.2);
+  padding: $spacing-sm;
+  border-radius: $radius-sm;
+  overflow-x: auto;
+  max-height: 200px;
+}
+
+// 自定义区块样式
+.custom-block {
+  margin-bottom: $spacing-md;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.custom-block-title {
+  font-size: $text-sm;
+  font-weight: $weight-medium;
+  color: $color-accent;
+  margin-bottom: $spacing-sm;
+  padding-bottom: $spacing-xs;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+}
