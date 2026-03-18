@@ -1,0 +1,83 @@
+// =====================================================
+// LandIt 简历优化阶段组件共享样式
+// @author Azir
+// =====================================================
+
+// 通用数据内容样式
+.data-content {
+  font-size: $text-sm;
+}
+
+// 快速改进建议区域
+.quickwins-section {
+  margin-top: $spacing-sm;
+}
+
+.quickwins-title {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+  margin-bottom: $spacing-xs;
+}
+
+.quickwin-item {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-xs;
+  padding: $spacing-xs;
+  font-size: $text-xs;
+  color: $color-text-secondary;
+  background: rgba(251, 191, 36, 0.05);
+  border-radius: $radius-sm;
+  margin-bottom: 4px;
+}
+
+// 标签类型颜色
+%tag-critical {
+  background: rgba(248, 113, 113, 0.15);
+  color: $color-error;
+}
+
+%tag-warning {
+  background: rgba(251, 191, 36, 0.15);
+  color: $color-warning;
+}
+
+%tag-info {
+  background: rgba(96, 165, 250, 0.15);
+  color: $color-info;
+}
+
+%tag-success {
+  background: rgba(52, 211, 153, 0.15);
+  color: $color-success;
+}
+
+// 值列表样式（使用数字序号）
+.change-value-list {
+  padding: 0 0 0 $spacing-lg;
+  list-style: decimal;
+
+  li {
+    padding: 2px 0;
+    font-size: $text-xs;
+    line-height: 1.5;
+
+    &::marker {
+      color: inherit;
+      opacity: 0.6;
+    }
+  }
+}
+
+// 值文本样式（保留换行）
+.change-value-text {
+  margin: $spacing-xs 0 0 0;
+  padding: $spacing-xs;
+  font-size: $text-xs;
+  font-family: inherit;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: $radius-sm;
+}

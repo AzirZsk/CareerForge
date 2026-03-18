@@ -565,11 +565,22 @@ $radius-full: 9999px;
 | EditSectionModal.vue | 编辑简历模块弹窗 |
 | ResumeContentViewer.vue | 简历内容查看器 |
 | ResumeComparison.vue | 简历优化前后对比 |
-| OptimizeProgressModal.vue | 优化进度弹窗（SSE 实时展示） |
+| OptimizeProgressModal.vue | 优化进度弹窗（SSE 实时展示，主容器组件） |
 | ResumeHeader.vue | 简历头部信息 |
 | MetricsSection.vue | 指标展示区域 |
 | SectionContent.vue | 区块内容渲染 |
 | SectionList.vue | 区块列表管理 |
+
+### 优化进度子组件 (components/resume/optimize/) - 7 个
+| 组件 | 功能 |
+|------|------|
+| ModalHeader.vue | 弹窗头部（状态图标、标题、关闭按钮） |
+| ProgressBar.vue | 进度条（百分比、消息展示） |
+| StageList.vue | 阶段列表容器 |
+| StageItem.vue | 单个阶段项（指示器、展开/收起） |
+| DiagnoseStageContent.vue | 诊断阶段内容（评分、维度、问题、亮点） |
+| SuggestionsStageContent.vue | 建议阶段内容（建议列表、快速改进项） |
+| OptimizeStageContent.vue | 优化阶段内容（变更详情、对比按钮） |
 
 ### 简历区块组件 (components/resume/sections/) - 7 个
 | 组件 | 功能 |
@@ -678,7 +689,11 @@ frontend/
 │   ├── composables/
 │   │   ├── useResumeOptimize.ts # 简历优化 Composable
 │   │   ├── useSectionEdit.ts    # 区块编辑 Composable
-│   │   └── useSectionHelper.ts  # 区块辅助工具
+│   │   ├── useSectionHelper.ts  # 区块辅助工具
+│   │   ├── useStageEdit.ts      # 阶段编辑 Composable
+│   │   └── useStageTimer.ts     # 阶段计时器 Composable
+│   ├── utils/
+│   │   └── stageHelpers.ts      # 阶段辅助工具函数
 │   ├── views/                   # 页面组件（9 个）
 │   │   ├── Onboarding.vue
 │   │   ├── Home.vue
@@ -701,6 +716,15 @@ frontend/
 │   │       ├── MetricsSection.vue
 │   │       ├── SectionContent.vue
 │   │       ├── SectionList.vue
+│   │       ├── optimize/           # 优化进度子组件
+│   │       │   ├── _shared.scss    # 共享样式
+│   │       │   ├── ModalHeader.vue
+│   │       │   ├── ProgressBar.vue
+│   │       │   ├── StageList.vue
+│   │       │   ├── StageItem.vue
+│   │       │   ├── DiagnoseStageContent.vue
+│   │       │   ├── SuggestionsStageContent.vue
+│   │       │   └── OptimizeStageContent.vue
 │   │       ├── sections/
 │   │       │   ├── BasicInfoSection.vue
 │   │       │   ├── EducationSection.vue
