@@ -231,6 +231,7 @@
       v-model:visible="showTailorModal"
       :resume-id="tailorResumeId || store.primaryResume?.id || ''"
       @complete="handleTailorComplete"
+      @save="handleSaveTailor"
     />
 
     <!-- 删除确认弹窗 -->
@@ -254,9 +255,12 @@ import type { OptimizeStage } from '@/types/resume-optimize'
 
 // 导入优化相关
 import { useResumeOptimize } from '@/composables/useResumeOptimize'
+import { useToast } from '@/composables/useToast'
+import { saveTailoredResume } from '@/api/resume'
 import OptimizeProgressModal from '@/components/resume/OptimizeProgressModal.vue'
 import TailorResumeModal from '@/components/resume/TailorResumeModal.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import type { ResumeSection } from '@/types'
 
 interface FilterItem {
   key: string
@@ -287,6 +291,9 @@ const {
   cancelOptimize,
   toggleStageExpanded
 } = useResumeOptimize()
+
+// Toast 提示
+const toast = useToast()
 
 // 页面加载时获取主简历信息和简历列表
 onMounted(async () => {
@@ -381,6 +388,43 @@ function handleTailorComplete(): void {
   // 刷新简历列表
   store.fetchPrimaryResume()
   store.fetchResumes()
+}
+
+// 保存定制简历
+async function handleSaveTailor(data: {
+  targetPosition: string
+  jobDescription: string
+  resumeName: string
+  afterSection: ResumeSection[]
+}): Promise<void> {
+  const sourceResumeId = tailorResumeId.value || store.primaryResume?.id
+  if (!sourceResumeId) return
+
+  try {
+    await saveTailoredResume(sourceResumeId, {
+      targetPosition: data.targetPosition,
+      jobDescription: data.jobDescription,
+      resumeName: data.resumeName,
+      afterSection: data.afterSection.map(section => ({
+        id: section.id,
+        type: section.type,
+        title: section.title,
+        content: typeof section.content === 'string'
+          ? section.content
+          : JSON.stringify(section.content)
+      }))
+    })
+
+    toast.success('定制简历保存成功')
+    showTailorModal.value = false
+    tailorResumeId.value = ''
+    // 刷新简历列表
+    store.fetchPrimaryResume()
+    store.fetchResumes()
+  } catch (error) {
+    console.error('保存定制简历失败', error)
+    toast.error('保存失败，请重试')
+  }
 }
 
 // 打开定制弹窗（从简历列表点击）

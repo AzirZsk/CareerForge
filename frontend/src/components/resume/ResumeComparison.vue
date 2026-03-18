@@ -8,7 +8,7 @@
   <div class="resume-comparison">
     <div class="comparison-header">
       <div class="resume-column before">
-        <h4>优化前</h4>
+        <h4>{{ beforeTitle }}</h4>
       </div>
       <div class="vs-divider">
         <span class="improvement-badge" v-if="improvementScore">
@@ -16,7 +16,7 @@
         </span>
       </div>
       <div class="resume-column after">
-        <h4>优化后</h4>
+        <h4>{{ afterTitle }}</h4>
       </div>
     </div>
 
@@ -52,6 +52,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import ResumeContentViewer from './ResumeContentViewer.vue'
 import type { ResumeSection } from '@/types'
 import type { ChangeItem, ComparisonEditEvent } from '@/types/resume-optimize'
@@ -69,11 +70,18 @@ interface Props {
   beforeResume?: Record<string, unknown>
   /** 是否可编辑 */
   editable?: boolean
+  /** 对比模式：optimize-优化对比，tailor-定制对比 */
+  mode?: 'optimize' | 'tailor'
 }
 
-withDefaults(defineProps<Props>(), {
-  editable: false
+const props = withDefaults(defineProps<Props>(), {
+  editable: false,
+  mode: 'optimize'
 })
+
+// 根据模式显示不同的标题
+const beforeTitle = computed(() => props.mode === 'tailor' ? '原简历' : '优化前')
+const afterTitle = computed(() => props.mode === 'tailor' ? '定制简历' : '优化后')
 
 const emit = defineEmits<{
   /** 编辑区块事件 */

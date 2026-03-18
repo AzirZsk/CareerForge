@@ -149,3 +149,21 @@ export interface TailorComparisonData {
   tailorNotes: string[]
   sectionRelevanceScores: Record<string, number>
 }
+
+// ==================== 保存定制简历 ====================
+
+/** 区块数据项（用于保存定制简历） */
+export interface SectionDataItem {
+  id?: string
+  type?: string
+  title?: string
+  content: string
+}
+
+/** 保存定制简历请求 */
+export interface SaveTailoredResumeRequest {
+  targetPosition: string
+  resumeName?: string
+  jobDescription: string
+  afterSection: SectionDataItem[]
+}

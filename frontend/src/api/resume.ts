@@ -4,7 +4,7 @@
 // =====================================================
 
 import type { ApiResponse, PrimaryResumeVO, ResumeDetail, ResumeListItem, CreateResumeRequest } from '@/types'
-import type { DeriveResumeRequest } from '@/types/resume-tailor'
+import type { DeriveResumeRequest, SaveTailoredResumeRequest } from '@/types/resume-tailor'
 
 // API 基础路径
 const API_BASE = '/landit'
@@ -269,4 +269,26 @@ export async function deleteSuggestion(
   if (result.code !== 200) {
     throw new Error(result.message || '删除建议失败')
   }
+}
+
+/**
+ * 保存定制简历
+ * 创建新的派生简历并应用定制内容
+ * @param sourceResumeId 源简历ID
+ * @param data 保存请求数据
+ */
+export async function saveTailoredResume(
+  sourceResumeId: string,
+  data: SaveTailoredResumeRequest
+): Promise<ResumeDetail> {
+  const response = await fetch(`${API_BASE}/resumes/${sourceResumeId}/tailor/save`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+  const result: ApiResponse<ResumeDetail> = await response.json()
+  if (result.code !== 200) {
+    throw new Error(result.message || '保存定制简历失败')
+  }
+  return result.data
 }

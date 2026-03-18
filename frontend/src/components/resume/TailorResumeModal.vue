@@ -9,11 +9,11 @@
       <div
         v-if="visible"
         class="modal-overlay"
-        :class="{ 'modal-overlay--high': overlay || showComparisonView }"
+        :class="{ 'modal-overlay--high': overlay }"
         @click.self="handleClose"
       >
         <div class="modal-container" :class="{
-          'modal-container--fullscreen': tailorState.isTailoring || tailorState.isCompleted || showComparisonView
+          'modal-container--fullscreen': tailorState.isTailoring || tailorState.isCompleted
         }">
           <!-- 头部 -->
           <ModalHeader
@@ -87,49 +87,55 @@
               </button>
             </template>
             <template v-else-if="tailorState.isCompleted">
-              <button class="footer-btn primary" @click="viewTailoredResume">
+              <button class="footer-btn secondary" @click="handleClose">
+                不保存
+              </button>
+              <button class="footer-btn primary" @click="handleSaveTailor">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                  <circle cx="12" cy="12" r="3"/>
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
                 </svg>
-                查看定制简历
+                保存定制简历
               </button>
             </template>
-          </div>
-
-          <!-- 对比视图 -->
-          <div v-if="showComparisonView" class="comparison-section">
-            <ResumeComparison
-              v-if="comparisonData"
-              :before-section="comparisonData.beforeSection"
-              :after-section="comparisonData.afterSection"
-              :improvement-score="comparisonData.improvementScore"
-              :editable="true"
-              @edit-section="handleEditSection"
-            />
-            <div v-else class="comparison-empty">
-              <p>暂无对比数据</p>
-            </div>
-
-            <div class="comparison-actions">
-              <button class="btn-back" @click="showComparisonView = false">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="19" y1="12" x2="5" y2="12"></line>
-                  <polyline points="12 19 5 12 12 5"></polyline>
-                </svg>
-                返回
-              </button>
-              <button class="btn-apply" @click="handleApplyChanges">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-                应用变更
-              </button>
-            </div>
           </div>
         </div>
       </div>
     </Transition>
+
+    <!-- 全屏简历对比 -->
+    <Teleport to="body">
+      <Transition name="fullscreen-comparison">
+        <div v-if="showComparisonView" class="fullscreen-comparison-overlay">
+          <div class="fullscreen-comparison-container">
+            <div class="fullscreen-comparison-header">
+              <h3 class="fullscreen-comparison-title">简历对比</h3>
+              <button class="fullscreen-comparison-close" @click="showComparisonView = false">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            <div class="fullscreen-comparison-body">
+              <ResumeComparison
+                v-if="comparisonData"
+                :before-section="comparisonData.beforeSection"
+                :after-section="comparisonData.afterSection"
+                :improvement-score="comparisonData.improvementScore"
+                :editable="true"
+                mode="tailor"
+                @edit-section="handleEditSection"
+              />
+              <div v-else class="comparison-empty">
+                <p>暂无对比数据</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
 
     <!-- 编辑弹窗 -->
     <EditSectionModal
@@ -170,6 +176,12 @@ const emit = defineEmits<{
   'update:visible': [value: boolean]
   'complete': []
   'apply': [sections: ResumeSection[]]
+  'save': [data: {
+    targetPosition: string
+    jobDescription: string
+    resumeName: string
+    afterSection: ResumeSection[]
+  }]
 }>()
 
 // 表单数据
@@ -274,15 +286,6 @@ function handleEditSave(data: { content: Record<string, unknown>; itemIndex?: nu
   editingSection.value = null
 }
 
-// 应用变更
-function handleApplyChanges() {
-  const sectionsToApply = editedAfterSection.value || comparisonData.value?.afterSection
-  if (sectionsToApply) {
-    emit('apply', sectionsToApply as ResumeSection[])
-  }
-  handleClose()
-}
-
 // 固定显示所有阶段节点
 const sortedStageHistory = computed(() => {
   const order = ['analyze_jd', 'match_resume', 'generate_tailored'] as const
@@ -317,10 +320,26 @@ function handleClose() {
   emit('update:visible', false)
 }
 
-// 查看定制后的简历
-function viewTailoredResume() {
-  emit('complete')
-  handleClose()
+// 保存定制简历
+function handleSaveTailor() {
+  const sectionsToSave = editedAfterSection.value || comparisonData.value?.afterSection
+  if (!sectionsToSave) return
+
+  const afterSectionData = sectionsToSave.map(section => ({
+    id: section.id,
+    type: section.type,
+    title: section.title,
+    content: typeof section.content === 'string'
+      ? section.content
+      : JSON.stringify(section.content)
+  }))
+
+  emit('save', {
+    targetPosition: formData.value.targetPosition,
+    jobDescription: formData.value.jobDescription,
+    resumeName: formData.value.resumeName || `${formData.value.targetPosition}定制版`,
+    afterSection: afterSectionData as ResumeSection[]
+  })
 }
 
 // 滚动锁定
@@ -462,42 +481,47 @@ onUnmounted(() => {
   }
 }
 
-// 对比视图
-.comparison-section {
-  padding: $spacing-lg;
+// 全屏简历对比
+.fullscreen-comparison-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  backdrop-filter: blur(12px);
+  z-index: $z-overlay;
   display: flex;
   flex-direction: column;
-  gap: $spacing-lg;
-  flex: 1;
-  overflow-y: auto;
 }
 
-.comparison-empty {
-  flex: 1;
+.fullscreen-comparison-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+.fullscreen-comparison-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-md $spacing-xl;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.fullscreen-comparison-title {
+  font-size: $text-lg;
+  font-weight: $weight-semibold;
+  color: $color-text-primary;
+}
+
+.fullscreen-comparison-close {
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: $color-text-tertiary;
-}
-
-.comparison-actions {
-  display: flex;
-  justify-content: space-between;
-  gap: $spacing-md;
-  padding-top: $spacing-md;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.btn-back {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  padding: $spacing-sm $spacing-lg;
-  background: rgba(255, 255, 255, 0.05);
-  color: $color-text-secondary;
-  font-size: $text-sm;
-  font-weight: $weight-medium;
-  border-radius: $radius-md;
+  border-radius: $radius-sm;
   transition: all $transition-fast;
 
   &:hover {
@@ -506,21 +530,18 @@ onUnmounted(() => {
   }
 }
 
-.btn-apply {
+.fullscreen-comparison-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: $spacing-lg $spacing-xl;
+}
+
+.comparison-empty {
+  flex: 1;
   display: flex;
   align-items: center;
-  gap: $spacing-sm;
-  padding: $spacing-sm $spacing-lg;
-  background: $gradient-gold;
-  color: $color-bg-deep;
-  font-size: $text-sm;
-  font-weight: $weight-medium;
-  border-radius: $radius-md;
-  transition: all $transition-fast;
-
-  &:hover {
-    box-shadow: 0 4px 16px rgba(212, 168, 83, 0.3);
-  }
+  justify-content: center;
+  color: $color-text-tertiary;
 }
 
 // 动画
@@ -540,5 +561,15 @@ onUnmounted(() => {
   .modal-container {
     transform: scale(0.95) translateY(20px);
   }
+}
+
+.fullscreen-comparison-enter-active,
+.fullscreen-comparison-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.fullscreen-comparison-enter-from,
+.fullscreen-comparison-leave-to {
+  opacity: 0;
 }
 </style>

@@ -2,14 +2,23 @@ package com.landit.resume.handler;
 
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
+import com.landit.common.enums.ResumeStatus;
+import com.landit.common.enums.SectionType;
+import com.landit.common.exception.BusinessException;
+import com.landit.resume.dto.DeriveResumeRequest;
 import com.landit.resume.dto.OptimizeProgressEvent;
 import com.landit.resume.dto.ResumeDetailVO;
+import com.landit.resume.dto.SaveTailoredResumeRequest;
+import com.landit.resume.entity.Resume;
 import com.landit.resume.graph.tailor.TailorResumeGraphService;
+import com.landit.resume.service.ResumeSectionService;
+import com.landit.resume.service.ResumeService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
@@ -35,6 +44,8 @@ public class TailorResumeGraphHandler {
 
     private final TailorResumeGraphService graphService;
     private final ResumeHandler resumeHandler;
+    private final ResumeService resumeService;
+    private final ResumeSectionService resumeSectionService;
 
     /**
      * 流式执行职位适配工作流（使用SseEmitter）
@@ -150,6 +161,52 @@ public class TailorResumeGraphHandler {
      */
     private boolean isInterruptionOutput(NodeOutput output) {
         return output instanceof InterruptionMetadata;
+    }
+
+    /**
+     * 保存定制简历
+     * 创建派生简历并应用定制内容
+     *
+     * @param sourceResumeId 源简历ID
+     * @param request        保存请求
+     * @return 新创建的简历详情
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public ResumeDetailVO saveTailoredResume(String sourceResumeId, SaveTailoredResumeRequest request) {
+        log.info("保存定制简历: sourceResumeId={}, targetPosition={}", sourceResumeId, request.getTargetPosition());
+
+        // 获取源简历并验证
+        Resume sourceResume = resumeService.getById(sourceResumeId);
+        if (sourceResume == null) {
+            throw BusinessException.notFound("源简历不存在");
+        }
+        if (!ResumeStatus.OPTIMIZED.getValue().equals(sourceResume.getStatus())) {
+            throw new BusinessException("只能基于已优化的简历进行定制");
+        }
+
+        // 创建派生简历
+        DeriveResumeRequest deriveRequest = new DeriveResumeRequest();
+        deriveRequest.setTargetPosition(request.getTargetPosition());
+        deriveRequest.setResumeName(request.getResumeName());
+        deriveRequest.setJobDescription(request.getJobDescription());
+        Resume derivedResume = resumeService.createDerivedResume(sourceResume, deriveRequest);
+        log.info("派生简历创建完成: derivedResumeId={}", derivedResume.getId());
+
+        // 删除自动复制的区块（createDerivedResume不会复制区块，这里不需要删除）
+        // 直接创建定制内容的区块
+        for (SaveTailoredResumeRequest.SectionDataItem item : request.getAfterSection()) {
+            String type = item.getType() != null ? item.getType() : SectionType.CUSTOM.getCode();
+            String title = item.getTitle() != null ? item.getTitle() : "";
+            resumeSectionService.create(derivedResume.getId(), type, title, item.getContent());
+        }
+        log.info("定制区块创建完成: count={}", request.getAfterSection().size());
+
+        // 更新状态为已优化（定制简历已经过 AI 优化）
+        resumeService.updateStatus(derivedResume.getId(), ResumeStatus.OPTIMIZED);
+        log.info("定制简历状态已更新为 OPTIMIZED: resumeId={}", derivedResume.getId());
+
+        // 返回新简历详情
+        return resumeService.getResumeDetail(derivedResume.getId());
     }
 
 }

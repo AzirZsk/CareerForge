@@ -1,14 +1,20 @@
 package com.landit.resume.controller;
 
+import com.landit.common.response.ApiResponse;
+import com.landit.resume.dto.ResumeDetailVO;
+import com.landit.resume.dto.SaveTailoredResumeRequest;
 import com.landit.resume.handler.TailorResumeGraphHandler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -48,6 +54,19 @@ public class TailorResumeController {
             @RequestParam String jobDescription,
             HttpServletResponse response) {
         return tailorGraphHandler.streamTailorWithSse(id, targetPosition, jobDescription, response);
+    }
+
+    /**
+     * 保存定制简历
+     * 创建新的派生简历并应用定制内容
+     */
+    @Operation(summary = "保存定制简历", description = "创建新的派生简历并应用定制内容")
+    @PostMapping("/{id}/tailor/save")
+    public ApiResponse<ResumeDetailVO> saveTailored(
+            @PathVariable String id,
+            @Valid @RequestBody SaveTailoredResumeRequest request) {
+        ResumeDetailVO result = tailorGraphHandler.saveTailoredResume(id, request);
+        return ApiResponse.success(result);
     }
 
 }
