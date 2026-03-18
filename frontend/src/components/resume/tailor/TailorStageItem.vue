@@ -106,7 +106,6 @@ defineEmits<{
   background: rgba(255, 255, 255, 0.02);
   border-radius: $radius-md;
   border: 1px solid rgba(255, 255, 255, 0.05);
-  overflow: hidden;
   transition: all $transition-fast;
 
   &.active {
@@ -208,7 +207,30 @@ defineEmits<{
 
 // 展开数据区域
 .stage-data {
-  padding: 0 $spacing-md $spacing-md;
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  // 底部额外 padding 确保内容完整显示
+  padding-bottom: $spacing-sm;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+  }
 }
 
 .data-content {

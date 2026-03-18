@@ -8,6 +8,8 @@
 
 | 日期 | 版本 | 变更内容 |
 |------|------|----------|
+| 2026-03-18 | 1.5.0 | AI 上下文全面扫描更新：更新文件统计（110 个 Java 文件、8 个控制器、11 个服务、8 个 Handler） |
+| 2026-03-18 | 1.4.0 | 定制简历限制条件改为"仅已优化简历" |
 | 2026-03-08 | 1.3.0 | 更新工作流结构（简化为三节点）、更新文件清单、补充 Composables 说明 |
 | 2026-03-06 | 1.2.0 | 从 DashScope Starter 迁移到 OpenAI Starter |
 | 2026-03-03 | 1.1.0 | 更新工作流文档、补充 AI 配置详情、完善 API 清单 |
@@ -67,6 +69,7 @@ export AI_MODEL=gpt-4o
 | user | `/user` | UserController | 用户信息管理 |
 | resume | `/resumes` | ResumeController | 简历CRUD与优化 |
 | resume-workflow | `/resumes` | ResumeOptimizeGraphController | 简历优化工作流 |
+| resume-tailor | `/resumes` | TailorResumeController | 简历定制工作流 |
 | interview | `/interviews` | InterviewController | 面试会话管理 |
 | review | `/reviews` | ReviewController | 面试复盘 |
 | statistics | `/statistics` | StatisticsController | 数据统计 |
@@ -168,6 +171,31 @@ START --> DiagnoseQuick --> GenerateSuggestions --> OptimizeSection --> END
 | GET | `/workflow/state` | 获取工作流状态 |
 | POST | `/workflow/review` | 提交人工审核结果 |
 | POST | `/workflow/resume` | 恢复工作流执行 |
+
+### 简历定制工作流 Graph
+
+简历定制功能基于 Spring AI Alibaba Agent Framework 构建状态机工作流：
+
+```
+START --> AnalyzeJD --> MatchResume --> GenerateTailored --> END
+           (分析JD)     (匹配简历)       (生成定制简历)
+```
+
+**工作流节点：**
+
+| 节点 | 类名 | 职责 |
+|------|------|------|
+| analyze_jd | AnalyzeJDNode | 分析职位描述，提取必备技能、关键词等 |
+| match_resume | MatchResumeNode | 匹配简历与 JD，计算匹配度 |
+| generate_tailored | GenerateTailoredResumeNode | 根据匹配分析生成定制简历 |
+
+**工作流配置文件：**
+
+| 文件 | 职责 |
+|------|------|
+| `TailorResumeGraphConfig.java` | 定义工作流节点、边、状态策略 |
+| `TailorResumeGraphService.java` | 执行、恢复、状态管理工作流 |
+| `TailorResumeGraphConstants.java` | 统一管理状态键、节点名称等常量 |
 
 ### 区块类型系统
 
@@ -304,8 +332,8 @@ public abstract class BaseEntity {
 - **路径**：`src/main/java/com/landit/resume/`
 - **文件统计**：39 个 Java 文件
 - **实体**：Resume, ResumeSection, ResumeSuggestion, ResumeVersion
-- **控制器**：ResumeController, ResumeOptimizeGraphController
-- **Handler**：ResumeHandler, ResumeOptimizeGraphHandler
+- **控制器**：ResumeController, ResumeOptimizeGraphController, TailorResumeController
+- **Handler**：ResumeHandler, ResumeOptimizeGraphHandler, TailorResumeGraphHandler
 - **核心功能**：
   - 简历 CRUD
   - 版本管理与回滚
@@ -314,13 +342,14 @@ public abstract class BaseEntity {
   - PDF 导出
   - 模块级 CRUD
 
-### resume/graph - 简历优化工作流
+### resume/graph - 简历优化/定制工作流
 - **路径**：`src/main/java/com/landit/resume/graph/`
-- **文件统计**：7 个 Java 文件
-- **节点**：DiagnoseResumeNode, GenerateSuggestionsNode, OptimizeSectionNode
-- **配置**：ResumeOptimizeGraphConfig, ResumeOptimizeGraphConstants
-- **服务**：ResumeOptimizeGraphService
-- **Handler**：ResumeOptimizeGraphHandler
+- **文件统计**：13 个 Java 文件
+- **优化节点**：DiagnoseResumeNode, GenerateSuggestionsNode, OptimizeSectionNode
+- **定制节点**：AnalyzeJDNode, MatchResumeNode, GenerateTailoredResumeNode
+- **配置**：ResumeOptimizeGraphConfig, ResumeOptimizeGraphConstants, TailorResumeGraphConfig, TailorResumeGraphConstants
+- **服务**：ResumeOptimizeGraphService, TailorResumeGraphService
+- **Handler**：ResumeOptimizeGraphHandler, TailorResumeGraphHandler
 
 ### interview - 面试模块
 - **路径**：`src/main/java/com/landit/interview/`
@@ -428,7 +457,7 @@ backend/
 │   │   │   ├── convertor/               # 转换器
 │   │   │   ├── dto/                     # 数据传输对象
 │   │   │   ├── entity/                  # 实体类
-│   │   │   ├── graph/                   # 工作流节点（7 个文件）
+│   │   │   ├── graph/                   # 工作流节点（13 个文件）
 │   │   │   ├── handler/                 # 业务处理器
 │   │   │   ├── mapper/                  # 数据访问
 │   │   │   ├── service/                 # 服务层
@@ -441,14 +470,14 @@ backend/
 │       ├── application.yml              # 应用配置
 │       ├── logback-spring.xml           # 日志配置
 │       └── schema.sql                   # 数据库结构
-└── src/test/                            # 测试目录（待补充）
+└── src/test/                            # 测试目录（1 个测试文件）
 ```
 
 ---
 
 ## 测试与质量
 
-**当前状态**：项目暂无测试文件
+**当前状态**：项目有 1 个测试文件
 
 **建议补充**：
 1. 单元测试：Service 层业务逻辑测试

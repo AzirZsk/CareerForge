@@ -3,11 +3,11 @@
 ---
 
 # Frontend - 前端应用模块
-
-## 变更记录 (Changelog)
-
+## 台更记录 (Changelog)
 | 日期 | 版本 | 变更内容 |
 |------|------|----------|
+| 2026-03-18 | 1.4.0 | AI 上下文全面扫描更新：更新文件统计（56 个 Vue 组件、 10 个 Composables、 3 个 Types） |
+| 2026-03-18 | 1.3.0 | 新增 viewer/tailor 组件目录、补充 composables（Tailor/Diff/Confirm/Toast/FormValidation） |
 | 2026-03-08 | 1.2.0 | 更新组件清单、补充 Composables 文档、完善简历区块组件 |
 | 2026-03-03 | 1.1.0 | 添加简历优化相关类型、更新组件清单、完善 API 模块文档 |
 | 2026-02-19 | 1.0.0 | 初始版本 |
@@ -53,18 +53,15 @@ VITE_API_TARGET=http://localhost:8080
 ---
 
 ## 对外接口
-
 前端通过 HTTP 请求调用后端 API，基础路径：`http://localhost:8080/landit/`
 
 ### API 模块
-
 | 模块 | 文件 | 描述 |
 |------|------|------|
 | user | `api/user.ts` | 用户状态、初始化、信息管理 |
 | resume | `api/resume.ts` | 简历 CRUD、模块操作 |
 
 ### 页面路由
-
 | 路径 | 组件 | 标题 | 描述 | 权限 |
 |------|------|------|------|------|
 | `/onboarding` | Onboarding.vue | 欢迎 | 用户引导页 | 公开 |
@@ -85,7 +82,6 @@ VITE_API_TARGET=http://localhost:8080
 ---
 
 ## 关键依赖与配置
-
 ### NPM 依赖 (package.json)
 
 #### 运行时依赖
@@ -142,14 +138,13 @@ export default defineConfig(({ mode }) => {
 ---
 
 ## 数据模型
-
 ### TypeScript 类型定义
-
 #### 核心类型文件
 | 文件 | 描述 |
 |------|------|
 | `types/index.ts` | 通用业务类型定义（445 行） |
 | `types/resume-optimize.ts` | 简历优化工作流类型定义（295 行） |
+| `types/resume-tailor.ts` | 简历定制工作流类型定义（152 行） |
 
 #### 用户相关 (types/index.ts)
 ```typescript
@@ -244,40 +239,6 @@ interface OptimizeProgressEvent {
   timestamp: number
 }
 
-// 诊断数据
-interface DiagnoseData {
-  overallScore: number
-  dimensionScores: DimensionScores
-  suggestions?: SuggestionItem[]
-  strengths: string[]
-  weaknesses: string[] | WeaknessItem[]
-  quickWins: string[]
-  preciseAnalysis?: any
-}
-
-// 优化建议项
-interface SuggestionItem {
-  priority: 'high' | 'medium' | 'low'
-  category: string
-  position: string
-  title: string
-  current: string
-  suggestion: string
-  impact: string
-}
-
-// 内容优化数据
-interface OptimizeSectionData {
-  changes: ChangeItem[]
-  improvementScore: number
-  tips: string[]
-  confidence: 'high' | 'medium' | 'low'
-  needsReview: boolean
-  changeCount: number
-  beforeSection?: ResumeSection[]
-  afterSection?: ResumeSection[]
-}
-
 // 优化状态
 interface OptimizeState {
   isConnecting: boolean
@@ -293,6 +254,37 @@ interface OptimizeState {
   message: string
   errorMessage: string | null
   stageHistory: StageHistoryItem[]
+}
+```
+
+#### 简历定制相关 (types/resume-tailor.ts)
+```typescript
+// 定制阶段
+type TailorStage =
+  | 'start'
+  | 'analyze_jd'
+  | 'match_resume'
+  | 'generate_tailored'
+  | 'end'
+
+// 定制状态
+interface TailorState {
+  isConnecting: boolean
+  isTailoring: boolean
+  isCompleted: boolean
+  hasError: boolean
+  threadId: string | null
+  resumeId: string | null
+  targetPosition: string
+  jobDescription: string
+  currentStage: TailorStage
+  progress: number
+  message: string
+  errorMessage: string | null
+  jobRequirements: JobRequirements | null
+  matchAnalysis: MatchAnalysis | null
+  tailoredResume: TailorResumeResponse | null
+  stageHistory: TailorStageHistoryItem[]
 }
 ```
 
@@ -330,7 +322,6 @@ interface InterviewDetail {
 ---
 
 ## 状态管理
-
 ### Pinia Store (stores/index.ts)
 
 #### 状态
@@ -394,13 +385,9 @@ toggleSidebar(): void
 ---
 
 ## Composables
-
 前端使用 **Composables（组合式函数）** 封装复用逻辑：
-
 ### useResumeOptimize (composables/useResumeOptimize.ts)
-
 简历优化工作流的组合式函数，封装 SSE 连接和状态管理：
-
 ```typescript
 const {
   // 状态
@@ -415,7 +402,6 @@ const {
   resetState
 } = useResumeOptimize()
 ```
-
 **功能**：
 - SSE 连接管理
 - 优化进度追踪
@@ -423,67 +409,100 @@ const {
 - 错误处理
 - 断点续传
 
-**使用示例**：
-```typescript
-import { useResumeOptimize } from '@/composables/useResumeOptimize'
-
-const { startOptimize, state, stageHistory } = useResumeOptimize()
-
-// 开始优化
-startOptimize(resumeId, 'quick', targetPosition)
-
-// 监听进度
-watch(() => state.currentStage, (stage) => {
-  console.log('当前阶段:', stage)
-})
-```
-
-### useSectionEdit (composables/useSectionEdit.ts)
-
-简历区块编辑的组合式函数，封装区块的增删改逻辑：
-
+### useResumeTailor (composables/useResumeTailor.ts)
+简历定制工作流的组合式函数，封装 SSE 连接和状态管理：
 ```typescript
 const {
-  // 状态
+  state,
+  stageHistory,
+  currentData,
+  startTailor,
+  resumeTailor,
+  cancelTailor,
+  resetState
+} = useResumeTailor()
+```
+**功能**：
+- SSE 连接管理
+- 定制进度追踪
+- JD 分析、匹配、生成定制简历阶段
+- 错误处理
+
+### useSectionEdit (composables/useSectionEdit.ts)
+简历区块编辑的组合式函数，封装区块的增删改逻辑：
+```typescript
+const {
   editingSection,
   isEditing,
-
-  // 方法
   startEdit,
   saveEdit,
   cancelEdit
 } = useSectionEdit()
 ```
-
 **功能**：
 - 区块编辑状态管理
 - 表单数据验证
 - 保存/取消操作
 
 ### useSectionHelper (composables/useSectionHelper.ts)
-
 简历区块辅助工具函数：
-
 ```typescript
 const {
-  // 方法
   getSectionTypeLabel,
   getSectionIcon,
   formatSectionContent,
   validateSectionData
 } = useSectionHelper()
 ```
-
 **功能**：
 - 区块类型标签映射
 - 区块图标获取
 - 内容格式化
 - 数据校验
 
+### useSectionDiff (composables/useSectionDiff.ts)
+简历区块差异对比的组合式函数：
+**功能**：
+- 区块内容差异计算
+- 高亮变更部分
+- 对比视图渲染
+
+### useStageEdit (composables/useStageEdit.ts)
+阶段编辑的组合式函数：
+**功能**：
+- 阶段数据编辑状态管理
+- 阶段数据更新
+
+### useStageTimer (composables/useStageTimer.ts)
+阶段计时器的组合式函数：
+**功能**：
+- 阶段计时
+- 自动更新计时状态
+
+### useConfirm (composables/useConfirm.ts)
+确认弹窗的组合式函数：
+**功能**：
+- 确认/取消弹窗
+- 异步确认结果
+- 自定义弹窗内容
+
+### useToast (composables/useToast.ts)
+Toast 提示的组合式函数：
+**功能**：
+- 成功/错误/警告提示
+- 自动消失
+- 可配置显示时长
+
+### useFormValidation (composables/useFormValidation.ts)
+表单验证的组合式函数：
+**功能**：
+- 表单字段验证
+- 错误信息收集
+- 实时验证反馈
+
 ---
 
 ## 设计系统
-
 ### SCSS 变量 (assets/styles/variables.scss)
 
 #### 色彩系统
@@ -540,7 +559,6 @@ $radius-full: 9999px;
 ---
 
 ## 组件结构
-
 ### 页面组件 (views/) - 9 个
 | 组件 | 功能 |
 |------|------|
@@ -554,22 +572,28 @@ $radius-full: 9999px;
 | ReviewDetail.vue | 复盘详情，维度分析可视化 |
 | Profile.vue | 个人信息设置 |
 
-### 公共组件 (components/common/) - 1 个
+### 公共组件 (components/common/) - 3 个
 | 组件 | 功能 |
 |------|------|
 | AppNavbar.vue | 顶部导航栏 |
+| ConfirmModal.vue | 确认弹窗 |
+| Toast.vue | Toast 提示 |
 
-### 简历组件 (components/resume/) - 8 个
+### 简历组件 (components/resume/) - 12 个
 | 组件 | 功能 |
 |------|------|
 | EditSectionModal.vue | 编辑简历模块弹窗 |
+| AddSectionModal.vue | 添加简历模块弹窗 |
 | ResumeContentViewer.vue | 简历内容查看器 |
 | ResumeComparison.vue | 简历优化前后对比 |
 | OptimizeProgressModal.vue | 优化进度弹窗（SSE 实时展示，主容器组件） |
+| TailorResumeModal.vue | 定制简历弹窗 |
 | ResumeHeader.vue | 简历头部信息 |
 | MetricsSection.vue | 指标展示区域 |
 | SectionContent.vue | 区块内容渲染 |
 | SectionList.vue | 区块列表管理 |
+| SuggestionsBlock.vue | 建议区块 |
+| SuggestionCard.vue | 建议卡片 |
 
 ### 优化进度子组件 (components/resume/optimize/) - 7 个
 | 组件 | 功能 |
@@ -582,7 +606,7 @@ $radius-full: 9999px;
 | SuggestionsStageContent.vue | 建议阶段内容（建议列表、快速改进项） |
 | OptimizeStageContent.vue | 优化阶段内容（变更详情、对比按钮） |
 
-### 简历区块组件 (components/resume/sections/) - 7 个
+### 简历区块组件 (components/resume/sections/) - 8 个
 | 组件 | 功能 |
 |------|------|
 | BasicInfoSection.vue | 基本信息区块 |
@@ -594,17 +618,41 @@ $radius-full: 9999px;
 | OpenSourceSection.vue | 开源贡献区块 |
 | CustomSection.vue | 自定义区块 |
 
-### 表单组件 (components/resume/forms/) - 3 个
+### 表单组件 (components/resume/forms/) - 4 个
 | 组件 | 功能 |
 |------|------|
 | BasicInfoForm.vue | 基本信息表单 |
 | ExperienceForm.vue | 经历表单（工作/项目/教育） |
 | SkillsForm.vue | 技能表单 |
+| CustomItemForm.vue | 自定义区块表单 |
+
+### 区块查看器组件 (components/resume/viewer/) - 11 个
+| 组件 | 功能 |
+|------|------|
+| SectionHeader.vue | 区块头部（标题、编辑按钮） |
+| SectionEditButton.vue | 区块编辑按钮 |
+| BasicInfoViewer.vue | 基本信息查看器 |
+| EducationViewer.vue | 教育经历查看器 |
+| WorkViewer.vue | 工作经历查看器 |
+| ProjectViewer.vue | 项目经验查看器 |
+| SkillsViewer.vue | 技能查看器 |
+| CertificateViewer.vue | 证书荣誉查看器 |
+| OpenSourceViewer.vue | 开源贡献查看器 |
+| CustomViewer.vue | 自定义区块查看器 |
+| _shared.scss | 共享样式 |
+
+### 定制简历组件 (components/resume/tailor/) - 5 个
+| 组件 | 功能 |
+|------|------|
+| TailorForm.vue | 定制表单（职位信息输入） |
+| TailorStageItem.vue | 定制阶段项 |
+| AnalyzeJDStageContent.vue | JD 分析阶段内容 |
+| MatchResumeStageContent.vue | 简历匹配阶段内容 |
+| GenerateTailoredStageContent.vue | 生成定制简历阶段内容 |
 
 ---
 
 ## Mock 数据
-
 ### 数据文件 (mock/data.ts)
 项目使用 Mock 数据进行前端开发，包含：
 - `currentUser` - 当前用户
@@ -681,17 +729,23 @@ frontend/
 │   ├── stores/
 │   │   └── index.ts             # Pinia Store
 │   ├── types/
-│   │   ├── index.ts             # 通用类型定义（445 行）
-│   │   └── resume-optimize.ts   # 简历优化类型（295 行）
+│   │   ├── index.ts             # 通用类型定义
+│   │   ├── resume-optimize.ts   # 简历优化类型
+│   │   └── resume-tailor.ts     # 简历定制类型
 │   ├── api/
 │   │   ├── user.ts              # 用户 API
 │   │   └── resume.ts            # 简历 API
-│   ├── composables/
+│   ├── composables/             # 10 个 Composables
 │   │   ├── useResumeOptimize.ts # 简历优化 Composable
+│   │   ├── useResumeTailor.ts   # 简历定制 Composable
 │   │   ├── useSectionEdit.ts    # 区块编辑 Composable
 │   │   ├── useSectionHelper.ts  # 区块辅助工具
+│   │   ├── useSectionDiff.ts    # 区块差异对比
 │   │   ├── useStageEdit.ts      # 阶段编辑 Composable
-│   │   └── useStageTimer.ts     # 阶段计时器 Composable
+│   │   ├── useStageTimer.ts     # 阶段计时器 Composable
+│   │   ├── useConfirm.ts        # 确认弹窗
+│   │   ├── useToast.ts          # Toast 提示
+│   │   └── useFormValidation.ts # 表单验证
 │   ├── utils/
 │   │   └── stageHelpers.ts      # 阶段辅助工具函数
 │   ├── views/                   # 页面组件（9 个）
@@ -705,19 +759,25 @@ frontend/
 │   │   ├── ReviewDetail.vue
 │   │   └── Profile.vue
 │   ├── components/
-│   │   ├── common/
-│   │   │   └── AppNavbar.vue
+│   │   ├── common/              # 公共组件（3 个）
+│   │   │   ├── AppNavbar.vue
+│   │   │   ├── ConfirmModal.vue
+│   │   │   └── Toast.vue
 │   │   └── resume/
 │   │       ├── EditSectionModal.vue
+│   │       ├── AddSectionModal.vue
 │   │       ├── ResumeContentViewer.vue
 │   │       ├── ResumeComparison.vue
 │   │       ├── OptimizeProgressModal.vue
+│   │       ├── TailorResumeModal.vue
 │   │       ├── ResumeHeader.vue
 │   │       ├── MetricsSection.vue
 │   │       ├── SectionContent.vue
 │   │       ├── SectionList.vue
-│   │       ├── optimize/           # 优化进度子组件
-│   │       │   ├── _shared.scss    # 共享样式
+│   │       ├── SuggestionsBlock.vue
+│   │       ├── SuggestionCard.vue
+│   │       ├── optimize/           # 优化进度子组件（7 个）
+│   │       │   ├── _shared.scss
 │   │       │   ├── ModalHeader.vue
 │   │       │   ├── ProgressBar.vue
 │   │       │   ├── StageList.vue
@@ -725,7 +785,25 @@ frontend/
 │   │       │   ├── DiagnoseStageContent.vue
 │   │       │   ├── SuggestionsStageContent.vue
 │   │       │   └── OptimizeStageContent.vue
-│   │       ├── sections/
+│   │       ├── viewer/             # 区块查看器（11 个）
+│   │       │   ├── _shared.scss
+│   │       │   ├── SectionHeader.vue
+│   │       │   ├── SectionEditButton.vue
+│   │       │   ├── BasicInfoViewer.vue
+│   │       │   ├── EducationViewer.vue
+│   │       │   ├── WorkViewer.vue
+│   │       │   ├── ProjectViewer.vue
+│   │       │   ├── SkillsViewer.vue
+│   │       │   ├── CertificateViewer.vue
+│   │       │   ├── OpenSourceViewer.vue
+│   │       │   └── CustomViewer.vue
+│   │       ├── tailor/             # 定制简历组件（5 个）
+│   │       │   ├── TailorForm.vue
+│   │       │   ├── TailorStageItem.vue
+│   │       │   ├── AnalyzeJDStageContent.vue
+│   │       │   ├── MatchResumeStageContent.vue
+│   │       │   └── GenerateTailoredStageContent.vue
+│   │       ├── sections/           # 区块组件（8 个）
 │   │       │   ├── BasicInfoSection.vue
 │   │       │   ├── EducationSection.vue
 │   │       │   ├── WorkSection.vue
@@ -734,10 +812,11 @@ frontend/
 │   │       │   ├── CertificateSection.vue
 │   │       │   ├── OpenSourceSection.vue
 │   │       │   └── CustomSection.vue
-│   │       └── forms/
+│   │       └── forms/              # 表单组件（4 个）
 │   │           ├── BasicInfoForm.vue
 │   │           ├── ExperienceForm.vue
-│   │           └── SkillsForm.vue
+│   │           ├── SkillsForm.vue
+│   │           └── CustomItemForm.vue
 │   ├── mock/
 │   │   └── data.ts              # Mock 数据
 │   └── assets/
@@ -750,9 +829,7 @@ frontend/
 ---
 
 ## 测试与质量
-
 **当前状态**：项目暂无测试文件
-
 **建议补充**：
 1. 组件测试：`src/__tests__/components/`
 2. Store 测试：`src/__tests__/stores/`
