@@ -37,6 +37,7 @@
             v-for="suggestion in suggestions"
             :key="suggestion.id"
             :suggestion="suggestion"
+            @delete="handleDeleteSuggestion"
           />
         </TransitionGroup>
       </div>
@@ -53,7 +54,9 @@ defineProps<{
   suggestions: ResumeSuggestionItem[]
 }>()
 
-
+const emit = defineEmits<{
+  delete: [id: string]
+}>()
 
 // 展开状态
 const isExpanded = ref<boolean>(false)
@@ -61,6 +64,11 @@ const isExpanded = ref<boolean>(false)
 // 切换展开状态
 function toggleExpand(): void {
   isExpanded.value = !isExpanded.value
+}
+
+// 处理删除建议
+function handleDeleteSuggestion(id: string): void {
+  emit('delete', id)
 }
 
 // 展开/折叠过渡钩子（用真实高度代替 max-height）

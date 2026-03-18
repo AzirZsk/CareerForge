@@ -252,3 +252,21 @@ export async function applyOptimizeChanges(
   }
   return result.data
 }
+
+/**
+ * 删除优化建议
+ * @param resumeId 简历ID
+ * @param suggestionId 建议ID
+ */
+export async function deleteSuggestion(
+  resumeId: string,
+  suggestionId: string
+): Promise<void> {
+  const response = await fetch(`${API_BASE}/resumes/${resumeId}/suggestions/${suggestionId}`, {
+    method: 'DELETE'
+  })
+  const result: ApiResponse<void> = await response.json()
+  if (result.code !== 200) {
+    throw new Error(result.message || '删除建议失败')
+  }
+}

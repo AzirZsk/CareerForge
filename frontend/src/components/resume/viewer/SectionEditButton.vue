@@ -69,11 +69,15 @@ function handleClick(event: MouseEvent) {
   border: none;
   padding: 0;
 
-  // 尺寸变体
+  // 尺寸变体 - 条目级按钮（绝对定位到右上角）
   &.size-small {
+    position: absolute;
+    top: $spacing-sm;
+    right: $spacing-sm;
     width: 24px;
     height: 24px;
     opacity: 0;
+    z-index: 1;
 
     &.is-visible {
       opacity: 1;

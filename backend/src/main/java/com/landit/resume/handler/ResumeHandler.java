@@ -23,6 +23,7 @@ import com.landit.resume.dto.ResumeListVO;
 import com.landit.resume.dto.ResumeDetailVO;
 import com.landit.resume.entity.Resume;
 import com.landit.resume.entity.ResumeSection;
+import com.landit.resume.entity.ResumeSuggestion;
 import com.landit.resume.entity.ResumeVersion;
 import com.landit.resume.graph.optimize.DiagnoseResumeNode;
 import com.landit.resume.service.ResumeSectionService;
@@ -505,6 +506,28 @@ public class ResumeHandler {
             // 诊断失败只记录日志，不影响主流程
             log.error("应用变更后诊断失败: resumeId={}", resumeId, e);
         }
+    }
+
+    /**
+     * 删除单条优化建议
+     *
+     * @param resumeId     简历ID
+     * @param suggestionId 建议ID
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteSuggestion(String resumeId, String suggestionId) {
+        // 验证建议存在
+        ResumeSuggestion suggestion = resumeSuggestionService.getById(suggestionId);
+        if (suggestion == null) {
+            throw BusinessException.notFound("建议不存在");
+        }
+        // 验证建议属于该简历
+        if (!resumeId.equals(suggestion.getResumeId())) {
+            throw new BusinessException("建议不属于该简历");
+        }
+        // 删除建议
+        resumeSuggestionService.deleteSuggestionById(suggestionId);
+        log.info("已删除优化建议: suggestionId={}, resumeId={}", suggestionId, resumeId);
     }
 
     /**

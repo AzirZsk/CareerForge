@@ -123,4 +123,13 @@ public class ResumeController {
         return ApiResponse.success(resumeHandler.applyOptimizeChanges(id, request));
     }
 
+    @Operation(summary = "删除优化建议")
+    @DeleteMapping("/{id}/suggestions/{suggestionId}")
+    public ApiResponse<Void> deleteSuggestion(
+            @PathVariable String id,
+            @PathVariable String suggestionId) {
+        resumeHandler.deleteSuggestion(id, suggestionId);
+        return ApiResponse.success(null);
+    }
+
 }

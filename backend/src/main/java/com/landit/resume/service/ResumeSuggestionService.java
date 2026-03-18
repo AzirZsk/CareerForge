@@ -118,4 +118,18 @@ public class ResumeSuggestionService extends ServiceImpl<ResumeSuggestionMapper,
                 .eq(ResumeSuggestion::getResumeId, resumeId));
         log.info("已删除简历的所有建议: resumeId={}", resumeId);
     }
+
+    /**
+     * 根据建议ID删除单条建议
+     *
+     * @param suggestionId 建议ID
+     * @return 是否删除成功
+     */
+    public boolean deleteSuggestionById(String suggestionId) {
+        boolean result = removeById(suggestionId);
+        if (result) {
+            log.info("已删除优化建议: suggestionId={}", suggestionId);
+        }
+        return result;
+    }
 }

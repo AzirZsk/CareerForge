@@ -1,6 +1,8 @@
 // ResumeContentViewer 共享样式
 // Extracted from ResumeContentViewer.vue for component reuse
 
+@use "@/assets/styles/variables.scss" as *;
+
 // ============================================================
 // 高亮样式（差异对比）
 // ============================================================
@@ -74,37 +76,13 @@
   }
 }
 
-// 项目编辑按钮（聚合类型）
-.item-edit-btn {
-  position: absolute;
-  top: $spacing-sm;
-  right: $spacing-sm;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: $radius-sm;
-  color: $color-text-tertiary;
-  background: rgba(255, 255, 255, 0.05);
-  opacity: 0;
-  transition: all $transition-fast;
-  z-index: 1;
-
-  &:hover {
-    background: rgba(212, 168, 83, 0.15);
-    color: $color-accent;
-    opacity: 1;
-  }
-}
-
-// 带编辑按钮的项目
+// 带编辑按钮的项目（hover时显示编辑按钮）
 .has-edit-btn {
   position: relative;
   padding-right: $spacing-xl;
 
   &:hover {
-    .item-edit-btn {
+    .edit-btn {
       opacity: 1;
     }
   }
@@ -119,7 +97,6 @@
     font-size: $text-xl;
     font-weight: $weight-semibold;
     color: $color-text-primary;
-    margin-bottom: $spacing-md;
     padding-bottom: $spacing-sm;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }

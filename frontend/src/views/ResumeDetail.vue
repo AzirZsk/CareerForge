@@ -56,6 +56,7 @@
             :suggestions="sectionSuggestions"
             @apply="handleApplySuggestion"
             @ignore="handleIgnoreSuggestion"
+            @delete="handleDeleteSuggestion"
           />
 
           <div class="panel-header">
@@ -150,6 +151,16 @@
       @confirm="confirmDeleteCustomItem"
     />
 
+    <!-- 删除建议确认弹窗 -->
+    <ConfirmModal
+      v-model:visible="showDeleteSuggestionModal"
+      title="删除建议"
+      message="确定要删除这条优化建议吗？删除后将无法恢复。"
+      confirm-text="删除"
+      :danger="true"
+      @confirm="confirmDeleteSuggestion"
+    />
+
     <!-- 删除条目确认弹窗（来自 useSectionEdit） -->
     <ConfirmModal
       v-model:visible="confirmVisible"
@@ -194,6 +205,10 @@ const showOptimizeModal = ref<boolean>(false)
 
 // 删除确认弹窗状态
 const showDeleteConfirmModal = ref<boolean>(false)
+
+// 删除建议确认弹窗状态
+const showDeleteSuggestionModal = ref<boolean>(false)
+const pendingDeleteSuggestionId = ref<string | null>(null)
 
 // 添加模块相关状态
 const showAddSectionModal = ref<boolean>(false)
@@ -314,6 +329,27 @@ function handleIgnoreSuggestion(suggestion: ResumeSuggestionItem): void {
   console.log('忽略建议:', suggestion)
   // TODO: 实现忽略建议功能（需要后端 API 支持）
   toast.info('忽略建议功能开发中...')
+}
+
+// 删除建议（显示确认弹窗）
+function handleDeleteSuggestion(suggestionId: string): void {
+  pendingDeleteSuggestionId.value = suggestionId
+  showDeleteSuggestionModal.value = true
+}
+
+// 确认删除建议
+async function confirmDeleteSuggestion(): Promise<void> {
+  if (!pendingDeleteSuggestionId.value) return
+
+  try {
+    await store.deleteSuggestion(resumeId.value, pendingDeleteSuggestionId.value)
+    toast.success('建议已删除')
+  } catch (error) {
+    console.error('删除建议失败:', error)
+    toast.error('删除建议失败')
+  } finally {
+    pendingDeleteSuggestionId.value = null
+  }
 }
 
 // 删除确认弹窗消息

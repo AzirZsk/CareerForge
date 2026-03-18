@@ -182,6 +182,6 @@ function handleEdit(payload: ComparisonEditEvent) {
 .resume-content {
   display: flex;
   flex-direction: column;
-  gap: $spacing-lg;
+  gap: $spacing-md;
 }
 </style>

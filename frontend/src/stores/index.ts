@@ -364,6 +364,22 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
+  // 删除优化建议
+  async function deleteSuggestion(resumeId: string, suggestionId: string): Promise<void> {
+    try {
+      await resumeApi.deleteSuggestion(resumeId, suggestionId)
+      // 从本地状态中移除该建议
+      for (const section of currentResume.value.sections) {
+        if (section.suggestions) {
+          section.suggestions = section.suggestions.filter((s) => s.id !== suggestionId)
+        }
+      }
+    } catch (error) {
+      console.error('删除建议失败', error)
+      throw error
+    }
+  }
+
   return {
     // 状态
     user,
@@ -402,6 +418,7 @@ export const useAppStore = defineStore('app', () => {
     deleteResumeSection,
     addResumeSectionItem,
     updateResumeSectionItem,
-    deleteResumeSectionItem
+    deleteResumeSectionItem,
+    deleteSuggestion
   }
 })
