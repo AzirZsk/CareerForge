@@ -967,6 +967,12 @@ public class AIPromptProperties {
                     3. responsibilities 总结准确
                     4. seniorityLevel 判断合理
                     5. 只返回JSON，无其他内容
+
+                    ---
+
+                    ## 异常处理
+                    - 如果JD信息不足，无法判断某个字段，该字段返回 null 或空数组
+                    - 如果JD格式异常（非职位描述内容），尽可能提取有效信息，实在无法提取的字段返回 null
                     """,
                     // userPromptTemplate
                     """
@@ -999,7 +1005,7 @@ public class AIPromptProperties {
                     ## 任务
                     分析简历与职位要求的匹配程度，生成匹配报告。你需要：
                     1. 计算整体匹配分数（0-100）
-                    2. 识别已匹配和缺失的技能
+                    2. 对比简历与 jobRequirements.requiredSkills 中的技能，找出匹配和缺失项
                     3. 找出相关经历
                     4. 提供调整建议
 
@@ -1053,10 +1059,22 @@ public class AIPromptProperties {
                     </target_position>
 
                     <resume_content>
+                    简历结构化数据，包含字段：
+                    - targetPosition: 目标职位
+                    - sections: 简历区块数组，每个区块包含 type(类型)、title(标题)、content(内容JSON)
+
                     {resumeContent}
                     </resume_content>
 
                     <job_requirements>
+                    包含字段：
+                    - requiredSkills: 必备技能列表
+                    - preferredSkills: 优先技能列表
+                    - keywords: 职位关键词
+                    - responsibilities: 工作职责
+                    - seniorityLevel: 资历级别
+                    - industryDomain: 行业领域
+
                     {jobRequirements}
                     </job_requirements>
                     """);
@@ -1106,7 +1124,8 @@ public class AIPromptProperties {
 
                     ### 技能模块
                     - 重新排序：JD必备技能 > JD优先技能 > 其他技能
-                    - 补充JD关键词（如简历中有相关经验）
+                    - 仅当简历中有相关经验支撑时，才可以将同义技能替换为JD关键词
+                    - 禁止添加简历中未提及的技能
                     - 合并相似技能，保持简洁
 
                     ---
@@ -1136,8 +1155,31 @@ public class AIPromptProperties {
 
                     ---
 
-                    ## 输出格式
-                    返回完整的简历 JSON，格式与输入一致，附加 tailorNotes 和 sectionRelevanceScores。
+                    ## 输出格式（严格 JSON）
+
+                    ```json
+                    {
+                      "basicInfo": {
+                        "name": "姓名",
+                        "targetPosition": "目标职位",
+                        "summary": "个人简介（突出与JD相关的核心优势）"
+                      },
+                      "education": [...],
+                      "work": [...],
+                      "projects": [...],
+                      "skills": [...],
+                      "certificates": [...],
+                      "openSource": [...],
+                      "customSections": [...],
+                      "tailorNotes": ["调整说明1", "调整说明2"],
+                      "sectionRelevanceScores": { "work": 85, "projects": 90 }
+                    }
+                    ```
+
+                    注意：
+                    - basicInfo、education、work、projects、skills 等字段结构与输入的 sections 中对应区块的 content 结构一致
+                    - tailorNotes: 描述具体做了哪些调整（3-5条）
+                    - sectionRelevanceScores: 对每个区块与JD的相关性评分（0-100）
 
                     ---
 
@@ -1156,14 +1198,33 @@ public class AIPromptProperties {
                     </target_position>
 
                     <resume_content>
+                    简历结构化数据，包含字段：
+                    - targetPosition: 目标职位
+                    - sections: 简历区块数组，每个区块包含 type(类型)、title(标题)、content(内容JSON)
+
                     {resumeContent}
                     </resume_content>
 
                     <job_requirements>
+                    包含字段：
+                    - requiredSkills: 必备技能列表
+                    - preferredSkills: 优先技能列表
+                    - keywords: 职位关键词
+                    - responsibilities: 工作职责
+                    - seniorityLevel: 资历级别
+                    - industryDomain: 行业领域
+
                     {jobRequirements}
                     </job_requirements>
 
                     <match_analysis>
+                    包含字段：
+                    - matchScore: 匹配分数（0-100）
+                    - matchedSkills: 已匹配的技能
+                    - missingSkills: 缺失的技能
+                    - relevantExperiences: 相关经历
+                    - adjustmentSuggestions: 调整建议
+
                     {matchAnalysis}
                     </match_analysis>
                     """);

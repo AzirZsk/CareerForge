@@ -43,9 +43,13 @@ public class MatchResumeNode implements NodeAction {
         JobRequirements jobRequirements = JsonParseHelper.parseToEntity(jobRequirementsJson, JobRequirements.class);
 
         String targetPosition = (String) state.value(STATE_TARGET_POSITION).orElse("");
-        String resumeContent = resumeDetail.getMarkdownContent() != null
-                ? resumeDetail.getMarkdownContent()
-                : "";
+        // 传入结构化区块数据而非 Markdown 纯文本，便于 AI 精确提取信息
+        String resumeContent = JsonParseHelper.toJsonString(
+                Map.of(
+                        "targetPosition", targetPosition,
+                        "sections", resumeDetail.getSections() != null ? resumeDetail.getSections() : List.of()
+                )
+        );
 
         // 使用拆分提示词调用
         AIPromptProperties.PromptConfig promptConfig = aiPromptProperties.getTailorGraph().getMatchResumeConfig();

@@ -46,8 +46,13 @@ public class GenerateTailoredResumeNode implements NodeAction {
         String matchAnalysisJson = (String) state.value(STATE_MATCH_ANALYSIS).orElse("{}");
         String targetPosition = (String) state.value(STATE_TARGET_POSITION).orElse("");
 
-        // 获取简历结构化内容
-        String resumeContent = JsonParseHelper.toJsonString(resumeDetail);
+        // 获取简历结构化内容（仅传入 sections，避免无关字段浪费 token）
+        String resumeContent = JsonParseHelper.toJsonString(
+                Map.of(
+                        "targetPosition", targetPosition,
+                        "sections", resumeDetail.getSections() != null ? resumeDetail.getSections() : List.of()
+                )
+        );
 
         // 使用拆分提示词调用
         AIPromptProperties.PromptConfig promptConfig = aiPromptProperties.getTailorGraph().getGenerateTailoredConfig();
