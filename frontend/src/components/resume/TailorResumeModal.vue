@@ -13,8 +13,7 @@
         @click.self="handleClose"
       >
         <div class="modal-container" :class="{
-          'modal-container--wide': showComparisonView,
-          'modal-container--fullscreen': tailorState.isTailoring || tailorState.isCompleted
+          'modal-container--fullscreen': tailorState.isTailoring || tailorState.isCompleted || showComparisonView
         }">
           <!-- 头部 -->
           <ModalHeader
@@ -365,11 +364,6 @@ onUnmounted(() => {
   border: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   flex-direction: column;
-
-  &.modal-container--wide {
-    max-width: 95vw;
-    max-height: 95vh;
-  }
 
   &.modal-container--fullscreen {
     width: 100%;

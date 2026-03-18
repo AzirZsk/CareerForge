@@ -5,12 +5,14 @@
 
 <template>
   <div class="data-content">
-    <!-- 匹配分数展示 -->
-    <div class="match-score-display">
-      <div class="match-ring" :style="{ '--score': data.matchScore }">
-        <span>{{ data.matchScore }}</span>
+    <!-- 匹配度状态栏 -->
+    <div class="match-header">
+      <span class="match-title">匹配分析</span>
+      <div class="match-badge" :class="matchLevel">
+        <span class="match-dot"></span>
+        <span class="match-percent">{{ data.matchScore }}%</span>
+        <span class="match-level-text">{{ matchLevelText }}</span>
       </div>
-      <span class="match-label">匹配度</span>
     </div>
 
     <!-- 匹配详情 -->
@@ -51,11 +53,32 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { MatchAnalysis } from '@/types/resume-tailor'
 
-defineProps<{
+const props = defineProps<{
   data: MatchAnalysis
 }>()
+
+// 根据分数计算匹配等级
+const matchLevel = computed(() => {
+  const score = props.data.matchScore
+  if (score >= 90) return 'excellent'
+  if (score >= 70) return 'good'
+  if (score >= 50) return 'fair'
+  return 'poor'
+})
+
+// 匹配等级文字
+const matchLevelText = computed(() => {
+  const levelMap = {
+    excellent: '优秀',
+    good: '良好',
+    fair: '一般',
+    poor: '较差'
+  }
+  return levelMap[matchLevel.value]
+})
 </script>
 
 <style lang="scss" scoped>
@@ -66,48 +89,68 @@ defineProps<{
   padding: $spacing-md;
 }
 
-.match-score-display {
+// 匹配度状态栏
+.match-header {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
   align-items: center;
-  gap: $spacing-sm;
   margin-bottom: $spacing-md;
+  padding-bottom: $spacing-sm;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.match-ring {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: conic-gradient(
-    $color-accent calc(var(--score) * 3.6deg),
-    rgba(255, 255, 255, 0.1) calc(var(--score) * 3.6deg)
-  );
+.match-title {
+  font-size: $text-sm;
+  font-weight: $weight-medium;
+  color: $color-text-primary;
+}
+
+.match-badge {
   display: flex;
   align-items: center;
-  justify-content: center;
-  position: relative;
+  gap: $spacing-xs;
+  padding: 4px 10px;
+  border-radius: $radius-full;
+  font-size: $text-xs;
 
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 8px;
-    background: $color-bg-tertiary;
-    border-radius: 50%;
+  // 优秀 - 绿色
+  &.excellent {
+    background: rgba(52, 211, 153, 0.15);
+    color: $color-success;
   }
 
-  span {
-    position: relative;
-    z-index: 1;
-    font-family: $font-display;
-    font-size: $text-2xl;
-    font-weight: $weight-semibold;
+  // 良好 - 琥珀金
+  &.good {
+    background: rgba(212, 168, 83, 0.15);
     color: $color-accent;
   }
+
+  // 一般 - 黄色
+  &.fair {
+    background: rgba(251, 191, 36, 0.15);
+    color: $color-warning;
+  }
+
+  // 较差 - 红色
+  &.poor {
+    background: rgba(248, 113, 113, 0.15);
+    color: $color-error;
+  }
 }
 
-.match-label {
-  font-size: $text-sm;
-  color: $color-text-secondary;
+.match-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.match-percent {
+  font-weight: $weight-semibold;
+}
+
+.match-level-text {
+  opacity: 0.9;
 }
 
 .match-details {
