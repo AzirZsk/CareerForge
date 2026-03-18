@@ -31,14 +31,23 @@
     <!-- 定制说明 -->
     <div class="tailor-notes" v-if="data.tailorNotes?.length">
       <div class="notes-title">定制说明</div>
-      <ul class="notes-list">
-        <li v-for="(note, idx) in data.tailorNotes" :key="idx">{{ note }}</li>
-      </ul>
+      <div class="notes-content">
+        <div
+          v-for="(note, idx) in data.tailorNotes"
+          :key="idx"
+          class="note-item"
+          v-html="renderMarkdown(note)"
+        />
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useMarkdown } from '@/composables/useMarkdown'
+
+const { renderMarkdown } = useMarkdown()
+
 defineProps<{
   data: {
     improvementScore?: number
@@ -118,23 +127,64 @@ defineEmits<{
     letter-spacing: 0.5px;
   }
 
-  .notes-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+  .notes-content {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
 
-    li {
-      position: relative;
+  .note-item {
+    font-size: $text-sm;
+    color: $color-text-secondary;
+    line-height: 1.6;
+
+    // Markdown 渲染样式
+    :deep(p) {
+      margin: 0 0 $spacing-xs;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+
+    :deep(strong) {
+      color: $color-text-primary;
+      font-weight: $weight-medium;
+    }
+
+    :deep(em) {
+      color: $color-accent;
+    }
+
+    :deep(ul),
+    :deep(ol) {
+      margin: $spacing-xs 0;
       padding-left: $spacing-lg;
-      font-size: $text-sm;
-      color: $color-text-secondary;
-      margin-bottom: $spacing-xs;
 
-      &::before {
-        content: '✓';
-        position: absolute;
-        left: 0;
-        color: $color-success;
+      li {
+        margin-bottom: $spacing-xs;
+      }
+    }
+
+    :deep(code) {
+      padding: 2px 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: $radius-sm;
+      font-family: $font-mono;
+      font-size: $text-xs;
+      color: $color-accent;
+    }
+
+    :deep(pre) {
+      margin: $spacing-sm 0;
+      padding: $spacing-sm;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: $radius-sm;
+      overflow-x: auto;
+
+      code {
+        padding: 0;
+        background: transparent;
       }
     }
   }
