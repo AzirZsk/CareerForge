@@ -54,27 +54,29 @@
 
     <!-- 展开的数据区域 -->
     <Transition name="expand">
-      <div v-if="item.expanded && item.data" class="stage-data">
-        <!-- JD 分析结果 -->
-        <AnalyzeJDStageContent
-          v-if="item.stage === 'analyze_jd'"
-          :data="item.data"
-        />
-        <!-- 匹配分析结果 -->
-        <MatchResumeStageContent
-          v-else-if="item.stage === 'match_resume'"
-          :data="item.data"
-        />
-        <!-- 定制简历结果 -->
-        <GenerateTailoredStageContent
-          v-else-if="item.stage === 'generate_tailored'"
-          :data="item.data"
-          :can-show-comparison="canShowComparison"
-          @show-comparison="$emit('showComparison')"
-        />
-        <!-- 默认 JSON 显示 -->
-        <div v-else class="data-content">
-          <pre class="json-display">{{ JSON.stringify(item.data, null, 2) }}</pre>
+      <div v-if="item.expanded && item.data" class="stage-data-wrapper">
+        <div class="stage-data">
+          <!-- JD 分析结果 -->
+          <AnalyzeJDStageContent
+            v-if="item.stage === 'analyze_jd'"
+            :data="item.data"
+          />
+          <!-- 匹配分析结果 -->
+          <MatchResumeStageContent
+            v-else-if="item.stage === 'match_resume'"
+            :data="item.data"
+          />
+          <!-- 定制简历结果 -->
+          <GenerateTailoredStageContent
+            v-else-if="item.stage === 'generate_tailored'"
+            :data="item.data"
+            :can-show-comparison="canShowComparison"
+            @show-comparison="$emit('showComparison')"
+          />
+          <!-- 默认 JSON 显示 -->
+          <div v-else class="data-content">
+            <pre class="json-display">{{ JSON.stringify(item.data, null, 2) }}</pre>
+          </div>
         </div>
       </div>
     </Transition>
@@ -205,14 +207,23 @@ defineEmits<{
   }
 }
 
-// 展开数据区域
+// 展开数据区域 - 使用 Grid 动画实现平滑展开
+.stage-data-wrapper {
+  display: grid;
+  grid-template-rows: 1fr;
+  overflow: hidden;
+
+  &:not(:empty) {
+    margin-top: $spacing-sm;
+  }
+}
+
 .stage-data {
+  min-height: 0;
   max-height: 400px;
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
-  // 底部额外 padding 确保内容完整显示
-  padding-bottom: $spacing-sm;
 
   &::-webkit-scrollbar {
     width: 6px;
@@ -248,22 +259,25 @@ defineEmits<{
   max-height: 200px;
 }
 
-// 展开动画
-.expand-enter-active,
+// 展开动画 - 使用 Grid 实现平滑展开，告别卡顿
+.expand-enter-active {
+  transition: grid-template-rows 0.25s ease-out, opacity 0.2s ease-out;
+}
+
 .expand-leave-active {
-  transition: all 0.3s ease;
-  overflow: hidden;
+  transition: grid-template-rows 0.2s ease-in, opacity 0.15s ease-in;
 }
 
 .expand-enter-from,
 .expand-leave-to {
+  grid-template-rows: 0fr;
   opacity: 0;
-  max-height: 0;
 }
 
 .expand-enter-to,
 .expand-leave-from {
-  max-height: 500px;
+  grid-template-rows: 1fr;
+  opacity: 1;
 }
 
 @keyframes spin {
