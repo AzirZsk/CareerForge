@@ -12,7 +12,7 @@
     </div>
 
     <div v-else class="resume-content">
-      <template v-for="(section, sectionIdx) in sections" :key="section.id">
+      <template v-for="(section, sectionIdx) in sortedSections" :key="section.id">
         <!-- 基本信息 -->
         <BasicInfoViewer
           v-if="section.type === 'BASIC_INFO'"
@@ -153,10 +153,33 @@ const emit = defineEmits<{
   (e: 'edit', payload: ComparisonEditEvent): void
 }>()
 
+// 区块类型排序顺序（与后端 SectionType 枚举顺序一致）
+const SECTION_ORDER: Record<string, number> = {
+  'BASIC_INFO': 1,
+  'EDUCATION': 2,
+  'WORK': 3,
+  'PROJECT': 4,
+  'SKILLS': 5,
+  'CERTIFICATE': 6,
+  'OPEN_SOURCE': 7,
+  'CUSTOM': 8,
+  'RAW_TEXT': 99
+}
+
 // 是否显示编辑功能（仅 after 侧且 editable 为 true）
 const showEdit = computed(() => props.editable && props.side === 'after')
 
 const isEmpty = computed(() => !props.sections || props.sections.length === 0)
+
+// 按区块类型排序后的 sections
+const sortedSections = computed(() => {
+  if (!props.sections) return []
+  return [...props.sections].sort((a, b) => {
+    const orderA = SECTION_ORDER[a.type] ?? 99
+    const orderB = SECTION_ORDER[b.type] ?? 99
+    return orderA - orderB
+  })
+})
 
 // 统一处理编辑事件（直接透传）
 function handleEdit(payload: ComparisonEditEvent) {

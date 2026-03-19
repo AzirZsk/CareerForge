@@ -218,30 +218,10 @@ defineEmits<{
   }
 }
 
+// 移除独立滚动，让内容自然撑开，由父容器统一管理滚动
+// 解决嵌套滚动导致滚动到底部无法继续滚动父容器的问题
 .stage-data {
-  min-height: 0;
-  max-height: 400px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  overscroll-behavior: contain;
-
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: 3px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.2);
-    }
-  }
+  padding: $spacing-md;
 }
 
 .data-content {

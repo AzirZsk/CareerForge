@@ -134,9 +134,18 @@ defineEmits<{
   }
 
   .note-item {
+    position: relative;
+    padding-left: $spacing-md;
     font-size: $text-sm;
     color: $color-text-secondary;
     line-height: 1.6;
+
+    &::before {
+      content: '•';
+      position: absolute;
+      left: 0;
+      color: $color-accent;
+    }
 
     // Markdown 渲染样式
     :deep(p) {

@@ -201,7 +201,11 @@ public class TailorResumeGraphHandler {
             // 获取区块相关性评分
             Integer sectionScore = 0;
             if (request.getSectionRelevanceScores() != null && type != null) {
-                sectionScore = request.getSectionRelevanceScores().get(type);
+                // 【修复】将 code 转换为 schemaFieldName 进行匹配
+                // 前端传的是驼峰命名(basicInfo)，后端 code 是大写(BASIC_INFO)
+                SectionType sectionType = SectionType.fromCode(type);
+                String mapKey = sectionType != null ? sectionType.getSchemaFieldName() : type;
+                sectionScore = request.getSectionRelevanceScores().get(mapKey);
             }
             // 如果 item 中有 score，优先使用
             if (item.getScore() != null) {

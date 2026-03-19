@@ -75,6 +75,9 @@
                 </svg>
                 定制简历
               </button>
+              <div class="action-tooltip" v-if="store.primaryResume.analyzed">
+                根据目标岗位JD自动调整简历内容
+              </div>
               <div class="disabled-tooltip" v-if="!store.primaryResume.analyzed">
                 <p class="tooltip-title">简历尚未完成AI诊断分析</p>
                 <p class="tooltip-hint">请先在简历详情页点击"开始优化"</p>
@@ -140,19 +143,20 @@
               </span>
               <div class="card-actions">
                 <!-- 定制简历按钮（已优化的简历才显示） -->
-                <button
-                  v-if="resume.status === 'optimized' && !resume.isPrimary"
-                  class="icon-action tailor-action"
-                  @click.stop="openTailorModal(resume.id)"
-                  title="定制简历"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                    <line x1="16" y1="13" x2="8" y2="13"></line>
-                    <line x1="16" y1="17" x2="8" y2="17"></line>
-                  </svg>
-                </button>
+                <div class="icon-action-wrapper" v-if="resume.status === 'optimized' && !resume.isPrimary">
+                  <button
+                    class="icon-action tailor-action"
+                    @click.stop="openTailorModal(resume.id)"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                      <line x1="16" y1="13" x2="8" y2="13"></line>
+                      <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                  </button>
+                  <div class="icon-tooltip">根据目标岗位JD定制简历</div>
+                </div>
                 <button class="icon-action" @click.stop="setPrimary(resume.id)" v-if="!resume.isPrimary">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
@@ -629,10 +633,41 @@ function openTailorModal(resumeId: string): void {
 .action-btn-wrapper {
   position: relative;
 
-  &:hover .disabled-tooltip {
+  &:hover .disabled-tooltip,
+  &:hover .action-tooltip {
     opacity: 1;
     visibility: visible;
     transform: translateX(-50%) translateY(0);
+  }
+}
+
+.action-tooltip {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  padding: $spacing-xs $spacing-sm;
+  background: $color-bg-elevated;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: $radius-sm;
+  font-size: $text-xs;
+  color: $color-text-secondary;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all $transition-fast;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: $z-tooltip;
+  pointer-events: none;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: $color-bg-elevated;
   }
 }
 
@@ -872,6 +907,46 @@ function openTailorModal(resumeId: string): void {
 .card-actions {
   display: flex;
   gap: $spacing-xs;
+}
+
+.icon-action-wrapper {
+  position: relative;
+
+  &:hover .icon-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.icon-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  padding: $spacing-xs $spacing-sm;
+  background: $color-bg-elevated;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: $radius-sm;
+  font-size: $text-xs;
+  color: $color-text-secondary;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all $transition-fast;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: $z-tooltip;
+  pointer-events: none;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: $color-bg-elevated;
+  }
 }
 
 .icon-action {
