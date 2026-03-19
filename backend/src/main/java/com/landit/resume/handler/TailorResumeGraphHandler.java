@@ -7,6 +7,7 @@ import com.landit.common.enums.SectionType;
 import com.landit.common.exception.BusinessException;
 import com.landit.resume.dto.DeriveResumeRequest;
 import com.landit.resume.dto.OptimizeProgressEvent;
+import com.landit.resume.util.GraphSseHelper;
 import com.landit.resume.dto.ResumeDetailVO;
 import com.landit.resume.dto.SaveTailoredResumeRequest;
 import com.landit.resume.entity.Resume;
@@ -62,7 +63,7 @@ public class TailorResumeGraphHandler {
         log.info("开始SSE流式职位适配: resumeId={}, targetPosition={}", id, targetPosition);
 
         configureSseResponse(response);
-        SseEmitter emitter = new SseEmitter(300000L);
+        SseEmitter emitter = new SseEmitter(GraphSseHelper.SSE_TIMEOUT);
         String threadId = UUID.randomUUID().toString();
 
         streamTailorWithThreadId(id, targetPosition, jobDescription, threadId).subscribe(

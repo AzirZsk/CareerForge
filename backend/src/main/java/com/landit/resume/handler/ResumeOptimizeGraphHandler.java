@@ -4,6 +4,7 @@ import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.landit.common.util.JsonParseHelper;
 import com.landit.resume.dto.OptimizeProgressEvent;
+import com.landit.resume.util.GraphSseHelper;
 import com.landit.resume.dto.ResumeDetailVO;
 import com.landit.resume.graph.optimize.ResumeOptimizeGraphService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -65,7 +66,7 @@ public class ResumeOptimizeGraphHandler {
         log.info("开始SSE流式简历优化: resumeId={}, mode={}", id, mode);
 
         configureSseResponse(response);
-        SseEmitter emitter = new SseEmitter(300000L);
+        SseEmitter emitter = new SseEmitter(GraphSseHelper.SSE_TIMEOUT);
         String threadId = UUID.randomUUID().toString();
 
         streamOptimizeWithThreadId(id, mode, targetPosition, threadId).subscribe(

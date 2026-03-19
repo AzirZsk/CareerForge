@@ -19,9 +19,9 @@ import java.io.IOException;
 public final class GraphSseHelper {
 
     /**
-     * SSE 连接超时时间（5分钟）
+     * SSE 连接超时时间（10分钟）
      */
-    public static final long SSE_TIMEOUT = 300000L;
+    public static final long SSE_TIMEOUT = 600000L;
 
     private GraphSseHelper() {
         // 工具类禁止实例化
