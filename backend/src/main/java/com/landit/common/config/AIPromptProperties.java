@@ -1144,6 +1144,7 @@ public class AIPromptProperties {
                     | customSections | array | 否 | 自定义区块 |
                     | tailorNotes | array | 是 | 定制说明（描述做了哪些调整） |
                     | sectionRelevanceScores | object | 是 | 各区块与JD的相关性评分 |
+                    | dimensionScores | object | 是 | 四大维度评分 |
 
                     ---
 
@@ -1152,6 +1153,18 @@ public class AIPromptProperties {
                     2. 只调整表达方式和顺序，不改变事实
                     3. tailorNotes 说明具体做了哪些调整
                     4. sectionRelevanceScores 对每个区块评分（0-100）
+                    5. dimensionScores 对四大维度进行评分（0-100）
+
+                    ---
+
+                    ## 四大维度评分说明
+
+                    | 维度 | 评估内容 |
+                    |------|---------|
+                    | content（内容质量） | 评估定制后简历的内容丰富度、准确性、专业性 |
+                    | structure（结构规范） | 评估格式规范、逻辑清晰、层次分明程度 |
+                    | matching（岗位匹配） | 评估与目标岗位的契合度 |
+                    | competitiveness（竞争力） | 评估在求职市场中的竞争优势 |
 
                     ---
 
@@ -1172,7 +1185,13 @@ public class AIPromptProperties {
                       "openSource": [...],
                       "customSections": [...],
                       "tailorNotes": ["调整说明1", "调整说明2"],
-                      "sectionRelevanceScores": { "work": 85, "projects": 90 }
+                      "sectionRelevanceScores": { "work": 85, "projects": 90 },
+                      "dimensionScores": {
+                        "content": 85,
+                        "structure": 80,
+                        "matching": 90,
+                        "competitiveness": 75
+                      }
                     }
                     ```
 
@@ -1180,6 +1199,7 @@ public class AIPromptProperties {
                     - basicInfo、education、work、projects、skills 等字段结构与输入的 sections 中对应区块的 content 结构一致
                     - tailorNotes: 描述具体做了哪些调整（3-5条）
                     - sectionRelevanceScores: 对每个区块与JD的相关性评分（0-100）
+                    - dimensionScores: 四大维度评分（0-100）
 
                     ---
 

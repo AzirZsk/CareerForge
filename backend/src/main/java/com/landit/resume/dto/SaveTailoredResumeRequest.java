@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 保存定制简历请求DTO
@@ -29,6 +30,26 @@ public class SaveTailoredResumeRequest {
     private List<SectionDataItem> afterSection;
 
     /**
+     * 整体提升分数
+     */
+    private Integer improvementScore;
+
+    /**
+     * 岗位匹配分数
+     */
+    private Integer matchScore;
+
+    /**
+     * 区块相关性评分
+     */
+    private Map<String, Integer> sectionRelevanceScores;
+
+    /**
+     * 四大维度评分
+     */
+    private DimensionScores dimensionScores;
+
+    /**
      * 区块数据项
      */
     @Data
@@ -38,5 +59,20 @@ public class SaveTailoredResumeRequest {
         private String title;
         @NotBlank(message = "区块内容不能为空")
         private String content;
+        /**
+         * 区块评分
+         */
+        private Integer score;
+    }
+
+    /**
+     * 四大维度评分
+     */
+    @Data
+    public static class DimensionScores {
+        private Integer content;
+        private Integer structure;
+        private Integer matching;
+        private Integer competitiveness;
     }
 }

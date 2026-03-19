@@ -61,6 +61,7 @@ export interface TailorResumeResponse {
   customSections: any[]
   tailorNotes: string[]
   sectionRelevanceScores: Record<string, number>
+  dimensionScores?: DimensionScores
 }
 
 // ==================== 定制状态 ====================
@@ -148,9 +149,18 @@ export interface TailorComparisonData {
   matchScore: number
   tailorNotes: string[]
   sectionRelevanceScores: Record<string, number>
+  dimensionScores?: DimensionScores
 }
 
 // ==================== 保存定制简历 ====================
+
+/** 四大维度评分 */
+export interface DimensionScores {
+  content: number
+  structure: number
+  matching: number
+  competitiveness: number
+}
 
 /** 区块数据项（用于保存定制简历） */
 export interface SectionDataItem {
@@ -158,6 +168,7 @@ export interface SectionDataItem {
   type?: string
   title?: string
   content: string
+  score?: number
 }
 
 /** 保存定制简历请求 */
@@ -166,4 +177,8 @@ export interface SaveTailoredResumeRequest {
   resumeName?: string
   jobDescription: string
   afterSection: SectionDataItem[]
+  improvementScore?: number
+  matchScore?: number
+  sectionRelevanceScores?: Record<string, number>
+  dimensionScores?: DimensionScores
 }

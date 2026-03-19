@@ -71,4 +71,35 @@ public class TailorResumeResponse {
      */
     private Map<String, Integer> sectionRelevanceScores;
 
+    /**
+     * 定制简历四大维度评分
+     */
+    private DimensionScores dimensionScores;
+
+    /**
+     * 四大维度评分
+     */
+    @Data
+    public static class DimensionScores {
+        /**
+         * 内容质量评分 (0-100)
+         */
+        private Integer content;
+
+        /**
+         * 结构规范评分 (0-100)
+         */
+        private Integer structure;
+
+        /**
+         * 岗位匹配评分 (0-100)
+         */
+        private Integer matching;
+
+        /**
+         * 竞争力评分 (0-100)
+         */
+        private Integer competitiveness;
+    }
+
 }

@@ -193,13 +193,39 @@ public class TailorResumeGraphHandler {
         log.info("派生简历创建完成: derivedResumeId={}", derivedResume.getId());
 
         // 删除自动复制的区块（createDerivedResume不会复制区块，这里不需要删除）
-        // 直接创建定制内容的区块
+        // 直接创建定制内容的区块（带评分）
         for (SaveTailoredResumeRequest.SectionDataItem item : request.getAfterSection()) {
             String type = item.getType() != null ? item.getType() : SectionType.CUSTOM.getCode();
             String title = item.getTitle() != null ? item.getTitle() : "";
-            resumeSectionService.create(derivedResume.getId(), type, title, item.getContent());
+            // 获取区块相关性评分
+            Integer sectionScore = 0;
+            if (request.getSectionRelevanceScores() != null && type != null) {
+                sectionScore = request.getSectionRelevanceScores().get(type);
+            }
+            // 如果 item 中有 score，优先使用
+            if (item.getScore() != null) {
+                sectionScore = item.getScore();
+            }
+            resumeSectionService.createWithScore(derivedResume.getId(), type, title, item.getContent(), sectionScore);
         }
         log.info("定制区块创建完成: count={}", request.getAfterSection().size());
+
+        // 更新四大维度评分
+        if (request.getDimensionScores() != null) {
+            SaveTailoredResumeRequest.DimensionScores ds = request.getDimensionScores();
+            derivedResume.setContentScore(ds.getContent() != null ? ds.getContent() : 0);
+            derivedResume.setStructureScore(ds.getStructure() != null ? ds.getStructure() : 0);
+            derivedResume.setMatchingScore(ds.getMatching() != null ? ds.getMatching() : 0);
+            derivedResume.setCompetitivenessScore(ds.getCompetitiveness() != null ? ds.getCompetitiveness() : 0);
+            // 计算综合评分（四大维度的平均值）
+            int avgScore = (derivedResume.getContentScore() + derivedResume.getStructureScore()
+                    + derivedResume.getMatchingScore() + derivedResume.getCompetitivenessScore()) / 4;
+            derivedResume.setOverallScore(avgScore);
+            derivedResume.setScore(avgScore);
+            resumeService.updateById(derivedResume);
+            log.info("四大维度评分已更新: content={}, structure={}, matching={}, competitiveness={}",
+                    ds.getContent(), ds.getStructure(), ds.getMatching(), ds.getCompetitiveness());
+        }
 
         // 更新状态为已优化（定制简历已经过 AI 优化）
         resumeService.updateStatus(derivedResume.getId(), ResumeStatus.OPTIMIZED);

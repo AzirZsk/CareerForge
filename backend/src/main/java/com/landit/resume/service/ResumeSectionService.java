@@ -52,4 +52,26 @@ public class ResumeSectionService extends ServiceImpl<ResumeSectionMapper, Resum
         save(section);
         return section;
     }
+
+    /**
+     * 创建简历区块（带评分）
+     *
+     * @param resumeId 简历ID
+     * @param type     区块类型
+     * @param title    区块标题
+     * @param content  区块内容（JSON字符串）
+     * @param score    区块评分
+     * @return 创建的区块实体
+     */
+    public ResumeSection createWithScore(String resumeId, String type, String title, String content, Integer score) {
+        ResumeSection section = new ResumeSection();
+        section.setResumeId(resumeId);
+        section.setResumeVersionId(null);
+        section.setType(type);
+        section.setTitle(title);
+        section.setContent(content);
+        section.setScore(score != null ? score : 0);
+        save(section);
+        return section;
+    }
 }

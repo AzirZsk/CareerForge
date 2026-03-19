@@ -181,6 +181,15 @@ const emit = defineEmits<{
     jobDescription: string
     resumeName: string
     afterSection: ResumeSection[]
+    improvementScore?: number
+    matchScore?: number
+    sectionRelevanceScores?: Record<string, number>
+    dimensionScores?: {
+      content: number
+      structure: number
+      matching: number
+      competitiveness: number
+    }
   }]
 }>()
 
@@ -331,14 +340,23 @@ function handleSaveTailor() {
     title: section.title,
     content: typeof section.content === 'string'
       ? section.content
-      : JSON.stringify(section.content)
+      : JSON.stringify(section.content),
+    score: section.score
   }))
+
+  // 获取评分数据
+  const generateStage = tailorState.stageHistory.find(h => h.stage === 'generate_tailored')
+  const stageData = generateStage?.data
 
   emit('save', {
     targetPosition: formData.value.targetPosition,
     jobDescription: formData.value.jobDescription,
     resumeName: formData.value.resumeName || `${formData.value.targetPosition}定制版`,
-    afterSection: afterSectionData as ResumeSection[]
+    afterSection: afterSectionData as ResumeSection[],
+    improvementScore: stageData?.improvementScore,
+    matchScore: stageData?.matchScore,
+    sectionRelevanceScores: stageData?.sectionRelevanceScores,
+    dimensionScores: stageData?.dimensionScores
   })
 }
 

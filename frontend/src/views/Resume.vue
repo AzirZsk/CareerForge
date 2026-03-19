@@ -396,6 +396,15 @@ async function handleSaveTailor(data: {
   jobDescription: string
   resumeName: string
   afterSection: ResumeSection[]
+  improvementScore?: number
+  matchScore?: number
+  sectionRelevanceScores?: Record<string, number>
+  dimensionScores?: {
+    content: number
+    structure: number
+    matching: number
+    competitiveness: number
+  }
 }): Promise<void> {
   const sourceResumeId = tailorResumeId.value || store.primaryResume?.id
   if (!sourceResumeId) return
@@ -411,8 +420,13 @@ async function handleSaveTailor(data: {
         title: section.title,
         content: typeof section.content === 'string'
           ? section.content
-          : JSON.stringify(section.content)
-      }))
+          : JSON.stringify(section.content),
+        score: section.score
+      })),
+      improvementScore: data.improvementScore,
+      matchScore: data.matchScore,
+      sectionRelevanceScores: data.sectionRelevanceScores,
+      dimensionScores: data.dimensionScores
     })
 
     toast.success('定制简历保存成功')
