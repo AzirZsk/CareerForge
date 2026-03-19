@@ -47,33 +47,11 @@
     </div>
     <div class="form-group">
       <label class="form-label">成果/要点</label>
-      <div class="highlights-input">
-        <div
-          v-for="(_, hIndex) in localHighlights"
-          :key="hIndex"
-          class="highlight-item"
-        >
-          <input
-            v-model="localHighlights[hIndex]"
-            type="text"
-            class="form-input"
-            placeholder="请输入成果或要点"
-          />
-          <button class="remove-btn" @click="removeHighlight(hIndex)" type="button">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-        </div>
-        <button class="add-highlight-btn" @click="addHighlight" type="button">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-          添加要点
-        </button>
-      </div>
+      <DynamicListInput
+        v-model="localHighlights"
+        item-placeholder="请输入成果或要点"
+        add-button-text="添加要点"
+      />
     </div>
   </div>
 </template>
@@ -81,6 +59,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useValidationInject } from '@/composables/useFormValidation'
+import DynamicListInput from './DynamicListInput.vue'
 
 interface Props {
   modelValue: Record<string, unknown>
@@ -148,16 +127,6 @@ watch(
   },
   { deep: true }
 )
-
-// 添加要点
-function addHighlight(): void {
-  localHighlights.value.push('')
-}
-
-// 删除要点
-function removeHighlight(index: number): void {
-  localHighlights.value.splice(index, 1)
-}
 </script>
 
 <style lang="scss" scoped>
@@ -224,50 +193,5 @@ function removeHighlight(index: number): void {
 .form-textarea {
   resize: vertical;
   min-height: 80px;
-}
-
-.highlights-input {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-}
-
-.highlight-item {
-  display: flex;
-  gap: $spacing-sm;
-  .form-input {
-    flex: 1;
-  }
-}
-
-.remove-btn {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: $color-text-tertiary;
-  border-radius: $radius-sm;
-  transition: all $transition-fast;
-  &:hover {
-    background: rgba(248, 113, 113, 0.1);
-    color: $color-error;
-  }
-}
-
-.add-highlight-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: $spacing-xs;
-  padding: $spacing-xs $spacing-sm;
-  font-size: $text-xs;
-  color: $color-accent;
-  background: transparent;
-  border-radius: $radius-sm;
-  transition: all $transition-fast;
-  align-self: flex-start;
-  &:hover {
-    background: $color-accent-glow;
-  }
 }
 </style>

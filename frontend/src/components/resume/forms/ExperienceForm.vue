@@ -79,35 +79,11 @@
       </div>
       <div class="form-group">
         <label class="form-label">校内荣誉</label>
-        <div class="honors-input">
-          <div class="honor-list">
-            <div
-              v-for="(_honor, index) in localHonors"
-              :key="index"
-              class="honor-item"
-            >
-              <input
-                v-model="localHonors[index]"
-                type="text"
-                class="form-input"
-                placeholder="请输入荣誉名称（如：国家奖学金、优秀毕业生）"
-              />
-              <button class="remove-btn" @click="removeHonor(index)">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
-            </div>
-          </div>
-          <button class="add-honor-btn" @click="addHonor">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            添加荣誉
-          </button>
-        </div>
+        <DynamicListInput
+          v-model="localHonors"
+          item-placeholder="请输入荣誉名称（如：国家奖学金、优秀毕业生）"
+          add-button-text="添加荣誉"
+        />
       </div>
     </template>
 
@@ -174,35 +150,11 @@
       </div>
       <div class="form-group">
         <label class="form-label">工作成果</label>
-        <div class="achievements-input">
-          <div class="achievement-list">
-            <div
-              v-for="(_achievement, index) in localAchievements"
-              :key="index"
-              class="achievement-item"
-            >
-              <input
-                v-model="localAchievements[index]"
-                type="text"
-                class="form-input"
-                placeholder="请输入成果描述（如：提升系统性能30%）"
-              />
-              <button class="remove-btn" @click="removeAchievement(index)">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
-            </div>
-          </div>
-          <button class="add-achievement-btn" @click="addAchievement">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            添加成果
-          </button>
-        </div>
+        <DynamicListInput
+          v-model="localAchievements"
+          item-placeholder="请输入成果描述（如：提升系统性能30%）"
+          add-button-text="添加成果"
+        />
       </div>
       <div class="form-group">
         <label class="form-label">技术栈</label>
@@ -224,35 +176,11 @@
       </div>
       <div class="form-group">
         <label class="form-label">代表产品</label>
-        <div class="products-input">
-          <div class="product-list">
-            <div
-              v-for="(_product, index) in localProducts"
-              :key="index"
-              class="product-item"
-            >
-              <input
-                v-model="localProducts[index]"
-                type="text"
-                class="form-input"
-                placeholder="请输入产品名称"
-              />
-              <button class="remove-btn" @click="removeProduct(index)">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
-            </div>
-          </div>
-          <button class="add-product-btn" @click="addProduct">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            添加产品
-          </button>
-        </div>
+        <DynamicListInput
+          v-model="localProducts"
+          item-placeholder="请输入产品名称"
+          add-button-text="添加产品"
+        />
       </div>
     </template>
 
@@ -326,35 +254,11 @@
       </div>
       <div class="form-group">
         <label class="form-label">主要成果</label>
-        <div class="achievements-input">
-          <div class="achievement-list">
-            <div
-              v-for="(_achievement, index) in localAchievements"
-              :key="index"
-              class="achievement-item"
-            >
-              <input
-                v-model="localAchievements[index]"
-                type="text"
-                class="form-input"
-                placeholder="请输入成果描述"
-              />
-              <button class="remove-btn" @click="removeAchievement(index)">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
-            </div>
-          </div>
-          <button class="add-achievement-btn" @click="addAchievement">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            添加成果
-          </button>
-        </div>
+        <DynamicListInput
+          v-model="localAchievements"
+          item-placeholder="请输入成果描述"
+          add-button-text="添加成果"
+        />
       </div>
     </template>
 
@@ -464,35 +368,11 @@
       </div>
       <div class="form-group">
         <label class="form-label">主要成果</label>
-        <div class="achievements-input">
-          <div class="achievement-list">
-            <div
-              v-for="(_achievement, index) in localAchievements"
-              :key="index"
-              class="achievement-item"
-            >
-              <input
-                v-model="localAchievements[index]"
-                type="text"
-                class="form-input"
-                placeholder="请输入成果描述"
-              />
-              <button class="remove-btn" @click="removeAchievement(index)">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
-            </div>
-          </div>
-          <button class="add-achievement-btn" @click="addAchievement">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            添加成果
-          </button>
-        </div>
+        <DynamicListInput
+          v-model="localAchievements"
+          item-placeholder="请输入成果描述"
+          add-button-text="添加成果"
+        />
       </div>
     </template>
 
@@ -551,28 +431,11 @@
             </div>
             <div class="form-group">
               <label class="form-label">成果/要点</label>
-              <div class="highlights-input">
-                <div
-                  v-for="(_highlight, hIndex) in item.highlights"
-                  :key="hIndex"
-                  class="highlight-item"
-                >
-                  <input v-model="item.highlights[hIndex]" type="text" class="form-input" placeholder="请输入成果或要点" />
-                  <button class="remove-btn" @click="removeHighlight(index, hIndex)" type="button">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <line x1="18" y1="6" x2="6" y2="18"></line>
-                      <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                  </button>
-                </div>
-                <button class="add-highlight-btn" @click="addHighlight(index)" type="button">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                  </svg>
-                  添加要点
-                </button>
-              </div>
+              <DynamicListInput
+                v-model="item.highlights"
+                item-placeholder="请输入成果或要点"
+                add-button-text="添加要点"
+              />
             </div>
           </div>
           <button class="add-item-btn" @click="addContentItem" type="button">
@@ -591,6 +454,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useValidationInject } from '@/composables/useFormValidation'
+import DynamicListInput from './DynamicListInput.vue'
 
 interface Props {
   modelValue: Record<string, unknown>
@@ -753,16 +617,6 @@ watch(
   { deep: true }
 )
 
-// 添加成果
-function addAchievement(): void {
-  localAchievements.value.push('')
-}
-
-// 删除成果
-function removeAchievement(index: number): void {
-  localAchievements.value.splice(index, 1)
-}
-
 // 添加技术栈标签
 function addTechnology(event: KeyboardEvent): void {
   event.preventDefault()
@@ -776,16 +630,6 @@ function addTechnology(event: KeyboardEvent): void {
 // 删除技术栈标签
 function removeTechnology(index: number): void {
   localTechnologies.value.splice(index, 1)
-}
-
-// 添加产品
-function addProduct(): void {
-  localProducts.value.push('')
-}
-
-// 删除产品
-function removeProduct(index: number): void {
-  localProducts.value.splice(index, 1)
 }
 
 // 添加课程标签
@@ -803,16 +647,6 @@ function removeCourse(index: number): void {
   localCourses.value.splice(index, 1)
 }
 
-// 添加荣誉
-function addHonor(): void {
-  localHonors.value.push('')
-}
-
-// 删除荣誉
-function removeHonor(index: number): void {
-  localHonors.value.splice(index, 1)
-}
-
 // 添加内容项
 function addContentItem(): void {
   localContentItems.value.push({
@@ -827,16 +661,6 @@ function addContentItem(): void {
 // 删除内容项
 function removeContentItem(index: number): void {
   localContentItems.value.splice(index, 1)
-}
-
-// 添加要点
-function addHighlight(itemIndex: number): void {
-  localContentItems.value[itemIndex].highlights.push('')
-}
-
-// 删除要点
-function removeHighlight(itemIndex: number, highlightIndex: number): void {
-  localContentItems.value[itemIndex].highlights.splice(highlightIndex, 1)
 }
 </script>
 
@@ -916,57 +740,6 @@ function removeHighlight(itemIndex: number, highlightIndex: number): void {
   min-height: 140px;
 }
 
-.achievements-input {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-}
-
-.achievement-list {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-}
-
-.achievement-item {
-  display: flex;
-  gap: $spacing-sm;
-  .form-input {
-    flex: 1;
-  }
-}
-
-.remove-btn {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: $color-text-tertiary;
-  border-radius: $radius-sm;
-  transition: all $transition-fast;
-  &:hover {
-    background: rgba(248, 113, 113, 0.1);
-    color: $color-error;
-  }
-}
-
-.add-achievement-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: $spacing-xs;
-  padding: $spacing-sm $spacing-md;
-  font-size: $text-sm;
-  color: $color-accent;
-  background: $color-accent-glow;
-  border-radius: $radius-sm;
-  transition: all $transition-fast;
-  align-self: flex-start;
-  &:hover {
-    background: rgba(212, 168, 83, 0.2);
-  }
-}
-
 // 技术栈标签输入
 .tags-input {
   display: flex;
@@ -1012,44 +785,7 @@ function removeHighlight(itemIndex: number, highlightIndex: number): void {
   width: 100%;
 }
 
-// 产品输入
-.products-input {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-}
-
-.product-list {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-}
-
-.product-item {
-  display: flex;
-  gap: $spacing-sm;
-  .form-input {
-    flex: 1;
-  }
-}
-
-.add-product-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: $spacing-xs;
-  padding: $spacing-sm $spacing-md;
-  font-size: $text-sm;
-  color: $color-accent;
-  background: $color-accent-glow;
-  border-radius: $radius-sm;
-  transition: all $transition-fast;
-  align-self: flex-start;
-  &:hover {
-    background: rgba(212, 168, 83, 0.2);
-  }
-}
-
-// 教育经历-课程标签样式
+// 自定义区块样式
 .tags-list {
   display: flex;
   flex-wrap: wrap;
@@ -1087,43 +823,6 @@ function removeHighlight(itemIndex: number, highlightIndex: number): void {
 
 .tag-input {
   width: 100%;
-}
-
-// 教育经历-荣誉输入样式
-.honors-input {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-}
-
-.honor-list {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-}
-
-.honor-item {
-  display: flex;
-  gap: $spacing-sm;
-  .form-input {
-    flex: 1;
-  }
-}
-
-.add-honor-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: $spacing-xs;
-  padding: $spacing-sm $spacing-md;
-  font-size: $text-sm;
-  color: $color-accent;
-  background: $color-accent-glow;
-  border-radius: $radius-sm;
-  transition: all $transition-fast;
-  align-self: flex-start;
-  &:hover {
-    background: rgba(212, 168, 83, 0.2);
-  }
 }
 
 // 自定义区块样式
@@ -1165,36 +864,6 @@ function removeHighlight(itemIndex: number, highlightIndex: number): void {
   &:hover {
     background: rgba(248, 113, 113, 0.1);
     color: $color-error;
-  }
-}
-
-.highlights-input {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-}
-
-.highlight-item {
-  display: flex;
-  gap: $spacing-sm;
-  .form-input {
-    flex: 1;
-  }
-}
-
-.add-highlight-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: $spacing-xs;
-  padding: $spacing-xs $spacing-sm;
-  font-size: $text-xs;
-  color: $color-accent;
-  background: transparent;
-  border-radius: $radius-sm;
-  transition: all $transition-fast;
-  align-self: flex-start;
-  &:hover {
-    background: $color-accent-glow;
   }
 }
 
