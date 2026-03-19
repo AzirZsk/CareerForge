@@ -92,6 +92,27 @@ export async function getResumeDetail(id: string): Promise<ResumeDetail> {
 }
 
 /**
+ * 更新简历基本信息
+ * @param id 简历ID
+ * @param data 更新数据（名称和目标岗位）
+ */
+export async function updateResume(
+  id: string,
+  data: { name: string; targetPosition?: string }
+): Promise<ResumeDetail> {
+  const response = await fetch(`${API_BASE}/resumes/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+  const result: ApiResponse<ResumeDetail> = await response.json()
+  if (result.code !== 200) {
+    throw new Error(result.message || '更新简历失败')
+  }
+  return result.data
+}
+
+/**
  * 更新简历模块
  * @param resumeId 简历ID
  * @param sectionId 模块ID

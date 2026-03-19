@@ -10,6 +10,7 @@ import com.landit.resume.convertor.ResumeConvertor;
 import com.landit.resume.dto.AddSectionRequest;
 import com.landit.resume.dto.ApplyOptimizeRequest;
 import com.landit.resume.dto.DeriveResumeRequest;
+import com.landit.resume.dto.UpdateResumeRequest;
 import com.landit.resume.dto.UpdateSectionRequest;
 import com.landit.resume.dto.DiagnoseResumeRequest;
 import com.landit.resume.dto.DiagnoseResumeResponse;
@@ -145,6 +146,19 @@ public class ResumeHandler {
     public PrimaryResumeVO setPrimaryResume(String resumeId) {
         resumeService.setPrimaryResume(resumeId);
         return getPrimaryResume();
+    }
+
+    /**
+     * 更新简历基本信息（名称和目标岗位）
+     *
+     * @param resumeId 简历ID
+     * @param request  更新请求
+     * @return 更新后的简历详情
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public ResumeDetailVO updateResumeBasicInfo(String resumeId, UpdateResumeRequest request) {
+        resumeService.updateResumeBasicInfo(resumeId, request.getName(), request.getTargetPosition());
+        return resumeService.getResumeDetail(resumeId);
     }
 
     /**

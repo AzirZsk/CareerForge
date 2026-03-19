@@ -67,14 +67,13 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
 
     /**
      * 判断简历是否已完成分析
-     * 根据评分和完整度是否有效来判断
+     * 根据简历状态判断：OPTIMIZED 表示已完成 AI 分析/优化
      *
      * @param resume 简历实体
      * @return true 已完成分析，false 未完成
      */
     public boolean isResumeAnalyzed(Resume resume) {
-        return resume.getScore() != null && resume.getScore() > 0
-                && resume.getCompleteness() != null && resume.getCompleteness() > 0;
+        return ResumeStatus.OPTIMIZED.getValue().equals(resume.getStatus());
     }
 
     /**
@@ -653,5 +652,25 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
         resume.setStatus(status.getValue());
         updateById(resume);
         log.info("简历状态已更新: resumeId={}, status={}", resumeId, status.getValue());
+    }
+
+    /**
+     * 更新简历基本信息（名称和目标岗位）
+     *
+     * @param resumeId        简历ID
+     * @param name            简历名称
+     * @param targetPosition  目标岗位（可为空）
+     */
+    public void updateResumeBasicInfo(String resumeId, String name, String targetPosition) {
+        Resume resume = getById(resumeId);
+        if (resume == null) {
+            throw BusinessException.notFound("简历不存在");
+        }
+        resume.setName(name);
+        if (targetPosition != null) {
+            resume.setTargetPosition(targetPosition);
+        }
+        updateById(resume);
+        log.info("简历基本信息已更新: resumeId={}, name={}", resumeId, name);
     }
 }

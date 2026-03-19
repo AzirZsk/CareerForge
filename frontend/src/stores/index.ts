@@ -380,6 +380,29 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
+  // 更新简历基本信息（名称和目标岗位）
+  async function updateResumeBasicInfo(
+    resumeId: string,
+    data: { name: string; targetPosition?: string }
+  ): Promise<void> {
+    try {
+      const result = await resumeApi.updateResume(resumeId, data)
+      currentResume.value = result
+      // 同步更新简历列表
+      const index = resumeList.value.findIndex((r: Resume) => r.id === resumeId)
+      if (index !== -1) {
+        resumeList.value[index] = {
+          ...resumeList.value[index],
+          name: result.name,
+          targetPosition: result.targetPosition
+        }
+      }
+    } catch (error) {
+      console.error('更新简历基本信息失败', error)
+      throw error
+    }
+  }
+
   return {
     // 状态
     user,
@@ -419,6 +442,7 @@ export const useAppStore = defineStore('app', () => {
     addResumeSectionItem,
     updateResumeSectionItem,
     deleteResumeSectionItem,
-    deleteSuggestion
+    deleteSuggestion,
+    updateResumeBasicInfo
   }
 })

@@ -6,8 +6,49 @@
 <template>
   <header class="resume-header animate-in" style="--delay: 1">
     <div class="header-left">
-      <h1 class="resume-title">{{ name }}</h1>
-      <p class="resume-target">目标岗位：{{ targetPosition || '暂未设置目标职位' }}</p>
+      <!-- 编辑模式 -->
+      <template v-if="isEditing">
+        <div class="edit-form">
+          <input
+            v-model="editName"
+            type="text"
+            class="edit-input title-input"
+            placeholder="简历名称"
+            maxlength="50"
+          />
+          <input
+            v-model="editTargetPosition"
+            type="text"
+            class="edit-input target-input"
+            placeholder="目标岗位（可选）"
+            maxlength="50"
+          />
+        </div>
+        <div class="edit-actions">
+          <button class="edit-btn save" :disabled="!editName.trim()" @click="handleSave">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            保存
+          </button>
+          <button class="edit-btn cancel" @click="handleCancel">
+            取消
+          </button>
+        </div>
+      </template>
+      <!-- 展示模式 -->
+      <template v-else>
+        <div class="title-row">
+          <h1 class="resume-title">{{ name }}</h1>
+          <button v-if="resumeId" class="edit-trigger" @click="startEdit" title="编辑名称">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+          </button>
+        </div>
+        <p class="resume-target">目标岗位：{{ targetPosition || '暂未设置目标职位' }}</p>
+      </template>
     </div>
     <div class="header-right">
       <div class="score-overview">
@@ -40,18 +81,64 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+import { ref, watch } from 'vue'
+
+const props = defineProps<{
   name: string
   targetPosition: string
   analyzed: boolean
   overallScore: number
   structureScore: number
   hasContent?: boolean
+  resumeId?: string
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   optimize: []
+  update: [data: { name: string; targetPosition?: string }]
 }>()
+
+// 编辑状态
+const isEditing = ref(false)
+const editName = ref('')
+const editTargetPosition = ref('')
+
+// 监听 props 变化，同步到编辑状态
+watch(() => props.name, (newName) => {
+  if (!isEditing.value) {
+    editName.value = newName
+  }
+}, { immediate: true })
+
+watch(() => props.targetPosition, (newTarget) => {
+  if (!isEditing.value) {
+    editTargetPosition.value = newTarget || ''
+  }
+}, { immediate: true })
+
+// 开始编辑
+function startEdit(): void {
+  editName.value = props.name
+  editTargetPosition.value = props.targetPosition || ''
+  isEditing.value = true
+}
+
+// 保存编辑
+function handleSave(): void {
+  if (!editName.value.trim()) return
+  emit('update', {
+    name: editName.value.trim(),
+    targetPosition: editTargetPosition.value.trim() || undefined
+  })
+  isEditing.value = false
+}
+
+// 取消编辑
+function handleCancel(): void {
+  editName.value = props.name
+  editTargetPosition.value = props.targetPosition || ''
+  isEditing.value = false
+}
 </script>
 
 <style lang="scss" scoped>
@@ -65,23 +152,140 @@ defineEmits<{
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+.header-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-xs;
+}
+
 .resume-title {
   font-family: $font-display;
   font-size: $text-3xl;
   font-weight: $weight-semibold;
   color: $color-text-primary;
-  margin-bottom: $spacing-xs;
+  margin: 0;
+}
+
+.edit-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: $radius-sm;
+  color: $color-text-tertiary;
+  cursor: pointer;
+  transition: all $transition-fast;
+  opacity: 0;
+
+  .title-row:hover & {
+    opacity: 1;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: $color-accent;
+  }
 }
 
 .resume-target {
   font-size: $text-base;
   color: $color-text-secondary;
+  margin: 0;
+}
+
+// 编辑表单样式
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-sm;
+}
+
+.edit-input {
+  width: 100%;
+  max-width: 360px;
+  padding: $spacing-sm $spacing-md;
+  font-size: $text-base;
+  color: $color-text-primary;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: $radius-sm;
+  transition: all $transition-fast;
+
+  &::placeholder {
+    color: $color-text-tertiary;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: $color-accent;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  &.title-input {
+    font-size: $text-xl;
+    font-weight: $weight-semibold;
+  }
+}
+
+.edit-actions {
+  display: flex;
+  gap: $spacing-sm;
+}
+
+.edit-btn {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-xs $spacing-md;
+  font-size: $text-sm;
+  font-weight: $weight-medium;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &.save {
+    background: $gradient-gold;
+    color: $color-bg-deep;
+    border: none;
+
+    &:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(212, 168, 83, 0.3);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  &.cancel {
+    background: transparent;
+    color: $color-text-secondary;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: $color-text-primary;
+    }
+  }
 }
 
 .header-right {
   display: flex;
   align-items: center;
   gap: $spacing-2xl;
+  flex-shrink: 0;
 }
 
 .score-main {

@@ -105,7 +105,8 @@ public class GenerateTailoredResumeNode implements NodeAction {
                         "improvementScore", improvementScore,
                         "matchScore", matchScore,
                         "tailorNotes", response.getTailorNotes(),
-                        "sectionRelevanceScores", response.getSectionRelevanceScores()
+                        "sectionRelevanceScores", response.getSectionRelevanceScores(),
+                        "dimensionScores", response.getDimensionScores()
                 )
         );
 

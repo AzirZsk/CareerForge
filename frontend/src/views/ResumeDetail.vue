@@ -19,6 +19,7 @@
 
       <!-- 简历头部 -->
       <ResumeHeader
+        :resume-id="resumeId"
         :name="store.currentResume.name"
         :target-position="store.currentResume.targetPosition"
         :analyzed="store.currentResume.analyzed"
@@ -26,6 +27,7 @@
         :structure-score="store.currentResume.structureScore"
         :has-content="hasAnalyzableContent"
         @optimize="optimizeResume"
+        @update="handleUpdateResumeBasicInfo"
       />
 
       <!-- 评分指标 -->
@@ -395,6 +397,18 @@ function optimizeResume(): void {
     mode: 'quick',
     targetPosition
   })
+}
+
+// 更新简历基本信息
+async function handleUpdateResumeBasicInfo(data: { name: string; targetPosition?: string }): Promise<void> {
+  if (!resumeId.value) return
+  try {
+    await store.updateResumeBasicInfo(resumeId.value, data)
+    toast.success('简历信息已更新')
+  } catch (error) {
+    console.error('更新简历信息失败:', error)
+    toast.error('更新失败，请重试')
+  }
 }
 
 // 选择要添加的模块类型

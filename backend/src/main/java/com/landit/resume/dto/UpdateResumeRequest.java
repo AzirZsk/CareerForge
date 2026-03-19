@@ -1,20 +1,20 @@
 package com.landit.resume.dto;
 
-import com.landit.resume.entity.ResumeSection;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
-import java.util.List;
-
 /**
- * 更新简历请求DTO
+ * 更新简历基本信息请求DTO
+ * 用于更新简历名称和目标岗位
  *
  * @author Azir
  */
 @Data
 public class UpdateResumeRequest {
 
+    @NotBlank(message = "简历名称不能为空")
     private String name;
 
-    private List<ResumeSection> sections;
+    private String targetPosition;
 
 }

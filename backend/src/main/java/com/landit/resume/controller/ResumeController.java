@@ -8,6 +8,7 @@ import com.landit.resume.dto.DeriveResumeRequest;
 import com.landit.resume.dto.PrimaryResumeVO;
 import com.landit.resume.dto.ResumeListVO;
 import com.landit.resume.dto.ResumeDetailVO;
+import com.landit.resume.dto.UpdateResumeRequest;
 import com.landit.resume.dto.UpdateSectionRequest;
 import com.landit.resume.entity.Resume;
 import com.landit.resume.handler.ResumeHandler;
@@ -80,6 +81,14 @@ public class ResumeController {
     @GetMapping("/{id}")
     public ApiResponse<ResumeDetailVO> getResumeDetail(@PathVariable String id) {
         return ApiResponse.success(resumeHandler.getResumeDetail(id));
+    }
+
+    @Operation(summary = "更新简历基本信息")
+    @PutMapping("/{id}")
+    public ApiResponse<ResumeDetailVO> updateResume(
+            @PathVariable String id,
+            @Valid @RequestBody UpdateResumeRequest request) {
+        return ApiResponse.success(resumeHandler.updateResumeBasicInfo(id, request));
     }
 
     @Operation(summary = "更新简历模块")

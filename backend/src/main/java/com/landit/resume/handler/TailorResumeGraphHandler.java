@@ -198,18 +198,12 @@ public class TailorResumeGraphHandler {
         for (SaveTailoredResumeRequest.SectionDataItem item : request.getAfterSection()) {
             String type = item.getType() != null ? item.getType() : SectionType.CUSTOM.getCode();
             String title = item.getTitle() != null ? item.getTitle() : "";
-            // 获取区块相关性评分
+            // 从 sectionRelevanceScores 获取区块相关性评分
             Integer sectionScore = 0;
             if (request.getSectionRelevanceScores() != null && type != null) {
-                // 【修复】将 code 转换为 schemaFieldName 进行匹配
-                // 前端传的是驼峰命名(basicInfo)，后端 code 是大写(BASIC_INFO)
                 SectionType sectionType = SectionType.fromCode(type);
                 String mapKey = sectionType != null ? sectionType.getSchemaFieldName() : type;
                 sectionScore = request.getSectionRelevanceScores().get(mapKey);
-            }
-            // 如果 item 中有 score，优先使用
-            if (item.getScore() != null) {
-                sectionScore = item.getScore();
             }
             resumeSectionService.createWithScore(derivedResume.getId(), type, title, item.getContent(), sectionScore);
         }
