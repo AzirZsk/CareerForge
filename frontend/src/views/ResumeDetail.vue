@@ -319,11 +319,25 @@ const hasAnalyzableContent = computed<boolean>(() => {
   })
 })
 
-// 应用建议（占位实现）
+// 应用建议 - 跳转到对应模块编辑
 function handleApplySuggestion(suggestion: ResumeSuggestionItem): void {
-  console.log('应用建议:', suggestion)
-  // TODO: 实现应用建议功能（需要后端 API 支持）
-  toast.info('应用建议功能开发中...')
+  // 1. 找到关联的模块
+  const section = store.currentResume.sections.find((s: ResumeSection) =>
+    s.suggestions?.some((sug: ResumeSuggestionItem) => sug.id === suggestion.id)
+  )
+
+  if (section) {
+    // 2. 选中该模块
+    activeSection.value = section.id
+
+    // 3. 打开编辑弹窗（用户根据建议手动修改）
+    openEditModal()
+
+    // 4. 提示用户根据建议修改
+    toast.info(`请根据建议修改「${section.title}」模块`)
+  } else {
+    toast.warning('该建议未关联具体模块')
+  }
 }
 
 // 忽略建议（占位实现）

@@ -93,11 +93,13 @@ export type SuggestionType = 'critical' | 'improvement' | 'enhancement'
 // 简历优化建议项（关联到 t_resume_suggestion 表）
 export interface ResumeSuggestionItem {
   id: string
+  sectionId?: string    // 关联的简历模块ID
   type: SuggestionType
   category: string
   title: string
   description: string
   impact: string
+  position?: string     // 建议位置
 }
 
 // 简历模块类型枚举
