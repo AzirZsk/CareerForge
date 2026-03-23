@@ -189,35 +189,28 @@
       <section class="suggestions-section animate-in" style="--delay: 3">
         <div class="section-header">
           <h2 class="section-title">AI优化建议</h2>
-          <span class="suggestion-count">{{ store.suggestions.length }} 条建议</span>
+          <span class="suggestion-count">{{ totalSuggestionCount }} 条建议</span>
         </div>
-        <div class="suggestions-list">
-          <div
-            v-for="(suggestion, index) in store.suggestions"
-            :key="suggestion.id"
-            class="suggestion-card"
+
+        <!-- 按简历分组展示 -->
+        <div class="suggestion-groups" v-if="store.suggestionsByResume.length > 0">
+          <ResumeSuggestionsGroup
+            v-for="(group, index) in store.suggestionsByResume"
+            :key="group.resumeId"
+            :group="group"
             :style="{ '--index': index }"
-          >
-            <div class="suggestion-indicator" :class="suggestion.type"></div>
-            <div class="suggestion-content">
-              <div class="suggestion-header">
-                <span class="suggestion-category">{{ suggestion.category }}</span>
-                <span class="suggestion-impact" :class="suggestion.impact">
-                  {{ suggestion.impact }}影响
-                </span>
-              </div>
-              <h4 class="suggestion-title">{{ suggestion.title }}</h4>
-              <p class="suggestion-desc">{{ suggestion.description }}</p>
-              <div class="suggestion-location">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                  <circle cx="12" cy="10" r="3"></circle>
-                </svg>
-                {{ suggestion.position }}
-              </div>
-            </div>
-            <button class="apply-btn">应用建议</button>
-          </div>
+          />
+        </div>
+
+        <!-- 空状态 -->
+        <div class="empty-suggestions" v-else>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <p>暂无优化建议</p>
+          <span>完成简历优化后，这里会显示改进建议</span>
         </div>
       </section>
     </div>
@@ -264,6 +257,7 @@ import { saveTailoredResume } from '@/api/resume'
 import OptimizeProgressModal from '@/components/resume/OptimizeProgressModal.vue'
 import TailorResumeModal from '@/components/resume/TailorResumeModal.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import ResumeSuggestionsGroup from '@/components/resume/ResumeSuggestionsGroup.vue'
 import type { ResumeSection } from '@/types'
 
 interface FilterItem {
@@ -305,9 +299,16 @@ onMounted(async () => {
     store.fetchPrimaryResume(),
     store.fetchResumes()
   ])
+  // 获取所有简历的优化建议（按简历分组）
+  await store.fetchAllSuggestions()
 })
 
 const filteredResumes = computed<Resume[]>(() => store.resumeList)
+
+// 计算建议总数
+const totalSuggestionCount = computed(() => {
+  return store.suggestionsByResume.reduce((sum, group) => sum + group.suggestionCount, 0)
+})
 
 // 切换筛选标签时调用后端接口
 async function switchFilter(key: string): Promise<void> {
@@ -1015,116 +1016,31 @@ function openTailorModal(resumeId: string): void {
   color: $color-text-tertiary;
 }
 
-.suggestions-list {
+.suggestion-groups {
   display: flex;
   flex-direction: column;
   gap: $spacing-md;
 }
 
-.suggestion-card {
+.empty-suggestions {
   display: flex;
-  align-items: flex-start;
-  gap: $spacing-lg;
-  padding: $spacing-lg;
-  background: $gradient-card;
-  border-radius: $radius-lg;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  animation: slideUp 0.5s ease forwards;
-  animation-delay: calc(var(--index) * 0.1s);
-  opacity: 0;
-  transition: all $transition-fast;
-  &:hover {
-    border-color: rgba(212, 168, 83, 0.15);
-  }
-}
-
-.suggestion-indicator {
-  width: 4px;
-  height: 100%;
-  min-height: 80px;
-  border-radius: $radius-full;
-  &.critical {
-    background: $color-error;
-  }
-  &.improvement {
-    background: $color-warning;
-  }
-  &.enhancement {
-    background: $color-info;
-  }
-}
-
-.suggestion-content {
-  flex: 1;
-}
-
-.suggestion-header {
-  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: $spacing-sm;
-  margin-bottom: $spacing-sm;
-}
-
-.suggestion-category {
-  font-size: $text-xs;
+  justify-content: center;
+  padding: $spacing-2xl;
   color: $color-text-tertiary;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.suggestion-impact {
-  padding: 2px 8px;
-  font-size: $text-xs;
-  font-weight: $weight-medium;
-  border-radius: $radius-sm;
-  &.高 {
-    background: $color-error-bg;
-    color: $color-error;
+  text-align: center;
+  svg {
+    margin-bottom: $spacing-md;
+    opacity: 0.5;
   }
-  &.中 {
-    background: $color-warning-bg;
-    color: $color-warning;
+  p {
+    font-size: $text-base;
+    color: $color-text-secondary;
+    margin-bottom: $spacing-xs;
   }
-  &.低 {
-    background: $color-info-bg;
-    color: $color-info;
-  }
-}
-
-.suggestion-title {
-  font-size: $text-base;
-  font-weight: $weight-medium;
-  color: $color-text-primary;
-  margin-bottom: $spacing-xs;
-}
-
-.suggestion-desc {
-  font-size: $text-sm;
-  color: $color-text-secondary;
-  line-height: $leading-relaxed;
-  margin-bottom: $spacing-sm;
-}
-
-.suggestion-location {
-  display: flex;
-  align-items: center;
-  gap: $spacing-xs;
-  font-size: $text-xs;
-  color: $color-text-tertiary;
-}
-
-.apply-btn {
-  padding: $spacing-sm $spacing-md;
-  background: $color-accent-glow;
-  color: $color-accent;
-  font-size: $text-sm;
-  font-weight: $weight-medium;
-  border-radius: $radius-md;
-  border: 1px solid rgba(212, 168, 83, 0.3);
-  transition: all $transition-fast;
-  white-space: nowrap;
-  &:hover {
-    background: rgba(212, 168, 83, 0.2);
+  span {
+    font-size: $text-sm;
   }
 }
 

@@ -267,6 +267,15 @@ export interface ResumeSuggestion {
   position: string
 }
 
+// 按简历分组的建议
+export interface ResumeSuggestionsGroup {
+  resumeId: string
+  resumeName: string
+  targetPosition: string
+  suggestionCount: number
+  suggestions: ResumeSuggestion[]
+}
+
 // 面试类型
 export type InterviewType = 'technical' | 'behavioral'
 

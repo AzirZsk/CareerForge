@@ -3,7 +3,7 @@
 // @author Azir
 // =====================================================
 
-import type { ApiResponse, PrimaryResumeVO, ResumeDetail, ResumeListItem, CreateResumeRequest } from '@/types'
+import type { ApiResponse, PrimaryResumeVO, ResumeDetail, ResumeListItem, CreateResumeRequest, ResumeSuggestion, ResumeSuggestionsGroup } from '@/types'
 import type { DeriveResumeRequest, SaveTailoredResumeRequest } from '@/types/resume-tailor'
 
 // API 基础路径
@@ -290,6 +290,31 @@ export async function deleteSuggestion(
   if (result.code !== 200) {
     throw new Error(result.message || '删除建议失败')
   }
+}
+
+/**
+ * 获取简历优化建议列表
+ * @param resumeId 简历ID
+ */
+export async function getSuggestions(resumeId: string): Promise<ResumeSuggestion[]> {
+  const response = await fetch(`${API_BASE}/suggestions/resume/${resumeId}`)
+  const result: ApiResponse<ResumeSuggestion[]> = await response.json()
+  if (result.code !== 200) {
+    throw new Error(result.message || '获取建议列表失败')
+  }
+  return result.data
+}
+
+/**
+ * 获取所有简历的优化建议（按简历分组）
+ */
+export async function getAllSuggestions(): Promise<ResumeSuggestionsGroup[]> {
+  const response = await fetch(`${API_BASE}/suggestions/all`)
+  const result: ApiResponse<ResumeSuggestionsGroup[]> = await response.json()
+  if (result.code !== 200) {
+    throw new Error(result.message || '获取建议失败')
+  }
+  return result.data
 }
 
 /**

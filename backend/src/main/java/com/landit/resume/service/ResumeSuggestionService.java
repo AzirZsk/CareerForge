@@ -2,13 +2,21 @@ package com.landit.resume.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.landit.common.enums.ResumeStatus;
 import com.landit.resume.dto.DiagnoseResumeResponse;
+import com.landit.resume.dto.ResumeSuggestionVO;
+import com.landit.resume.dto.ResumeSuggestionsGroupVO;
+import com.landit.resume.entity.Resume;
 import com.landit.resume.entity.ResumeSuggestion;
+import com.landit.resume.mapper.ResumeMapper;
 import com.landit.resume.mapper.ResumeSuggestionMapper;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -21,7 +29,10 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class ResumeSuggestionService extends ServiceImpl<ResumeSuggestionMapper, ResumeSuggestion> {
+
+    private final ResumeMapper resumeMapper;
 
     /**
      * 保存简历优化建议（先删除旧建议，再批量插入新建议）
@@ -131,5 +142,83 @@ public class ResumeSuggestionService extends ServiceImpl<ResumeSuggestionMapper,
             log.info("已删除优化建议: suggestionId={}", suggestionId);
         }
         return result;
+    }
+
+    /**
+     * 获取所有简历的建议（按简历分组）
+     * 只查询已优化简历，每个简历最多显示3条高优先级建议
+     *
+     * @return 分组建议列表
+     */
+    public List<ResumeSuggestionsGroupVO> getAllSuggestionsGrouped() {
+        // 查询所有已优化简历
+        LambdaQueryWrapper<Resume> resumeWrapper = new LambdaQueryWrapper<>();
+        resumeWrapper.eq(Resume::getStatus, ResumeStatus.OPTIMIZED.getValue())
+                .orderByDesc(Resume::getIsPrimary)
+                .orderByDesc(Resume::getUpdatedAt);
+        List<Resume> optimizedResumes = resumeMapper.selectList(resumeWrapper);
+        if (optimizedResumes.isEmpty()) {
+            return new ArrayList<>();
+        }
+        // 遍历每个简历，获取建议并分组
+        List<ResumeSuggestionsGroupVO> result = new ArrayList<>();
+        for (Resume resume : optimizedResumes) {
+            List<ResumeSuggestion> suggestions = getSuggestionsByResumeId(String.valueOf(resume.getId()));
+            if (suggestions.isEmpty()) {
+                continue;
+            }
+            // 按优先级排序：critical > improvement > enhancement
+            List<ResumeSuggestion> sortedSuggestions = suggestions.stream()
+                    .sorted(Comparator.comparingInt(this::getSuggestionPriority))
+                    .limit(3)
+                    .collect(Collectors.toList());
+            // 转换为 VO
+            List<ResumeSuggestionVO> suggestionVOs = sortedSuggestions.stream()
+                    .map(this::toSuggestionVO)
+                    .collect(Collectors.toList());
+            ResumeSuggestionsGroupVO groupVO = ResumeSuggestionsGroupVO.builder()
+                    .resumeId(String.valueOf(resume.getId()))
+                    .resumeName(resume.getName())
+                    .targetPosition(resume.getTargetPosition())
+                    .suggestionCount(suggestions.size())
+                    .suggestions(suggestionVOs)
+                    .build();
+            result.add(groupVO);
+        }
+        log.info("获取所有简历建议分组完成: 已优化简历数={}, 有建议的简历数={}",
+                optimizedResumes.size(), result.size());
+        return result;
+    }
+
+    /**
+     * 获取建议类型的优先级（数值越小优先级越高）
+     */
+    private int getSuggestionPriority(ResumeSuggestion suggestion) {
+        String type = suggestion.getType();
+        if (type == null) {
+            return 3;
+        }
+        return switch (type.toLowerCase()) {
+            case "critical" -> 1;
+            case "improvement" -> 2;
+            case "enhancement" -> 3;
+            default -> 3;
+        };
+    }
+
+    /**
+     * 实体转 VO
+     */
+    private ResumeSuggestionVO toSuggestionVO(ResumeSuggestion entity) {
+        return ResumeSuggestionVO.builder()
+                .id(String.valueOf(entity.getId()))
+                .sectionId(entity.getSectionId())
+                .type(entity.getType())
+                .category(entity.getCategory())
+                .title(entity.getTitle())
+                .description(entity.getDescription())
+                .impact(entity.getImpact())
+                .position(entity.getPosition())
+                .build();
     }
 }

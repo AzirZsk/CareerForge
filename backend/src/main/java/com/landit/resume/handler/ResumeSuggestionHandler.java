@@ -1,6 +1,7 @@
 package com.landit.resume.handler;
 
 import com.landit.resume.dto.ResumeSuggestionVO;
+import com.landit.resume.dto.ResumeSuggestionsGroupVO;
 import com.landit.resume.entity.ResumeSuggestion;
 import com.landit.resume.service.ResumeSuggestionService;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +46,15 @@ public class ResumeSuggestionHandler {
         if (!success) {
             log.warn("删除建议失败或建议不存在: suggestionId={}", suggestionId);
         }
+    }
+
+    /**
+     * 获取所有简历的优化建议（按简历分组）
+     *
+     * @return 分组建议列表
+     */
+    public List<ResumeSuggestionsGroupVO> getAllSuggestionsGrouped() {
+        return suggestionService.getAllSuggestionsGrouped();
     }
 
     /**

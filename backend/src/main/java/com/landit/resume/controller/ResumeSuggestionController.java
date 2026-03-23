@@ -2,6 +2,7 @@ package com.landit.resume.controller;
 
 import com.landit.common.response.ApiResponse;
 import com.landit.resume.dto.ResumeSuggestionVO;
+import com.landit.resume.dto.ResumeSuggestionsGroupVO;
 import com.landit.resume.handler.ResumeSuggestionHandler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -40,6 +41,12 @@ public class ResumeSuggestionController {
             @PathVariable String suggestionId) {
         suggestionHandler.deleteSuggestion(suggestionId);
         return ApiResponse.success(null);
+    }
+
+    @Operation(summary = "获取所有简历的优化建议（按简历分组）")
+    @GetMapping("/all")
+    public ApiResponse<List<ResumeSuggestionsGroupVO>> getAllSuggestions() {
+        return ApiResponse.success(suggestionHandler.getAllSuggestionsGrouped());
     }
 
 }

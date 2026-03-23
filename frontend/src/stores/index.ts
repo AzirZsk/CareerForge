@@ -8,7 +8,6 @@ import { ref, computed } from 'vue'
 import {
   currentUser,
   resumeDetail,
-  resumeSuggestions,
   interviewHistory,
   interviewQuestions,
   interviewDetail,
@@ -23,6 +22,7 @@ import type {
   Resume,
   ResumeDetail,
   ResumeSuggestion,
+  ResumeSuggestionsGroup,
   Interview,
   InterviewQuestions,
   InterviewDetail,
@@ -46,7 +46,8 @@ export const useAppStore = defineStore('app', () => {
   // 简历相关
   const resumeList = ref<Resume[]>([])
   const currentResume = ref<ResumeDetail>(resumeDetail)
-  const suggestions = ref<ResumeSuggestion[]>(resumeSuggestions)
+  const suggestions = ref<ResumeSuggestion[]>([])
+  const suggestionsByResume = ref<ResumeSuggestionsGroup[]>([])
   const primaryResume = ref<PrimaryResumeVO | null>(null)
 
   // 面试相关
@@ -380,6 +381,28 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
+  // 获取简历优化建议
+  async function fetchSuggestions(resumeId: string): Promise<void> {
+    try {
+      const result = await resumeApi.getSuggestions(resumeId)
+      suggestions.value = result
+    } catch (error) {
+      console.error('获取建议列表失败', error)
+      suggestions.value = []
+    }
+  }
+
+  // 获取所有简历的优化建议（按简历分组）
+  async function fetchAllSuggestions(): Promise<void> {
+    try {
+      const result = await resumeApi.getAllSuggestions()
+      suggestionsByResume.value = result
+    } catch (error) {
+      console.error('获取所有建议失败', error)
+      suggestionsByResume.value = []
+    }
+  }
+
   // 更新简历基本信息（名称和目标岗位）
   async function updateResumeBasicInfo(
     resumeId: string,
@@ -411,6 +434,7 @@ export const useAppStore = defineStore('app', () => {
     resumeList,
     currentResume,
     suggestions,
+    suggestionsByResume,
     primaryResume,
     interviews,
     questions,
@@ -443,6 +467,8 @@ export const useAppStore = defineStore('app', () => {
     updateResumeSectionItem,
     deleteResumeSectionItem,
     deleteSuggestion,
+    fetchSuggestions,
+    fetchAllSuggestions,
     updateResumeBasicInfo
   }
 })
