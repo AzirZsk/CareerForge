@@ -12,11 +12,6 @@
       <span class="suggestion-impact" :class="impactClass">{{ suggestion.impact }}影响</span>
       <!-- 操作按钮组（hover时显示） -->
       <div class="action-btns">
-        <button class="apply-btn" @click.stop="handleApply" title="应用建议">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="20 6 9 17 4 12"></polyline>
-          </svg>
-        </button>
         <button class="delete-btn" @click.stop="handleDelete" title="删除建议">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="3 6 5 6 21 6"></polyline>
@@ -40,7 +35,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   delete: [id: string]
-  apply: [suggestion: ResumeSuggestionItem]
 }>()
 
 // 根据类型返回图标
@@ -64,11 +58,6 @@ const impactClass = computed<string>(() => {
 // 处理删除按钮点击
 function handleDelete(): void {
   emit('delete', props.suggestion.id)
-}
-
-// 处理应用按钮点击
-function handleApply(): void {
-  emit('apply', props.suggestion)
 }
 </script>
 
@@ -148,7 +137,6 @@ function handleApply(): void {
   opacity: 1;
 }
 
-.apply-btn,
 .delete-btn {
   padding: $spacing-xs;
   background: transparent;
@@ -162,19 +150,9 @@ function handleApply(): void {
   justify-content: center;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: $color-text-primary;
+    background: rgba(248, 113, 113, 0.15);
+    color: $color-error;
   }
-}
-
-.apply-btn:hover {
-  background: rgba(52, 211, 153, 0.15);
-  color: $color-success;
-}
-
-.delete-btn:hover {
-  background: rgba(248, 113, 113, 0.15);
-  color: $color-error;
 }
 
 .suggestion-description {

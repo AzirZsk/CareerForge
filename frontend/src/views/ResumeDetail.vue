@@ -56,7 +56,6 @@
           <SuggestionsBlock
             v-if="currentSectionDetail"
             :suggestions="sectionSuggestions"
-            @apply="handleApplySuggestion"
             @ignore="handleIgnoreSuggestion"
             @delete="handleDeleteSuggestion"
           />
@@ -318,27 +317,6 @@ const hasAnalyzableContent = computed<boolean>(() => {
     return content !== '{}' && content !== '[]' && content !== ''
   })
 })
-
-// 应用建议 - 跳转到对应模块编辑
-function handleApplySuggestion(suggestion: ResumeSuggestionItem): void {
-  // 1. 找到关联的模块
-  const section = store.currentResume.sections.find((s: ResumeSection) =>
-    s.suggestions?.some((sug: ResumeSuggestionItem) => sug.id === suggestion.id)
-  )
-
-  if (section) {
-    // 2. 选中该模块
-    activeSection.value = section.id
-
-    // 3. 打开编辑弹窗（用户根据建议手动修改）
-    openEditModal()
-
-    // 4. 提示用户根据建议修改
-    toast.info(`请根据建议修改「${section.title}」模块`)
-  } else {
-    toast.warning('该建议未关联具体模块')
-  }
-}
 
 // 忽略建议（占位实现）
 function handleIgnoreSuggestion(suggestion: ResumeSuggestionItem): void {

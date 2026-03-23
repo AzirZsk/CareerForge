@@ -38,7 +38,6 @@
             :key="suggestion.id"
             :suggestion="suggestion"
             @delete="handleDeleteSuggestion"
-            @apply="handleApplySuggestion"
           />
         </TransitionGroup>
       </div>
@@ -57,7 +56,6 @@ defineProps<{
 
 const emit = defineEmits<{
   delete: [id: string]
-  apply: [suggestion: ResumeSuggestionItem]
 }>()
 
 // 展开状态
@@ -71,11 +69,6 @@ function toggleExpand(): void {
 // 处理删除建议
 function handleDeleteSuggestion(id: string): void {
   emit('delete', id)
-}
-
-// 处理应用建议
-function handleApplySuggestion(suggestion: ResumeSuggestionItem): void {
-  emit('apply', suggestion)
 }
 
 // 展开/折叠过渡钩子（用真实高度代替 max-height）
