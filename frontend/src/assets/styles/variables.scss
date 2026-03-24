@@ -114,3 +114,8 @@ $z-overlay: 1000;           // 全屏遮罩层（如对比视图）
 $z-modal-overlay: 1100;     // 需要在全屏遮罩之上显示的弹窗
 $z-toast: 1200;
 $z-tooltip: 1300;
+
+// AI聊天窗口层级
+$z-chat-float: 900;         // 悬浮按钮
+$z-chat-window: 1000;       // 聊天窗口
+$z-chat-dialog: 1020;       // 聊天窗口内的对话框

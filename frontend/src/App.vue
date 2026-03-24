@@ -26,6 +26,9 @@
 
     <!-- 全局 Toast 通知 -->
     <Toast ref="toastRef" />
+
+    <!-- AI聊天悬浮窗口 -->
+    <AIChatFloat />
   </div>
 </template>
 
@@ -33,6 +36,7 @@
 import { ref, onMounted } from 'vue'
 import AppNavbar from '@/components/common/AppNavbar.vue'
 import Toast from '@/components/common/Toast.vue'
+import AIChatFloat from '@/components/chat/AIChatFloat.vue'
 import { setToastInstance } from '@/composables/useToast'
 
 const toastRef = ref<InstanceType<typeof Toast> | null>(null)
