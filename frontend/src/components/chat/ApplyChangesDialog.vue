@@ -98,7 +98,7 @@ interface Emits {
   (e: 'cancel'): void
 }
 
-const props = defineProps<Props>()
+defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 function getTypeLabel(type: string): string {

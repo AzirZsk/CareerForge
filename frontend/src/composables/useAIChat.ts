@@ -5,7 +5,7 @@
 
 import { reactive, onUnmounted } from 'vue'
 import type { ChatMessage, SectionChange, AIChatState } from '@/types/ai-chat'
-import { streamChat, applyChanges as apiApplyChanges, getResumeList } from '@/api/aiChat'
+import { streamChat, applyChanges as apiApplyChanges } from '@/api/aiChat'
 import { getResumes } from '@/api/resume'
 
 function generateId(): string {

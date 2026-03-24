@@ -98,11 +98,11 @@ const imageUrl = computed(() => {
   if (props.selectedImage) {
     return URL.createObjectURL(props.selectedImage)
   }
-  return null
+  return undefined
 })
 
 // 清理图片URL
-watch(imageUrl, (newUrl, oldUrl) => {
+watch(imageUrl, (_newUrl, oldUrl) => {
   if (oldUrl) {
     URL.revokeObjectURL(oldUrl)
   }

@@ -33,7 +33,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { QUICK_COMMANDS, type QuickCommandItem } from '@/types/ai-chat'
+import { QUICK_COMMANDS } from '@/types/ai-chat'
 
 interface Emits {
   (e: 'select', prompt: string): void

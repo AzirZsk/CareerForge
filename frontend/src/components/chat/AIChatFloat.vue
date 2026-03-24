@@ -7,15 +7,18 @@
 <template>
   <div class="ai-chat-float">
     <!-- 悬浮按钮 -->
-    <Transition name="fade">
+    <Transition name="float-fade">
       <button
         v-if="!state.isWindowOpen"
         class="float-button"
         @click="toggleWindow"
         title="AI简历助手"
       >
+        <!-- 状态指示器 -->
+        <span class="status-indicator" :class="{ processing: state.isStreaming }"></span>
+
         <!-- AI图标 -->
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg class="ai-icon" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/>
           <circle cx="8" cy="14" r="1.5" fill="currentColor"/>
           <circle cx="16" cy="14" r="1.5" fill="currentColor"/>
@@ -47,51 +50,151 @@ const { state, toggleWindow, closeWindow } = useAIChat()
   position: fixed;
   bottom: $spacing-xl;
   right: $spacing-xl;
-  z-index: 900;
+  z-index: $z-chat-float;
 }
 
 .float-button {
+  position: relative;
   display: flex;
   align-items: center;
   gap: $spacing-sm;
   padding: $spacing-md $spacing-lg;
   border-radius: $radius-full;
-  background: linear-gradient(135deg, $color-accent, $color-accent-dark);
-  box-shadow: 0 4px 20px rgba(212, 168, 83, 0.4);
+  border: none;
   cursor: pointer;
   color: white;
-  border: none;
-  transition: all 0.3s ease;
+  // 精致渐变：浅金→主金→深金
+  background: linear-gradient(
+    135deg,
+    $color-accent-light 0%,
+    $color-accent 50%,
+    $color-accent-dark 100%
+  );
+  // 多层阴影，质感提升
+  box-shadow:
+    0 4px 16px rgba($color-accent, 0.25),
+    0 8px 32px rgba($color-accent, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transition: all $transition-base;
+  overflow: visible;
+
+  // 微妙脉冲光环
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: inherit;
+    border: 1px solid rgba($color-accent, 0.3);
+    animation: gentle-pulse 2.5s ease-in-out infinite;
+    pointer-events: none;
+  }
 
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 30px rgba(212, 168, 83, 0.5);
+    transform: translateY(-3px);
+    box-shadow:
+      0 6px 20px rgba($color-accent, 0.35),
+      0 12px 40px rgba($color-accent, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+
+    // hover 时脉冲加速
+    &::before {
+      animation-duration: 1.5s;
+    }
+
+    .ai-icon {
+      animation-play-state: paused;
+    }
   }
 
   &:active {
+    transform: translateY(-1px);
+    box-shadow:
+      0 2px 8px rgba($color-accent, 0.3),
+      0 4px 16px rgba($color-accent, 0.15);
+  }
+}
+
+// 状态指示器
+.status-indicator {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: $color-success;
+  box-shadow: 0 0 6px $color-success;
+  transition: all $transition-fast;
+
+  &.processing {
+    background: $color-warning;
+    box-shadow: 0 0 6px $color-warning;
+    animation: processing-blink 1s ease-in-out infinite;
+  }
+}
+
+// AI 图标微动效
+.ai-icon {
+  flex-shrink: 0;
+  animation: icon-float 3s ease-in-out infinite;
+}
+
+.button-text {
+  font-family: $font-body;
+  font-size: $text-sm;
+  font-weight: $weight-medium;
+  white-space: nowrap;
+}
+
+// 脉冲动画
+@keyframes gentle-pulse {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
+
+// 图标悬浮
+@keyframes icon-float {
+  0%, 100% {
     transform: translateY(0);
   }
-
-  svg {
-    flex-shrink: 0;
-  }
-
-  .button-text {
-    font-family: $font-body;
-    font-size: $text-sm;
-    font-weight: $weight-medium;
-    white-space: nowrap;
+  50% {
+    transform: translateY(-2px);
   }
 }
 
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease, transform 0.3s ease;
+// 处理中闪烁
+@keyframes processing-blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }
 
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-  transform: scale(0.9);
+// 过渡动画
+.float-fade-enter-active {
+  animation: float-in 0.4s $transition-spring;
+}
+
+.float-fade-leave-active {
+  animation: float-in 0.25s ease reverse;
+}
+
+@keyframes float-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 </style>
