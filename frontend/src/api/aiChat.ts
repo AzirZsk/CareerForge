@@ -48,7 +48,6 @@ export async function* streamChat(
   try {
     while (true) {
       const { done, value } = await reader.read()
-      if (done) break
 
       buffer += decoder.decode(value, { stream: true })
 
@@ -56,16 +55,37 @@ export async function* streamChat(
       buffer = lines.pop() || ''
 
       for (const line of lines) {
-        if (line.startsWith('data:')) {
-          const jsonStr = line.slice(5).trim()
+        const trimmedLine = line.trim()
+        if (trimmedLine.startsWith('data:')) {
+          const jsonStr = trimmedLine.slice(5).trim()
           if (jsonStr) {
             try {
               yield JSON.parse(jsonStr) as ChatEvent
             } catch (e) {
-              console.error('[AIChat] 解析事件失败', e)
+              console.error('[AIChat] 解析事件失败', e, jsonStr)
             }
           }
         }
+      }
+
+      if (done) {
+        if (buffer.trim()) {
+          const remainingLines = buffer.split('\n')
+          for (const line of remainingLines) {
+            const trimmedLine = line.trim()
+            if (trimmedLine.startsWith('data:')) {
+              const jsonStr = trimmedLine.slice(5).trim()
+              if (jsonStr) {
+                try {
+                  yield JSON.parse(jsonStr) as ChatEvent
+                } catch (e) {
+                  console.error('[AIChat] 解析残留事件失败', e, jsonStr)
+                }
+              }
+            }
+          }
+        }
+        break
       }
     }
   } finally {
