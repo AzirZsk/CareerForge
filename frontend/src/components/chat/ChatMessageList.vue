@@ -15,12 +15,12 @@
 
       <!-- 加载中提示 -->
       <div v-if="isStreaming && !hasStreamingMessage" class="loading-indicator">
+        <span class="loading-text">正在思考</span>
         <div class="typing-dots">
           <span></span>
           <span></span>
           <span></span>
         </div>
-        <span class="loading-text">AI正在思考...</span>
       </div>
     </div>
   </div>

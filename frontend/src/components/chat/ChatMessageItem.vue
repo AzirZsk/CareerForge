@@ -23,9 +23,7 @@
         </svg>
       </template>
       <template v-else>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/>
-        </svg>
+        <AIIcon :size="20" />
       </template>
     </div>
 
@@ -39,10 +37,11 @@
         </div>
 
         <!-- 文本内容 -->
-        <div class="message-text" v-html="formattedContent"></div>
-
-        <!-- 流式输出光标 -->
-        <span v-if="message.isStreaming" class="streaming-cursor"></span>
+        <div
+          class="message-text"
+          :class="{ 'is-streaming': message.isStreaming }"
+          v-html="formattedContent"
+        ></div>
       </div>
 
       <!-- 时间戳 -->
@@ -55,6 +54,7 @@
 import { computed } from 'vue'
 import type { ChatMessage } from '@/types/ai-chat'
 import { useMarkdown } from '@/composables/useMarkdown'
+import AIIcon from '@/components/common/AIIcon.vue'
 
 interface Props {
   message: ChatMessage
@@ -215,14 +215,22 @@ function formatTime(timestamp: number): string {
   word-break: break-word;
 }
 
-.streaming-cursor {
-  display: inline-block;
-  width: 2px;
-  height: 1em;
-  background: $color-accent;
-  margin-left: 2px;
-  animation: blink 1s infinite;
-  vertical-align: text-bottom;
+// 流式输出光标 - 使用伪元素实现，紧跟在最后一个段落后面
+.message-text.is-streaming {
+  :deep(p:last-child) {
+    display: inline;
+
+    &::after {
+      content: '';
+      display: inline-block;
+      width: 2px;
+      height: 1em;
+      background: $color-accent;
+      margin-left: 2px;
+      animation: blink 1s infinite;
+      vertical-align: text-bottom;
+    }
+  }
 }
 
 @keyframes blink {
