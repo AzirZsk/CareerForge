@@ -77,6 +77,7 @@ function scrollToBottom() {
   flex: 1;
   overflow-y: auto;
   padding: $spacing-lg;
+  overscroll-behavior: contain;
 
   &::-webkit-scrollbar {
     width: 6px;

@@ -136,7 +136,8 @@ function formatTime(timestamp: number): string {
 }
 
 .message-content {
-  padding: $spacing-md $spacing-md $spacing-lg $spacing-md;
+  padding: $spacing-md;
+  padding-bottom: $spacing-lg;
   border-radius: $radius-md;
   position: relative;
 
@@ -215,6 +216,12 @@ function formatTime(timestamp: number): string {
   bottom: $spacing-xs;
   font-size: 10px;
   color: $color-text-tertiary;
-  opacity: 0.7;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.message-item:hover .message-time {
+  opacity: 0.5;
 }
 </style>

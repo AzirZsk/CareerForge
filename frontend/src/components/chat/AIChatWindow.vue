@@ -54,6 +54,7 @@
 </template>
 
 <script setup lang="ts">
+import { watch } from 'vue'
 import { useAIChat } from '@/composables/useAIChat'
 import ChatHeader from './ChatHeader.vue'
 import ChatMessageList from './ChatMessageList.vue'
@@ -70,8 +71,20 @@ interface Emits {
   (e: 'close'): void
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+
+watch(
+  () => props.open,
+  (isOpen) => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+  },
+  { immediate: true }
+)
 
 const {
   state,
@@ -104,6 +117,7 @@ function handleClose() {
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  overscroll-behavior: contain;
 }
 
 .chat-window {
