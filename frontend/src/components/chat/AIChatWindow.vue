@@ -115,7 +115,7 @@ function handleClose() {
   right: 0;
   bottom: 0;
   background: $color-bg-primary;
-  z-index: $z-modal-backdrop;
+  z-index: $z-chat-window;
   display: flex;
   flex-direction: column;
   overscroll-behavior: contain;
