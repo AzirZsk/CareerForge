@@ -95,10 +95,7 @@ export function useAIChat() {
     }
   }
 
-  let eventCount = 0
   function handleEvent(event: any): void {
-    eventCount++
-    console.log(`[useAIChat] handleEvent #${eventCount}:`, event)
     switch (event.type) {
       case 'chunk':
         handleChunkEvent(event.content as string)
@@ -116,20 +113,18 @@ export function useAIChat() {
   }
 
   function handleChunkEvent(content: string): void {
-    console.log(`[useAIChat] handleChunkEvent 收到内容: "${content}"`)
     if (!currentAiMessage) {
-      currentAiMessage = {
+      const newMessage: ChatMessage = {
         id: generateId(),
         role: 'assistant',
         content: '',
         timestamp: Date.now(),
         isStreaming: true
       }
-      state.messages.push(currentAiMessage)
-      console.log('[useAIChat] 创建新的 AI 消息对象')
+      state.messages.push(newMessage)
+      currentAiMessage = state.messages[state.messages.length - 1]
     }
     currentAiMessage.content += content
-    console.log(`[useAIChat] 当前消息内容长度: ${currentAiMessage.content.length}`)
   }
 
   function handleSuggestionEvent(changes: SectionChange[]): void {
