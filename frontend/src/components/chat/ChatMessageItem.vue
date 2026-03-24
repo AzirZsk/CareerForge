@@ -136,7 +136,7 @@ function formatTime(timestamp: number): string {
 }
 
 .message-content {
-  padding: $spacing-md;
+  padding: $spacing-md $spacing-md $spacing-lg $spacing-md;
   border-radius: $radius-md;
   position: relative;
 
@@ -210,9 +210,11 @@ function formatTime(timestamp: number): string {
 }
 
 .message-time {
-  font-size: $text-xs;
+  position: absolute;
+  right: $spacing-sm;
+  bottom: $spacing-xs;
+  font-size: 10px;
   color: $color-text-tertiary;
-  margin-top: $spacing-xs;
-  text-align: right;
+  opacity: 0.7;
 }
 </style>
