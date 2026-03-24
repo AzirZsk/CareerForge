@@ -3,6 +3,7 @@ package com.landit.chat.service;
 import com.landit.chat.dto.ChatEvent;
 import com.landit.chat.dto.ChatRequest;
 import com.landit.chat.dto.SectionChange;
+import com.landit.common.config.AIPromptProperties;
 import com.landit.common.service.FileToImageService;
 import com.landit.resume.dto.ResumeDetailVO;
 import com.landit.resume.handler.ResumeHandler;
@@ -30,6 +31,7 @@ public class AIChatService {
     private final ChatClient chatClient;
     private final ResumeHandler resumeHandler;
     private final FileToImageService fileToImageService;
+    private final AIPromptProperties aiPromptProperties;
 
     /**
      * 处理聊天请求，返回Flux流
@@ -53,11 +55,11 @@ public class AIChatService {
                 resumeContext = loadResumeContext(request.getResumeId());
             }
 
-            // 构建系统提示词
-            String systemPrompt = buildSystemPrompt(resumeContext);
+            // 构建系统提示词（固定部分）
+            String systemPrompt = buildSystemPrompt();
 
-            // 构建用户消息（包含历史上下文）
-            String userMessage = buildUserMessage(request);
+            // 构建用户消息（包含简历上下文和历史对话）
+            String userMessage = buildUserMessage(request, resumeContext);
 
             log.info("[AIChat] 开始AI对话: resumeId={}, message={}", request.getResumeId(), request.getCurrentUserMessage());
 
@@ -127,41 +129,25 @@ public class AIChatService {
     }
 
     /**
-     * 构建系统提示词
+     * 构建系统提示词（固定部分，从配置读取）
      */
-    private String buildSystemPrompt(String resumeContext) {
-        return """
-                你是一位专业的简历优化顾问，帮助用户通过对话方式优化简历内容。
-
-                # 角色定义
-                你是一位经验丰富的简历优化专家，擅长：
-                - 分析简历问题，给出专业诊断
-                - 优化工作经历、项目描述等内容
-                - 提供量化的成果描述建议
-                - 帮助用户突出核心竞争力
-
-                # 当前简历数据
-                """ + resumeContext + """
-
-                # 对话策略
-                1. 首先理解用户需求（优化目标、目标岗位等）
-                2. 根据需求提供具体、可操作的建议
-                3. 如果用户询问简历相关内容，基于上述简历上下文回答
-                4. 保持简洁明了，每次回复控制在200字以内
-                5. 语气友好专业，使用中文回复
-
-                # 注意事项
-                - 不要编造不存在的简历信息
-                - 如果用户没有选择简历，提示用户先选择一份简历
-                - 提供的建议要具体、可执行
-                """;
+    private String buildSystemPrompt() {
+        return aiPromptProperties.getChat().getAdvisorConfig().getSystemPrompt();
     }
 
+
+
     /**
-     * 构建用户消息（包含历史上下文）
+     * 构建用户消息（包含简历上下文和历史对话）
      */
-    private String buildUserMessage(ChatRequest request) {
+    private String buildUserMessage(ChatRequest request, String resumeContext) {
         StringBuilder message = new StringBuilder();
+
+        // 添加简历上下文（如果有）
+        if (resumeContext != null && !resumeContext.isEmpty()) {
+            String template = aiPromptProperties.getChat().getAdvisorConfig().getUserPromptTemplate();
+            message.append(template.replace("{resumeContext}", resumeContext)).append("\n\n");
+        }
 
         // 添加历史对话上下文
         if (request.getMessages() != null && !request.getMessages().isEmpty()) {

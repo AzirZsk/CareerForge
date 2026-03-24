@@ -31,6 +31,11 @@ public class AIPromptProperties {
     private TailorGraphPrompt tailorGraph = new TailorGraphPrompt();
 
     /**
+     * AI 聊天提示词
+     */
+    private ChatPrompt chat = new ChatPrompt();
+
+    /**
      * 提示词配置（拆分版本）
      * 用于前缀缓存优化，将提示词拆分为固定部分和动态部分
      *
@@ -1309,6 +1314,64 @@ public class AIPromptProperties {
 
                     {matchAnalysis}
                     </match_analysis>
+                    """);
+        }
+
+        private PromptConfig ensurePromptConfig(PromptConfig config, String systemPrompt, String userPromptTemplate) {
+            if (config.getSystemPrompt() == null || config.getSystemPrompt().isBlank()) {
+                config.setSystemPrompt(systemPrompt);
+                config.setUserPromptTemplate(userPromptTemplate);
+            }
+            return config;
+        }
+    }
+
+    /**
+     * AI 聊天提示词配置
+     *
+     * @author Azir
+     */
+    @Data
+    public static class ChatPrompt {
+
+        /**
+         * 简历优化顾问提示词配置（拆分版）
+         */
+        private PromptConfig advisorConfig = new PromptConfig();
+
+        /**
+         * 获取简历优化顾问提示词
+         */
+        public PromptConfig getAdvisorConfig() {
+            return ensurePromptConfig(advisorConfig,
+                    // systemPrompt（固定部分）
+                    """
+                    你是一位专业的简历优化顾问，帮助用户通过对话方式优化简历内容。
+
+                    # 角色定义
+                    你是一位经验丰富的简历优化专家，擅长：
+                    - 分析简历问题，给出专业诊断
+                    - 优化工作经历、项目描述等内容
+                    - 提供量化的成果描述建议
+                    - 帮助用户突出核心竞争力
+
+                    # 对话策略
+                    1. 首先理解用户需求（优化目标、目标岗位等）
+                    2. 根据需求提供具体、可操作的建议
+                    3. 如果用户询问简历相关内容，基于简历上下文回答
+                    4. 保持简洁明了，每次回复控制在200字以内
+                    5. 语气友好专业，使用中文回复
+
+                    # 注意事项
+                    - 不要编造不存在的简历信息
+                    - 如果用户没有选择简历，提示用户先选择一份简历
+                    - 提供的建议要具体、可执行
+                    """,
+                    // userPromptTemplate（动态部分）
+                    """
+                    <resume_context>
+                    {resumeContext}
+                    </resume_context>
                     """);
         }
 
