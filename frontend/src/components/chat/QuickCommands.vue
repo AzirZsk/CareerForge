@@ -66,6 +66,9 @@ function getCategoryIcon(category: string): string {
   padding: $spacing-md $spacing-lg;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   background: rgba($color-bg-secondary, 0.5);
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .commands-label {

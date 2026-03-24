@@ -101,6 +101,9 @@ function scrollToBottom() {
   display: flex;
   flex-direction: column;
   gap: $spacing-md;
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .loading-indicator {

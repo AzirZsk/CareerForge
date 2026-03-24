@@ -143,9 +143,12 @@ function handleKeydown(event: KeyboardEvent) {
 
 <style lang="scss" scoped>
 .chat-input-area {
-  padding: $spacing-md $spacing-lg;
+  padding: $spacing-md $spacing-xl $spacing-xl;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   background: $color-bg-secondary;
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .image-preview {

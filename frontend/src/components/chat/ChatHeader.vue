@@ -75,7 +75,7 @@ function handleResumeChange(event: Event) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: $spacing-lg;
+  padding: $spacing-lg $spacing-xl;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   background: $color-bg-tertiary;
 }
@@ -83,18 +83,23 @@ function handleResumeChange(event: Event) {
 .header-left {
   display: flex;
   align-items: center;
-  gap: $spacing-lg;
+  gap: $spacing-xl;
 }
 
 .header-title {
   display: flex;
   align-items: center;
-  gap: $spacing-sm;
+  gap: $spacing-md;
   color: $color-accent;
+
+  svg {
+    width: 28px;
+    height: 28px;
+  }
 
   .title {
     font-family: $font-display;
-    font-size: $text-lg;
+    font-size: $text-xl;
     font-weight: $weight-semibold;
     color: $color-text-primary;
   }
@@ -112,7 +117,7 @@ function handleResumeChange(event: Event) {
     color: $color-text-secondary;
     font-size: $text-sm;
     cursor: pointer;
-    min-width: 150px;
+    min-width: 180px;
 
     &:focus {
       outline: none;
@@ -136,14 +141,19 @@ function handleResumeChange(event: Event) {
 }
 
 .close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
   color: $color-text-tertiary;
   padding: $spacing-sm;
-  border-radius: $radius-sm;
+  border-radius: $radius-md;
   transition: all 0.2s ease;
 
   &:hover {
     color: $color-text-primary;
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.08);
   }
 }
 </style>

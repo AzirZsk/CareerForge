@@ -6,9 +6,9 @@
 
 <template>
   <Teleport to="body">
-    <Transition name="slide-up">
-      <div v-if="open" class="chat-window-overlay" @click.self="handleClose">
-        <div class="chat-window">
+    <Transition name="fullscreen-slide">
+      <div v-if="open" class="chat-fullscreen">
+        <div class="chat-container">
           <!-- 头部 -->
           <ChatHeader
             :resume-list="state.resumeList"
@@ -17,17 +17,20 @@
             @close="handleClose"
           />
 
-          <!-- 消息列表 -->
-          <ChatMessageList
-            :messages="state.messages"
-            :is-streaming="state.isStreaming"
-          />
+          <!-- 主内容区 -->
+          <div class="chat-main">
+            <!-- 消息列表 -->
+            <ChatMessageList
+              :messages="state.messages"
+              :is-streaming="state.isStreaming"
+            />
 
-          <!-- 快捷指令 -->
-          <QuickCommands
-            v-if="state.messages.length <= 1"
-            @select="handleQuickCommand"
-          />
+            <!-- 快捷指令 -->
+            <QuickCommands
+              v-if="state.messages.length <= 1"
+              @select="handleQuickCommand"
+            />
+          </div>
 
           <!-- 输入区域 -->
           <ChatInputArea
@@ -105,51 +108,46 @@ function handleClose() {
 </script>
 
 <style lang="scss" scoped>
-.chat-window-overlay {
+.chat-fullscreen {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
+  background: $color-bg-primary;
+  z-index: $z-modal-backdrop;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
+  flex-direction: column;
   overscroll-behavior: contain;
 }
 
-.chat-window {
-  width: 90%;
-  max-width: 600px;
-  height: 80vh;
-  max-height: 700px;
-  background: $color-bg-secondary;
-  border-radius: $radius-lg;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+.chat-container {
+  width: 100%;
+  height: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-.slide-up-enter-active,
-.slide-up-leave-active {
-  transition: all 0.3s ease;
-
-  .chat-window {
-    transition: all 0.3s ease;
-  }
+.chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
 }
 
-.slide-up-enter-from,
-.slide-up-leave-to {
-  opacity: 0;
+// 全屏滑入动画
+.fullscreen-slide-enter-active,
+.fullscreen-slide-leave-active {
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
 
-  .chat-window {
-    transform: translateY(20px) scale(0.95);
-    opacity: 0;
-  }
+.fullscreen-slide-enter-from,
+.fullscreen-slide-leave-to {
+  opacity: 0;
+  transform: translateY(30px);
 }
 </style>
