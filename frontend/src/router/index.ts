@@ -83,8 +83,13 @@ router.beforeEach(async (to: RouteLocationNormalized, _from: RouteLocationNormal
   // 检查用户是否已初始化
   if (!store.isInitialized) {
     const status = await store.checkUserExists()
+    // 用户不存在 → 跳转 onboarding
     if (!status.exists && to.name !== 'Onboarding') {
       return next({ name: 'Onboarding' })
+    }
+    // 用户已存在 → 访问 onboarding 时跳转首页
+    if (status.exists && to.name === 'Onboarding') {
+      return next({ name: 'Home' })
     }
   }
 

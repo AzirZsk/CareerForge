@@ -29,18 +29,21 @@
       </template>
     </div>
 
-    <!-- 消息内容 -->
-    <div class="message-content">
-      <!-- 图片预览 -->
-      <div v-if="message.imageUrl" class="message-image">
-        <img :src="message.imageUrl" alt="上传的图片" />
+    <!-- 消息主体 -->
+    <div class="message-body">
+      <!-- 消息内容 -->
+      <div class="message-content">
+        <!-- 图片预览 -->
+        <div v-if="message.imageUrl" class="message-image">
+          <img :src="message.imageUrl" alt="上传的图片" />
+        </div>
+
+        <!-- 文本内容 -->
+        <div class="message-text" v-html="formattedContent"></div>
+
+        <!-- 流式输出光标 -->
+        <span v-if="message.isStreaming" class="streaming-cursor"></span>
       </div>
-
-      <!-- 文本内容 -->
-      <div class="message-text" v-html="formattedContent"></div>
-
-      <!-- 流式输出光标 -->
-      <span v-if="message.isStreaming" class="streaming-cursor"></span>
 
       <!-- 时间戳 -->
       <div class="message-time">{{ formatTime(message.timestamp) }}</div>
@@ -88,6 +91,10 @@ function formatTime(timestamp: number): string {
       background: rgba($color-accent, 0.2);
       border: 1px solid rgba($color-accent, 0.3);
     }
+
+    .message-body {
+      align-items: flex-end;
+    }
   }
 
   &.message-assistant {
@@ -102,6 +109,10 @@ function formatTime(timestamp: number): string {
       background: $color-bg-tertiary;
       border: 1px solid rgba(255, 255, 255, 0.06);
     }
+
+    .message-body {
+      align-items: flex-start;
+    }
   }
 
   &.message-system {
@@ -114,6 +125,14 @@ function formatTime(timestamp: number): string {
       text-align: center;
       font-size: $text-sm;
       color: $color-text-secondary;
+    }
+
+    .message-body {
+      align-items: center;
+    }
+
+    .message-time {
+      display: none;
     }
   }
 
@@ -135,11 +154,16 @@ function formatTime(timestamp: number): string {
   color: $color-text-primary;
 }
 
+.message-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 100%;
+}
+
 .message-content {
   padding: $spacing-md;
-  padding-bottom: $spacing-lg;
   border-radius: $radius-md;
-  position: relative;
 
   :deep(p) {
     margin: 0 0 $spacing-sm 0;
@@ -211,17 +235,19 @@ function formatTime(timestamp: number): string {
 }
 
 .message-time {
-  position: absolute;
-  right: $spacing-sm;
-  bottom: $spacing-xs;
   font-size: 10px;
   color: $color-text-tertiary;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  pointer-events: none;
+  padding: 0 $spacing-xs;
+  opacity: 0.6;
 }
 
-.message-item:hover .message-time {
-  opacity: 0.5;
+// 用户消息时间在右边
+.message-user .message-time {
+  text-align: right;
+}
+
+// AI消息时间在左边
+.message-assistant .message-time {
+  text-align: left;
 }
 </style>

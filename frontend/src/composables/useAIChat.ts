@@ -5,28 +5,37 @@
 
 import { reactive, onUnmounted } from 'vue'
 import type { ChatMessage, SectionChange, AIChatState } from '@/types/ai-chat'
-import { streamChat, applyChanges as apiApplyChanges } from '@/api/aiChat'
+import { streamChat, applyChanges as apiApplyChanges, getChatHistory } from '@/api/aiChat'
 import { getResumes } from '@/api/resume'
 
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }
 
-export function useAIChat() {
-  const state = reactive<AIChatState>({
-    isWindowOpen: false,
-    currentResumeId: null,
-    resumeList: [],
-    messages: [],
-    isStreaming: false,
-    showApplyDialog: false,
-    pendingChanges: [],
-    currentInput: '',
-    selectedImage: null,
-    error: null
-  })
+// 单例状态
+let stateInstance: AIChatState | null = null
+let currentAiMessage: ChatMessage | null = null
 
-  let currentAiMessage: ChatMessage | null = null
+function getState(): AIChatState {
+  if (!stateInstance) {
+    stateInstance = reactive<AIChatState>({
+      isWindowOpen: false,
+      currentResumeId: null,
+      resumeList: [],
+      messages: [],
+      isStreaming: false,
+      showApplyDialog: false,
+      pendingChanges: [],
+      currentInput: '',
+      selectedImage: null,
+      error: null
+    })
+  }
+  return stateInstance
+}
+
+export function useAIChat() {
+  const state = getState()
 
   async function loadResumeList(): Promise<void> {
     try {
@@ -38,6 +47,24 @@ export function useAIChat() {
     } catch (error) {
       console.error('[AIChat] 加载简历列表失败', error)
       state.error = '加载简历列表失败'
+    }
+  }
+
+  /**
+   * 从后端加载聊天历史
+   */
+  async function loadHistory(resumeId: string): Promise<void> {
+    try {
+      const history = await getChatHistory(resumeId)
+      state.messages = history.map(m => ({
+        id: m.id,
+        role: m.role as 'user' | 'assistant' | 'system',
+        content: m.content,
+        timestamp: new Date(m.createdAt).getTime()
+      }))
+    } catch (error) {
+      console.error('[AIChat] 加载历史失败', error)
+      state.messages = []
     }
   }
 
@@ -73,12 +100,8 @@ export function useAIChat() {
     currentAiMessage = null
 
     try {
-      const history = state.messages
-        .filter(m => m.role !== 'system')
-        .slice(-20)
-        .map(m => ({ role: m.role, content: m.content }))
-
-      for await (const event of streamChat(message, state.currentResumeId, imageToSend, history)) {
+      // 不再发送历史消息，历史消息由后端从数据库加载
+      for await (const event of streamChat(message, state.currentResumeId, imageToSend)) {
         handleEvent(event)
       }
     } catch (error) {
@@ -152,20 +175,30 @@ export function useAIChat() {
     }
   }
 
-  function handleResumeChange(resumeId: string | null): void {
+  /**
+   * 切换简历时从后端加载历史消息
+   */
+  async function handleResumeChange(resumeId: string | null): Promise<void> {
     state.currentResumeId = resumeId
-    state.messages = []
     state.pendingChanges = []
     state.showApplyDialog = false
 
     if (resumeId) {
-      const resume = state.resumeList.find(r => r.id === resumeId)
-      state.messages.push({
-        id: generateId(),
-        role: 'system',
-        content: `已选择简历「${resume?.name}」，您现在可以询问关于这份简历的任何问题。`,
-        timestamp: Date.now()
-      })
+      // 从后端加载历史消息
+      await loadHistory(resumeId)
+
+      // 如果没有历史消息，添加欢迎提示
+      if (state.messages.length === 0) {
+        const resume = state.resumeList.find(r => r.id === resumeId)
+        state.messages.push({
+          id: generateId(),
+          role: 'system',
+          content: `已选择简历「${resume?.name}」，您现在可以询问关于这份简历的任何问题。`,
+          timestamp: Date.now()
+        })
+      }
+    } else {
+      state.messages = []
     }
   }
 
@@ -220,6 +253,10 @@ export function useAIChat() {
 
   function toggleWindow(): void {
     state.isWindowOpen = !state.isWindowOpen
+    // 窗口打开时加载简历列表
+    if (state.isWindowOpen && state.resumeList.length === 0) {
+      loadResumeList()
+    }
   }
 
   function closeWindow(): void {
@@ -234,11 +271,10 @@ export function useAIChat() {
     })
   })
 
-  loadResumeList()
-
   return {
     state,
     loadResumeList,
+    loadHistory,
     sendMessage,
     handleResumeChange,
     handleQuickCommand,

@@ -124,8 +124,6 @@ function handleClose() {
 .chat-container {
   width: 100%;
   height: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
   display: flex;
   flex-direction: column;
   overflow: hidden;

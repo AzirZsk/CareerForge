@@ -1,12 +1,12 @@
 package com.landit.chat.handler;
 
 import com.landit.chat.dto.ChatEvent;
-import com.landit.chat.dto.ChatRequest;
+import com.landit.chat.dto.ChatStreamRequest;
 import com.landit.chat.service.AIChatService;
+import com.landit.resume.util.GraphSseHelper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -34,20 +34,19 @@ public class AIChatHandler {
     /**
      * 流式处理聊天请求
      *
-     * @param request 聊天请求
-     * @param imageData 图片数据（可选）
+     * @param request 聊天请求（包含图片字段）
      * @param response HTTP响应
      * @return SSE事件发射器
      */
-    public SseEmitter streamChat(ChatRequest request, byte[] imageData, HttpServletResponse response) {
+    public SseEmitter streamChat(ChatStreamRequest request, HttpServletResponse response) {
         log.info("[AIChat] 开始SSE流式聊天: resumeId={}, hasImage={}",
                 request.getResumeId(),
-                imageData != null && imageData.length > 0);
+                request.getImage() != null && !request.getImage().isEmpty());
 
-        configureSseResponse(response);
+        GraphSseHelper.configureSseResponse(response);
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT);
 
-        chatService.chat(request, imageData).subscribe(
+        chatService.chat(request).subscribe(
                 event -> sendSseEvent(emitter, event),
                 error -> {
                     log.error("[AIChat] 流异常", error);
@@ -80,16 +79,6 @@ public class AIChatHandler {
         return emitter;
     }
 
-    /**
-     * 配置SSE响应头
-     * 复用ResumeOptimizeGraphHandler的配置
-     */
-    private void configureSseResponse(HttpServletResponse response) {
-        response.setHeader("X-Accel-Buffering", "no");
-        response.setHeader("Cache-Control", "no-cache");
-        response.setHeader("Connection", "keep-alive");
-        response.setContentType(MediaType.TEXT_EVENT_STREAM_VALUE);
-    }
 
     /**
      * 发送SSE事件
