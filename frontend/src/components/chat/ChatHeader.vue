@@ -35,13 +35,28 @@
       </div>
     </div>
 
-    <!-- 关闭按钮 -->
-    <button class="close-btn" @click="$emit('close')">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="18" y1="6" x2="6" y2="18"></line>
-        <line x1="6" y1="6" x2="18" y2="18"></line>
-      </svg>
-    </button>
+    <!-- 操作按钮 -->
+    <div class="header-actions">
+      <!-- 新会话按钮 -->
+      <button
+        class="new-session-btn"
+        @click="$emit('newSession')"
+        title="开始新会话"
+        :disabled="!currentResumeId"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+      </button>
+
+      <!-- 关闭按钮 -->
+      <button class="close-btn" @click="$emit('close')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
   </header>
 </template>
 
@@ -57,6 +72,7 @@ interface Props {
 interface Emits {
   (e: 'resumeChange', resumeId: string | null): void
   (e: 'close'): void
+  (e: 'newSession'): void
 }
 
 defineProps<Props>()
@@ -153,6 +169,34 @@ function handleResumeChange(event: Event) {
   &:hover {
     color: $color-text-primary;
     background: rgba(255, 255, 255, 0.08);
+  }
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+}
+
+.new-session-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  color: $color-text-tertiary;
+  padding: $spacing-sm;
+  border-radius: $radius-md;
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    color: $color-accent;
+    background: rgba(212, 168, 83, 0.1);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 }
 </style>

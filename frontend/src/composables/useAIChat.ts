@@ -5,7 +5,7 @@
 
 import { reactive, onUnmounted } from 'vue'
 import type { ChatMessage, SectionChange, AIChatState } from '@/types/ai-chat'
-import { streamChat, applyChanges as apiApplyChanges, getChatHistory } from '@/api/aiChat'
+import { streamChat, applyChanges as apiApplyChanges, getChatHistory, clearChatHistory } from '@/api/aiChat'
 import { getResumes } from '@/api/resume'
 
 function generateId(): string {
@@ -243,6 +243,40 @@ export function useAIChat() {
     state.pendingChanges = []
   }
 
+  /**
+   * 开始新会话 - 清空当前对话历史
+   */
+  async function startNewSession(): Promise<void> {
+    if (!state.currentResumeId) return
+
+    try {
+      // 调用后端清空历史
+      await clearChatHistory(state.currentResumeId)
+
+      // 清空前端消息列表
+      state.messages = []
+      state.pendingChanges = []
+      state.showApplyDialog = false
+
+      // 添加欢迎提示
+      const resume = state.resumeList.find(r => r.id === state.currentResumeId)
+      state.messages.push({
+        id: generateId(),
+        role: 'system',
+        content: `已开始新会话，您可以继续询问关于「${resume?.name}」的问题。`,
+        timestamp: Date.now()
+      })
+    } catch (error) {
+      console.error('[AIChat] 清空历史失败', error)
+      state.messages.push({
+        id: generateId(),
+        role: 'system',
+        content: '❌ 开始新会话失败，请稍后重试',
+        timestamp: Date.now()
+      })
+    }
+  }
+
   function handleImageSelect(file: File): void {
     state.selectedImage = file
   }
@@ -284,6 +318,7 @@ export function useAIChat() {
     handleImageSelect,
     handleImageRemove,
     toggleWindow,
-    closeWindow
+    closeWindow,
+    startNewSession
   }
 }

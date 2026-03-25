@@ -15,6 +15,7 @@
             :current-resume-id="state.currentResumeId"
             @resume-change="handleResumeChange"
             @close="handleClose"
+            @new-session="startNewSession"
           />
 
           <!-- 主内容区 -->
@@ -98,7 +99,8 @@ const {
   handleRegenerate,
   handleCancelChanges,
   handleImageSelect,
-  handleImageRemove
+  handleImageRemove,
+  startNewSession
 } = useAIChat()
 
 function handleClose() {
