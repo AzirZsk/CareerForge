@@ -1,5 +1,10 @@
 package com.landit.chat.service;
 
+import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.streaming.OutputType;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.landit.chat.dto.ChatEvent;
 import com.landit.chat.dto.ChatStreamRequest;
 import com.landit.chat.dto.SectionChange;
@@ -17,11 +22,12 @@ import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * AI聊天服务
- * 处理聊天请求并返回流式响应
- * 消息历史存储在数据库中，刷新页面不丢失
+ * 使用 ReactAgent 处理聊天请求并返回流式响应
+ * 消息历史同时存储在数据库和 Agent MemorySaver 中
  *
  * @author Azir
  */
@@ -30,6 +36,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AIChatService {
 
+    private final ReactAgent chatAgent;
     private final ChatClient chatClient;
     private final ResumeHandler resumeHandler;
     private final FileToImageService fileToImageService;
@@ -38,7 +45,7 @@ public class AIChatService {
 
     /**
      * 处理聊天请求，返回Flux流
-     * 消息历史从数据库加载，AI回复后保存到数据库
+     * 使用 ReactAgent 进行对话，支持多轮对话上下文
      *
      * @param request 聊天请求（包含图片字段）
      * @return SSE事件流
@@ -46,46 +53,46 @@ public class AIChatService {
     public Flux<ChatEvent> chat(ChatStreamRequest request) {
         try {
             String resumeId = request.getResumeId();
-
             // 1. 保存用户消息到数据库（如果有 resumeId）
             if (resumeId != null && !resumeId.isEmpty()) {
                 chatMessageService.saveMessage(resumeId, "user", request.getCurrentUserMessage());
             }
 
-            // 2. 处理图片
+            // 2. 处理图片（如果有图片，暂时使用 ChatClient，后续再优化）
             List<Media> mediaList = processImage(request.getImage());
+            if (!mediaList.isEmpty()) {
+                log.info("[AIChat] 检测到图片输入，使用 ChatClient 处理");
+                return chatWithImage(request, mediaList);
+            }
 
-            // 3. 加载简历上下文
-            String resumeContext = loadResumeContextIfNeeded(resumeId);
+            // 3. 构建 instruction（包含简历上下文）
+            String instruction = buildInstruction(request);
 
-            // 4. 从数据库加载历史消息
-            String historyContext = loadHistoryContext(resumeId);
+            // 4. 构建运行时配置（使用 resumeId 作为 threadId 维护对话上下文）
+            RunnableConfig config = RunnableConfig.builder()
+                    .threadId(resumeId != null && !resumeId.isEmpty() ? resumeId : "default-chat-thread")
+                    .build();
 
-            // 5. 构建提示词
-            String systemPrompt = aiPromptProperties.getChat().getAdvisorConfig().getSystemPrompt();
-            String userMessage = buildUserMessage(request, resumeContext, historyContext);
+            log.info("[AIChat] 开始 Agent 对话: resumeId={}, threadId={}", resumeId, config.threadId());
 
-            log.info("[AIChat] 开始AI对话: resumeId={}, message={}", resumeId, request.getCurrentUserMessage());
-
-            // 6. 用于收集 AI 回复的 StringBuilder
+            // 5. 用于收集 AI 回复的 StringBuilder
             StringBuilder aiResponse = new StringBuilder();
 
-            // 7. 调用 AI，流式返回
-            return chatClient.prompt()
-                    .system(systemPrompt)
-                    .user(userSpec -> {
-                        userSpec.text(userMessage);
-                        if (!mediaList.isEmpty()) {
-                            userSpec.media(mediaList.toArray(new Media[0]));
+            // 6. 调用 Agent 流式输出
+            return chatAgent.stream(instruction, config)
+                    .filter(output -> output instanceof StreamingOutput)
+                    .map(output -> (StreamingOutput) output)
+                    .filter(so -> so.getOutputType() == OutputType.AGENT_MODEL_STREAMING)
+                    .map(so -> {
+                        String chunk = so.message().getText();
+                        if (chunk != null && !chunk.isEmpty()) {
+                            aiResponse.append(chunk);
+                            log.debug("[AIChat] 收到chunk: {}", chunk);
+                            return ChatEvent.chunk(chunk);
                         }
+                        return null;
                     })
-                    .stream()
-                    .content()
-                    .map(chunk -> {
-                        aiResponse.append(chunk);  // 收集 AI 回复
-                        log.debug("[AIChat] 收到chunk: {}", chunk);
-                        return ChatEvent.chunk(chunk);
-                    })
+                    .filter(Objects::nonNull)
                     .concatWith(Flux.defer(() -> {
                         // 流结束后保存 AI 回复到数据库
                         if (resumeId != null && !resumeId.isEmpty()) {
@@ -94,7 +101,7 @@ public class AIChatService {
                         return Flux.just(ChatEvent.complete("对话完成"));
                     }))
                     .onErrorResume(e -> {
-                        log.error("[AIChat] 对话异常", e);
+                        log.error("[AIChat] Agent 对话异常", e);
                         return Flux.just(ChatEvent.error("对话处理失败: " + e.getMessage()));
                     });
 
@@ -102,6 +109,48 @@ public class AIChatService {
             log.error("[AIChat] 处理请求失败", e);
             return Flux.just(ChatEvent.error("处理请求失败: " + e.getMessage()));
         }
+    }
+
+    /**
+     * 使用 ChatClient 处理带图片的对话（暂时保留，后续优化）
+     */
+    private Flux<ChatEvent> chatWithImage(ChatStreamRequest request, List<Media> mediaList) {
+        String resumeId = request.getResumeId();
+        // 加载简历上下文和历史对话（ChatClient 模式需要手动加载历史）
+        String resumeContext = loadResumeContextIfNeeded(resumeId);
+        String historyContext = loadHistoryContext(resumeId);
+        String systemPrompt = aiPromptProperties.getChat().getAdvisorConfig().getSystemPrompt();
+        String userMessage = buildUserMessage(request, resumeContext, historyContext);
+        StringBuilder aiResponse = new StringBuilder();
+
+        log.info("[AIChat] 开始 ChatClient 对话（带图片）: resumeId={}", resumeId);
+
+        return chatClient.prompt()
+                .system(systemPrompt)
+                .user(userSpec -> {
+                    userSpec.text(userMessage);
+                    if (!mediaList.isEmpty()) {
+                        userSpec.media(mediaList.toArray(new Media[0]));
+                    }
+                })
+                .stream()
+                .content()
+                .map(chunk -> {
+                    aiResponse.append(chunk);
+                    log.debug("[AIChat] 收到chunk: {}", chunk);
+                    return ChatEvent.chunk(chunk);
+                })
+                .concatWith(Flux.defer(() -> {
+                    // 流结束后保存 AI 回复到数据库
+                    if (resumeId != null && !resumeId.isEmpty()) {
+                        chatMessageService.saveMessage(resumeId, "assistant", aiResponse.toString());
+                    }
+                    return Flux.just(ChatEvent.complete("对话完成"));
+                }))
+                .onErrorResume(e -> {
+                    log.error("[AIChat] ChatClient 对话异常", e);
+                    return Flux.just(ChatEvent.error("对话处理失败: " + e.getMessage()));
+                });
     }
 
     /**
@@ -113,6 +162,28 @@ public class AIChatService {
         }
         log.info("[AIChat] 处理上传图片: {}, 大小: {} bytes", image.getOriginalFilename(), image.getSize());
         return fileToImageService.convertToMedia(image);
+    }
+
+    /**
+     * 构建 instruction（包含简历上下文）
+     * 历史对话由 ReactAgent 的 MemorySaver 自动维护，无需手动加载
+     */
+    private String buildInstruction(ChatStreamRequest request) {
+        StringBuilder instruction = new StringBuilder();
+
+        String resumeId = request.getResumeId();
+
+        // 1. 加载简历上下文
+        String resumeContext = loadResumeContextIfNeeded(resumeId);
+        if (!resumeContext.isEmpty()) {
+            String template = aiPromptProperties.getChat().getAdvisorConfig().getUserPromptTemplate();
+            instruction.append(template.replace("{resumeContext}", resumeContext)).append("\n\n");
+        }
+
+        // 2. 当前用户问题
+        instruction.append("【当前问题】\n").append(request.getCurrentUserMessage());
+
+        return instruction.toString();
     }
 
     /**
@@ -164,7 +235,8 @@ public class AIChatService {
     }
 
     /**
-     * 从数据库加载历史消息上下文
+     * 从数据库加载历史消息上下文（仅用于 ChatClient 模式）
+     * ReactAgent 模式由 MemorySaver 自动维护，无需调用此方法
      */
     private String loadHistoryContext(String resumeId) {
         if (resumeId == null || resumeId.isEmpty()) {
@@ -189,6 +261,7 @@ public class AIChatService {
 
     /**
      * 构建用户消息（包含简历上下文和历史对话）
+     * 仅用于 ChatClient 模式
      */
     private String buildUserMessage(ChatStreamRequest request, String resumeContext, String historyContext) {
         StringBuilder message = new StringBuilder();
