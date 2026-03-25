@@ -46,7 +46,8 @@
       <textarea
         v-model="inputText"
         @keydown="handleKeydown"
-        placeholder="输入消息，按Enter发送..."
+        @paste="handlePaste"
+        placeholder="输入消息，按Enter发送，Ctrl+V粘贴图片..."
         :disabled="isStreaming"
         rows="1"
         class="message-input"
@@ -138,6 +139,35 @@ function handleKeydown(event: KeyboardEvent) {
     event.preventDefault()
     handleSend()
   }
+}
+
+/**
+ * 处理粘贴事件，支持从剪贴板粘贴图片
+ */
+function handlePaste(event: ClipboardEvent): void {
+  // 如果正在流式传输，不处理粘贴
+  if (props.isStreaming) return
+
+  const clipboardData = event.clipboardData
+  if (!clipboardData) return
+
+  // 检查剪贴板项中是否有图片
+  const items = clipboardData.items
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i]
+    // 检查是否为图片类型
+    if (item.type.startsWith('image/')) {
+      const file = item.getAsFile()
+      if (file) {
+        // 复用现有的图片选择逻辑
+        emit('imageSelect', file)
+        // 阻止默认粘贴行为（避免图片作为文本粘贴）
+        event.preventDefault()
+        break
+      }
+    }
+  }
+  // 如果没有图片，保持默认的文本粘贴行为
 }
 </script>
 
