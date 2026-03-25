@@ -288,3 +288,79 @@ CREATE TABLE IF NOT EXISTS t_chat_message (
 
 CREATE INDEX IF NOT EXISTS idx_chat_message_resume_id ON t_chat_message(resume_id);
 CREATE INDEX IF NOT EXISTS idx_chat_message_created_at ON t_chat_message(created_at);
+
+-- ============================================================================
+-- 语音面试功能扩展（v1.4.0）
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- 扩展面试会话表（语音模式相关字段）
+-- 注意：SQLite 不支持 IF NOT EXISTS 用于 ALTER TABLE，需要忽略重复列错误
+-- ----------------------------------------------------------------------------
+ALTER TABLE t_interview_session ADD COLUMN voice_mode VARCHAR(20) DEFAULT 'text';
+-- voice_mode: text(纯文本), half_voice(半语音), full_voice(全语音)
+
+ALTER TABLE t_interview_session ADD COLUMN assist_count INT DEFAULT 0;
+ALTER TABLE t_interview_session ADD COLUMN assist_limit INT DEFAULT 5;
+ALTER TABLE t_interview_session ADD COLUMN freeze_at DATETIME;  -- 冻结时间点
+
+-- ----------------------------------------------------------------------------
+-- 助手对话记录表（语音面试求助记录）
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS t_assistant_conversation (
+    id VARCHAR(64) PRIMARY KEY,              -- 主键ID（雪花ID字符串）
+    session_id VARCHAR(64) NOT NULL,          -- 关联的面试会话ID
+    freeze_index INT NOT NULL,                -- 冻结时的问题序号
+    assist_type VARCHAR(30) NOT NULL,         -- 求助类型：GIVE_HINTS, EXPLAIN_CONCEPT, POLISH_ANSWER, FREE_QUESTION
+    user_question TEXT,                       -- 用户问题（自由提问时）
+    assistant_response TEXT NOT NULL,         -- 助手回复
+    audio_url VARCHAR(500),                   -- 音频存储路径
+    duration_ms INT,                          -- 音频时长（毫秒）
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    deleted INTEGER DEFAULT 0,                -- 逻辑删除标记
+    FOREIGN KEY (session_id) REFERENCES t_interview_session(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_assistant_conversation_session_id ON t_assistant_conversation(session_id);
+CREATE INDEX IF NOT EXISTS idx_assistant_conversation_freeze_index ON t_assistant_conversation(session_id, freeze_index);
+
+-- ----------------------------------------------------------------------------
+-- 面试录音片段表（语音面试录音存储）
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS t_interview_recording (
+    id VARCHAR(64) PRIMARY KEY,              -- 主键ID（雪花ID字符串）
+    session_id VARCHAR(64) NOT NULL,          -- 关联的面试会话ID
+    segment_index INT NOT NULL,               -- 片段序号
+    role VARCHAR(20) NOT NULL,                -- 角色：interviewer / candidate / assistant
+    content TEXT,                             -- 对应的文字内容
+    audio_path VARCHAR(500) NOT NULL,         -- 音频文件路径
+    duration_ms INT NOT NULL,                 -- 时长（毫秒）
+    start_time DATETIME NOT NULL,             -- 开始时间
+    end_time DATETIME NOT NULL,               -- 结束时间
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    deleted INTEGER DEFAULT 0,                -- 逻辑删除标记
+    FOREIGN KEY (session_id) REFERENCES t_interview_session(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_interview_recording_session_id ON t_interview_recording(session_id);
+CREATE INDEX IF NOT EXISTS idx_interview_recording_segment_index ON t_interview_recording(session_id, segment_index);
+
+-- ----------------------------------------------------------------------------
+-- 录音索引表（面试录音合并信息）
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS t_recording_index (
+    id VARCHAR(64) PRIMARY KEY,              -- 主键ID（雪花ID字符串）
+    session_id VARCHAR(64) NOT NULL,          -- 关联的面试会话ID
+    total_duration_ms INT DEFAULT 0,          -- 总时长（毫秒）
+    merged_audio_path VARCHAR(500),           -- 合并后的完整音频路径
+    transcript TEXT,                          -- 完整文字记录（JSON格式）
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    deleted INTEGER DEFAULT 0,                -- 逻辑删除标记
+    FOREIGN KEY (session_id) REFERENCES t_interview_session(id)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_recording_index_session_id ON t_recording_index(session_id);
+
