@@ -24,6 +24,7 @@
             <ChatMessageList
               :messages="state.messages"
               :is-streaming="state.isStreaming"
+              @preview-image="handleImagePreview"
             />
 
             <!-- 快捷指令 -->
@@ -41,6 +42,7 @@
             @send="sendMessage"
             @image-select="handleImageSelect"
             @image-remove="handleImageRemove"
+            @preview-image="handleImagePreview"
           />
 
           <!-- 修改确认对话框 -->
@@ -51,6 +53,12 @@
             @regenerate="handleRegenerate"
             @cancel="handleCancelChanges"
           />
+
+          <!-- 图片预览弹窗 -->
+          <ImagePreviewModal
+            v-model:visible="previewVisible"
+            :src="previewImageUrl"
+          />
         </div>
       </div>
     </Transition>
@@ -58,13 +66,14 @@
 </template>
 
 <script setup lang="ts">
-import { watch } from 'vue'
+import { watch, ref } from 'vue'
 import { useAIChat } from '@/composables/useAIChat'
 import ChatHeader from './ChatHeader.vue'
 import ChatMessageList from './ChatMessageList.vue'
 import QuickCommands from './QuickCommands.vue'
 import ChatInputArea from './ChatInputArea.vue'
 import ApplyChangesDialog from './ApplyChangesDialog.vue'
+import ImagePreviewModal from '@/components/common/ImagePreviewModal.vue'
 
 interface Props {
   open: boolean
@@ -77,6 +86,15 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+
+// 图片预览状态
+const previewVisible = ref(false)
+const previewImageUrl = ref('')
+
+function handleImagePreview(url: string) {
+  previewImageUrl.value = url
+  previewVisible.value = true
+}
 
 watch(
   () => props.open,

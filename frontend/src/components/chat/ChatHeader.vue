@@ -41,12 +41,9 @@
       <button
         class="new-session-btn"
         @click="$emit('newSession')"
-        title="开始新会话"
         :disabled="!currentResumeId"
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 5v14M5 12h14"/>
-        </svg>
+        新会话
       </button>
 
       <!-- 关闭按钮 -->
@@ -182,12 +179,13 @@ function handleResumeChange(event: Event) {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  color: $color-text-tertiary;
-  padding: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  color: $color-text-secondary;
+  font-size: $text-sm;
+  font-weight: $weight-medium;
   border-radius: $radius-md;
   transition: all 0.2s ease;
+  white-space: nowrap;
 
   &:hover:not(:disabled) {
     color: $color-accent;

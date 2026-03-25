@@ -91,16 +91,15 @@ public class AIChatService {
                     .filter(output -> output instanceof StreamingOutput)
                     .map(output -> (StreamingOutput) output)
                     .filter(so -> so.getOutputType() == OutputType.AGENT_MODEL_STREAMING)
-                    .map(so -> {
+                    .flatMap(so -> {
                         String chunk = so.message().getText();
                         if (chunk != null && !chunk.isEmpty()) {
                             aiResponse.append(chunk);
                             log.debug("[AIChat] 收到chunk: {}", chunk);
-                            return ChatEvent.chunk(chunk);
+                            return Flux.just(ChatEvent.chunk(chunk));
                         }
-                        return null;
+                        return Flux.empty();
                     })
-                    .filter(Objects::nonNull)
                     .concatWith(Flux.defer(() -> {
                         // 流结束后保存 AI 回复到数据库
                         if (resumeId != null && !resumeId.isEmpty()) {

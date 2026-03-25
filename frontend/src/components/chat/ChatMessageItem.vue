@@ -32,8 +32,16 @@
       <!-- 消息内容 -->
       <div class="message-content">
         <!-- 图片预览 -->
-        <div v-if="message.imageUrl" class="message-image">
+        <div v-if="message.imageUrl" class="message-image" @click="handleImageClick">
           <img :src="message.imageUrl" alt="上传的图片" />
+          <div class="image-overlay">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              <line x1="11" y1="8" x2="11" y2="14"></line>
+              <line x1="8" y1="11" x2="14" y2="11"></line>
+            </svg>
+          </div>
         </div>
 
         <!-- 文本内容 -->
@@ -61,9 +69,19 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const emit = defineEmits<{
+  'preview-image': [url: string]
+}>()
+
 const { renderMarkdown } = useMarkdown()
 
 const formattedContent = computed(() => renderMarkdown(props.message.content))
+
+function handleImageClick() {
+  if (props.message.imageUrl) {
+    emit('preview-image', props.message.imageUrl)
+  }
+}
 
 function formatTime(timestamp: number): string {
   const date = new Date(timestamp)
@@ -175,7 +193,7 @@ function formatTime(timestamp: number): string {
 
   :deep(ul), :deep(ol) {
     margin: $spacing-sm 0;
-    padding-left: $spacing-lg;
+    padding-left: $spacing-md;
   }
 
   :deep(code) {
@@ -201,12 +219,42 @@ function formatTime(timestamp: number): string {
 
 .message-image {
   margin-bottom: $spacing-sm;
+  position: relative;
+  cursor: pointer;
+  border-radius: $radius-sm;
+  overflow: hidden;
 
   img {
     max-width: 100%;
     max-height: 200px;
     border-radius: $radius-sm;
     object-fit: cover;
+    transition: transform $transition-fast;
+  }
+
+  .image-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity $transition-fast;
+    color: $color-text-primary;
+  }
+
+  &:hover {
+    img {
+      transform: scale(1.02);
+    }
+
+    .image-overlay {
+      opacity: 1;
+    }
   }
 }
 
