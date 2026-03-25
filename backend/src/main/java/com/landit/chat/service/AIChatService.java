@@ -11,7 +11,9 @@ import com.landit.chat.dto.SectionChange;
 import com.landit.common.config.AIPromptProperties;
 import com.landit.common.enums.SectionType;
 import com.landit.common.service.FileToImageService;
+import com.landit.resume.dto.AddSectionRequest;
 import com.landit.resume.dto.ResumeDetailVO;
+import com.landit.resume.dto.UpdateSectionRequest;
 import com.landit.resume.handler.ResumeHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -212,6 +214,7 @@ public class AIChatService {
 
     /**
      * 应用修改建议到简历
+     * 遍历修改列表，根据 changeType 调用相应的 Handler 方法
      *
      * @param resumeId 简历ID
      * @param changes  修改列表
@@ -219,27 +222,36 @@ public class AIChatService {
     public void applyChanges(String resumeId, List<SectionChange> changes) {
         log.info("[AIChat] 应用修改: resumeId={}, changes={}", resumeId, changes.size());
 
-        // TODO: 实现应用修改逻辑
-        // 1. 遍历changes
-        // 2. 根据changeType调用相应的Service方法
-        // 3. 更新/新增/删除区块
-
         for (SectionChange change : changes) {
-            switch (change.getChangeType()) {
-                case "update" -> {
-                    log.info("[AIChat] 更新区块: sectionId={}", change.getSectionId());
-                    // resumeHandler.updateSection(resumeId, change.getSectionId(), change.getAfterContent());
+            try {
+                switch (change.getChangeType()) {
+                    case "update" -> {
+                        log.info("[AIChat] 更新区块: sectionId={}", change.getSectionId());
+                        UpdateSectionRequest request = new UpdateSectionRequest();
+                        request.setContent(change.getAfterContent());
+                        resumeHandler.updateResumeSection(resumeId, change.getSectionId(), request);
+                    }
+                    case "add" -> {
+                        log.info("[AIChat] 新增区块: type={}, title={}",
+                                change.getSectionType(), change.getSectionTitle());
+                        AddSectionRequest request = new AddSectionRequest();
+                        request.setType(change.getSectionType());
+                        request.setTitle(change.getSectionTitle());
+                        request.setContent(change.getAfterContent());
+                        resumeHandler.addResumeSection(resumeId, request);
+                    }
+                    case "delete" -> {
+                        log.info("[AIChat] 删除区块: sectionId={}", change.getSectionId());
+                        resumeHandler.deleteResumeSection(resumeId, change.getSectionId());
+                    }
+                    default -> log.warn("[AIChat] 未知的变更类型: {}", change.getChangeType());
                 }
-                case "add" -> {
-                    log.info("[AIChat] 新增区块: type={}", change.getSectionType());
-                    // resumeHandler.addSection(resumeId, change.getSectionType(), change.getAfterContent());
-                }
-                case "delete" -> {
-                    log.info("[AIChat] 删除区块: sectionId={}", change.getSectionId());
-                    // resumeHandler.deleteSection(resumeId, change.getSectionId());
-                }
-                default -> log.warn("[AIChat] 未知的变更类型: {}", change.getChangeType());
+            } catch (Exception e) {
+                log.error("[AIChat] 应用修改失败: change={}", change, e);
+                throw new RuntimeException("应用修改失败: " + e.getMessage(), e);
             }
         }
+
+        log.info("[AIChat] 所有修改已应用成功: resumeId={}", resumeId);
     }
 }

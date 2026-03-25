@@ -5,10 +5,17 @@ import com.alibaba.cloud.ai.graph.agent.hook.skills.SkillsAgentHook;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.skills.registry.SkillRegistry;
 import com.alibaba.cloud.ai.graph.skills.registry.filesystem.FileSystemSkillRegistry;
+import com.landit.chat.tools.AddSectionTool;
+import com.landit.chat.tools.DeleteSectionTool;
+import com.landit.chat.tools.GetResumeTool;
+import com.landit.chat.tools.GetSectionTool;
+import com.landit.chat.tools.UpdateSectionTool;
 import com.landit.common.config.AIPromptProperties;
+import com.landit.resume.handler.ResumeHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -16,7 +23,7 @@ import java.util.List;
 
 /**
  * ChatAgent 配置类
- * 创建用于 AI 聊天的 ReactAgent，支持技能系统
+ * 创建用于 AI 聊天的 ReactAgent，支持技能系统和简历操作工具
  *
  * @author Azir
  */
@@ -27,6 +34,7 @@ public class ChatAgentConfig {
 
     private final ChatModel chatModel;
     private final AIPromptProperties aiPromptProperties;
+    private final ResumeHandler resumeHandler;
 
     /**
      * 创建技能注册表
@@ -56,22 +64,45 @@ public class ChatAgentConfig {
     }
 
     /**
+     * 创建简历操作工具列表
+     * 注意：不注册为 Bean，避免被 Spring AI 的 toolCallbackResolver 自动扫描导致循环依赖
+     */
+    private List<ToolCallback> createResumeTools() {
+        List<ToolCallback> tools = List.of(
+            GetResumeTool.createCallback(resumeHandler),
+            GetSectionTool.createCallback(resumeHandler),
+            UpdateSectionTool.createCallback(resumeHandler),
+            AddSectionTool.createCallback(resumeHandler),
+            DeleteSectionTool.createCallback(resumeHandler)
+        );
+        log.info("[ResumeTools] 创建 {} 个简历工具", tools.size());
+        return tools;
+    }
+
+    /**
      * 创建 AI 聊天 Agent
      * 使用 MemorySaver 维护对话历史（内存存储，服务重启后丢失）
      * 通过 SkillsAgentHook 支持技能系统
+     * 通过 tools 注入简历操作工具
      */
     @Bean
     public ReactAgent chatAgent(SkillsAgentHook skillsAgentHook) {
         String systemPrompt = aiPromptProperties.getChat()
                 .getAdvisorConfig()
                 .getSystemPrompt();
-        log.info("[ChatAgent] 初始化 ChatAgent, systemPrompt length={}", systemPrompt.length());
+
+        // 在方法内部创建工具，避免循环依赖
+        List<ToolCallback> resumeTools = createResumeTools();
+
+        log.info("[ChatAgent] 初始化 ChatAgent, systemPrompt length={}, tools count={}",
+                systemPrompt.length(), resumeTools.size());
         return ReactAgent.builder()
                 .name("chat_advisor")
                 .model(chatModel)
                 .systemPrompt(systemPrompt)
                 .saver(new MemorySaver())
                 .hooks(List.of(skillsAgentHook))
+                .tools(resumeTools)
                 .build();
     }
 }
