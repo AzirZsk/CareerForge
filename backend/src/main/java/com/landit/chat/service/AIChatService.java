@@ -24,12 +24,12 @@ import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
-import java.util.Objects;
 
 /**
  * AI聊天服务
  * 使用 ReactAgent 处理聊天请求并返回流式响应
  * 支持多轮对话上下文（通过 MemorySaver）和图片输入
+ * 支持两种模式：简历对话（resumeId）和通用聊天（sessionId）
  *
  * @author Azir
  */
@@ -54,39 +54,47 @@ public class AIChatService {
     public Flux<ChatEvent> chat(ChatStreamRequest request) {
         try {
             String resumeId = request.getResumeId();
+            String sessionId = request.getSessionId();
 
-            // 1. 保存用户消息到数据库（如果有 resumeId）
-            if (resumeId != null && !resumeId.isEmpty()) {
-                chatMessageService.saveMessage(resumeId, "user", request.getCurrentUserMessage());
+            // 1. 确定会话ID：简历模式使用 resumeId，通用模式使用或生成 sessionId
+            if (sessionId == null || sessionId.isEmpty()) {
+                sessionId = (resumeId != null && !resumeId.isEmpty())
+                        ? resumeId
+                        : java.util.UUID.randomUUID().toString();
             }
 
-            // 2. 构建 instruction（包含简历上下文）
-            String instruction = buildInstruction(request);
+            final String finalSessionId = sessionId;
 
-            // 3. 处理图片（如果有）
+            // 2. 保存用户消息到数据库
+            chatMessageService.saveMessage(finalSessionId, resumeId, "user", request.getCurrentUserMessage());
+
+            // 3. 构建 instruction（包含简历上下文或通用提示词）
+            String instruction = buildInstruction(request, finalSessionId);
+
+            // 4. 处理图片（如果有）
             List<Media> mediaList = processImage(request.getImage());
             if (!mediaList.isEmpty()) {
                 log.info("[AIChat] 检测到图片输入，共 {} 张", mediaList.size());
             }
 
-            // 4. 构建运行时配置（使用 resumeId 作为 threadId 维护对话上下文）
+            // 5. 构建运行时配置（使用 sessionId 作为 threadId 维护对话上下文）
             RunnableConfig config = RunnableConfig.builder()
-                    .threadId(resumeId != null && !resumeId.isEmpty() ? resumeId : "default-chat-thread")
+                    .threadId(finalSessionId)
                     .build();
 
-            log.info("[AIChat] 开始 Agent 对话: resumeId={}, threadId={}, hasImage={}",
-                    resumeId, config.threadId(), !mediaList.isEmpty());
+            log.info("[AIChat] 开始 Agent 对话: sessionId={}, resumeId={}, threadId={}, hasImage={}",
+                    finalSessionId, resumeId, config.threadId(), !mediaList.isEmpty());
 
-            // 5. 用于收集 AI 回复的 StringBuilder
+            // 6. 用于收集 AI 回复的 StringBuilder
             StringBuilder aiResponse = new StringBuilder();
 
-            // 6. 构建 UserMessage（包含文本和图片）
+            // 7. 构建 UserMessage（包含文本和图片）
             UserMessage userMessage = UserMessage.builder()
                     .text(instruction)
                     .media(mediaList)
                     .build();
 
-            // 7. 调用 Agent 流式输出
+            // 8. 调用 Agent 流式输出
             return chatAgent.stream(userMessage, config)
                     .filter(output -> output instanceof StreamingOutput)
                     .map(output -> (StreamingOutput) output)
@@ -95,16 +103,13 @@ public class AIChatService {
                         String chunk = so.message().getText();
                         if (chunk != null && !chunk.isEmpty()) {
                             aiResponse.append(chunk);
-                            log.debug("[AIChat] 收到chunk: {}", chunk);
                             return Flux.just(ChatEvent.chunk(chunk));
                         }
                         return Flux.empty();
                     })
                     .concatWith(Flux.defer(() -> {
                         // 流结束后保存 AI 回复到数据库
-                        if (resumeId != null && !resumeId.isEmpty()) {
-                            chatMessageService.saveMessage(resumeId, "assistant", aiResponse.toString());
-                        }
+                        chatMessageService.saveMessage(finalSessionId, resumeId, "assistant", aiResponse.toString());
                         return Flux.just(ChatEvent.complete("对话完成"));
                     }))
                     .onErrorResume(e -> {
@@ -130,26 +135,48 @@ public class AIChatService {
     }
 
     /**
-     * 构建 instruction（包含简历上下文）
+     * 构建 instruction（包含简历上下文或通用提示词）
      * 历史对话由 ReactAgent 的 MemorySaver 自动维护，无需手动加载
      * 简历上下文只在首次对话时注入，后续对话只发送用户问题
      */
-    private String buildInstruction(ChatStreamRequest request) {
+    private String buildInstruction(ChatStreamRequest request, String sessionId) {
         StringBuilder instruction = new StringBuilder();
         String resumeId = request.getResumeId();
 
-        // 只有首次对话才注入简历上下文
-        boolean isFirstMessage = chatMessageService.isFirstMessage(resumeId);
-        if (isFirstMessage && resumeId != null && !resumeId.isEmpty()) {
-            String resumeContext = loadResumeContext(resumeId);
-            String template = aiPromptProperties.getChat().getAdvisorConfig().getUserPromptTemplate();
-            instruction.append(template.replace("{resumeContext}", resumeContext)).append("\n\n");
+        boolean isFirstMessage = chatMessageService.isFirstMessage(sessionId);
+
+        if (isFirstMessage) {
+            if (resumeId != null && !resumeId.isEmpty()) {
+                // 简历模式：注入简历上下文
+                String resumeContext = loadResumeContext(resumeId);
+                String template = aiPromptProperties.getChat().getAdvisorConfig().getUserPromptTemplate();
+                instruction.append(template.replace("{resumeContext}", resumeContext)).append("\n\n");
+            } else {
+                // 通用聊天模式：注入通用提示词
+                instruction.append(buildGeneralContext()).append("\n\n");
+            }
         }
 
         // 当前用户问题
         instruction.append(request.getCurrentUserMessage());
 
         return instruction.toString();
+    }
+
+    /**
+     * 构建通用聊天模式的提示词（从配置文件读取）
+     */
+    private String buildGeneralContext() {
+        String systemPrompt = aiPromptProperties.getChat().getGeneralConfig().getSystemPrompt();
+        if (systemPrompt == null || systemPrompt.isBlank()) {
+            // 兜底默认值
+            return """
+                你是 LandIt 求职助手，专门帮助用户进行求职相关咨询。
+                你可以协助用户解答求职相关问题、创建简历、提供面试建议等。
+                如果用户需要创建简历，请使用 create_resume 工具。
+                """;
+        }
+        return systemPrompt;
     }
 
     /**

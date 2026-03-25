@@ -11,6 +11,7 @@ import java.util.List;
 /**
  * AI聊天消息服务
  * 管理聊天消息的持久化存储
+ * 支持两种模式：简历对话（resumeId）和通用聊天（sessionId）
  *
  * @author Azir
  */
@@ -18,14 +19,16 @@ import java.util.List;
 public class ChatMessageService extends ServiceImpl<ChatMessageMapper, ChatMessage> {
 
     /**
-     * 保存消息
+     * 保存消息（简历模式）
      *
-     * @param resumeId 简历ID
-     * @param role     角色（user / assistant）
-     * @param content  消息内容
+     * @param sessionId 会话ID（通用模式为UUID，简历模式为resumeId）
+     * @param resumeId  简历ID（可选，通用模式为空）
+     * @param role      角色（user / assistant）
+     * @param content   消息内容
      */
-    public void saveMessage(String resumeId, String role, String content) {
+    public void saveMessage(String sessionId, String resumeId, String role, String content) {
         ChatMessage msg = new ChatMessage();
+        msg.setSessionId(sessionId);
         msg.setResumeId(resumeId);
         msg.setRole(role);
         msg.setContent(content);
@@ -35,38 +38,38 @@ public class ChatMessageService extends ServiceImpl<ChatMessageMapper, ChatMessa
     /**
      * 获取历史消息（按时间升序，最近 N 条）
      *
-     * @param resumeId 简历ID
-     * @param limit    限制条数
+     * @param sessionId 会话ID
+     * @param limit     限制条数
      * @return 消息列表
      */
-    public List<ChatMessage> getHistory(String resumeId, int limit) {
+    public List<ChatMessage> getHistory(String sessionId, int limit) {
         return list(new LambdaQueryWrapper<ChatMessage>()
-                .eq(ChatMessage::getResumeId, resumeId)
+                .eq(ChatMessage::getSessionId, sessionId)
                 .orderByAsc(ChatMessage::getCreatedAt)
                 .last("LIMIT " + limit));
     }
 
     /**
-     * 清空指定简历的聊天历史
+     * 清空指定会话的聊天历史
      *
-     * @param resumeId 简历ID
+     * @param sessionId 会话ID
      */
-    public void clearHistory(String resumeId) {
+    public void clearHistory(String sessionId) {
         remove(new LambdaQueryWrapper<ChatMessage>()
-                .eq(ChatMessage::getResumeId, resumeId));
+                .eq(ChatMessage::getSessionId, sessionId));
     }
 
     /**
-     * 判断是否是该简历的首次对话
+     * 判断是否是该会话的首次对话
      *
-     * @param resumeId 简历ID
+     * @param sessionId 会话ID
      * @return true 表示首次对话，false 表示已有历史消息
      */
-    public boolean isFirstMessage(String resumeId) {
-        if (resumeId == null || resumeId.isEmpty()) {
+    public boolean isFirstMessage(String sessionId) {
+        if (sessionId == null || sessionId.isEmpty()) {
             return true;
         }
         return count(new LambdaQueryWrapper<ChatMessage>()
-                .eq(ChatMessage::getResumeId, resumeId)) == 0;
+                .eq(ChatMessage::getSessionId, sessionId)) == 0;
     }
 }

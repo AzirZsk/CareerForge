@@ -1,6 +1,7 @@
 <!--=====================================================
   聊天窗口头部组件
   包含简历选择器和关闭按钮
+  支持通用聊天和简历对话两种模式
   @author Azir
 =====================================================-->
 
@@ -10,7 +11,11 @@
       <!-- AI图标和标题 -->
       <div class="header-title">
         <AIIcon :size="28" />
-        <span class="title">简历助手</span>
+        <span class="title">求职助手</span>
+        <!-- 模式标签 -->
+        <span class="mode-tag" :class="chatMode">
+          {{ chatMode === 'resume' ? '简历模式' : '通用聊天' }}
+        </span>
       </div>
 
       <!-- 简历选择器 -->
@@ -20,7 +25,7 @@
           @change="handleResumeChange"
           class="resume-select"
         >
-          <option value="">请选择简历</option>
+          <option value="">通用聊天</option>
           <option
             v-for="resume in resumeList"
             :key="resume.id"
@@ -41,7 +46,6 @@
       <button
         class="new-session-btn"
         @click="$emit('newSession')"
-        :disabled="!currentResumeId"
       >
         新会话
       </button>
@@ -58,12 +62,13 @@
 </template>
 
 <script setup lang="ts">
-import type { ResumeOption } from '@/types/ai-chat'
+import type { ResumeOption, ChatMode } from '@/types/ai-chat'
 import AIIcon from '@/components/common/AIIcon.vue'
 
 interface Props {
   resumeList: ResumeOption[]
   currentResumeId: string | null
+  chatMode: ChatMode
 }
 
 interface Emits {
@@ -114,6 +119,23 @@ function handleResumeChange(event: Event) {
     font-size: $text-xl;
     font-weight: $weight-semibold;
     color: $color-text-primary;
+  }
+}
+
+.mode-tag {
+  padding: 2px 8px;
+  border-radius: $radius-full;
+  font-size: $text-xs;
+  font-weight: $weight-medium;
+
+  &.general {
+    background: rgba($color-info, 0.15);
+    color: $color-info;
+  }
+
+  &.resume {
+    background: rgba($color-accent, 0.15);
+    color: $color-accent;
   }
 }
 
@@ -187,14 +209,9 @@ function handleResumeChange(event: Event) {
   transition: all 0.2s ease;
   white-space: nowrap;
 
-  &:hover:not(:disabled) {
+  &:hover {
     color: $color-accent;
     background: rgba(212, 168, 83, 0.1);
-  }
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
   }
 }
 </style>

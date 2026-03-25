@@ -41,18 +41,25 @@ function parseSseLine(line: string): ChatEvent | null {
 
 /**
  * 流式聊天
- * 不再发送历史消息，历史消息由后端从数据库加载
+ * 支持两种模式：简历对话（resumeId）和通用聊天（sessionId）
+ * sessionId 每次会话必须传递，简历模式下 sessionId = resumeId
  */
 export async function* streamChat(
   message: string,
-  resumeId: string | null,
-  image: File | null
+  sessionId: string,
+  resumeId: string | null = null,
+  image: File | null = null
 ): AsyncGenerator<ChatEvent, void, unknown> {
   const formData = new FormData()
 
+  // sessionId 每次会话必须传递
+  formData.append('sessionId', sessionId)
+
+  // resumeId 可选，简历模式时传递
   if (resumeId) {
     formData.append('resumeId', resumeId)
   }
+
   formData.append('currentUserMessage', message)
 
   if (image) {
@@ -110,10 +117,10 @@ export async function* streamChat(
 
 /**
  * 获取聊天历史
- * 从后端数据库加载指定简历的聊天历史
+ * 从后端数据库加载指定会话的聊天历史
  */
-export async function getChatHistory(resumeId: string): Promise<ChatHistoryMessage[]> {
-  const response = await fetch(`${API_BASE}/chat/history/${resumeId}`)
+export async function getChatHistory(sessionId: string): Promise<ChatHistoryMessage[]> {
+  const response = await fetch(`${API_BASE}/chat/history/${sessionId}`)
   const result = await response.json()
 
   if (result.code !== 200) {
@@ -126,8 +133,8 @@ export async function getChatHistory(resumeId: string): Promise<ChatHistoryMessa
 /**
  * 清空聊天历史
  */
-export async function clearChatHistory(resumeId: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/chat/history/${resumeId}`, {
+export async function clearChatHistory(sessionId: string): Promise<void> {
+  const response = await fetch(`${API_BASE}/chat/history/${sessionId}`, {
     method: 'DELETE'
   })
   const result = await response.json()

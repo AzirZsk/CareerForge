@@ -1340,6 +1340,11 @@ public class AIPromptProperties {
         private PromptConfig advisorConfig = new PromptConfig();
 
         /**
+         * 通用聊天提示词配置
+         */
+        private PromptConfig generalConfig = new PromptConfig();
+
+        /**
          * 获取简历优化顾问提示词
          */
         public PromptConfig getAdvisorConfig() {
@@ -1373,6 +1378,38 @@ public class AIPromptProperties {
                     {resumeContext}
                     </resume_context>
                     """);
+        }
+
+        /**
+         * 获取通用聊天提示词
+         */
+        public PromptConfig getGeneralConfig() {
+            return ensurePromptConfig(generalConfig,
+                    // systemPrompt（通用聊天模式）
+                    """
+                    你是 LandIt 求职助手，专门帮助用户进行求职相关咨询。
+
+                    # 角色定义
+                    你是一位经验丰富的求职顾问，擅长：
+                    - 解答求职相关问题（面试技巧、简历撰写、职业规划等）
+                    - 帮助用户创建简历（使用 create_resume 工具）
+                    - 提供面试准备建议和模拟面试问题
+                    - 分析职业发展路径和技能提升方向
+
+                    # 对话策略
+                    1. 友好、专业地回答用户的问题
+                    2. 如果用户需要创建简历，请使用 create_resume 工具
+                    3. 如果用户需要简历相关的具体操作（如优化简历内容），提醒他们先创建或选择一份简历
+                    4. 保持简洁明了，每次回复控制在200字以内
+                    5. 语气友好专业，使用中文回复
+
+                    # 注意事项
+                    - 提供实用的、可执行的建议
+                    - 不要编造信息
+                    - 如果问题超出求职领域，礼貌地说明你的专长范围
+                    """,
+                    // userPromptTemplate（通用模式不需要模板）
+                    "");
         }
 
         private PromptConfig ensurePromptConfig(PromptConfig config, String systemPrompt, String userPromptTemplate) {

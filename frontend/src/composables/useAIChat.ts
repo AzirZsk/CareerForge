@@ -12,6 +12,10 @@ function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }
 
+function generateSessionId(): string {
+  return crypto.randomUUID ? crypto.randomUUID() : generateId()
+}
+
 // 单例状态
 let stateInstance: AIChatState | null = null
 let currentAiMessage: ChatMessage | null = null
@@ -20,6 +24,8 @@ function getState(): AIChatState {
   if (!stateInstance) {
     stateInstance = reactive<AIChatState>({
       isWindowOpen: false,
+      chatMode: 'general',
+      sessionId: generateSessionId(),
       currentResumeId: null,
       resumeList: [],
       messages: [],
@@ -53,9 +59,9 @@ export function useAIChat() {
   /**
    * 从后端加载聊天历史
    */
-  async function loadHistory(resumeId: string): Promise<void> {
+  async function loadHistory(sessionId: string): Promise<void> {
     try {
-      const history = await getChatHistory(resumeId)
+      const history = await getChatHistory(sessionId)
       state.messages = history.map(m => ({
         id: m.id,
         role: m.role as 'user' | 'assistant' | 'system',
@@ -72,15 +78,7 @@ export function useAIChat() {
     const message = state.currentInput.trim()
     if (!message && !state.selectedImage) return
 
-    if (!state.currentResumeId) {
-      state.messages.push({
-        id: generateId(),
-        role: 'system',
-        content: '请先选择一份简历，然后开始对话。',
-        timestamp: Date.now()
-      })
-      return
-    }
+    // 移除简历检查，允许通用聊天模式
 
     const userMessage: ChatMessage = {
       id: generateId(),
@@ -100,8 +98,15 @@ export function useAIChat() {
     currentAiMessage = null
 
     try {
-      // 不再发送历史消息，历史消息由后端从数据库加载
-      for await (const event of streamChat(message, state.currentResumeId, imageToSend)) {
+      // sessionId 每次会话必须传递
+      // 简历模式：sessionId = resumeId
+      // 通用模式：sessionId = UUID
+      for await (const event of streamChat(
+        message,
+        state.sessionId!,
+        state.currentResumeId,
+        imageToSend
+      )) {
         handleEvent(event)
       }
     } catch (error) {
@@ -176,7 +181,7 @@ export function useAIChat() {
   }
 
   /**
-   * 切换简历时从后端加载历史消息
+   * 切换简历或切换到通用聊天模式
    */
   async function handleResumeChange(resumeId: string | null): Promise<void> {
     state.currentResumeId = resumeId
@@ -184,6 +189,10 @@ export function useAIChat() {
     state.showApplyDialog = false
 
     if (resumeId) {
+      // 简历模式：sessionId = resumeId
+      state.chatMode = 'resume'
+      state.sessionId = resumeId
+
       // 从后端加载历史消息
       await loadHistory(resumeId)
 
@@ -198,7 +207,18 @@ export function useAIChat() {
         })
       }
     } else {
+      // 通用聊天模式：生成新的 sessionId
+      state.chatMode = 'general'
+      state.sessionId = generateSessionId()
       state.messages = []
+
+      // 添加通用模式欢迎提示
+      state.messages.push({
+        id: generateId(),
+        role: 'system',
+        content: '欢迎使用 LandIt 求职助手！我可以帮您解答求职相关问题，或者帮您创建简历。',
+        timestamp: Date.now()
+      })
     }
   }
 
@@ -247,11 +267,15 @@ export function useAIChat() {
    * 开始新会话 - 清空当前对话历史
    */
   async function startNewSession(): Promise<void> {
-    if (!state.currentResumeId) return
+    const currentSessionId = state.sessionId
+    if (!currentSessionId) return
 
     try {
       // 调用后端清空历史
-      await clearChatHistory(state.currentResumeId)
+      await clearChatHistory(currentSessionId)
+
+      // 生成新的 sessionId
+      state.sessionId = generateSessionId()
 
       // 清空前端消息列表
       state.messages = []
@@ -259,13 +283,22 @@ export function useAIChat() {
       state.showApplyDialog = false
 
       // 添加欢迎提示
-      const resume = state.resumeList.find(r => r.id === state.currentResumeId)
-      state.messages.push({
-        id: generateId(),
-        role: 'system',
-        content: `已开始新会话，您可以继续询问关于「${resume?.name}」的问题。`,
-        timestamp: Date.now()
-      })
+      if (state.chatMode === 'resume' && state.currentResumeId) {
+        const resume = state.resumeList.find(r => r.id === state.currentResumeId)
+        state.messages.push({
+          id: generateId(),
+          role: 'system',
+          content: `已开始新会话，您可以继续询问关于「${resume?.name}」的问题。`,
+          timestamp: Date.now()
+        })
+      } else {
+        state.messages.push({
+          id: generateId(),
+          role: 'system',
+          content: '已开始新会话，请问有什么可以帮您的？',
+          timestamp: Date.now()
+        })
+      }
     } catch (error) {
       console.error('[AIChat] 清空历史失败', error)
       state.messages.push({

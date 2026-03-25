@@ -4,6 +4,11 @@
 // =====================================================
 
 /**
+ * 聊天模式
+ */
+export type ChatMode = 'general' | 'resume'
+
+/**
  * 聊天消息
  */
 export interface ChatMessage {
@@ -55,7 +60,7 @@ export const ChangeType = {
 /**
  * 快捷指令类型
  */
-export type QuickCommandCategory = 'optimize' | 'adjust' | 'diagnose' | 'create'
+export type QuickCommandCategory = 'optimize' | 'adjust' | 'diagnose' | 'create' | 'general'
 
 /**
  * 快捷指令
@@ -65,6 +70,7 @@ export interface QuickCommandItem {
   category: QuickCommandCategory
   label: string
   prompt: string
+  mode?: ChatMode // 指定适用的模式
 }
 
 /**
@@ -82,6 +88,12 @@ export interface ResumeOption {
 export interface AIChatState {
   // 窗口状态
   isWindowOpen: boolean
+
+  // 聊天模式
+  chatMode: ChatMode
+
+  // 会话ID（通用模式使用UUID，简历模式使用resumeId）
+  sessionId: string | null
 
   // 简历上下文
   currentResumeId: string | null
@@ -104,27 +116,64 @@ export interface AIChatState {
 }
 
 /**
- * 预设的快捷指令
+ * 预设的快捷指令 - 通用聊天模式
  */
-export const QUICK_COMMANDS: QuickCommandItem[] = [
+export const GENERAL_QUICK_COMMANDS: QuickCommandItem[] = [
+  {
+    id: 'create-resume',
+    category: 'create',
+    label: '创建简历',
+    prompt: '请帮我创建一份新的简历',
+    mode: 'general'
+  },
+  {
+    id: 'interview-tips',
+    category: 'general',
+    label: '面试技巧',
+    prompt: '请分享一些面试技巧和注意事项',
+    mode: 'general'
+  },
+  {
+    id: 'job-advice',
+    category: 'general',
+    label: '求职建议',
+    prompt: '我现在正在找工作，请问有什么建议吗？',
+    mode: 'general'
+  },
+  {
+    id: 'career-planning',
+    category: 'general',
+    label: '职业规划',
+    prompt: '请帮我分析一下职业发展方向',
+    mode: 'general'
+  }
+]
+
+/**
+ * 预设的快捷指令 - 简历模式
+ */
+export const RESUME_QUICK_COMMANDS: QuickCommandItem[] = [
   // 区块优化类
   {
     id: 'optimize-work',
     category: 'optimize',
     label: '优化工作经历',
-    prompt: '请帮我优化工作经历部分的描述，使其更加专业和有说服力'
+    prompt: '请帮我优化工作经历部分的描述，使其更加专业和有说服力',
+    mode: 'resume'
   },
   {
     id: 'optimize-project',
     category: 'optimize',
     label: '润色项目描述',
-    prompt: '请润色我的项目经验描述，突出技术亮点和成果'
+    prompt: '请润色我的项目经验描述，突出技术亮点和成果',
+    mode: 'resume'
   },
   {
     id: 'optimize-skills',
     category: 'optimize',
     label: '精简技能列表',
-    prompt: '请帮我精简和优化技能列表，去除冗余并突出核心技能'
+    prompt: '请帮我精简和优化技能列表，去除冗余并突出核心技能',
+    mode: 'resume'
   },
 
   // 内容调整类
@@ -132,13 +181,15 @@ export const QUICK_COMMANDS: QuickCommandItem[] = [
     id: 'quantify-content',
     category: 'adjust',
     label: '改为量化描述',
-    prompt: '请将这段内容改为量化描述，使用具体的数字和成果'
+    prompt: '请将这段内容改为量化描述，使用具体的数字和成果',
+    mode: 'resume'
   },
   {
     id: 'add-keywords',
     category: 'adjust',
     label: '增加技术关键词',
-    prompt: '请为这段内容增加相关的技术关键词，提高ATS匹配度'
+    prompt: '请为这段内容增加相关的技术关键词，提高ATS匹配度',
+    mode: 'resume'
   },
 
   // 诊断分析类
@@ -146,13 +197,15 @@ export const QUICK_COMMANDS: QuickCommandItem[] = [
     id: 'analyze-strengths',
     category: 'diagnose',
     label: '分析优势和不足',
-    prompt: '请分析我简历的优势和不足之处，并给出改进建议'
+    prompt: '请分析我简历的优势和不足之处，并给出改进建议',
+    mode: 'resume'
   },
   {
     id: 'improvement-suggestions',
     category: 'diagnose',
     label: '给出改进建议',
-    prompt: '请针对我的简历给出具体的改进建议'
+    prompt: '请针对我的简历给出具体的改进建议',
+    mode: 'resume'
   },
 
   // 创建生成类
@@ -160,12 +213,19 @@ export const QUICK_COMMANDS: QuickCommandItem[] = [
     id: 'create-work',
     category: 'create',
     label: '从零写工作经历',
-    prompt: '请根据我的背景帮我写一段工作经历'
+    prompt: '请根据我的背景帮我写一段工作经历',
+    mode: 'resume'
   },
   {
     id: 'create-summary',
     category: 'create',
     label: '创建个人简介',
-    prompt: '请帮我写一段专业的个人简介'
+    prompt: '请帮我写一段专业的个人简介',
+    mode: 'resume'
   }
 ]
+
+/**
+ * 所有快捷指令（向后兼容）
+ */
+export const QUICK_COMMANDS: QuickCommandItem[] = RESUME_QUICK_COMMANDS

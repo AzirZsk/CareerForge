@@ -278,7 +278,8 @@ CREATE INDEX IF NOT EXISTS idx_suggestion_section_id ON t_resume_suggestion(sect
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS t_chat_message (
     id VARCHAR(64) PRIMARY KEY,              -- 主键ID（雪花ID字符串）
-    resume_id VARCHAR(64) NOT NULL,          -- 关联的简历ID
+    resume_id VARCHAR(64),                   -- 关联的简历ID（可选，通用聊天模式为空）
+    session_id VARCHAR(64),                  -- 会话ID（通用聊天模式使用UUID，简历模式使用resumeId）
     role VARCHAR(20) NOT NULL,               -- 角色（user / assistant）
     content TEXT NOT NULL,                   -- 消息内容
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -287,4 +288,5 @@ CREATE TABLE IF NOT EXISTS t_chat_message (
 );
 
 CREATE INDEX IF NOT EXISTS idx_chat_message_resume_id ON t_chat_message(resume_id);
+CREATE INDEX IF NOT EXISTS idx_chat_message_session_id ON t_chat_message(session_id);
 CREATE INDEX IF NOT EXISTS idx_chat_message_created_at ON t_chat_message(created_at);

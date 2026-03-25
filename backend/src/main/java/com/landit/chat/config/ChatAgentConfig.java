@@ -6,6 +6,7 @@ import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.skills.registry.SkillRegistry;
 import com.alibaba.cloud.ai.graph.skills.registry.filesystem.FileSystemSkillRegistry;
 import com.landit.chat.tools.AddSectionTool;
+import com.landit.chat.tools.CreateResumeTool;
 import com.landit.chat.tools.DeleteSectionTool;
 import com.landit.chat.tools.GetResumeTool;
 import com.landit.chat.tools.GetSectionTool;
@@ -73,7 +74,8 @@ public class ChatAgentConfig {
             GetSectionTool.createCallback(resumeHandler),
             UpdateSectionTool.createCallback(resumeHandler),
             AddSectionTool.createCallback(resumeHandler),
-            DeleteSectionTool.createCallback(resumeHandler)
+            DeleteSectionTool.createCallback(resumeHandler),
+            CreateResumeTool.createCallback(resumeHandler)
         );
         log.info("[ResumeTools] 创建 {} 个简历工具", tools.size());
         return tools;
@@ -99,6 +101,7 @@ public class ChatAgentConfig {
         return ReactAgent.builder()
                 .name("chat_advisor")
                 .model(chatModel)
+                .enableLogging(true)
                 .systemPrompt(systemPrompt)
                 .saver(new MemorySaver())
                 .hooks(List.of(skillsAgentHook))

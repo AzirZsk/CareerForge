@@ -13,6 +13,7 @@
           <ChatHeader
             :resume-list="state.resumeList"
             :current-resume-id="state.currentResumeId"
+            :chat-mode="state.chatMode"
             @resume-change="handleResumeChange"
             @close="handleClose"
             @new-session="startNewSession"
@@ -30,6 +31,7 @@
             <!-- 快捷指令 -->
             <QuickCommands
               v-if="state.messages.length <= 1"
+              :chat-mode="state.chatMode"
               @select="handleQuickCommand"
             />
           </div>

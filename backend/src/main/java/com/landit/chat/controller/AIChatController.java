@@ -22,6 +22,7 @@ import java.util.List;
 /**
  * AI聊天控制器
  * 提供聊天接口和SSE流式输出
+ * 支持两种模式：简历对话（resumeId）和通用聊天（sessionId）
  *
  * @author Azir
  */
@@ -42,28 +43,29 @@ public class AIChatController {
             @ModelAttribute ChatStreamRequest request,
             HttpServletResponse response) {
 
-        log.info("[AIChat] 收到聊天请求: resumeId={}, hasImage={}",
+        log.info("[AIChat] 收到聊天请求: resumeId={}, sessionId={}, hasImage={}",
                 request.getResumeId(),
+                request.getSessionId(),
                 request.getImage() != null && !request.getImage().isEmpty());
 
         return chatHandler.streamChat(request, response);
     }
 
-    @Operation(summary = "获取聊天历史", description = "获取指定简历的聊天历史消息")
-    @GetMapping("/history/{resumeId}")
-    public ApiResponse<List<ChatMessageVO>> getHistory(@PathVariable String resumeId) {
-        List<ChatMessage> messages = chatMessageService.getHistory(resumeId, 50);
+    @Operation(summary = "获取聊天历史", description = "获取指定会话的聊天历史消息")
+    @GetMapping("/history/{sessionId}")
+    public ApiResponse<List<ChatMessageVO>> getHistory(@PathVariable String sessionId) {
+        List<ChatMessage> messages = chatMessageService.getHistory(sessionId, 50);
         List<ChatMessageVO> voList = messages.stream()
                 .map(m -> new ChatMessageVO(m.getId(), m.getRole(), m.getContent(), m.getCreatedAt()))
                 .toList();
         return ApiResponse.success(voList);
     }
 
-    @Operation(summary = "清空聊天历史", description = "清空指定简历的聊天历史")
-    @DeleteMapping("/history/{resumeId}")
-    public ApiResponse<Void> clearHistory(@PathVariable String resumeId) {
-        chatMessageService.clearHistory(resumeId);
-        log.info("[AIChat] 已清空简历 {} 的聊天历史", resumeId);
+    @Operation(summary = "清空聊天历史", description = "清空指定会话的聊天历史")
+    @DeleteMapping("/history/{sessionId}")
+    public ApiResponse<Void> clearHistory(@PathVariable String sessionId) {
+        chatMessageService.clearHistory(sessionId);
+        log.info("[AIChat] 已清空会话 {} 的聊天历史", sessionId);
         return ApiResponse.success();
     }
 

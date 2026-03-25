@@ -1,6 +1,7 @@
 <!--=====================================================
   快捷指令组件
   预设常用优化指令
+  根据聊天模式显示不同的指令
   @author Azir
 =====================================================-->
 
@@ -20,7 +21,7 @@
 
       <!-- 更多按钮 -->
       <button
-        v-if="!showAll && commands.length > 4"
+        v-if="!showAll && currentCommands.length > 4"
         class="command-btn more-btn"
         @click="showAll = true"
       >
@@ -33,20 +34,29 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { QUICK_COMMANDS } from '@/types/ai-chat'
+import { GENERAL_QUICK_COMMANDS, RESUME_QUICK_COMMANDS, type ChatMode } from '@/types/ai-chat'
+
+interface Props {
+  chatMode: ChatMode
+}
 
 interface Emits {
   (e: 'select', prompt: string): void
 }
 
+const props = defineProps<Props>()
 defineEmits<Emits>()
 
-const commands = QUICK_COMMANDS
 const showAll = ref(false)
+
+// 根据模式选择指令列表
+const currentCommands = computed(() => {
+  return props.chatMode === 'resume' ? RESUME_QUICK_COMMANDS : GENERAL_QUICK_COMMANDS
+})
 
 // 显示的指令（默认只显示前4个）
 const displayCommands = computed(() => {
-  return showAll.value ? commands : commands.slice(0, 4)
+  return showAll.value ? currentCommands.value : currentCommands.value.slice(0, 4)
 })
 
 // 获取分类图标
@@ -55,7 +65,8 @@ function getCategoryIcon(category: string): string {
     'optimize': '✨',
     'adjust': '🔧',
     'diagnose': '🔍',
-    'create': '✍️'
+    'create': '✍️',
+    'general': '💬'
   }
   return icons[category] || '📝'
 }
