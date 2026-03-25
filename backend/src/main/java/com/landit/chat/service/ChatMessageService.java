@@ -55,4 +55,18 @@ public class ChatMessageService extends ServiceImpl<ChatMessageMapper, ChatMessa
         remove(new LambdaQueryWrapper<ChatMessage>()
                 .eq(ChatMessage::getResumeId, resumeId));
     }
+
+    /**
+     * 判断是否是该简历的首次对话
+     *
+     * @param resumeId 简历ID
+     * @return true 表示首次对话，false 表示已有历史消息
+     */
+    public boolean isFirstMessage(String resumeId) {
+        if (resumeId == null || resumeId.isEmpty()) {
+            return true;
+        }
+        return count(new LambdaQueryWrapper<ChatMessage>()
+                .eq(ChatMessage::getResumeId, resumeId)) == 0;
+    }
 }
