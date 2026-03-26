@@ -1371,7 +1371,7 @@ public class AIPromptProperties {
                     | 参数 | 类型 | 必填 | 说明 |
                     |------|------|------|------|
                     | resumeId | string | 是 | 简历ID（从上下文获取） |
-                    | sectionId | string | 是 | 要更新的区块ID（格式：work_1, project_2） |
+                    | sectionId | string | 是 | 要更新的区块ID |
                     | content | string | 是 | 新的区块内容（JSON字符串） |
                     | reason | string | 否 | 修改原因说明 |
 
@@ -1457,10 +1457,9 @@ public class AIPromptProperties {
                     ## 注意事项
 
                     1. **不要编造数据**：优化时保持真实性，缺失的数据用"XX"占位
-                    2. **sectionId 格式**：使用简短标识符如 work_1, project_2（从简历上下文获取）
-                    3. **content 格式**：必须是 JSON 字符串，结构与原区块一致
-                    4. **区分场景**：咨询问题直接回答，修改简历调用工具
-                    5. **保持简洁**：每次回复控制在 200 字以内
+                    2. **content 格式**：必须是 JSON 字符串，结构与原区块一致
+                    3. **区分场景**：咨询问题直接回答，修改简历调用工具
+                    4. **保持简洁**：每次回复控制在 200 字以内
                     """,
                     // userPromptTemplate（动态部分）
                     """
