@@ -76,6 +76,16 @@
                 </div>
               </div>
             </div>
+            <!-- 实时转录显示 -->
+            <div v-if="partialTranscript && !partialTranscript.isFinal" class="message partial-transcript">
+              <div class="message-avatar">
+                <span v-if="partialTranscript.role === 'interviewer'">AI</span>
+                <span v-else>我</span>
+              </div>
+              <div class="message-content">
+                <p class="message-text">{{ partialTranscript.text }}<span class="cursor-blink">|</span></p>
+              </div>
+            </div>
           </div>
         </main>
 
@@ -147,7 +157,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import VoiceControls from '@/components/interview/voice/VoiceControls.vue'
 import AssistantPanel from '@/components/interview/voice/AssistantPanel.vue'
@@ -185,14 +195,27 @@ const elapsedTime = computed(() => voiceInterview.elapsedTime.value)
 const messages = voiceInterview.messages
 const assistRemaining = voiceInterview.assistRemaining
 const assistLimit = voiceInterview.assistLimit
+const partialTranscript = voiceInterview.partialTranscript
 
-// 处理状态
-const isProcessing = ref(false)
-const statusText = ref('')
-const statusType = ref<'idle' | 'recording' | 'recognizing' | 'synthesizing' | 'error'>('idle')
+// 处理状态（基于实时转录状态）
+const isProcessing = computed(() => !!partialTranscript.value && !partialTranscript.value.isFinal)
+const statusText = computed(() => {
+  if (voiceInterview.isPlaying.value) return 'AI 正在说话...'
+  if (isRecording.value) return '正在录音...'
+  if (isProcessing.value) return '正在识别...'
+  if (voiceInterview.error.value) return '连接错误'
+  return ''
+})
+const statusType = computed(() => {
+  if (voiceInterview.isPlaying.value) return 'synthesizing'
+  if (isRecording.value) return 'recording'
+  if (isProcessing.value) return 'recognizing'
+  if (voiceInterview.error.value) return 'error'
+  return 'idle'
+})
 
-// AI 响应状态
-const isAIResponding = ref(false)
+// AI 响应状态（与音频播放状态同步）
+const isAIResponding = computed(() => voiceInterview.isPlaying.value)
 
 // ============================================================================
 // 助手相关
@@ -236,6 +259,15 @@ onMounted(async () => {
 
 onUnmounted(() => {
   voiceInterview.dispose()
+})
+
+// 监听消息变化，自动滚动到底部
+watch(() => messages.value.length, () => {
+  nextTick(() => {
+    if (messagesContainer.value) {
+      messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+    }
+  })
 })
 
 // ============================================================================
@@ -722,5 +754,24 @@ function goToQuestion(index: number): void {
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.7; }
+}
+
+// 实时转录样式
+.partial-transcript {
+  opacity: 0.7;
+  .message-text {
+    background: rgba(212, 168, 83, 0.1);
+    border: 1px dashed rgba(212, 168, 83, 0.3);
+  }
+}
+
+.cursor-blink {
+  animation: blink 1s step-end infinite;
+  color: $color-accent;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
 </style>

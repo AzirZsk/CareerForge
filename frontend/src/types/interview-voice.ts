@@ -134,10 +134,22 @@ export interface ErrorEventData {
 // WebSocket 消息
 // ============================================================================
 
+/** 转录数据（与后端 VoiceResponse.TranscriptData 对应） */
+export interface TranscriptData {
+  /** 转录文本 */
+  text: string
+  /** 是否最终结果 */
+  isFinal: boolean
+  /** 角色：interviewer, candidate */
+  role: string
+  /** 置信度 */
+  confidence?: number
+}
+
 /** WebSocket 消息 */
 export interface WSMessage {
-  type: 'audio' | 'state' | 'error'
-  data: AudioData | StateData | ErrorData
+  type: 'transcript' | 'audio' | 'state' | 'error'
+  data: TranscriptData | AudioData | StateData | ErrorData
 }
 
 /** 音频数据 */
@@ -226,20 +238,32 @@ export interface ConversationMessage {
 
 /** 录音片段 */
 export interface RecordingSegment {
-  /** ID */
-  id: string
   /** 片段序号 */
-  segmentIndex: number
+  index: number
   /** 角色 */
   role: ConversationRole
   /** 文字内容 */
   content: string
-  /** 音频URL */
-  audioUrl: string
   /** 时长（毫秒） */
   durationMs: number
   /** 开始时间 */
   startTime: string
+  /** 结束时间 */
+  endTime: string
+  /** 音频URL */
+  audioUrl: string
+}
+
+/** 文字记录条目 */
+export interface TranscriptEntry {
+  /** 角色 */
+  role: ConversationRole
+  /** 内容 */
+  content: string
+  /** 时间戳（毫秒） */
+  timestamp: number
+  /** 片段序号 */
+  segmentIndex: number
 }
 
 /** 录音回放信息 */
@@ -252,6 +276,8 @@ export interface RecordingInfo {
   mergedAudioUrl: string
   /** 片段列表 */
   segments: RecordingSegment[]
+  /** 文字记录列表 */
+  transcript: TranscriptEntry[]
 }
 
 // ============================================================================

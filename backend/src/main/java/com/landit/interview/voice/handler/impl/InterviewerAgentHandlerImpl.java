@@ -5,6 +5,7 @@ import com.landit.interview.voice.dto.*;
 import com.landit.interview.voice.gateway.impl.InterviewVoiceGatewayImpl;
 import com.landit.interview.voice.handler.InterviewerAgentHandler;
 import com.landit.interview.voice.service.ASRService;
+import com.landit.interview.voice.service.RecordingService;
 import com.landit.interview.voice.service.TTSService;
 import com.landit.interview.voice.service.VoiceServiceFactory;
 import lombok.RequiredArgsConstructor;
@@ -14,8 +15,11 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.io.ByteArrayOutputStream;
+import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 面试官 Agent 处理器实现
@@ -32,6 +36,7 @@ public class InterviewerAgentHandlerImpl implements InterviewerAgentHandler {
     private final VoiceProperties voiceProperties;
     private final ChatClient.Builder chatClientBuilder;
     private final InterviewVoiceGatewayImpl voiceGateway;
+    private final RecordingService recordingService;
 
     // 会话上下文：sessionId -> ConversationContext
     private final ConcurrentHashMap<String, ConversationContext> contexts = new ConcurrentHashMap<>();
@@ -49,6 +54,9 @@ public class InterviewerAgentHandlerImpl implements InterviewerAgentHandler {
         // 获取会话上下文
         ConversationContext context = contexts.computeIfAbsent(sessionId, k -> new ConversationContext());
 
+        // 收集候选人音频数据
+        context.appendCandidateAudio(audioData);
+
         // Step 1: ASR 识别
         return asrService.streamRecognize(Flux.just(audioData), asrConfig)
                 .flatMap(asrResult -> {
@@ -62,9 +70,13 @@ public class InterviewerAgentHandlerImpl implements InterviewerAgentHandler {
                                     .build()
                     ));
 
-                    // 如果是最终结果，生成面试官回复
+                    // 如果是最终结果，保存候选人录音并生成面试官回复
                     if (asrResult.getIsFinal() && !asrResult.getText().isEmpty()) {
                         context.addCandidateMessage(asrResult.getText());
+
+                        // 保存候选人录音片段
+                        saveCandidateRecording(sessionId, context, asrResult.getText());
+
                         return transcriptFlux.concatWith(generateInterviewerReply(sessionId, asrResult.getText()));
                     }
 
@@ -155,6 +167,9 @@ public class InterviewerAgentHandlerImpl implements InterviewerAgentHandler {
             return Flux.empty();
         }
 
+        // 开始新的录音片段
+        context.startSegment();
+
         // 构建提示词
         String systemPrompt = buildInterviewerSystemPrompt();
         String userPrompt = String.format(
@@ -171,9 +186,25 @@ public class InterviewerAgentHandlerImpl implements InterviewerAgentHandler {
         TTSService ttsService = voiceServiceFactory.getTTSService();
         TTSConfig ttsConfig = buildInterviewerTTSConfig();
 
+        // 用于收集完整的面试官回复文本和音频
+        StringBuilder fullText = new StringBuilder();
+        ByteArrayOutputStream audioBuffer = new ByteArrayOutputStream();
+
         // 使用分句流式合成
         return ttsService.streamSynthesizeBySentence(llmStream, ttsConfig)
                 .flatMap(ttsChunk -> {
+                    // 收集文本
+                    fullText.append(ttsChunk.getText());
+
+                    // 收集音频
+                    if (ttsChunk.getAudio() != null && ttsChunk.getAudio().length > 0) {
+                        try {
+                            audioBuffer.write(ttsChunk.getAudio());
+                        } catch (Exception e) {
+                            log.error("[InterviewerAgent] Failed to buffer audio", e);
+                        }
+                    }
+
                     // 文本响应
                     Flux<VoiceResponse> textFlux = Flux.just(VoiceResponse.transcript(
                             VoiceResponse.TranscriptData.builder()
@@ -204,6 +235,9 @@ public class InterviewerAgentHandlerImpl implements InterviewerAgentHandler {
                     if (state != null) {
                         state.setCurrentQuestion(state.getCurrentQuestion() + 1);
                     }
+
+                    // 保存面试官录音片段
+                    saveInterviewerRecording(sessionId, context, fullText.toString(), audioBuffer.toByteArray());
                 });
     }
 
@@ -272,12 +306,95 @@ public class InterviewerAgentHandlerImpl implements InterviewerAgentHandler {
     }
 
     /**
+     * 保存候选人录音片段
+     */
+    private void saveCandidateRecording(String sessionId, ConversationContext context, String text) {
+        try {
+            byte[] audioData = context.getCandidateAudioAndReset();
+            if (audioData == null || audioData.length == 0) {
+                log.debug("[InterviewerAgent] No candidate audio to save, sessionId={}", sessionId);
+                return;
+            }
+
+            int segmentIndex = context.getNextSegmentIndex();
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime startTime = context.getSegmentStartTime();
+            if (startTime == null) {
+                startTime = now.minusSeconds(5);
+            }
+
+            // 估算时长：16kHz 16bit mono = 32000 bytes/sec
+            int durationMs = (int) ((audioData.length / 32000.0) * 1000);
+
+            RecordingSegment segment = RecordingSegment.builder()
+                    .index(segmentIndex)
+                    .role("candidate")
+                    .content(text)
+                    .audioData(audioData)
+                    .durationMs(durationMs)
+                    .startTime(startTime)
+                    .endTime(now)
+                    .build();
+
+            recordingService.saveSegment(sessionId, segment);
+            log.info("[InterviewerAgent] Saved candidate recording, sessionId={}, index={}, duration={}ms",
+                    sessionId, segmentIndex, durationMs);
+        } catch (Exception e) {
+            log.error("[InterviewerAgent] Failed to save candidate recording, sessionId={}", sessionId, e);
+        }
+    }
+
+    /**
+     * 保存面试官录音片段
+     */
+    private void saveInterviewerRecording(String sessionId, ConversationContext context, String text, byte[] audioData) {
+        try {
+            if (audioData == null || audioData.length == 0) {
+                log.debug("[InterviewerAgent] No interviewer audio to save, sessionId={}", sessionId);
+                return;
+            }
+
+            int segmentIndex = context.getNextSegmentIndex();
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime startTime = context.getSegmentStartTime();
+            if (startTime == null) {
+                startTime = now.minusSeconds(5);
+            }
+
+            // 估算时长
+            int durationMs = (int) ((audioData.length / 32000.0) * 1000);
+
+            RecordingSegment segment = RecordingSegment.builder()
+                    .index(segmentIndex)
+                    .role("interviewer")
+                    .content(text)
+                    .audioData(audioData)
+                    .durationMs(durationMs)
+                    .startTime(startTime)
+                    .endTime(now)
+                    .build();
+
+            recordingService.saveSegment(sessionId, segment);
+            log.info("[InterviewerAgent] Saved interviewer recording, sessionId={}, index={}, duration={}ms",
+                    sessionId, segmentIndex, durationMs);
+
+            // 记录面试官消息到上下文
+            context.addInterviewerMessage(text);
+        } catch (Exception e) {
+            log.error("[InterviewerAgent] Failed to save interviewer recording, sessionId={}", sessionId, e);
+        }
+    }
+
+    /**
      * 对话上下文
      */
     @lombok.Data
     private static class ConversationContext {
         private String position = "Java 开发工程师";
         private StringBuilder conversationHistory = new StringBuilder();
+        private AtomicInteger segmentIndex = new AtomicInteger(0);
+        private ByteArrayOutputStream candidateAudioBuffer = new ByteArrayOutputStream();
+        private LocalDateTime segmentStartTime;
 
         public void addCandidateMessage(String message) {
             conversationHistory.append("候选人：").append(message).append("\n");
@@ -292,6 +409,32 @@ public class InterviewerAgentHandlerImpl implements InterviewerAgentHandler {
                 return conversationHistory.substring(conversationHistory.length() - 2000);
             }
             return conversationHistory.toString();
+        }
+
+        public int getNextSegmentIndex() {
+            return segmentIndex.getAndIncrement();
+        }
+
+        public void appendCandidateAudio(byte[] audio) {
+            try {
+                candidateAudioBuffer.write(audio);
+            } catch (Exception e) {
+                log.error("Failed to append candidate audio", e);
+            }
+        }
+
+        public byte[] getCandidateAudioAndReset() {
+            byte[] audio = candidateAudioBuffer.toByteArray();
+            candidateAudioBuffer.reset();
+            return audio;
+        }
+
+        public void startSegment() {
+            segmentStartTime = LocalDateTime.now();
+        }
+
+        public LocalDateTime getSegmentStartTime() {
+            return segmentStartTime;
         }
     }
 }

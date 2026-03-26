@@ -6,6 +6,7 @@ import com.landit.interview.voice.dto.RecordingSegment;
 import com.landit.interview.voice.entity.InterviewRecording;
 import com.landit.interview.voice.mapper.InterviewRecordingMapper;
 import com.landit.interview.voice.service.RecordingService;
+import com.landit.interview.voice.util.WavHeaderUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,8 +17,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -77,8 +76,8 @@ public class RecordingServiceImpl implements RecordingService {
         int totalDurationMs = recordings.stream()
                 .mapToInt(r -> r.getDurationMs() != null ? r.getDurationMs() : 0)
                 .sum();
-        List<RecordingSegment> segments = recordings.stream()
-                .map(this::convertToSegment)
+        List<RecordingInfo.RecordingSegment> segments = recordings.stream()
+                .map(this::convertToInfoSegment)
                 .collect(Collectors.toList());
         List<RecordingInfo.TranscriptEntry> transcript = recordings.stream()
                 .filter(r -> r.getContent() != null && !r.getContent().isEmpty())
@@ -171,16 +170,18 @@ public class RecordingServiceImpl implements RecordingService {
     }
 
     /**
-     * 转换为 DTO
+     * 转换为 RecordingInfo 中的片段 DTO
      */
-    private RecordingSegment convertToSegment(InterviewRecording recording) {
-        return RecordingSegment.builder()
+    private RecordingInfo.RecordingSegment convertToInfoSegment(InterviewRecording recording) {
+        return RecordingInfo.RecordingSegment.builder()
                 .index(recording.getSegmentIndex())
                 .role(recording.getRole())
                 .content(recording.getContent())
                 .durationMs(recording.getDurationMs())
                 .startTime(recording.getStartTime())
                 .endTime(recording.getEndTime())
+                .audioUrl(String.format("/landit/recordings/%s/segments/%d/audio",
+                        recording.getSessionId(), recording.getSegmentIndex()))
                 .build();
     }
 
@@ -191,8 +192,7 @@ public class RecordingServiceImpl implements RecordingService {
         return RecordingInfo.TranscriptEntry.builder()
                 .role(recording.getRole())
                 .content(recording.getContent())
-                .timestamp(recording.getStartTime() != null ?
-                        recording.getStartTime().atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() : 0L)
+                .timestamp(WavHeaderUtils.convertToTimestamp(recording.getStartTime()))
                 .segmentIndex(recording.getSegmentIndex())
                 .build();
     }

@@ -15,6 +15,7 @@ import type {
   AudioData,
   StateData,
   ErrorData,
+  TranscriptData,
   ConversationMessage
 } from '@/types/interview-voice'
 
@@ -70,6 +71,21 @@ export function useInterviewVoice(sessionId: string) {
 
   /** WebSocket 连接 */
   let ws: WebSocket | null = null
+
+  /** 重连计数器 */
+  const reconnectAttempts = ref(0)
+
+  /** 最大重连次数 */
+  const MAX_RECONNECT_ATTEMPTS = 5
+
+  /** 重连延迟（毫秒） */
+  const RECONNECT_DELAY = 3000
+
+  /** 心跳定时器 */
+  let heartbeatInterval: number | null = null
+
+  /** 心跳间隔（毫秒） */
+  const heartbeatIntervalMs = 30000
 
   /** 音频播放器 */
   const audioPlayer = useStreamingAudio()
@@ -148,7 +164,31 @@ export function useInterviewVoice(sessionId: string) {
    */
   function handleWsOpen(): void {
     console.log('[useInterviewVoice] WebSocket 连接成功')
+    reconnectAttempts.value = 0
+    startHeartbeat()
     sendControlMessage('start')
+  }
+
+  /**
+   * 启动心跳检测
+   */
+  function startHeartbeat(): void {
+    stopHeartbeat()
+    heartbeatInterval = window.setInterval(() => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'ping' }))
+      }
+    }, heartbeatIntervalMs)
+  }
+
+  /**
+   * 停止心跳检测
+   */
+  function stopHeartbeat(): void {
+    if (heartbeatInterval) {
+      clearInterval(heartbeatInterval)
+      heartbeatInterval = null
+    }
   }
 
   /**
@@ -159,6 +199,9 @@ export function useInterviewVoice(sessionId: string) {
       const msg: WSMessage = JSON.parse(event.data)
 
       switch (msg.type) {
+        case 'transcript':
+          handleTranscriptMessage(msg.data as TranscriptData)
+          break
         case 'audio':
           handleAudioMessage(msg.data as AudioData)
           break
@@ -187,11 +230,44 @@ export function useInterviewVoice(sessionId: string) {
    */
   function handleWsClose(event: CloseEvent): void {
     console.log('[useInterviewVoice] WebSocket 关闭:', event.code, event.reason)
+    stopHeartbeat()
+
+    // 非正常关闭且未超过最大重连次数时尝试重连
+    if (event.code !== 1000 && reconnectAttempts.value < MAX_RECONNECT_ATTEMPTS) {
+      reconnectAttempts.value++
+      console.log(`[useInterviewVoice] 尝试重连 (${reconnectAttempts.value}/${MAX_RECONNECT_ATTEMPTS})`)
+      setTimeout(() => {
+        connectWebSocket()
+      }, RECONNECT_DELAY)
+    } else if (reconnectAttempts.value >= MAX_RECONNECT_ATTEMPTS) {
+      error.value = '连接已断开，请刷新页面重试'
+    }
   }
 
   // ============================================================================
   // 消息处理
   // ============================================================================
+
+  /**
+   * 处理转录消息
+   */
+  function handleTranscriptMessage(data: TranscriptData): void {
+    // 如果是最终结果，添加到消息列表
+    if (data.isFinal) {
+      const message: ConversationMessage = {
+        id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+        role: data.role === 'interviewer' ? 'interviewer' : 'candidate',
+        content: data.text,
+        timestamp: Date.now()
+      }
+      messages.value.push(message)
+    }
+    // 更新实时转录状态（非最终结果）
+    partialTranscript.value = data.isFinal ? null : data
+  }
+
+  /** 实时转录（非最终结果） */
+  const partialTranscript = ref<TranscriptData | null>(null)
 
   /**
    * 处理音频消息
@@ -356,10 +432,11 @@ export function useInterviewVoice(sessionId: string) {
    */
   function dispose(): void {
     stopTimer()
+    stopHeartbeat()
     stopRecording()
 
     if (ws) {
-      ws.close()
+      ws.close(1000, 'User closed')
       ws = null
     }
 
@@ -384,6 +461,8 @@ export function useInterviewVoice(sessionId: string) {
     elapsedTime,
     messages,
     error,
+    partialTranscript,
+    reconnectAttempts,
 
     // 计算属性
     isInterviewing,

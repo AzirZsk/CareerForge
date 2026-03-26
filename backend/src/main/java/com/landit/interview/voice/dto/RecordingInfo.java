@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -42,6 +43,50 @@ public class RecordingInfo {
      * 文字记录列表
      */
     private List<TranscriptEntry> transcript;
+
+    /**
+     * 录音片段
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class RecordingSegment {
+        /**
+         * 片段序号
+         */
+        private Integer index;
+
+        /**
+         * 角色
+         */
+        private String role;
+
+        /**
+         * 内容
+         */
+        private String content;
+
+        /**
+         * 时长（毫秒）
+         */
+        private Integer durationMs;
+
+        /**
+         * 开始时间
+         */
+        private LocalDateTime startTime;
+
+        /**
+         * 结束时间
+         */
+        private LocalDateTime endTime;
+
+        /**
+         * 音频 URL
+         */
+        private String audioUrl;
+    }
 
     /**
      * 文字记录条目
