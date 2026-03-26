@@ -382,6 +382,34 @@ function formatTime(timestamp: number): string {
       padding: 0;
     }
   }
+
+  :deep(table) {
+    width: 100%;
+    border-collapse: collapse;
+    margin: $spacing-sm 0;
+    font-size: $text-sm;
+
+    th,
+    td {
+      padding: $spacing-xs $spacing-sm;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: left;
+    }
+
+    th {
+      background: rgba(0, 0, 0, 0.3);
+      font-weight: $weight-medium;
+      color: $color-text-primary;
+    }
+
+    tr:nth-child(2n) {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    tr:hover {
+      background: rgba($color-accent, 0.05);
+    }
+  }
 }
 
 .message-images {

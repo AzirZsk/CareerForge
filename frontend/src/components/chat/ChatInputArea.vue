@@ -167,13 +167,15 @@
 
       <!-- 文本输入框 -->
       <textarea
+        ref="textareaRef"
         v-model="inputText"
-        placeholder="输入消息，按Enter发送，Ctrl+V粘贴图片..."
+        placeholder="输入消息，按Enter发送，Shift+Enter换行..."
         :disabled="isStreaming"
         rows="1"
         class="message-input"
         @keydown="handleKeydown"
         @paste="handlePaste"
+        @input="autoResize"
       />
 
       <!-- 发送按钮 -->
@@ -205,7 +207,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { MAX_IMAGE_COUNT } from '@/types/ai-chat'
 
 interface Props {
@@ -227,10 +229,28 @@ const emit = defineEmits<Emits>()
 
 const maxImageCount = MAX_IMAGE_COUNT
 const fileInputRef = ref<HTMLInputElement | null>(null)
+const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const inputText = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value)
 })
+
+// 自动调整文本框高度（最少1行，最多5行）
+function autoResize() {
+  const textarea = textareaRef.value
+  if (!textarea) return
+  // 重置高度以获取正确的 scrollHeight
+  textarea.style.height = 'auto'
+  // 计算单行高度（基于行高 1.5 + padding）
+  const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight)
+  const paddingTop = parseFloat(getComputedStyle(textarea).paddingTop)
+  const paddingBottom = parseFloat(getComputedStyle(textarea).paddingBottom)
+  const minHeight = lineHeight + paddingTop + paddingBottom
+  const maxHeight = lineHeight * 5 + paddingTop + paddingBottom
+  // 设置高度（限制在 min 和 max 之间）
+  const newHeight = Math.min(Math.max(textarea.scrollHeight, minHeight), maxHeight)
+  textarea.style.height = `${newHeight}px`
+}
 
 // 图片URL缓存
 const imageUrlCache = ref<Map<number, string>>(new Map())
@@ -293,6 +313,12 @@ function handleImagePreview(index: number) {
 function handleSend() {
   if (!props.isStreaming && (inputText.value.trim() || props.selectedImages.length > 0)) {
     emit('send')
+    // 发送后重置输入框高度
+    nextTick(() => {
+      if (textareaRef.value) {
+        textareaRef.value.style.height = 'auto'
+      }
+    })
   }
 }
 
@@ -498,7 +524,10 @@ function handlePaste(event: ClipboardEvent): void {
   font-size: $text-base;
   line-height: 1.5;
   resize: none;
-  max-height: 120px;
+  // 最少1行，最多5行（由 JS 动态计算高度）
+  min-height: 40px;
+  max-height: calc(1.5em * 5 + #{$spacing-sm * 2});
+  overflow-y: auto;
 
   &::placeholder {
     color: $color-text-tertiary;
