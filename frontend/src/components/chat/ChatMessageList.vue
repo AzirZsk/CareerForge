@@ -12,6 +12,7 @@
         :key="message.id"
         :message="message"
         @preview-image="emit('preview-image', $event)"
+        @apply-suggestion="emit('apply-suggestion', $event)"
       />
 
       <!-- 加载中提示 -->
@@ -40,6 +41,7 @@ interface Props {
 const props = defineProps<Props>()
 const emit = defineEmits<{
   'preview-image': [url: string]
+  'apply-suggestion': [messageId: string]
 }>()
 
 const messageListRef = ref<HTMLElement | null>(null)

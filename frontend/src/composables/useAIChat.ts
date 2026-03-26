@@ -157,8 +157,38 @@ export function useAIChat() {
   }
 
   function handleSuggestionEvent(changes: SectionChange[]): void {
-    state.pendingChanges = changes
-    state.showApplyDialog = true
+    state.messages.push({
+      id: generateId(),
+      role: 'assistant',
+      content: '我为您准备了以下修改建议，点击「应用修改」即可生效：',
+      suggestions: changes,
+      applied: false,
+      timestamp: Date.now()
+    })
+  }
+
+  async function applySuggestionFromMessage(messageId: string): Promise<void> {
+    const message = state.messages.find(m => m.id === messageId)
+    if (!message?.suggestions || !state.currentResumeId) return
+
+    try {
+      await apiApplyChanges(state.currentResumeId, message.suggestions)
+      message.applied = true
+      state.messages.push({
+        id: generateId(),
+        role: 'system',
+        content: '✅ 修改已应用成功！',
+        timestamp: Date.now()
+      })
+    } catch (error) {
+      console.error('[AIChat] 应用修改失败', error)
+      state.messages.push({
+        id: generateId(),
+        role: 'system',
+        content: '❌ 应用修改失败，请稍后重试',
+        timestamp: Date.now()
+      })
+    }
   }
 
   function handleCompleteEvent(): void {
@@ -358,6 +388,7 @@ export function useAIChat() {
     handleApplyChanges,
     handleRegenerate,
     handleCancelChanges,
+    applySuggestionFromMessage,
     handleImageSelect,
     handleImageRemove,
     handleImageRemoveAll,

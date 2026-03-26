@@ -69,19 +69,22 @@ public class AIChatService {
 
             final String finalSessionId = sessionId;
 
-            // 2. 保存用户消息到数据库
-            chatMessageService.saveMessage(finalSessionId, resumeId, "user", request.getCurrentUserMessage());
+            // 2. 先判断是否首次对话（必须在保存消息之前判断，否则 isFirstMessage 永远返回 false）
+            boolean isFirst = chatMessageService.isFirstMessage(finalSessionId);
 
             // 3. 构建 instruction（包含简历上下文或通用提示词）
-            String instruction = buildInstruction(request, finalSessionId);
+            String instruction = buildInstruction(request, isFirst);
 
-            // 4. 处理图片（如果有）
+            // 4. 保存用户消息到数据库（在构建 instruction 之后保存）
+            chatMessageService.saveMessage(finalSessionId, resumeId, "user", request.getCurrentUserMessage());
+
+            // 5. 处理图片（如果有）
             List<Media> mediaList = processImages(request.getImages());
             if (!mediaList.isEmpty()) {
                 log.info("[AIChat] 检测到图片输入，共 {} 张", mediaList.size());
             }
 
-            // 5. 构建运行时配置（使用 sessionId 作为 threadId 维护对话上下文）
+            // 6. 构建运行时配置（使用 sessionId 作为 threadId 维护对话上下文）
             RunnableConfig config = RunnableConfig.builder()
                     .threadId(finalSessionId)
                     .build();
@@ -89,19 +92,19 @@ public class AIChatService {
             log.info("[AIChat] 开始 Agent 对话: sessionId={}, resumeId={}, threadId={}, imageCount={}",
                     finalSessionId, resumeId, config.threadId(), mediaList.size());
 
-            // 6. 用于收集 AI 回复的 StringBuilder
+            // 7. 用于收集 AI 回复的 StringBuilder
             StringBuilder aiResponse = new StringBuilder();
 
-            // 7. 用于缓存 suggestion 事件（等 AI 回复完成后再发送，实现"先显示 AI 回复，再弹窗"）
+            // 8. 用于缓存 suggestion 事件（等 AI 回复完成后再发送，实现"先显示 AI 回复，再弹窗"）
             List<ChatEvent> pendingSuggestions = new ArrayList<>();
 
-            // 8. 构建 UserMessage（包含文本和图片）
+            // 9. 构建 UserMessage（包含文本和图片）
             UserMessage userMessage = UserMessage.builder()
                     .text(instruction)
                     .media(mediaList)
                     .build();
 
-            // 8. 调用 Agent 流式输出
+            // 10. 调用 Agent 流式输出
             return chatAgent.stream(userMessage, config)
                     .filter(output -> output instanceof StreamingOutput)
                     .map(output -> (StreamingOutput) output)
@@ -181,10 +184,13 @@ public class AIChatService {
      * 构建 instruction（包含简历上下文或通用提示词）
      * 历史对话由 ReactAgent 的 MemorySaver 自动维护，无需手动加载
      * 简历上下文只在首次对话时注入，后续对话只发送用户问题
+     *
+     * @param request 聊天请求
+     * @param isFirst 是否首次对话（调用方需要在保存消息之前判断）
      */
-    private String buildInstruction(ChatStreamRequest request, String sessionId) {
+    private String buildInstruction(ChatStreamRequest request, boolean isFirst) {
         // 非首次对话：直接返回用户问题
-        if (!chatMessageService.isFirstMessage(sessionId)) {
+        if (!isFirst) {
             return request.getCurrentUserMessage();
         }
 

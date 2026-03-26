@@ -24,6 +24,8 @@ export interface ChatMessage {
   imageUrls?: string[]
   timestamp: number
   isStreaming?: boolean
+  suggestions?: SectionChange[]
+  applied?: boolean
 }
 
 /**

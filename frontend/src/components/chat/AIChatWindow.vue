@@ -26,6 +26,7 @@
               :messages="state.messages"
               :is-streaming="state.isStreaming"
               @preview-image="handleImagePreview"
+              @apply-suggestion="applySuggestionFromMessage"
             />
 
             <!-- 快捷指令 -->
@@ -47,15 +48,6 @@
             @preview-image="handleImagePreview"
           />
 
-          <!-- 修改确认对话框 -->
-          <ApplyChangesDialog
-            v-model:visible="state.showApplyDialog"
-            :changes="state.pendingChanges"
-            @confirm="handleApplyChanges"
-            @regenerate="handleRegenerate"
-            @cancel="handleCancelChanges"
-          />
-
           <!-- 图片预览弹窗 -->
           <ImagePreviewModal
             v-model:visible="previewVisible"
@@ -74,7 +66,6 @@ import ChatHeader from './ChatHeader.vue'
 import ChatMessageList from './ChatMessageList.vue'
 import QuickCommands from './QuickCommands.vue'
 import ChatInputArea from './ChatInputArea.vue'
-import ApplyChangesDialog from './ApplyChangesDialog.vue'
 import ImagePreviewModal from '@/components/common/ImagePreviewModal.vue'
 
 interface Props {
@@ -115,9 +106,7 @@ const {
   sendMessage,
   handleResumeChange,
   handleQuickCommand,
-  handleApplyChanges,
-  handleRegenerate,
-  handleCancelChanges,
+  applySuggestionFromMessage,
   handleImageSelect,
   handleImageRemove,
   startNewSession

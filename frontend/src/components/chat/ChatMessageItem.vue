@@ -57,6 +57,46 @@
           :class="{ 'is-streaming': message.isStreaming }"
           v-html="formattedContent"
         ></div>
+
+        <!-- 建议卡片 -->
+        <div v-if="message.suggestions && message.suggestions.length > 0" class="suggestions-container">
+          <div v-for="(change, index) in message.suggestions" :key="index" class="suggestion-card">
+            <div class="suggestion-header">
+              <span class="change-type" :class="change.changeType">
+                {{ getTypeLabel(change.changeType) }}
+              </span>
+              <span class="section-name">{{ change.sectionTitle || change.sectionType || '内容修改' }}</span>
+            </div>
+            <div class="suggestion-desc">{{ change.description }}</div>
+            <div v-if="change.beforeContent || change.afterContent" class="suggestion-diff">
+              <div v-if="change.beforeContent" class="diff-item diff-before">
+                <span class="diff-label">修改前：</span>
+                <div class="diff-content">{{ truncateContent(change.beforeContent) }}</div>
+              </div>
+              <div v-if="change.afterContent" class="diff-item diff-after">
+                <span class="diff-label">修改后：</span>
+                <div class="diff-content">{{ truncateContent(change.afterContent) }}</div>
+              </div>
+            </div>
+          </div>
+          <!-- 操作按钮 -->
+          <button
+            v-if="!message.applied"
+            class="apply-btn"
+            @click="handleApplySuggestion"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            应用修改
+          </button>
+          <div v-else class="applied-status">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            已应用
+          </div>
+        </div>
       </div>
 
       <!-- 时间戳 -->
@@ -78,6 +118,7 @@ interface Props {
 const props = defineProps<Props>()
 const emit = defineEmits<{
   'preview-image': [url: string]
+  'apply-suggestion': [messageId: string]
 }>()
 
 const { renderMarkdown } = useMarkdown()
@@ -86,6 +127,30 @@ const formattedContent = computed(() => renderMarkdown(props.message.content))
 
 function handleImageClick(url: string) {
   emit('preview-image', url)
+}
+
+function handleApplySuggestion() {
+  emit('apply-suggestion', props.message.id)
+}
+
+function getTypeLabel(type: string): string {
+  const labels: Record<string, string> = {
+    'update': '修改',
+    'add': '新增',
+    'delete': '删除'
+  }
+  return labels[type] || type
+}
+
+function truncateContent(content: string | undefined): string {
+  if (!content) return ''
+  try {
+    const parsed = JSON.parse(content)
+    const str = JSON.stringify(parsed, null, 2)
+    return str.length > 150 ? str.slice(0, 150) + '...' : str
+  } catch {
+    return content.length > 150 ? content.slice(0, 150) + '...' : content
+  }
 }
 
 function formatTime(timestamp: number): string {
@@ -324,5 +389,143 @@ function formatTime(timestamp: number): string {
 // AI消息时间在左边
 .message-assistant .message-time {
   text-align: left;
+}
+
+// 建议卡片容器
+.suggestions-container {
+  margin-top: $spacing-md;
+  padding-top: $spacing-md;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.suggestion-card {
+  padding: $spacing-sm $spacing-md;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: $radius-sm;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.suggestion-header {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-xs;
+}
+
+.change-type {
+  padding: 2px 8px;
+  border-radius: $radius-sm;
+  font-size: $text-xs;
+  font-weight: $weight-medium;
+
+  &.update {
+    background: rgba($color-accent, 0.2);
+    color: $color-accent;
+  }
+
+  &.add {
+    background: rgba($color-success, 0.2);
+    color: $color-success;
+  }
+
+  &.delete {
+    background: rgba($color-error, 0.2);
+    color: $color-error;
+  }
+}
+
+.section-name {
+  font-size: $text-sm;
+  color: $color-text-secondary;
+  font-weight: $weight-medium;
+}
+
+.suggestion-desc {
+  font-size: $text-sm;
+  color: $color-text-tertiary;
+  line-height: $leading-relaxed;
+}
+
+.suggestion-diff {
+  margin-top: $spacing-sm;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.diff-item {
+  .diff-label {
+    font-size: $text-xs;
+    color: $color-text-tertiary;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .diff-content {
+    font-size: $text-xs;
+    font-family: monospace;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: $color-text-secondary;
+    background: rgba(0, 0, 0, 0.15);
+    padding: $spacing-xs;
+    border-radius: $radius-xs;
+    max-height: 80px;
+    overflow-y: auto;
+  }
+}
+
+.diff-after {
+  .diff-label {
+    color: $color-accent;
+  }
+
+  .diff-content {
+    color: $color-accent;
+    border: 1px solid rgba($color-accent, 0.2);
+  }
+}
+
+.apply-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-xs;
+  padding: $spacing-sm $spacing-lg;
+  margin-top: $spacing-sm;
+  font-size: $text-sm;
+  font-weight: $weight-medium;
+  color: $color-bg-primary;
+  background: $color-accent;
+  border: none;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    background: $color-accent-light;
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+.applied-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-xs;
+  padding: $spacing-sm $spacing-lg;
+  margin-top: $spacing-sm;
+  font-size: $text-sm;
+  font-weight: $weight-medium;
+  color: $color-success;
+  background: rgba($color-success, 0.1);
+  border: 1px solid rgba($color-success, 0.2);
+  border-radius: $radius-sm;
 }
 </style>
