@@ -104,7 +104,7 @@ export function useStreamingAudio() {
    */
   async function playAudioChunk(
     base64Audio: string,
-    format: 'pcm' | 'wav' = 'wav'
+    _format: 'pcm' | 'wav' = 'wav'
   ): Promise<void> {
     try {
       initAudioContext()

@@ -16,6 +16,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class TTSConfig {
 
+    /** TTS 模型 */
+    private String model;
+
     /** 音色ID */
     private String voice;
 
@@ -37,6 +40,7 @@ public class TTSConfig {
     /** 默认配置 */
     public static TTSConfig defaultConfig() {
         TTSConfig config = new TTSConfig();
+        config.model = "cosyvoice-v2";
         config.format = "wav";
         config.sampleRate = 16000;
         config.speechRate = 1.0;
@@ -57,6 +61,7 @@ public class TTSConfig {
 
     private static TTSConfig withVoice(String voiceId, double speechRate, double pitch) {
         TTSConfig config = new TTSConfig();
+        config.model = "cosyvoice-v2";
         config.voice = voiceId;
         config.format = "wav";
         config.sampleRate = 16000;

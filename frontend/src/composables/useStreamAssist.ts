@@ -7,7 +7,7 @@
 
 import { ref, computed, onUnmounted } from 'vue'
 import { useStreamingAudio } from './useStreamingAudio'
-import type { AssistType, AssistRequest, AssistSSEEvent, TextEventData, AudioEventData, DoneEventData, ErrorEventData } from '@/types/interview-voice'
+import type { AssistRequest, TextEventData, AudioEventData, DoneEventData, ErrorEventData } from '@/types/interview-voice'
 
 /**
  * SSE 流式求助

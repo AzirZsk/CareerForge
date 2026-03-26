@@ -9,13 +9,13 @@ import { ref, computed, onUnmounted } from 'vue'
 import { useStreamingAudio } from './useStreamingAudio'
 import { useAudioRecorder } from './useAudioRecorder'
 import type {
-  VoiceMode,
   SessionState,
   VoiceSettings,
   WSMessage,
   TranscriptData,
   AudioData,
   StateData,
+  ErrorData,
   ConversationMessage
 } from '@/types/interview-voice'
 
@@ -177,7 +177,7 @@ export function useInterviewVoice(sessionId: string) {
           handleStateMessage(msg.data as StateData)
           break
         case 'error':
-          handleErrorMessage(msg.data)
+          handleErrorMessage(msg.data as ErrorData)
           break
       }
     } catch (e) {
@@ -265,7 +265,7 @@ export function useInterviewVoice(sessionId: string) {
    */
   function sendAudioData(audioData: Int16Array): void {
     if (ws && ws.readyState === WebSocket.OPEN) {
-      const base64Audio = arrayBufferToBase64(audioData.buffer)
+      const base64Audio = arrayBufferToBase64(audioData.buffer as ArrayBuffer)
       ws.send(JSON.stringify({
         type: 'audio',
         data: {

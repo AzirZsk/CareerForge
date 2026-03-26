@@ -320,6 +320,20 @@ export interface TranscriptEntry {
 /** 播放状态 */
 export type PlaybackState = 'idle' | 'playing' | 'paused' | 'loading'
 
+/** 转录消息 */
+export interface TranscriptMessage {
+  /** 文本内容 */
+  text: string
+  /** 是否最终结果 */
+  isFinal: boolean
+  /** 角色 */
+  role: ConversationRole
+  /** 时间戳 */
+  timestamp?: number
+  /** 置信度 */
+  confidence?: number
+}
+
 /** 音频播放器状态 */
 export interface AudioPlayerState {
   /** 播放状态 */

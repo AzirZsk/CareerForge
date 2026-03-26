@@ -18,6 +18,11 @@ import lombok.NoArgsConstructor;
 public class ASRConfig {
 
     /**
+     * ASR 模型
+     */
+    private String model;
+
+    /**
      * 音频格式：pcm, wav, mp3
      */
     private String format;
@@ -52,6 +57,7 @@ public class ASRConfig {
      */
     public static ASRConfig defaultConfig() {
         return ASRConfig.builder()
+                .model("paraformer-realtime-v2")
                 .format("pcm")
                 .sampleRate(16000)
                 .enablePunctuation(true)
