@@ -57,4 +57,25 @@ public enum SectionType {
                 .orElse(null);
     }
 
+    /**
+     * 根据code获取枚举（忽略大小写）
+     */
+    public static SectionType fromCodeIgnoreCase(String code) {
+        if (code == null) {
+            return null;
+        }
+        return Arrays.stream(values())
+                .filter(type -> type.getCode().equalsIgnoreCase(code))
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * 判断是否为可新增的区块类型
+     * BASIC_INFO（基本信息）和 RAW_TEXT（原始文本）不允许新增
+     */
+    public boolean isAddable() {
+        return this != BASIC_INFO && this != RAW_TEXT;
+    }
+
 }

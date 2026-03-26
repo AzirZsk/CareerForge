@@ -18,6 +18,8 @@ import com.landit.resume.dto.UpdateSectionRequest;
 import com.landit.resume.handler.ResumeHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.content.Media;
 import org.springframework.stereotype.Service;
@@ -299,7 +301,20 @@ public class AIChatService {
      */
     private ChatEvent buildSuggestionEvent(StreamingOutput so) {
         try {
-            String toolResult = so.message().getText();
+            Message message = so.message();
+            String toolResult = null;
+
+            // 处理 ToolResponseMessage 类型（工具返回结果）
+            if (message instanceof ToolResponseMessage toolResponseMessage) {
+                List<ToolResponseMessage.ToolResponse> responses = toolResponseMessage.getResponses();
+                if (responses != null && !responses.isEmpty()) {
+                    toolResult = responses.get(0).responseData();
+                }
+            } else if (message != null) {
+                // 兼容普通文本消息
+                toolResult = message.getText();
+            }
+
             log.info("[AIChat] 工具执行完成: node={}, result={}", so.node(), toolResult);
 
             if (toolResult == null || toolResult.isEmpty()) {
@@ -329,48 +344,6 @@ public class AIChatService {
         } catch (Exception e) {
             log.error("[AIChat] 处理工具结果失败", e);
             return null;
-        }
-    }
-
-    /**
-     * 处理工具执行完成事件（已废弃，改用 buildSuggestionEvent）
-     * 解析工具返回的 SectionSuggestionResponse，转换为 suggestion 事件
-     * @deprecated 使用 buildSuggestionEvent 替代
-     */
-    @Deprecated
-    private Flux<ChatEvent> handleToolFinished(StreamingOutput so) {
-        try {
-            String toolResult = so.message().getText();
-            log.info("[AIChat] 工具执行完成: node={}, result={}", so.node(), toolResult);
-
-            if (toolResult == null || toolResult.isEmpty()) {
-                return Flux.empty();
-            }
-
-            // 解析 JSON 为 SectionSuggestionResponse
-            SectionSuggestionResponse response = JsonParseHelper.parseToEntity(
-                    toolResult, SectionSuggestionResponse.class);
-
-            if (response == null || !Boolean.TRUE.equals(response.getSuccess())) {
-                log.debug("[AIChat] 工具结果不是有效的建议响应，跳过");
-                return Flux.empty();
-            }
-
-            // 转换为 SectionChange
-            SectionChange change = convertToSectionChange(response);
-            if (change == null) {
-                return Flux.empty();
-            }
-
-            log.info("[AIChat] 生成修改建议: action={}, sectionType={}, sectionTitle={}",
-                    response.getAction(), response.getSectionType(), response.getSectionTitle());
-
-            // 发送 suggestion 事件
-            return Flux.just(ChatEvent.suggestion(List.of(change)));
-
-        } catch (Exception e) {
-            log.error("[AIChat] 处理工具结果失败", e);
-            return Flux.empty();
         }
     }
 

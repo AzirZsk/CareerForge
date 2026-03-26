@@ -3,6 +3,7 @@ package com.landit.chat.tools;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.landit.chat.dto.tool.SectionSuggestionResponse;
+import com.landit.common.enums.SectionType;
 import com.landit.resume.dto.ResumeDetailVO;
 import com.landit.resume.handler.ResumeHandler;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +12,6 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
-import java.util.Set;
 import java.util.function.BiFunction;
 
 /**
@@ -23,13 +23,6 @@ import java.util.function.BiFunction;
 @Slf4j
 @RequiredArgsConstructor
 public class AddSectionTool implements BiFunction<AddSectionTool.Request, ToolContext, String> {
-
-    /**
-     * 允许新增的区块类型
-     */
-    private static final Set<String> VALID_ADDABLE_SECTION_TYPES = Set.of(
-        "EDUCATION", "WORK", "PROJECT", "SKILLS", "CERTIFICATE", "OPEN_SOURCE", "CUSTOM"
-    );
 
     private final ResumeHandler resumeHandler;
 
@@ -84,10 +77,9 @@ public class AddSectionTool implements BiFunction<AddSectionTool.Request, ToolCo
     }
 
     private String validateSectionType(String type) {
-        for (String valid : VALID_ADDABLE_SECTION_TYPES) {
-            if (valid.equalsIgnoreCase(type)) {
-                return valid;
-            }
+        SectionType sectionType = SectionType.fromCodeIgnoreCase(type);
+        if (sectionType != null && sectionType.isAddable()) {
+            return sectionType.getCode();
         }
         return null;
     }
