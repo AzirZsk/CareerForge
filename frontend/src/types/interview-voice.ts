@@ -9,7 +9,7 @@
 // ============================================================================
 
 /** 语音模式 */
-export type VoiceMode = 'text' | 'half_voice' | 'full_voice'
+export type VoiceMode = 'half_voice' | 'full_voice'
 
 /** 会话状态 */
 export type SessionState = 'interviewing' | 'frozen' | 'completed'
@@ -28,8 +28,6 @@ export type ConversationRole = 'interviewer' | 'candidate' | 'assistant'
 export interface VoiceSettings {
   /** 语音模式 */
   mode: VoiceMode
-  /** 输入格式 */
-  inputFormat: 'pcm' | 'wav'
   /** 采样率 */
   sampleRate: 16000 | 24000
   /** 面试官音色ID */
@@ -47,47 +45,12 @@ export interface VoiceSettings {
 /** 默认语音设置 */
 export const defaultVoiceSettings: VoiceSettings = {
   mode: 'full_voice',
-  inputFormat: 'pcm',
   sampleRate: 16000,
   interviewerVoice: 'longxiaochun_v2',
   assistantVoice: 'zhimiao_emo_v2',
   speechRate: 1.0,
   vadEnabled: true,
   vadSilenceMs: 1500
-}
-
-// ============================================================================
-// ASR（语音识别）相关
-// ============================================================================
-
-/** ASR 配置 */
-export interface ASRConfig {
-  /** 音频格式 */
-  format: 'pcm' | 'wav' | 'mp3'
-  /** 采样率 */
-  sampleRate: number
-  /** 是否启用标点 */
-  enablePunctuation: boolean
-  /** 是否启用逆文本正则化 */
-  enableItn: boolean
-  /** 语言 */
-  language: 'zh' | 'en'
-  /** 是否启用 VAD */
-  enableVad: boolean
-}
-
-/** ASR 识别结果 */
-export interface ASRResult {
-  /** 识别文本 */
-  text: string
-  /** 是否最终结果 */
-  isFinal: boolean
-  /** 置信度 0-1 */
-  confidence?: number
-  /** 开始时间（毫秒） */
-  startTime?: number
-  /** 结束时间（毫秒） */
-  endTime?: number
 }
 
 // ============================================================================
@@ -173,18 +136,8 @@ export interface ErrorEventData {
 
 /** WebSocket 消息 */
 export interface WSMessage {
-  type: 'transcript' | 'audio' | 'state' | 'error'
-  data: TranscriptData | AudioData | StateData | ErrorData
-}
-
-/** 转录数据 */
-export interface TranscriptData {
-  /** 识别文本 */
-  text: string
-  /** 是否最终结果 */
-  isFinal: boolean
-  /** 角色 */
-  role: ConversationRole
+  type: 'audio' | 'state' | 'error'
+  data: AudioData | StateData | ErrorData
 }
 
 /** 音频数据 */
@@ -299,18 +252,6 @@ export interface RecordingInfo {
   mergedAudioUrl: string
   /** 片段列表 */
   segments: RecordingSegment[]
-  /** 文字记录 */
-  transcript: TranscriptEntry[]
-}
-
-/** 文字记录条目 */
-export interface TranscriptEntry {
-  /** 角色 */
-  role: string
-  /** 内容 */
-  content: string
-  /** 时间戳 */
-  timestamp: number
 }
 
 // ============================================================================
@@ -319,20 +260,6 @@ export interface TranscriptEntry {
 
 /** 播放状态 */
 export type PlaybackState = 'idle' | 'playing' | 'paused' | 'loading'
-
-/** 转录消息 */
-export interface TranscriptMessage {
-  /** 文本内容 */
-  text: string
-  /** 是否最终结果 */
-  isFinal: boolean
-  /** 角色 */
-  role: ConversationRole
-  /** 时间戳 */
-  timestamp?: number
-  /** 置信度 */
-  confidence?: number
-}
 
 /** 音频播放器状态 */
 export interface AudioPlayerState {

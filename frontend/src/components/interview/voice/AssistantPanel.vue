@@ -22,7 +22,7 @@
         <div class="text-content" v-html="formattedContent"></div>
 
         <!-- 音频播放器 -->
-        <div v-if="audioQueue.length > 0" class="audio-player">
+        <div v-if="hasAudio" class="audio-player">
           <button
             class="play-btn"
             :class="{ playing: isPlaying }"
@@ -33,7 +33,7 @@
           <div class="progress-bar">
             <div class="progress" :style="{ width: playProgress + '%' }"></div>
           </div>
-          <span class="duration">{{ formatDuration(currentTime) }} / {{ formatDuration(totalDuration) }}</span>
+          <span class="duration">{{ formatDuration(currentTime) }} / {{ formatDuration(duration) }}</span>
         </div>
       </div>
 
@@ -56,8 +56,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import QuickAssistButtons from './QuickAssistButtons.vue'
+import { useStreamingAudio } from '@/composables/useStreamingAudio'
 import type { AssistType } from '@/types/interview-voice'
 
 // Props
@@ -66,13 +67,15 @@ interface Props {
   isLoading?: boolean
   assistRemaining?: number
   assistLimit?: number
+  audioChunks?: string[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
   content: '',
   isLoading: false,
   assistRemaining: 5,
-  assistLimit: 5
+  assistLimit: 5,
+  audioChunks: () => []
 })
 
 // Emits
@@ -81,30 +84,60 @@ const emit = defineEmits<{
   assist: [type: AssistType, question?: string]
 }>()
 
-// 音频播放状态
-const audioQueue = ref<ArrayBuffer[]>([])
-const isPlaying = ref(false)
+// 流式音频播放器
+const audioPlayer = useStreamingAudio()
+
+// 播放状态
 const currentTime = ref(0)
-const totalDuration = ref(0)
+
+// 从 audioPlayer 获取状态
+const isPlaying = audioPlayer.isPlaying
+const duration = audioPlayer.duration
+const hasAudio = computed(() => props.audioChunks && props.audioChunks.length > 0)
 
 // 播放进度
 const playProgress = computed(() => {
-  if (totalDuration.value === 0) return 0
-  return (currentTime.value / totalDuration.value) * 100
+  if (duration.value === 0) return 0
+  return (currentTime.value / duration.value) * 100
 })
 
 // 格式化内容（支持 Markdown）
 const formattedContent = computed(() => {
   if (!props.content) return ''
-  // 简单的换行处理，实际可使用 markdown 解析器
   return props.content
     .split('\n')
     .map(line => `<p>${line}</p>`)
     .join('')
 })
 
+// 监听音频块变化，自动播放
+watch(() => props.audioChunks, async (chunks) => {
+  if (chunks && chunks.length > 0) {
+    audioPlayer.initAudioContext(16000)
+    for (const chunk of chunks) {
+      await audioPlayer.playAudioChunk(chunk, 'wav')
+    }
+  }
+}, { deep: true })
+
+// 更新当前播放时间
+let timeUpdateInterval: number | null = null
+watch(isPlaying, (playing) => {
+  if (playing) {
+    timeUpdateInterval = window.setInterval(() => {
+      currentTime.value = audioPlayer.currentTime.value
+    }, 100)
+  } else {
+    if (timeUpdateInterval) {
+      clearInterval(timeUpdateInterval)
+      timeUpdateInterval = null
+    }
+  }
+})
+
 // 返回面试
 function handleReturn() {
+  audioPlayer.stop()
   emit('return')
 }
 
@@ -115,16 +148,27 @@ function handleAssist(type: AssistType, question?: string) {
 
 // 切换播放
 function togglePlay() {
-  isPlaying.value = !isPlaying.value
-  // TODO: 实现音频播放逻辑
+  if (isPlaying.value) {
+    audioPlayer.pause()
+  } else {
+    audioPlayer.resume()
+  }
 }
 
 // 格式化时长
 function formatDuration(seconds: number): string {
   const mins = Math.floor(seconds / 60)
-  const secs = seconds % 60
+  const secs = Math.floor(seconds % 60)
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
+
+// 组件卸载时清理
+onUnmounted(() => {
+  audioPlayer.dispose()
+  if (timeUpdateInterval) {
+    clearInterval(timeUpdateInterval)
+  }
+})
 </script>
 
 <style scoped lang="scss">

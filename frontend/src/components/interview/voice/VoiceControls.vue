@@ -61,7 +61,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  modelValue: 'text',
+  modelValue: 'half_voice',
   isRecording: false,
   isProcessing: false,
   statusText: '',
@@ -78,7 +78,6 @@ const emit = defineEmits<{
 
 // 语音模式选项
 const voiceModes = [
-  { value: 'text' as VoiceMode, label: '文字' },
   { value: 'half_voice' as VoiceMode, label: '半语音' },
   { value: 'full_voice' as VoiceMode, label: '全语音' }
 ]

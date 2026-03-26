@@ -12,7 +12,6 @@ import type {
   SessionState,
   VoiceSettings,
   WSMessage,
-  TranscriptData,
   AudioData,
   StateData,
   ErrorData,
@@ -22,7 +21,6 @@ import type {
 // 默认设置
 const DEFAULT_SETTINGS: VoiceSettings = {
   mode: 'full_voice',
-  inputFormat: 'pcm',
   sampleRate: 16000,
   interviewerVoice: 'longxiaochun_v2',
   assistantVoice: 'zhimiao_emo_v2',
@@ -63,12 +61,6 @@ export function useInterviewVoice(sessionId: string) {
 
   /** 对话消息列表 */
   const messages = ref<ConversationMessage[]>([])
-
-  /** 当前识别文本 */
-  const currentTranscript = ref('')
-
-  /** 是否正在识别 */
-  const isRecognizing = ref(false)
 
   /** 错误信息 */
   const error = ref<string | null>(null)
@@ -167,9 +159,6 @@ export function useInterviewVoice(sessionId: string) {
       const msg: WSMessage = JSON.parse(event.data)
 
       switch (msg.type) {
-        case 'transcript':
-          handleTranscriptMessage(msg.data as TranscriptData)
-          break
         case 'audio':
           handleAudioMessage(msg.data as AudioData)
           break
@@ -203,20 +192,6 @@ export function useInterviewVoice(sessionId: string) {
   // ============================================================================
   // 消息处理
   // ============================================================================
-
-  /**
-   * 处理转录消息
-   */
-  function handleTranscriptMessage(data: TranscriptData): void {
-    if (data.isFinal) {
-      addMessage(data.role, data.text)
-      currentTranscript.value = ''
-      isRecognizing.value = false
-    } else {
-      currentTranscript.value = data.text + '...'
-      isRecognizing.value = true
-    }
-  }
 
   /**
    * 处理音频消息
@@ -270,7 +245,7 @@ export function useInterviewVoice(sessionId: string) {
         type: 'audio',
         data: {
           audio: base64Audio,
-          format: settings.value.inputFormat,
+          format: 'pcm',
           sampleRate: settings.value.sampleRate
         }
       }))
@@ -344,18 +319,6 @@ export function useInterviewVoice(sessionId: string) {
   // ============================================================================
 
   /**
-   * 添加消息
-   */
-  function addMessage(role: 'interviewer' | 'candidate' | 'assistant', content: string): void {
-    messages.value.push({
-      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      role,
-      content,
-      timestamp: Date.now()
-    })
-  }
-
-  /**
    * 启动计时器
    */
   function startTimer(): void {
@@ -420,8 +383,6 @@ export function useInterviewVoice(sessionId: string) {
     assistLimit,
     elapsedTime,
     messages,
-    currentTranscript,
-    isRecognizing,
     error,
 
     // 计算属性
