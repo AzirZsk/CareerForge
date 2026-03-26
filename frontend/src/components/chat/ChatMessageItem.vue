@@ -109,47 +109,11 @@
           v-if="message.suggestions && message.suggestions.length > 0"
           class="suggestions-container"
         >
-          <div
+          <SectionChangeCard
             v-for="(change, index) in message.suggestions"
             :key="index"
-            class="suggestion-card"
-          >
-            <div class="suggestion-header">
-              <span
-                class="change-type"
-                :class="change.changeType"
-              >
-                {{ getTypeLabel(change.changeType) }}
-              </span>
-              <span class="section-name">{{ change.sectionTitle || change.sectionType || '内容修改' }}</span>
-            </div>
-            <div class="suggestion-desc">
-              {{ change.description }}
-            </div>
-            <div
-              v-if="change.beforeContent || change.afterContent"
-              class="suggestion-diff"
-            >
-              <div
-                v-if="change.beforeContent"
-                class="diff-item diff-before"
-              >
-                <span class="diff-label">修改前：</span>
-                <div class="diff-content">
-                  {{ truncateContent(change.beforeContent) }}
-                </div>
-              </div>
-              <div
-                v-if="change.afterContent"
-                class="diff-item diff-after"
-              >
-                <span class="diff-label">修改后：</span>
-                <div class="diff-content">
-                  {{ truncateContent(change.afterContent) }}
-                </div>
-              </div>
-            </div>
-          </div>
+            :change="change"
+          />
           <!-- 操作按钮 -->
           <button
             v-if="!message.applied"
@@ -200,6 +164,7 @@ import { computed } from 'vue'
 import type { ChatMessage } from '@/types/ai-chat'
 import { useMarkdown } from '@/composables/useMarkdown'
 import AIIcon from '@/components/common/AIIcon.vue'
+import SectionChangeCard from './suggestion-cards/SectionChangeCard.vue'
 
 interface Props {
   message: ChatMessage
@@ -221,26 +186,6 @@ function handleImageClick(url: string) {
 
 function handleApplySuggestion() {
   emit('apply-suggestion', props.message.id)
-}
-
-function getTypeLabel(type: string): string {
-  const labels: Record<string, string> = {
-    'update': '修改',
-    'add': '新增',
-    'delete': '删除'
-  }
-  return labels[type] || type
-}
-
-function truncateContent(content: string | undefined): string {
-  if (!content) return ''
-  try {
-    const parsed = JSON.parse(content)
-    const str = JSON.stringify(parsed, null, 2)
-    return str.length > 150 ? str.slice(0, 150) + '...' : str
-  } catch {
-    return content.length > 150 ? content.slice(0, 150) + '...' : content
-  }
 }
 
 function formatTime(timestamp: number): string {
@@ -517,94 +462,6 @@ function formatTime(timestamp: number): string {
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
-}
-
-.suggestion-card {
-  padding: $spacing-sm $spacing-md;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: $radius-sm;
-  border: 1px solid rgba(255, 255, 255, 0.04);
-}
-
-.suggestion-header {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  margin-bottom: $spacing-xs;
-}
-
-.change-type {
-  padding: 2px 8px;
-  border-radius: $radius-sm;
-  font-size: $text-xs;
-  font-weight: $weight-medium;
-
-  &.update {
-    background: rgba($color-accent, 0.2);
-    color: $color-accent;
-  }
-
-  &.add {
-    background: rgba($color-success, 0.2);
-    color: $color-success;
-  }
-
-  &.delete {
-    background: rgba($color-error, 0.2);
-    color: $color-error;
-  }
-}
-
-.section-name {
-  font-size: $text-sm;
-  color: $color-text-secondary;
-  font-weight: $weight-medium;
-}
-
-.suggestion-desc {
-  font-size: $text-sm;
-  color: $color-text-tertiary;
-  line-height: $leading-relaxed;
-}
-
-.suggestion-diff {
-  margin-top: $spacing-sm;
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-xs;
-}
-
-.diff-item {
-  .diff-label {
-    font-size: $text-xs;
-    color: $color-text-tertiary;
-    display: block;
-    margin-bottom: 2px;
-  }
-
-  .diff-content {
-    font-size: $text-xs;
-    font-family: monospace;
-    white-space: pre-wrap;
-    word-break: break-word;
-    color: $color-text-secondary;
-    background: rgba(0, 0, 0, 0.15);
-    padding: $spacing-xs;
-    border-radius: $radius-xs;
-    max-height: 80px;
-    overflow-y: auto;
-  }
-}
-
-.diff-after {
-  .diff-label {
-    color: $color-accent;
-  }
-
-  .diff-content {
-    color: $color-accent;
-    border: 1px solid rgba($color-accent, 0.2);
-  }
 }
 
 .apply-btn {
