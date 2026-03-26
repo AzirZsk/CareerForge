@@ -1,6 +1,5 @@
 package com.landit.chat.service;
 
-import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.streaming.OutputType;
@@ -8,9 +7,11 @@ import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.landit.chat.dto.ChatEvent;
 import com.landit.chat.dto.ChatStreamRequest;
 import com.landit.chat.dto.SectionChange;
+import com.landit.chat.dto.tool.SectionSuggestionResponse;
 import com.landit.common.config.AIPromptProperties;
 import com.landit.common.enums.SectionType;
 import com.landit.common.service.FileToImageService;
+import com.landit.common.util.JsonParseHelper;
 import com.landit.resume.dto.AddSectionRequest;
 import com.landit.resume.dto.ResumeDetailVO;
 import com.landit.resume.dto.UpdateSectionRequest;
@@ -89,7 +90,10 @@ public class AIChatService {
             // 6. 用于收集 AI 回复的 StringBuilder
             StringBuilder aiResponse = new StringBuilder();
 
-            // 7. 构建 UserMessage（包含文本和图片）
+            // 7. 用于缓存 suggestion 事件（等 AI 回复完成后再发送，实现"先显示 AI 回复，再弹窗"）
+            List<ChatEvent> pendingSuggestions = new ArrayList<>();
+
+            // 8. 构建 UserMessage（包含文本和图片）
             UserMessage userMessage = UserMessage.builder()
                     .text(instruction)
                     .media(mediaList)
@@ -99,19 +103,43 @@ public class AIChatService {
             return chatAgent.stream(userMessage, config)
                     .filter(output -> output instanceof StreamingOutput)
                     .map(output -> (StreamingOutput) output)
-                    .filter(so -> so.getOutputType() == OutputType.AGENT_MODEL_STREAMING)
                     .flatMap(so -> {
-                        String chunk = so.message().getText();
-                        if (chunk != null && !chunk.isEmpty()) {
-                            aiResponse.append(chunk);
-                            return Flux.just(ChatEvent.chunk(chunk));
+                        OutputType outputType = so.getOutputType();
+                        log.debug("[AIChat] 收到输出: type={}, node={}", outputType, so.node());
+
+                        switch (outputType) {
+                            case AGENT_MODEL_STREAMING -> {
+                                String chunk = so.message().getText();
+                                if (chunk != null && !chunk.isEmpty()) {
+                                    aiResponse.append(chunk);
+                                    return Flux.just(ChatEvent.chunk(chunk));
+                                }
+                                return Flux.empty();
+                            }
+                            case AGENT_TOOL_FINISHED -> {
+                                // 缓存 suggestion 事件，等 AI 回复完成后再发送
+                                // 这样前端会先显示 AI 的回复，然后再弹窗
+                                ChatEvent suggestion = buildSuggestionEvent(so);
+                                if (suggestion != null) {
+                                    pendingSuggestions.add(suggestion);
+                                }
+                                return Flux.empty();
+                            }
+                            default -> {
+                                return Flux.empty();
+                            }
                         }
-                        return Flux.empty();
                     })
                     .concatWith(Flux.defer(() -> {
-                        // 流结束后保存 AI 回复到数据库
+                        // 流结束后：
+                        // 1. 保存 AI 回复到数据库
                         chatMessageService.saveMessage(finalSessionId, resumeId, "assistant", aiResponse.toString());
-                        return Flux.just(ChatEvent.complete("对话完成"));
+
+                        // 2. 先发送缓存的 suggestion 事件（如果有）
+                        Flux<ChatEvent> suggestionFlux = Flux.fromIterable(pendingSuggestions);
+
+                        // 3. 再发送 complete 事件
+                        return suggestionFlux.concatWith(Flux.just(ChatEvent.complete("对话完成")));
                     }))
                     .onErrorResume(e -> {
                         log.error("[AIChat] Agent 对话异常", e);
@@ -262,6 +290,107 @@ public class AIChatService {
     private String getSectionTypeLabel(String type) {
         SectionType sectionType = SectionType.fromCode(type);
         return sectionType != null ? sectionType.getDescription() : type;
+    }
+
+    /**
+     * 构建工具执行完成的 suggestion 事件
+     * 解析工具返回的 SectionSuggestionResponse，转换为 ChatEvent
+     * 返回单个 ChatEvent（用于缓存），如果无效则返回 null
+     */
+    private ChatEvent buildSuggestionEvent(StreamingOutput so) {
+        try {
+            String toolResult = so.message().getText();
+            log.info("[AIChat] 工具执行完成: node={}, result={}", so.node(), toolResult);
+
+            if (toolResult == null || toolResult.isEmpty()) {
+                return null;
+            }
+
+            // 解析 JSON 为 SectionSuggestionResponse
+            SectionSuggestionResponse response = JsonParseHelper.parseToEntity(
+                    toolResult, SectionSuggestionResponse.class);
+
+            if (response == null || !Boolean.TRUE.equals(response.getSuccess())) {
+                log.debug("[AIChat] 工具结果不是有效的建议响应，跳过");
+                return null;
+            }
+
+            // 转换为 SectionChange
+            SectionChange change = convertToSectionChange(response);
+            if (change == null) {
+                return null;
+            }
+
+            log.info("[AIChat] 生成修改建议: action={}, sectionType={}, sectionTitle={}",
+                    response.getAction(), response.getSectionType(), response.getSectionTitle());
+
+            return ChatEvent.suggestion(List.of(change));
+
+        } catch (Exception e) {
+            log.error("[AIChat] 处理工具结果失败", e);
+            return null;
+        }
+    }
+
+    /**
+     * 处理工具执行完成事件（已废弃，改用 buildSuggestionEvent）
+     * 解析工具返回的 SectionSuggestionResponse，转换为 suggestion 事件
+     * @deprecated 使用 buildSuggestionEvent 替代
+     */
+    @Deprecated
+    private Flux<ChatEvent> handleToolFinished(StreamingOutput so) {
+        try {
+            String toolResult = so.message().getText();
+            log.info("[AIChat] 工具执行完成: node={}, result={}", so.node(), toolResult);
+
+            if (toolResult == null || toolResult.isEmpty()) {
+                return Flux.empty();
+            }
+
+            // 解析 JSON 为 SectionSuggestionResponse
+            SectionSuggestionResponse response = JsonParseHelper.parseToEntity(
+                    toolResult, SectionSuggestionResponse.class);
+
+            if (response == null || !Boolean.TRUE.equals(response.getSuccess())) {
+                log.debug("[AIChat] 工具结果不是有效的建议响应，跳过");
+                return Flux.empty();
+            }
+
+            // 转换为 SectionChange
+            SectionChange change = convertToSectionChange(response);
+            if (change == null) {
+                return Flux.empty();
+            }
+
+            log.info("[AIChat] 生成修改建议: action={}, sectionType={}, sectionTitle={}",
+                    response.getAction(), response.getSectionType(), response.getSectionTitle());
+
+            // 发送 suggestion 事件
+            return Flux.just(ChatEvent.suggestion(List.of(change)));
+
+        } catch (Exception e) {
+            log.error("[AIChat] 处理工具结果失败", e);
+            return Flux.empty();
+        }
+    }
+
+    /**
+     * 将 SectionSuggestionResponse 转换为 SectionChange
+     */
+    private SectionChange convertToSectionChange(SectionSuggestionResponse response) {
+        if (response == null) {
+            return null;
+        }
+
+        return SectionChange.builder()
+                .sectionId(response.getSectionId())
+                .sectionType(response.getSectionType())
+                .sectionTitle(response.getSectionTitle())
+                .changeType(response.getAction())
+                .beforeContent(response.getBeforeContent())
+                .afterContent(response.getAfterContent())
+                .description(response.getDescription())
+                .build();
     }
 
     /**
