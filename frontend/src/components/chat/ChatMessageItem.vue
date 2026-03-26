@@ -196,9 +196,16 @@ function formatTime(timestamp: number): string {
     }
   }
 
-  :deep(ul), :deep(ol) {
+  :deep(ul) {
     margin: $spacing-sm 0;
-    padding-left: $spacing-md;
+    padding-left: $spacing-lg;
+    list-style: disc;
+  }
+
+  :deep(ol) {
+    margin: $spacing-sm 0;
+    padding-left: $spacing-lg;
+    list-style: decimal;
   }
 
   :deep(code) {
