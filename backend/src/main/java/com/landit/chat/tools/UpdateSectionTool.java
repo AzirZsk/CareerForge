@@ -2,6 +2,7 @@ package com.landit.chat.tools;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.landit.chat.dto.tool.SectionSuggestionResponse;
 import com.landit.resume.dto.ResumeDetailVO;
 import com.landit.resume.handler.ResumeHandler;
 import lombok.RequiredArgsConstructor;
@@ -50,7 +51,7 @@ public class UpdateSectionTool implements BiFunction<UpdateSectionTool.Request, 
             // 获取当前区块内容
             ResumeDetailVO resume = resumeHandler.getResumeDetail(request.resumeId());
             if (resume == null) {
-                return errorResponse("简历不存在", request.resumeId());
+                return ToolUtils.errorResponse("简历不存在", request.resumeId());
             }
 
             // 查找指定区块获取原始内容
@@ -58,7 +59,7 @@ public class UpdateSectionTool implements BiFunction<UpdateSectionTool.Request, 
             String sectionType = "";
             String sectionTitle = "";
             if (resume.getSections() != null) {
-                for (var section : resume.getSections()) {
+                for (ResumeDetailVO.ResumeSectionVO section : resume.getSections()) {
                     if (request.sectionId().equals(section.getId())) {
                         beforeContent = section.getContent();
                         sectionType = section.getType();
@@ -69,11 +70,11 @@ public class UpdateSectionTool implements BiFunction<UpdateSectionTool.Request, 
             }
 
             if (sectionType.isEmpty()) {
-                return errorResponse("区块不存在", request.sectionId());
+                return ToolUtils.errorResponseWithSection("区块不存在", request.sectionId());
             }
 
             // 返回修改建议（不直接修改）
-            return buildSuggestionResponse(
+            SectionSuggestionResponse response = SectionSuggestionResponse.forUpdate(
                 request.sectionId(),
                 sectionType,
                 sectionTitle,
@@ -81,45 +82,11 @@ public class UpdateSectionTool implements BiFunction<UpdateSectionTool.Request, 
                 request.content(),
                 request.reason()
             );
+            return ToolUtils.toJson(response);
         } catch (Exception e) {
             log.error("[UpdateSectionTool] 生成更新建议失败", e);
-            return errorResponse(e.getMessage(), request.sectionId());
+            return ToolUtils.errorResponseWithSection(e.getMessage(), request.sectionId());
         }
-    }
-
-    private String buildSuggestionResponse(
-        String sectionId,
-        String sectionType,
-        String sectionTitle,
-        String beforeContent,
-        String afterContent,
-        String reason
-    ) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("{");
-        sb.append("\"action\": \"update\", ");
-        sb.append("\"sectionId\": \"").append(sectionId).append("\", ");
-        sb.append("\"sectionType\": \"").append(sectionType).append("\", ");
-        sb.append("\"sectionTitle\": \"").append(escape(sectionTitle)).append("\", ");
-        sb.append("\"beforeContent\": \"").append(escape(beforeContent)).append("\", ");
-        sb.append("\"afterContent\": \"").append(escape(afterContent)).append("\", ");
-        sb.append("\"description\": \"").append(escape(reason != null ? reason : "更新区块内容")).append("\"");
-        sb.append("}");
-
-        return sb.toString();
-    }
-
-    private String errorResponse(String message, String sectionId) {
-        return "{\"success\": false, \"error\": \"" + escape(message) + "\", \"sectionId\": \"" + sectionId + "\"}";
-    }
-
-    private String escape(String str) {
-        if (str == null) return "";
-        return str.replace("\\", "\\\\")
-                  .replace("\"", "\\\"")
-                  .replace("\n", "\\n")
-                  .replace("\r", "\\r")
-                  .replace("\t", "\\t");
     }
 
     public static ToolCallback createCallback(ResumeHandler resumeHandler) {

@@ -1,50 +1,70 @@
 package com.landit.chat.tools;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.landit.chat.dto.tool.ToolErrorResponse;
+import com.landit.chat.dto.tool.ToolResponse;
+import lombok.extern.slf4j.Slf4j;
+
 /**
- * AI 工具类通用工具方法
+ * AI工具类通用工具方法
+ * 提供JSON序列化和错误响应构建功能
  *
  * @author Azir
  */
+@Slf4j
 public final class ToolUtils {
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private ToolUtils() {
         // 工具类不允许实例化
     }
 
     /**
-     * 转义字符串中的特殊字符，用于 JSON 字符串构建
+     * 将ToolResponse序列化为JSON字符串
      *
-     * @param str 原始字符串
-     * @return 转义后的字符串
+     * @param response 响应对象
+     * @return JSON字符串
      */
-    public static String escapeJson(String str) {
-        if (str == null) {
-            return "";
+    public static String toJson(ToolResponse response) {
+        try {
+            return OBJECT_MAPPER.writeValueAsString(response);
+        } catch (JsonProcessingException e) {
+            log.error("[ToolUtils] JSON序列化失败", e);
+            return "{\"success\": false, \"error\": \"JSON序列化失败\"}";
         }
-        return str.replace("\\", "\\\\")
-                  .replace("\"", "\\\"")
-                  .replace("\n", "\\n")
-                  .replace("\r", "\\r")
-                  .replace("\t", "\\t");
     }
 
     /**
-     * 构建成功响应 JSON
+     * 创建带简历ID的错误响应JSON
      *
-     * @param data 数据内容
-     * @return JSON 字符串
+     * @param message  错误信息
+     * @param resumeId 简历ID
+     * @return JSON字符串
      */
-    public static String successResponse(String data) {
-        return "{\"success\": true, \"data\": " + data + "}";
+    public static String errorResponse(String message, String resumeId) {
+        return toJson(ToolErrorResponse.of(message, resumeId));
     }
 
     /**
-     * 构建错误响应 JSON
+     * 创建带区块ID的错误响应JSON
+     *
+     * @param message   错误信息
+     * @param sectionId 区块ID
+     * @return JSON字符串
+     */
+    public static String errorResponseWithSection(String message, String sectionId) {
+        return toJson(ToolErrorResponse.ofSection(message, sectionId));
+    }
+
+    /**
+     * 创建简单错误响应JSON
      *
      * @param message 错误信息
-     * @return JSON 字符串
+     * @return JSON字符串
      */
     public static String errorResponse(String message) {
-        return "{\"success\": false, \"error\": \"" + escapeJson(message) + "\"}";
+        return toJson(new ToolErrorResponse(message));
     }
 }

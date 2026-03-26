@@ -153,26 +153,26 @@ public class AIChatService {
      * 简历上下文只在首次对话时注入，后续对话只发送用户问题
      */
     private String buildInstruction(ChatStreamRequest request, String sessionId) {
+        // 非首次对话：直接返回用户问题
+        if (!chatMessageService.isFirstMessage(sessionId)) {
+            return request.getCurrentUserMessage();
+        }
+
+        // 首次对话：注入上下文
         StringBuilder instruction = new StringBuilder();
         String resumeId = request.getResumeId();
 
-        boolean isFirstMessage = chatMessageService.isFirstMessage(sessionId);
-
-        if (isFirstMessage) {
-            if (resumeId != null && !resumeId.isEmpty()) {
-                // 简历模式：注入简历上下文
-                String resumeContext = loadResumeContext(resumeId);
-                String template = aiPromptProperties.getChat().getAdvisorConfig().getUserPromptTemplate();
-                instruction.append(template.replace("{resumeContext}", resumeContext)).append("\n\n");
-            } else {
-                // 通用聊天模式：注入通用提示词
-                instruction.append(buildGeneralContext()).append("\n\n");
-            }
+        if (resumeId != null && !resumeId.isEmpty()) {
+            // 简历模式：注入简历上下文
+            String resumeContext = loadResumeContext(resumeId);
+            String template = aiPromptProperties.getChat().getAdvisorConfig().getUserPromptTemplate();
+            instruction.append(template.replace("{resumeContext}", resumeContext));
+        } else {
+            // 通用聊天模式：注入通用提示词
+            instruction.append(buildGeneralContext());
         }
 
-        // 当前用户问题
-        instruction.append(request.getCurrentUserMessage());
-
+        instruction.append("\n\n").append(request.getCurrentUserMessage());
         return instruction.toString();
     }
 
@@ -204,8 +204,7 @@ public class AIChatService {
             }
 
             StringBuilder context = new StringBuilder();
-
-            // 1. 基本信息和评分
+            // 基本信息拼接
             context.append("## 简历基本信息\n");
             context.append("- 简历名称：").append(resume.getName()).append("\n");
             context.append("- 目标岗位：").append(resume.getTargetPosition()).append("\n");
@@ -214,26 +213,15 @@ public class AIChatService {
             }
             context.append("\n");
 
-            // 2. 遍历区块，拼接内容
-            if (resume.getSections() != null && !resume.getSections().isEmpty()) {
-                context.append("## 简历区块内容\n\n");
-                for (var section : resume.getSections()) {
-                    String typeLabel = getSectionTypeLabel(section.getType());
-                    context.append("### ").append(typeLabel);
-                    if (section.getTitle() != null && !section.getTitle().isEmpty()) {
-                        context.append(" - ").append(section.getTitle());
-                    }
-                    if (section.getScore() != null) {
-                        context.append("（评分：").append(section.getScore()).append("分）");
-                    }
-                    context.append("\n");
+            // 区块内容拼接
+            List<ResumeDetailVO.ResumeSectionVO> sections = resume.getSections();
+            if (sections == null || sections.isEmpty()) {
+                return context.toString();
+            }
 
-                    // 区块内容
-                    if (section.getContent() != null && !section.getContent().isEmpty()) {
-                        context.append(section.getContent()).append("\n");
-                    }
-                    context.append("\n");
-                }
+            context.append("## 简历区块内容\n\n");
+            for (ResumeDetailVO.ResumeSectionVO section : sections) {
+                appendSectionContent(context, section);
             }
 
             return context.toString();
@@ -241,6 +229,31 @@ public class AIChatService {
             log.error("[AIChat] 加载简历上下文失败", e);
             return "（加载简历上下文失败）";
         }
+    }
+
+    /**
+     * 拼接单个区块内容到上下文
+     */
+    private void appendSectionContent(StringBuilder context, ResumeDetailVO.ResumeSectionVO section) {
+        String typeLabel = getSectionTypeLabel(section.getType());
+        context.append("### ").append(typeLabel);
+
+        String title = section.getTitle();
+        if (title != null && !title.isEmpty()) {
+            context.append(" - ").append(title);
+        }
+
+        Integer score = section.getScore();
+        if (score != null) {
+            context.append("（评分：").append(score).append("分）");
+        }
+        context.append("\n");
+
+        String content = section.getContent();
+        if (content != null && !content.isEmpty()) {
+            context.append(content).append("\n");
+        }
+        context.append("\n");
     }
 
     /**

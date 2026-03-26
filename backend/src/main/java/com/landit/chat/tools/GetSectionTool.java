@@ -2,6 +2,7 @@ package com.landit.chat.tools;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.landit.chat.dto.tool.GetSectionResponse;
 import com.landit.resume.dto.ResumeDetailVO;
 import com.landit.resume.handler.ResumeHandler;
 import lombok.RequiredArgsConstructor;
@@ -41,51 +42,24 @@ public class GetSectionTool implements BiFunction<GetSectionTool.Request, ToolCo
         try {
             ResumeDetailVO resume = resumeHandler.getResumeDetail(request.resumeId());
             if (resume == null) {
-                return errorResponse("简历不存在", request.resumeId());
+                return ToolUtils.errorResponse("简历不存在", request.resumeId());
             }
 
             // 查找指定区块
             if (resume.getSections() != null) {
-                for (var section : resume.getSections()) {
+                for (ResumeDetailVO.ResumeSectionVO section : resume.getSections()) {
                     if (request.sectionId().equals(section.getId())) {
-                        return buildSuccessResponse(section);
+                        GetSectionResponse response = GetSectionResponse.from(section);
+                        return ToolUtils.toJson(response);
                     }
                 }
             }
 
-            return errorResponse("区块不存在", request.sectionId());
+            return ToolUtils.errorResponseWithSection("区块不存在", request.sectionId());
         } catch (Exception e) {
             log.error("[GetSectionTool] 获取区块失败", e);
-            return errorResponse(e.getMessage(), request.sectionId());
+            return ToolUtils.errorResponseWithSection(e.getMessage(), request.sectionId());
         }
-    }
-
-    private String buildSuccessResponse(ResumeDetailVO.ResumeSectionVO section) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("{\"success\": true, \"data\": {");
-        sb.append("\"id\": \"").append(section.getId()).append("\", ");
-        sb.append("\"type\": \"").append(section.getType()).append("\", ");
-        sb.append("\"title\": \"").append(escape(section.getTitle())).append("\", ");
-        sb.append("\"content\": \"").append(escape(section.getContent())).append("\"");
-        if (section.getScore() != null) {
-            sb.append(", \"score\": ").append(section.getScore());
-        }
-        sb.append("}}");
-
-        return sb.toString();
-    }
-
-    private String errorResponse(String message, String sectionId) {
-        return "{\"success\": false, \"error\": \"" + escape(message) + "\", \"sectionId\": \"" + sectionId + "\"}";
-    }
-
-    private String escape(String str) {
-        if (str == null) return "";
-        return str.replace("\\", "\\\\")
-                  .replace("\"", "\\\"")
-                  .replace("\n", "\\n")
-                  .replace("\r", "\\r")
-                  .replace("\t", "\\t");
     }
 
     public static ToolCallback createCallback(ResumeHandler resumeHandler) {

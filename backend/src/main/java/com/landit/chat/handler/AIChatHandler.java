@@ -27,9 +27,9 @@ public class AIChatHandler {
     private final AIChatService chatService;
 
     /**
-     * SSE超时时间（5分钟）
+     * SSE超时时间（5分钟，单位毫秒）
      */
-    private static final long SSE_TIMEOUT = 300_000L;
+    private static final long SSE_TIMEOUT_MILLIS = 300_000L;
 
     /**
      * 流式处理聊天请求
@@ -44,7 +44,7 @@ public class AIChatHandler {
                 request.getImages() != null ? request.getImages().size() : 0);
 
         GraphSseHelper.configureSseResponse(response);
-        SseEmitter emitter = new SseEmitter(SSE_TIMEOUT);
+        SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MILLIS);
 
         chatService.chat(request).subscribe(
                 event -> sendSseEvent(emitter, event),

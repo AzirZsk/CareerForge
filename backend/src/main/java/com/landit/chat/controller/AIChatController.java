@@ -33,6 +33,11 @@ import java.util.List;
 @Tag(name = "AI聊天", description = "AI聊天对话优化简历接口")
 public class AIChatController {
 
+    /**
+     * 默认获取历史消息条数
+     */
+    private static final int DEFAULT_HISTORY_LIMIT = 50;
+
     private final AIChatHandler chatHandler;
     private final AIChatService chatService;
     private final ChatMessageService chatMessageService;
@@ -54,7 +59,7 @@ public class AIChatController {
     @Operation(summary = "获取聊天历史", description = "获取指定会话的聊天历史消息")
     @GetMapping("/history/{sessionId}")
     public ApiResponse<List<ChatMessageVO>> getHistory(@PathVariable String sessionId) {
-        List<ChatMessage> messages = chatMessageService.getHistory(sessionId, 50);
+        List<ChatMessage> messages = chatMessageService.getHistory(sessionId, DEFAULT_HISTORY_LIMIT);
         List<ChatMessageVO> voList = messages.stream()
                 .map(m -> new ChatMessageVO(m.getId(), m.getRole(), m.getContent(), m.getCreatedAt()))
                 .toList();

@@ -2,6 +2,7 @@ package com.landit.chat.tools;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.landit.chat.dto.tool.GetResumeResponse;
 import com.landit.resume.dto.ResumeDetailVO;
 import com.landit.resume.handler.ResumeHandler;
 import lombok.RequiredArgsConstructor;
@@ -37,58 +38,15 @@ public class GetResumeTool implements BiFunction<GetResumeTool.Request, ToolCont
         try {
             ResumeDetailVO resume = resumeHandler.getResumeDetail(request.resumeId());
             if (resume == null) {
-                return errorResponse("简历不存在", request.resumeId());
+                return ToolUtils.errorResponse("简历不存在", request.resumeId());
             }
 
-            return buildSuccessResponse(resume);
+            GetResumeResponse response = GetResumeResponse.from(resume);
+            return ToolUtils.toJson(response);
         } catch (Exception e) {
             log.error("[GetResumeTool] 获取简历失败", e);
-            return errorResponse(e.getMessage(), request.resumeId());
+            return ToolUtils.errorResponse(e.getMessage(), request.resumeId());
         }
-    }
-
-    private String buildSuccessResponse(ResumeDetailVO resume) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("{\"success\": true, \"data\": {");
-        sb.append("\"name\": \"").append(escape(resume.getName())).append("\", ");
-        sb.append("\"targetPosition\": \"").append(escape(resume.getTargetPosition())).append("\", ");
-
-        if (resume.getOverallScore() != null) {
-            sb.append("\"overallScore\": ").append(resume.getOverallScore()).append(", ");
-        }
-
-        sb.append("\"sections\": [");
-        if (resume.getSections() != null) {
-            for (int i = 0; i < resume.getSections().size(); i++) {
-                var section = resume.getSections().get(i);
-                if (i > 0) sb.append(", ");
-                sb.append("{");
-                sb.append("\"id\": \"").append(section.getId()).append("\", ");
-                sb.append("\"type\": \"").append(section.getType()).append("\", ");
-                sb.append("\"title\": \"").append(escape(section.getTitle())).append("\", ");
-                sb.append("\"content\": \"").append(escape(section.getContent())).append("\"");
-                if (section.getScore() != null) {
-                    sb.append(", \"score\": ").append(section.getScore());
-                }
-                sb.append("}");
-            }
-        }
-        sb.append("]}}");
-
-        return sb.toString();
-    }
-
-    private String errorResponse(String message, String resumeId) {
-        return "{\"success\": false, \"error\": \"" + escape(message) + "\", \"resumeId\": \"" + resumeId + "\"}";
-    }
-
-    private String escape(String str) {
-        if (str == null) return "";
-        return str.replace("\\", "\\\\")
-                  .replace("\"", "\\\"")
-                  .replace("\n", "\\n")
-                  .replace("\r", "\\r")
-                  .replace("\t", "\\t");
     }
 
     public static ToolCallback createCallback(ResumeHandler resumeHandler) {

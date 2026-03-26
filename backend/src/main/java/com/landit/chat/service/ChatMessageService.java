@@ -1,11 +1,13 @@
 package com.landit.chat.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.landit.chat.entity.ChatMessage;
 import com.landit.chat.mapper.ChatMessageMapper;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -37,16 +39,31 @@ public class ChatMessageService extends ServiceImpl<ChatMessageMapper, ChatMessa
 
     /**
      * 获取历史消息（按时间升序，最近 N 条）
+     * 使用MyBatis-Plus分页插件，避免手动拼接SQL
      *
      * @param sessionId 会话ID
      * @param limit     限制条数
      * @return 消息列表
      */
     public List<ChatMessage> getHistory(String sessionId, int limit) {
-        return list(new LambdaQueryWrapper<ChatMessage>()
+        // 先查询总数
+        long total = count(new LambdaQueryWrapper<ChatMessage>()
+                .eq(ChatMessage::getSessionId, sessionId));
+
+        if (total == 0) {
+            return Collections.emptyList();
+        }
+
+        // 计算偏移量：获取最近的N条（按时间升序）
+        int offset = Math.max(0, (int) total - limit);
+
+        // 使用分页查询获取数据
+        Page<ChatMessage> page = new Page<>(offset / limit + 1, limit);
+        Page<ChatMessage> result = page(page, new LambdaQueryWrapper<ChatMessage>()
                 .eq(ChatMessage::getSessionId, sessionId)
-                .orderByAsc(ChatMessage::getCreatedAt)
-                .last("LIMIT " + limit));
+                .orderByAsc(ChatMessage::getCreatedAt));
+
+        return result.getRecords();
     }
 
     /**

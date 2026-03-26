@@ -2,6 +2,8 @@ package com.landit.chat.tools;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.landit.chat.dto.tool.CreateResumeResponse;
+import com.landit.resume.dto.CreateResumeRequest;
 import com.landit.resume.dto.ResumeDetailVO;
 import com.landit.resume.handler.ResumeHandler;
 import lombok.RequiredArgsConstructor;
@@ -42,7 +44,7 @@ public class CreateResumeTool implements BiFunction<CreateResumeTool.Request, To
         try {
             // 参数校验
             if (request.name() == null || request.name().isBlank()) {
-                return errorResponse("简历名称不能为空");
+                return ToolUtils.errorResponse("简历名称不能为空");
             }
 
             // 创建空白简历
@@ -50,39 +52,15 @@ public class CreateResumeTool implements BiFunction<CreateResumeTool.Request, To
             String targetPosition = request.targetPosition() != null ? request.targetPosition().trim() : null;
 
             ResumeDetailVO resume = resumeHandler.createBlankResume(
-                new com.landit.resume.dto.CreateResumeRequest(resumeName, targetPosition)
+                new CreateResumeRequest(resumeName, targetPosition)
             );
 
-            return buildSuccessResponse(resume);
+            CreateResumeResponse response = CreateResumeResponse.from(resume);
+            return ToolUtils.toJson(response);
         } catch (Exception e) {
             log.error("[CreateResumeTool] 创建简历失败", e);
-            return errorResponse(e.getMessage());
+            return ToolUtils.errorResponse(e.getMessage());
         }
-    }
-
-    private String buildSuccessResponse(ResumeDetailVO resume) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("{\"success\": true, \"data\": {");
-        sb.append("\"resumeId\": \"").append(resume.getId()).append("\", ");
-        sb.append("\"name\": \"").append(escape(resume.getName())).append("\", ");
-        sb.append("\"targetPosition\": \"").append(escape(resume.getTargetPosition())).append("\", ");
-        sb.append("\"message\": \"简历创建成功！您现在可以选择这份简历进行进一步的操作。\"");
-        sb.append("}}");
-
-        return sb.toString();
-    }
-
-    private String errorResponse(String message) {
-        return "{\"success\": false, \"error\": \"" + escape(message) + "\"}";
-    }
-
-    private String escape(String str) {
-        if (str == null) return "";
-        return str.replace("\\", "\\\\")
-                  .replace("\"", "\\\"")
-                  .replace("\n", "\\n")
-                  .replace("\r", "\\r")
-                  .replace("\t", "\\t");
     }
 
     public static ToolCallback createCallback(ResumeHandler resumeHandler) {
