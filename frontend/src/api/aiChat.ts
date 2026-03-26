@@ -48,7 +48,7 @@ export async function* streamChat(
   message: string,
   sessionId: string,
   resumeId: string | null = null,
-  image: File | null = null
+  images: File[] = []
 ): AsyncGenerator<ChatEvent, void, unknown> {
   const formData = new FormData()
 
@@ -62,8 +62,11 @@ export async function* streamChat(
 
   formData.append('currentUserMessage', message)
 
-  if (image) {
-    formData.append('image', image)
+  // 多图处理
+  if (images.length > 0) {
+    images.forEach((image) => {
+      formData.append('images', image)
+    })
   }
 
   const response = await fetch(`${API_BASE}/chat/stream`, {

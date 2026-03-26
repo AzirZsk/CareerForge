@@ -9,14 +9,19 @@
 export type ChatMode = 'general' | 'resume'
 
 /**
+ * 最大图片数量
+ */
+export const MAX_IMAGE_COUNT = 10
+
+/**
  * 聊天消息
  */
 export interface ChatMessage {
   id: string
   role: 'user' | 'assistant' | 'system'
   content: string
-  image?: File | null
-  imageUrl?: string | null
+  images?: File[]
+  imageUrls?: string[]
   timestamp: number
   isStreaming?: boolean
 }
@@ -109,7 +114,7 @@ export interface AIChatState {
 
   // 输入
   currentInput: string
-  selectedImage: File | null
+  selectedImages: File[]
 
   // 错误
   error: string | null

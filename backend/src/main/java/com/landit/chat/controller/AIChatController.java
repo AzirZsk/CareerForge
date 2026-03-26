@@ -43,10 +43,10 @@ public class AIChatController {
             @ModelAttribute ChatStreamRequest request,
             HttpServletResponse response) {
 
-        log.info("[AIChat] 收到聊天请求: resumeId={}, sessionId={}, hasImage={}",
+        log.info("[AIChat] 收到聊天请求: resumeId={}, sessionId={}, imageCount={}",
                 request.getResumeId(),
                 request.getSessionId(),
-                request.getImage() != null && !request.getImage().isEmpty());
+                request.getImages() != null ? request.getImages().size() : 0);
 
         return chatHandler.streamChat(request, response);
     }

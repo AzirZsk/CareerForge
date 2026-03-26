@@ -39,7 +39,7 @@
           <!-- 输入区域 -->
           <ChatInputArea
             v-model="state.currentInput"
-            :selected-image="state.selectedImage"
+            :selected-images="state.selectedImages"
             :is-streaming="state.isStreaming"
             @send="sendMessage"
             @image-select="handleImageSelect"

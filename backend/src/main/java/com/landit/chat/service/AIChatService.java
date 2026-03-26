@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -72,7 +73,7 @@ public class AIChatService {
             String instruction = buildInstruction(request, finalSessionId);
 
             // 4. 处理图片（如果有）
-            List<Media> mediaList = processImage(request.getImage());
+            List<Media> mediaList = processImages(request.getImages());
             if (!mediaList.isEmpty()) {
                 log.info("[AIChat] 检测到图片输入，共 {} 张", mediaList.size());
             }
@@ -82,8 +83,8 @@ public class AIChatService {
                     .threadId(finalSessionId)
                     .build();
 
-            log.info("[AIChat] 开始 Agent 对话: sessionId={}, resumeId={}, threadId={}, hasImage={}",
-                    finalSessionId, resumeId, config.threadId(), !mediaList.isEmpty());
+            log.info("[AIChat] 开始 Agent 对话: sessionId={}, resumeId={}, threadId={}, imageCount={}",
+                    finalSessionId, resumeId, config.threadId(), mediaList.size());
 
             // 6. 用于收集 AI 回复的 StringBuilder
             StringBuilder aiResponse = new StringBuilder();
@@ -124,14 +125,26 @@ public class AIChatService {
     }
 
     /**
-     * 处理上传的图片/文件
+     * 处理上传的多张图片/文件
+     *
+     * @param images 图片列表
+     * @return Media列表
      */
-    private List<Media> processImage(MultipartFile image) {
-        if (image == null || image.isEmpty()) {
+    private List<Media> processImages(List<MultipartFile> images) {
+        if (images == null || images.isEmpty()) {
             return List.of();
         }
-        log.info("[AIChat] 处理上传图片: {}, 大小: {} bytes", image.getOriginalFilename(), image.getSize());
-        return fileToImageService.convertToMedia(image);
+        List<Media> allMedia = new ArrayList<>();
+        for (MultipartFile image : images) {
+            if (image != null && !image.isEmpty()) {
+                log.info("[AIChat] 处理上传图片: {}, 大小: {} bytes",
+                        image.getOriginalFilename(), image.getSize());
+                allMedia.addAll(fileToImageService.convertToMedia(image));
+            }
+        }
+        log.info("[AIChat] 共处理 {} 张图片，生成 {} 个 Media 对象",
+                images.size(), allMedia.size());
+        return allMedia;
     }
 
     /**

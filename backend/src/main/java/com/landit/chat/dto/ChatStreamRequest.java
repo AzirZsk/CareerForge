@@ -1,5 +1,6 @@
 package com.landit.chat.dto;
 
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -35,7 +36,7 @@ public class ChatStreamRequest {
     private String currentUserMessage;
 
     /**
-     * 上传的图片/文件（可选）
+     * 上传的图片列表（最多10张）
      */
-    private MultipartFile image;
+    private List<MultipartFile> images;
 }

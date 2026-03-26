@@ -39,9 +39,9 @@ public class AIChatHandler {
      * @return SSE事件发射器
      */
     public SseEmitter streamChat(ChatStreamRequest request, HttpServletResponse response) {
-        log.info("[AIChat] 开始SSE流式聊天: resumeId={}, hasImage={}",
+        log.info("[AIChat] 开始SSE流式聊天: resumeId={}, imageCount={}",
                 request.getResumeId(),
-                request.getImage() != null && !request.getImage().isEmpty());
+                request.getImages() != null ? request.getImages().size() : 0);
 
         GraphSseHelper.configureSseResponse(response);
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT);

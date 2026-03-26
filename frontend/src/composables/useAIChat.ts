@@ -5,6 +5,7 @@
 
 import { reactive, onUnmounted } from 'vue'
 import type { ChatMessage, SectionChange, AIChatState } from '@/types/ai-chat'
+import { MAX_IMAGE_COUNT } from '@/types/ai-chat'
 import { streamChat, applyChanges as apiApplyChanges, getChatHistory, clearChatHistory } from '@/api/aiChat'
 import { getResumes } from '@/api/resume'
 
@@ -33,7 +34,7 @@ function getState(): AIChatState {
       showApplyDialog: false,
       pendingChanges: [],
       currentInput: '',
-      selectedImage: null,
+      selectedImages: [],
       error: null
     })
   }
@@ -76,7 +77,7 @@ export function useAIChat() {
 
   async function sendMessage(): Promise<void> {
     const message = state.currentInput.trim()
-    if (!message && !state.selectedImage) return
+    if (!message && state.selectedImages.length === 0) return
 
     // 移除简历检查，允许通用聊天模式
 
@@ -84,15 +85,15 @@ export function useAIChat() {
       id: generateId(),
       role: 'user',
       content: message,
-      image: state.selectedImage,
-      imageUrl: state.selectedImage ? URL.createObjectURL(state.selectedImage) : null,
+      images: [...state.selectedImages],
+      imageUrls: state.selectedImages.map(f => URL.createObjectURL(f)),
       timestamp: Date.now()
     }
     state.messages.push(userMessage)
 
     state.currentInput = ''
-    const imageToSend = state.selectedImage
-    state.selectedImage = null
+    const imagesToSend = [...state.selectedImages]
+    state.selectedImages = []
 
     state.isStreaming = true
     currentAiMessage = null
@@ -105,7 +106,7 @@ export function useAIChat() {
         message,
         state.sessionId!,
         state.currentResumeId,
-        imageToSend
+        imagesToSend
       )) {
         handleEvent(event)
       }
@@ -311,11 +312,20 @@ export function useAIChat() {
   }
 
   function handleImageSelect(file: File): void {
-    state.selectedImage = file
+    if (state.selectedImages.length >= MAX_IMAGE_COUNT) {
+      state.error = `最多只能上传 ${MAX_IMAGE_COUNT} 张图片`
+      return
+    }
+    state.selectedImages.push(file)
+    state.error = null
   }
 
-  function handleImageRemove(): void {
-    state.selectedImage = null
+  function handleImageRemove(index: number): void {
+    state.selectedImages.splice(index, 1)
+  }
+
+  function handleImageRemoveAll(): void {
+    state.selectedImages = []
   }
 
   function toggleWindow(): void {
@@ -332,8 +342,8 @@ export function useAIChat() {
 
   onUnmounted(() => {
     state.messages.forEach(m => {
-      if (m.imageUrl) {
-        URL.revokeObjectURL(m.imageUrl)
+      if (m.imageUrls) {
+        m.imageUrls.forEach(url => URL.revokeObjectURL(url))
       }
     })
   })
@@ -350,6 +360,7 @@ export function useAIChat() {
     handleCancelChanges,
     handleImageSelect,
     handleImageRemove,
+    handleImageRemoveAll,
     toggleWindow,
     closeWindow,
     startNewSession
