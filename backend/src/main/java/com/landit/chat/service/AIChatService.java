@@ -111,8 +111,6 @@ public class AIChatService {
                     .map(output -> (StreamingOutput) output)
                     .flatMap(so -> {
                         OutputType outputType = so.getOutputType();
-                        log.debug("[AIChat] 收到输出: type={}, node={}", outputType, so.node());
-
                         switch (outputType) {
                             case AGENT_MODEL_STREAMING -> {
                                 String chunk = so.message().getText();
@@ -221,10 +219,10 @@ public class AIChatService {
         if (systemPrompt == null || systemPrompt.isBlank()) {
             // 兜底默认值
             return """
-                你是 LandIt 求职助手，专门帮助用户进行求职相关咨询。
-                你可以协助用户解答求职相关问题、创建简历、提供面试建议等。
-                如果用户需要创建简历，请使用 create_resume 工具。
-                """;
+                    你是 LandIt 求职助手，专门帮助用户进行求职相关咨询。
+                    你可以协助用户解答求职相关问题、创建简历、提供面试建议等。
+                    如果用户需要创建简历，请使用 create_resume 工具。
+                    """;
         }
         return systemPrompt;
     }
@@ -312,21 +310,16 @@ public class AIChatService {
     private ChatEvent buildSuggestionEvent(StreamingOutput so) {
         try {
             Message message = so.message();
-            String toolResult = null;
-
-            // 处理 ToolResponseMessage 类型（工具返回结果）
-            if (message instanceof ToolResponseMessage toolResponseMessage) {
-                List<ToolResponseMessage.ToolResponse> responses = toolResponseMessage.getResponses();
-                if (responses != null && !responses.isEmpty()) {
-                    toolResult = responses.get(0).responseData();
-                }
-            } else if (message != null) {
-                // 兼容普通文本消息
-                toolResult = message.getText();
+            if (!(message instanceof ToolResponseMessage toolResponseMessage)) {
+                log.warn("非工具调用");
+                return null;
             }
-
+            String toolResult = null;
+            List<ToolResponseMessage.ToolResponse> responses = toolResponseMessage.getResponses();
+            if (!responses.isEmpty()) {
+                toolResult = responses.get(0).responseData();
+            }
             log.info("[AIChat] 工具执行完成: node={}, result={}", so.node(), toolResult);
-
             if (toolResult == null || toolResult.isEmpty()) {
                 return null;
             }
@@ -337,6 +330,13 @@ public class AIChatService {
 
             if (response == null || !Boolean.TRUE.equals(response.getSuccess())) {
                 log.debug("[AIChat] 工具结果不是有效的建议响应，跳过");
+                return null;
+            }
+
+            // 检查 action 字段是否有效（只有 add/update/delete 才是建议类响应）
+            String action = response.getAction();
+            if (action == null || action.isEmpty()) {
+                log.debug("[AIChat] 工具结果不是建议类型响应（无action字段），跳过");
                 return null;
             }
 

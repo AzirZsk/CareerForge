@@ -99,6 +99,7 @@
 
         <!-- 文本内容 -->
         <div
+          v-if="message.content"
           class="message-text"
           :class="{ 'is-streaming': message.isStreaming }"
           v-html="formattedContent"
@@ -107,46 +108,75 @@
         <!-- 建议卡片 -->
         <div
           v-if="message.suggestions && message.suggestions.length > 0"
-          class="suggestions-container"
+          class="suggestions-wrapper"
+          :class="{ 'no-content': !message.content }"
         >
-          <SectionChangeCard
-            v-for="(change, index) in message.suggestions"
-            :key="index"
-            :change="change"
-          />
-          <!-- 操作按钮 -->
-          <button
-            v-if="!message.applied"
-            class="apply-btn"
-            @click="handleApplySuggestion"
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            应用修改
-          </button>
+          <!-- 折叠头部 -->
           <div
-            v-else
-            class="applied-status"
+            class="suggestions-header"
+            @click="toggleSuggestions"
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
+            <span class="suggestions-title">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+              {{ message.suggestions.length }} 项修改建议
+            </span>
+            <span class="collapse-icon">{{ isSuggestionsExpanded ? '▼' : '▶' }}</span>
+          </div>
+
+          <!-- 建议卡片列表 -->
+          <div
+            v-show="isSuggestionsExpanded"
+            class="suggestions-container"
+          >
+            <SectionChangeCard
+              v-for="(change, index) in message.suggestions"
+              :key="index"
+              :change="change"
+            />
+            <!-- 操作按钮 -->
+            <button
+              v-if="!message.applied"
+              class="apply-btn"
+              @click="handleApplySuggestion"
             >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            已应用
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              应用修改
+            </button>
+            <div
+              v-else
+              class="applied-status"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              已应用
+            </div>
           </div>
         </div>
       </div>
@@ -160,7 +190,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { ChatMessage } from '@/types/ai-chat'
 import { useMarkdown } from '@/composables/useMarkdown'
 import AIIcon from '@/components/common/AIIcon.vue'
@@ -178,7 +208,14 @@ const emit = defineEmits<{
 
 const { renderMarkdown } = useMarkdown()
 
+// 建议卡片折叠状态，默认展开
+const isSuggestionsExpanded = ref(true)
+
 const formattedContent = computed(() => renderMarkdown(props.message.content))
+
+function toggleSuggestions() {
+  isSuggestionsExpanded.value = !isSuggestionsExpanded.value
+}
 
 function handleImageClick(url: string) {
   emit('preview-image', url)
@@ -355,6 +392,52 @@ function formatTime(timestamp: number): string {
       background: rgba($color-accent, 0.05);
     }
   }
+
+  // 标题样式 - 适配聊天场景的紧凑设计
+  :deep(h1) {
+    font-size: $text-xl;
+    font-weight: $weight-bold;
+    margin: $spacing-lg 0 $spacing-sm;
+    color: $color-text-primary;
+  }
+
+  :deep(h2) {
+    font-size: $text-lg;
+    font-weight: $weight-semibold;
+    margin: $spacing-md 0 $spacing-sm;
+    color: $color-text-primary;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: $spacing-xs;
+  }
+
+  :deep(h3) {
+    font-size: $text-base;
+    font-weight: $weight-semibold;
+    margin: $spacing-md 0 $spacing-xs;
+    color: $color-text-primary;
+  }
+
+  :deep(h4) {
+    font-size: $text-sm;
+    font-weight: $weight-medium;
+    margin: $spacing-sm 0 $spacing-xs;
+    color: $color-text-secondary;
+  }
+
+  :deep(h5),
+  :deep(h6) {
+    font-size: $text-xs;
+    font-weight: $weight-medium;
+    margin: $spacing-sm 0;
+    color: $color-text-tertiary;
+  }
+
+  // 分割线样式
+  :deep(hr) {
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin: $spacing-md 0;
+  }
 }
 
 .message-images {
@@ -454,14 +537,62 @@ function formatTime(timestamp: number): string {
   text-align: left;
 }
 
+// 建议卡片包装器
+.suggestions-wrapper {
+  margin-top: $spacing-md;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: $spacing-md;
+
+  // 当没有文本内容时，去掉上边距和边框
+  &.no-content {
+    margin-top: 0;
+    border-top: none;
+    padding-top: 0;
+  }
+}
+
+// 建议卡片折叠头部
+.suggestions-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-sm;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: $radius-sm;
+  cursor: pointer;
+  transition: background-color $transition-fast;
+  user-select: none;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
+}
+
+.suggestions-title {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  font-size: $text-sm;
+  font-weight: $weight-medium;
+  color: $color-accent;
+
+  svg {
+    opacity: 0.8;
+  }
+}
+
+.collapse-icon {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+  transition: transform $transition-fast;
+}
+
 // 建议卡片容器
 .suggestions-container {
-  margin-top: $spacing-md;
-  padding-top: $spacing-md;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
+  margin-top: $spacing-sm;
 }
 
 .apply-btn {

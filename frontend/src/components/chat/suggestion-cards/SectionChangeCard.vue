@@ -30,32 +30,42 @@
       {{ change.description }}
     </div>
 
-    <!-- 内容对比：复用现有 Viewer 组件 -->
+    <!-- 内容对比 -->
     <div class="card-content">
-      <!-- 修改前 -->
+      <!-- update 模式：字段级对比 -->
+      <FieldDiffViewer
+        v-if="change.changeType === 'update'"
+        :section-type="change.sectionType || ''"
+        :section-title="change.sectionTitle || ''"
+        :before-content="change.beforeContent || null"
+        :after-content="change.afterContent"
+      />
+
+      <!-- add 模式：只显示新增内容 -->
       <div
-        v-if="showBefore"
-        class="diff-section diff-before"
-      >
-        <span class="diff-label">修改前</span>
-        <component
-          :is="viewerComponent"
-          :section="beforeSection"
-          :section-index="0"
-          side="before"
-        />
-      </div>
-      <!-- 修改后 -->
-      <div
-        v-if="showAfter"
+        v-else-if="change.changeType === 'add'"
         class="diff-section diff-after"
       >
-        <span class="diff-label">修改后</span>
+        <span class="diff-label">新增内容</span>
         <component
           :is="viewerComponent"
           :section="afterSection"
           :section-index="0"
           side="after"
+        />
+      </div>
+
+      <!-- delete 模式：只显示删除内容 -->
+      <div
+        v-else-if="change.changeType === 'delete'"
+        class="diff-section diff-before"
+      >
+        <span class="diff-label">删除内容</span>
+        <component
+          :is="viewerComponent"
+          :section="beforeSection"
+          :section-index="0"
+          side="before"
         />
       </div>
     </div>
@@ -67,6 +77,7 @@ import { computed, defineComponent, h } from 'vue'
 import type { SectionChange } from '@/types/ai-chat'
 import type { ResumeSection } from '@/types'
 import { useSectionHelper } from '@/composables/useSectionHelper'
+import FieldDiffViewer from './FieldDiffViewer.vue'
 
 // 复用现有 Viewer 组件
 import BasicInfoViewer from '@/components/resume/viewer/BasicInfoViewer.vue'
@@ -130,16 +141,6 @@ const sectionIcon = computed(() => {
 const viewerComponent = computed(() => {
   const type = props.change.sectionType
   return type && viewerMap[type] ? viewerMap[type] : GenericViewer
-})
-
-// 是否显示修改前内容
-const showBefore = computed(() => {
-  return props.change.changeType === 'update' || props.change.changeType === 'delete'
-})
-
-// 是否显示修改后内容
-const showAfter = computed(() => {
-  return props.change.changeType === 'update' || props.change.changeType === 'add'
 })
 
 // 把 beforeContent 转换成 ResumeSection 格式

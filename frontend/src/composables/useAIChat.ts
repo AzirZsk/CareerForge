@@ -8,6 +8,7 @@ import type { ChatMessage, SectionChange, AIChatState } from '@/types/ai-chat'
 import { MAX_IMAGE_COUNT } from '@/types/ai-chat'
 import { streamChat, applyChanges as apiApplyChanges, getChatHistory, clearChatHistory } from '@/api/aiChat'
 import { getResumes } from '@/api/resume'
+import { useToast } from './useToast'
 
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
@@ -157,37 +158,36 @@ export function useAIChat() {
   }
 
   function handleSuggestionEvent(changes: SectionChange[]): void {
-    state.messages.push({
-      id: generateId(),
-      role: 'assistant',
-      content: '我为您准备了以下修改建议，点击「应用修改」即可生效：',
-      suggestions: changes,
-      applied: false,
-      timestamp: Date.now()
-    })
+    // 把建议拼接到当前AI消息中，而不是创建新消息
+    if (currentAiMessage) {
+      currentAiMessage.suggestions = changes
+      currentAiMessage.applied = false
+    } else {
+      // 如果没有当前消息（理论上不应该发生），创建新消息
+      state.messages.push({
+        id: generateId(),
+        role: 'assistant',
+        content: '',
+        suggestions: changes,
+        applied: false,
+        timestamp: Date.now()
+      })
+    }
   }
 
   async function applySuggestionFromMessage(messageId: string): Promise<void> {
     const message = state.messages.find(m => m.id === messageId)
     if (!message?.suggestions || !state.currentResumeId) return
 
+    const toast = useToast()
+
     try {
       await apiApplyChanges(state.currentResumeId, message.suggestions)
       message.applied = true
-      state.messages.push({
-        id: generateId(),
-        role: 'system',
-        content: '✅ 修改已应用成功！',
-        timestamp: Date.now()
-      })
+      toast.success('修改已应用成功！')
     } catch (error) {
       console.error('[AIChat] 应用修改失败', error)
-      state.messages.push({
-        id: generateId(),
-        role: 'system',
-        content: '❌ 应用修改失败，请稍后重试',
-        timestamp: Date.now()
-      })
+      toast.error('应用修改失败，请稍后重试')
     }
   }
 
@@ -261,24 +261,16 @@ export function useAIChat() {
   async function handleApplyChanges(): Promise<void> {
     if (!state.currentResumeId || state.pendingChanges.length === 0) return
 
+    const toast = useToast()
+
     try {
       await apiApplyChanges(state.currentResumeId, state.pendingChanges)
-      state.messages.push({
-        id: generateId(),
-        role: 'system',
-        content: '✅ 修改已应用成功！',
-        timestamp: Date.now()
-      })
+      toast.success('修改已应用成功！')
       state.showApplyDialog = false
       state.pendingChanges = []
     } catch (error) {
       console.error('[AIChat] 应用修改失败', error)
-      state.messages.push({
-        id: generateId(),
-        role: 'system',
-        content: '❌ 应用修改失败，请稍后重试',
-        timestamp: Date.now()
-      })
+      toast.error('应用修改失败，请稍后重试')
     }
   }
 
