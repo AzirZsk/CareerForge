@@ -4,32 +4,60 @@
   @author Azir
 =====================================================-->
 <template>
-  <div class="suggestion-group-card" @click="goToResume">
+  <div
+    class="suggestion-group-card"
+    @click="goToResume"
+  >
     <!-- 简历标题行 -->
     <div class="group-header">
       <div class="resume-info">
-        <svg class="resume-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-          <polyline points="14 2 14 8 20 8"></polyline>
+        <svg
+          class="resume-icon"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+        >
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
         </svg>
         <span class="resume-name">{{ group.resumeName }}</span>
-        <span class="target-position" v-if="group.targetPosition">{{ group.targetPosition }}</span>
+        <span
+          v-if="group.targetPosition"
+          class="target-position"
+        >{{ group.targetPosition }}</span>
       </div>
       <div class="suggestion-badge">
         {{ group.suggestionCount }} 条建议
-        <svg class="arrow-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="9 18 15 12 9 6"></polyline>
+        <svg
+          class="arrow-icon"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <polyline points="9 18 15 12 9 6" />
         </svg>
       </div>
     </div>
     <!-- 建议列表 -->
-    <div class="suggestion-items" v-if="group.suggestions.length > 0">
+    <div
+      v-if="group.suggestions.length > 0"
+      class="suggestion-items"
+    >
       <div
         v-for="suggestion in group.suggestions"
         :key="suggestion.id"
         class="suggestion-item"
       >
-        <span class="priority-dot" :class="suggestion.type"></span>
+        <span
+          class="priority-dot"
+          :class="suggestion.type"
+        />
         <span class="suggestion-title">{{ suggestion.title }}</span>
       </div>
     </div>

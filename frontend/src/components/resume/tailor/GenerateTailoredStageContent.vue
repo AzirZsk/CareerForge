@@ -8,10 +8,16 @@
     <!-- 头部：左边统计，右边操作按钮 -->
     <div class="tailor-summary">
       <div class="tailor-summary-left">
-        <span class="tailor-improvement" v-if="data.improvementScore">
+        <span
+          v-if="data.improvementScore"
+          class="tailor-improvement"
+        >
           预计提升 {{ data.improvementScore }} 分
         </span>
-        <span class="tailor-match" v-if="data.matchScore">
+        <span
+          v-if="data.matchScore"
+          class="tailor-match"
+        >
           匹配度 {{ data.matchScore }}%
         </span>
       </div>
@@ -20,17 +26,41 @@
         class="comparison-btn"
         @click="$emit('showComparison')"
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-          <line x1="12" y1="3" x2="12" y2="21"/>
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <rect
+            x="3"
+            y="3"
+            width="18"
+            height="18"
+            rx="2"
+            ry="2"
+          />
+          <line
+            x1="12"
+            y1="3"
+            x2="12"
+            y2="21"
+          />
         </svg>
         对比&编辑
       </button>
     </div>
 
     <!-- 定制说明 -->
-    <div class="tailor-notes" v-if="data.tailorNotes?.length">
-      <div class="notes-title">定制说明</div>
+    <div
+      v-if="data.tailorNotes?.length"
+      class="tailor-notes"
+    >
+      <div class="notes-title">
+        定制说明
+      </div>
       <div class="notes-content">
         <div
           v-for="(note, idx) in data.tailorNotes"

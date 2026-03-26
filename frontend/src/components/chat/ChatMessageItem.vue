@@ -15,11 +15,25 @@
     }"
   >
     <!-- 用户头像 -->
-    <div v-if="message.role !== 'system'" class="message-avatar">
+    <div
+      v-if="message.role !== 'system'"
+      class="message-avatar"
+    >
       <template v-if="message.role === 'user'">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-          <circle cx="12" cy="7" r="4"></circle>
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle
+            cx="12"
+            cy="7"
+            r="4"
+          />
         </svg>
       </template>
       <template v-else>
@@ -32,20 +46,52 @@
       <!-- 消息内容 -->
       <div class="message-content">
         <!-- 多图预览 -->
-        <div v-if="message.imageUrls && message.imageUrls.length > 0" class="message-images">
+        <div
+          v-if="message.imageUrls && message.imageUrls.length > 0"
+          class="message-images"
+        >
           <div
             v-for="(url, index) in message.imageUrls"
             :key="index"
             class="message-image"
             @click="handleImageClick(url)"
           >
-            <img :src="url" :alt="`图片 ${index + 1}`" />
+            <img
+              :src="url"
+              :alt="`图片 ${index + 1}`"
+            >
             <div class="image-overlay">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                <line x1="11" y1="8" x2="11" y2="14"></line>
-                <line x1="8" y1="11" x2="14" y2="11"></line>
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle
+                  cx="11"
+                  cy="11"
+                  r="8"
+                />
+                <line
+                  x1="21"
+                  y1="21"
+                  x2="16.65"
+                  y2="16.65"
+                />
+                <line
+                  x1="11"
+                  y1="8"
+                  x2="11"
+                  y2="14"
+                />
+                <line
+                  x1="8"
+                  y1="11"
+                  x2="14"
+                  y2="11"
+                />
               </svg>
             </div>
           </div>
@@ -56,26 +102,51 @@
           class="message-text"
           :class="{ 'is-streaming': message.isStreaming }"
           v-html="formattedContent"
-        ></div>
+        />
 
         <!-- 建议卡片 -->
-        <div v-if="message.suggestions && message.suggestions.length > 0" class="suggestions-container">
-          <div v-for="(change, index) in message.suggestions" :key="index" class="suggestion-card">
+        <div
+          v-if="message.suggestions && message.suggestions.length > 0"
+          class="suggestions-container"
+        >
+          <div
+            v-for="(change, index) in message.suggestions"
+            :key="index"
+            class="suggestion-card"
+          >
             <div class="suggestion-header">
-              <span class="change-type" :class="change.changeType">
+              <span
+                class="change-type"
+                :class="change.changeType"
+              >
                 {{ getTypeLabel(change.changeType) }}
               </span>
               <span class="section-name">{{ change.sectionTitle || change.sectionType || '内容修改' }}</span>
             </div>
-            <div class="suggestion-desc">{{ change.description }}</div>
-            <div v-if="change.beforeContent || change.afterContent" class="suggestion-diff">
-              <div v-if="change.beforeContent" class="diff-item diff-before">
+            <div class="suggestion-desc">
+              {{ change.description }}
+            </div>
+            <div
+              v-if="change.beforeContent || change.afterContent"
+              class="suggestion-diff"
+            >
+              <div
+                v-if="change.beforeContent"
+                class="diff-item diff-before"
+              >
                 <span class="diff-label">修改前：</span>
-                <div class="diff-content">{{ truncateContent(change.beforeContent) }}</div>
+                <div class="diff-content">
+                  {{ truncateContent(change.beforeContent) }}
+                </div>
               </div>
-              <div v-if="change.afterContent" class="diff-item diff-after">
+              <div
+                v-if="change.afterContent"
+                class="diff-item diff-after"
+              >
                 <span class="diff-label">修改后：</span>
-                <div class="diff-content">{{ truncateContent(change.afterContent) }}</div>
+                <div class="diff-content">
+                  {{ truncateContent(change.afterContent) }}
+                </div>
               </div>
             </div>
           </div>
@@ -85,14 +156,31 @@
             class="apply-btn"
             @click="handleApplySuggestion"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="20 6 9 17 4 12"></polyline>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <polyline points="20 6 9 17 4 12" />
             </svg>
             应用修改
           </button>
-          <div v-else class="applied-status">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="20 6 9 17 4 12"></polyline>
+          <div
+            v-else
+            class="applied-status"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <polyline points="20 6 9 17 4 12" />
             </svg>
             已应用
           </div>
@@ -100,7 +188,9 @@
       </div>
 
       <!-- 时间戳 -->
-      <div class="message-time">{{ formatTime(message.timestamp) }}</div>
+      <div class="message-time">
+        {{ formatTime(message.timestamp) }}
+      </div>
     </div>
   </div>
 </template>

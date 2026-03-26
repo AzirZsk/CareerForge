@@ -28,6 +28,7 @@ import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * AI聊天服务
@@ -64,7 +65,7 @@ public class AIChatService {
             if (sessionId == null || sessionId.isEmpty()) {
                 sessionId = (resumeId != null && !resumeId.isEmpty())
                         ? resumeId
-                        : java.util.UUID.randomUUID().toString();
+                        : UUID.randomUUID().toString();
             }
 
             final String finalSessionId = sessionId;

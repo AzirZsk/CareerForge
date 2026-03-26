@@ -7,15 +7,41 @@
 <template>
   <Teleport to="body">
     <Transition name="modal">
-      <div v-if="visible" class="dialog-overlay" @click.self="handleCancel">
+      <div
+        v-if="visible"
+        class="dialog-overlay"
+        @click.self="handleCancel"
+      >
         <div class="dialog-container">
           <!-- 头部 -->
           <header class="dialog-header">
-            <h3 class="dialog-title">应用修改建议</h3>
-            <button class="close-btn" @click="handleCancel">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
+            <h3 class="dialog-title">
+              应用修改建议
+            </h3>
+            <button
+              class="close-btn"
+              @click="handleCancel"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <line
+                  x1="18"
+                  y1="6"
+                  x2="6"
+                  y2="18"
+                />
+                <line
+                  x1="6"
+                  y1="6"
+                  x2="18"
+                  y2="18"
+                />
               </svg>
             </button>
           </header>
@@ -30,7 +56,10 @@
               >
                 <!-- 变更类型标签 -->
                 <div class="change-header">
-                  <span class="change-type" :class="change.changeType">
+                  <span
+                    class="change-type"
+                    :class="change.changeType"
+                  >
                     {{ getTypeLabel(change.changeType) }}
                   </span>
                   <span class="change-section">
@@ -44,14 +73,27 @@
                 </div>
 
                 <!-- 修改对比 -->
-                <div v-if="change.beforeContent || change.afterContent" class="change-comparison">
-                  <div v-if="change.beforeContent" class="comparison-before">
+                <div
+                  v-if="change.beforeContent || change.afterContent"
+                  class="change-comparison"
+                >
+                  <div
+                    v-if="change.beforeContent"
+                    class="comparison-before"
+                  >
                     <span class="comparison-label">修改前：</span>
-                    <div class="comparison-content">{{ truncateContent(change.beforeContent) }}</div>
+                    <div class="comparison-content">
+                      {{ truncateContent(change.beforeContent) }}
+                    </div>
                   </div>
-                  <div v-if="change.afterContent" class="comparison-after">
+                  <div
+                    v-if="change.afterContent"
+                    class="comparison-after"
+                  >
                     <span class="comparison-label">修改后：</span>
-                    <div class="comparison-content">{{ truncateContent(change.afterContent) }}</div>
+                    <div class="comparison-content">
+                      {{ truncateContent(change.afterContent) }}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -60,19 +102,42 @@
 
           <!-- 底部按钮 -->
           <footer class="dialog-footer">
-            <button class="btn-regenerate" @click="handleRegenerate">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="23 4 23 10 17 10"></polyline>
-                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+            <button
+              class="btn-regenerate"
+              @click="handleRegenerate"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polyline points="23 4 23 10 17 10" />
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
               </svg>
               重新生成
             </button>
-            <button class="btn-cancel" @click="handleCancel">
+            <button
+              class="btn-cancel"
+              @click="handleCancel"
+            >
               取消
             </button>
-            <button class="btn-confirm" @click="handleConfirm">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="20 6 9 17 4 12"></polyline>
+            <button
+              class="btn-confirm"
+              @click="handleConfirm"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polyline points="20 6 9 17 4 12" />
               </svg>
               应用修改
             </button>

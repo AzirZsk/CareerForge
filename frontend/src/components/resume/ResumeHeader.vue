@@ -4,7 +4,10 @@
 =====================================================-->
 
 <template>
-  <header class="resume-header animate-in" style="--delay: 1">
+  <header
+    class="resume-header animate-in"
+    style="--delay: 1"
+  >
     <div class="header-left">
       <!-- 编辑模式 -->
       <template v-if="isEditing">
@@ -15,23 +18,37 @@
             class="edit-input title-input"
             placeholder="简历名称"
             maxlength="50"
-          />
+          >
           <input
             v-model="editTargetPosition"
             type="text"
             class="edit-input target-input"
             placeholder="目标岗位（可选）"
             maxlength="50"
-          />
+          >
         </div>
         <div class="edit-actions">
-          <button class="edit-btn save" :disabled="!editName.trim()" @click="handleSave">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="20 6 9 17 4 12"></polyline>
+          <button
+            class="edit-btn save"
+            :disabled="!editName.trim()"
+            @click="handleSave"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <polyline points="20 6 9 17 4 12" />
             </svg>
             保存
           </button>
-          <button class="edit-btn cancel" @click="handleCancel">
+          <button
+            class="edit-btn cancel"
+            @click="handleCancel"
+          >
             取消
           </button>
         </div>
@@ -39,21 +56,40 @@
       <!-- 展示模式 -->
       <template v-else>
         <div class="title-row">
-          <h1 class="resume-title">{{ name }}</h1>
-          <button v-if="resumeId" class="edit-trigger" @click="startEdit" title="编辑名称">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          <h1 class="resume-title">
+            {{ name }}
+          </h1>
+          <button
+            v-if="resumeId"
+            class="edit-trigger"
+            title="编辑名称"
+            @click="startEdit"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
             </svg>
           </button>
         </div>
-        <p class="resume-target">目标岗位：{{ targetPosition || '暂未设置目标职位' }}</p>
+        <p class="resume-target">
+          目标岗位：{{ targetPosition || '暂未设置目标职位' }}
+        </p>
       </template>
     </div>
     <div class="header-right">
       <div class="score-overview">
         <div class="score-main">
-          <div class="score-ring" :style="{ '--score': analyzed ? overallScore : 0 }">
+          <div
+            class="score-ring"
+            :style="{ '--score': analyzed ? overallScore : 0 }"
+          >
             <span>{{ analyzed ? overallScore : '~' }}</span>
           </div>
           <div class="score-labels">
@@ -70,8 +106,15 @@
           :title="hasContent ? '' : '请先填写简历内容'"
           @click="hasContent && $emit('optimize')"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
           </svg>
           {{ hasContent ? (analyzed ? '一键优化' : 'AI分析') : '请先填写内容' }}
         </button>

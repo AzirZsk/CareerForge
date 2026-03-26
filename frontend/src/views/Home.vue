@@ -7,7 +7,10 @@
   <div class="home-page">
     <div class="container">
       <!-- 欢迎区域 -->
-      <section class="welcome-section animate-in" style="--delay: 0">
+      <section
+        class="welcome-section animate-in"
+        style="--delay: 0"
+      >
         <div class="welcome-content">
           <h1 class="welcome-title">
             你好，{{ store.user.name || '求职者' }}
@@ -18,11 +21,17 @@
           </p>
         </div>
         <div class="quick-actions">
-          <button class="action-btn primary" @click="startInterview">
+          <button
+            class="action-btn primary"
+            @click="startInterview"
+          >
             <span class="action-icon">🎯</span>
             <span>开始面试</span>
           </button>
-          <button class="action-btn secondary" @click="goToResume">
+          <button
+            class="action-btn secondary"
+            @click="goToResume"
+          >
             <span class="action-icon">📄</span>
             <span>优化简历</span>
           </button>
@@ -30,16 +39,28 @@
       </section>
 
       <!-- 统计概览 -->
-      <section class="stats-section animate-in" style="--delay: 1">
+      <section
+        class="stats-section animate-in"
+        style="--delay: 1"
+      >
         <div class="section-header">
-          <h2 class="section-title">数据概览</h2>
+          <h2 class="section-title">
+            数据概览
+          </h2>
           <span class="section-badge">本周</span>
         </div>
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-icon interviews">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
             </div>
             <div class="stat-content">
@@ -47,9 +68,16 @@
               <span class="stat-label">模拟面试次数</span>
             </div>
             <div class="stat-trend up">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-                <polyline points="17 6 23 6 23 12"></polyline>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                <polyline points="17 6 23 6 23 12" />
               </svg>
               +12%
             </div>
@@ -57,8 +85,15 @@
 
           <div class="stat-card">
             <div class="stat-icon score">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
               </svg>
             </div>
             <div class="stat-content">
@@ -66,9 +101,16 @@
               <span class="stat-label">平均得分</span>
             </div>
             <div class="stat-trend up">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-                <polyline points="17 6 23 6 23 12"></polyline>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                <polyline points="17 6 23 6 23 12" />
               </svg>
               +8%
             </div>
@@ -76,10 +118,32 @@
 
           <div class="stat-card">
             <div class="stat-icon improvement">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="12" y1="20" x2="12" y2="10"></line>
-                <line x1="18" y1="20" x2="18" y2="4"></line>
-                <line x1="6" y1="20" x2="6" y2="16"></line>
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <line
+                  x1="12"
+                  y1="20"
+                  x2="12"
+                  y2="10"
+                />
+                <line
+                  x1="18"
+                  y1="20"
+                  x2="18"
+                  y2="4"
+                />
+                <line
+                  x1="6"
+                  y1="20"
+                  x2="6"
+                  y2="16"
+                />
               </svg>
             </div>
             <div class="stat-content">
@@ -87,9 +151,16 @@
               <span class="stat-label">能力提升率</span>
             </div>
             <div class="stat-trend up">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-                <polyline points="17 6 23 6 23 12"></polyline>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                <polyline points="17 6 23 6 23 12" />
               </svg>
               +23%
             </div>
@@ -97,9 +168,20 @@
 
           <div class="stat-card">
             <div class="stat-icon study">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="12 6 12 12 16 14"></polyline>
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="10"
+                />
+                <polyline points="12 6 12 12 16 14" />
               </svg>
             </div>
             <div class="stat-content">
@@ -116,9 +198,14 @@
       <!-- 主内容区域 -->
       <div class="main-grid">
         <!-- 进度图表 -->
-        <section class="progress-section animate-in" style="--delay: 2">
+        <section
+          class="progress-section animate-in"
+          style="--delay: 2"
+        >
           <div class="section-header">
-            <h2 class="section-title">学习进度</h2>
+            <h2 class="section-title">
+              学习进度
+            </h2>
             <div class="chart-tabs">
               <button
                 v-for="tab in chartTabs"
@@ -140,7 +227,10 @@
                 :style="{ '--index': index }"
               >
                 <div class="bar-wrapper">
-                  <div class="bar" :style="{ height: item.score + '%' }">
+                  <div
+                    class="bar"
+                    :style="{ height: item.score + '%' }"
+                  >
                     <span class="bar-value">{{ item.score }}</span>
                   </div>
                 </div>
@@ -151,9 +241,14 @@
         </section>
 
         <!-- 技能雷达 -->
-        <section class="skills-section animate-in" style="--delay: 3">
+        <section
+          class="skills-section animate-in"
+          style="--delay: 3"
+        >
           <div class="section-header">
-            <h2 class="section-title">技能评估</h2>
+            <h2 class="section-title">
+              技能评估
+            </h2>
           </div>
           <div class="skills-list">
             <div
@@ -167,7 +262,10 @@
                 <span class="skill-score">{{ skill.score }}</span>
               </div>
               <div class="skill-bar">
-                <div class="skill-fill" :style="{ width: skill.score + '%' }"></div>
+                <div
+                  class="skill-fill"
+                  :style="{ width: skill.score + '%' }"
+                />
               </div>
             </div>
           </div>
@@ -177,10 +275,17 @@
       <!-- 最近动态 & 推荐岗位 -->
       <div class="bottom-grid">
         <!-- 最近动态 -->
-        <section class="activity-section animate-in" style="--delay: 4">
+        <section
+          class="activity-section animate-in"
+          style="--delay: 4"
+        >
           <div class="section-header">
-            <h2 class="section-title">最近动态</h2>
-            <button class="view-all-btn">查看全部</button>
+            <h2 class="section-title">
+              最近动态
+            </h2>
+            <button class="view-all-btn">
+              查看全部
+            </button>
           </div>
           <div class="activity-list">
             <div
@@ -189,17 +294,25 @@
               class="activity-item"
               :style="{ '--index': index }"
             >
-              <div class="activity-icon" :class="activity.type">
+              <div
+                class="activity-icon"
+                :class="activity.type"
+              >
                 <span v-if="activity.type === 'interview'">🎯</span>
                 <span v-else-if="activity.type === 'resume'">📄</span>
                 <span v-else-if="activity.type === 'practice'">📝</span>
                 <span v-else>📊</span>
               </div>
               <div class="activity-content">
-                <p class="activity-text">{{ activity.content }}</p>
+                <p class="activity-text">
+                  {{ activity.content }}
+                </p>
                 <span class="activity-time">{{ activity.time }}</span>
               </div>
-              <div v-if="activity.score" class="activity-score">
+              <div
+                v-if="activity.score"
+                class="activity-score"
+              >
                 {{ activity.score }}分
               </div>
             </div>
@@ -207,10 +320,17 @@
         </section>
 
         <!-- 推荐岗位 -->
-        <section class="jobs-section animate-in" style="--delay: 5">
+        <section
+          class="jobs-section animate-in"
+          style="--delay: 5"
+        >
           <div class="section-header">
-            <h2 class="section-title">推荐岗位</h2>
-            <button class="view-all-btn">更多职位</button>
+            <h2 class="section-title">
+              推荐岗位
+            </h2>
+            <button class="view-all-btn">
+              更多职位
+            </button>
           </div>
           <div class="jobs-list">
             <div
@@ -223,7 +343,9 @@
                   {{ job.company.charAt(0) }}
                 </div>
                 <div class="job-info">
-                  <h4 class="job-position">{{ job.position }}</h4>
+                  <h4 class="job-position">
+                    {{ job.position }}
+                  </h4>
                   <span class="job-company">{{ job.company }}</span>
                 </div>
                 <div class="match-score">
@@ -236,7 +358,11 @@
                 <span class="job-location">{{ job.location }}</span>
               </div>
               <div class="job-tags">
-                <span v-for="tag in job.tags" :key="tag" class="job-tag">{{ tag }}</span>
+                <span
+                  v-for="tag in job.tags"
+                  :key="tag"
+                  class="job-tag"
+                >{{ tag }}</span>
               </div>
             </div>
           </div>

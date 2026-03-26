@@ -7,41 +7,72 @@
   <div class="review-page">
     <div class="container">
       <!-- 页面标题 -->
-      <header class="page-header animate-in" style="--delay: 0">
+      <header
+        class="page-header animate-in"
+        style="--delay: 0"
+      >
         <div class="header-content">
-          <h1 class="page-title">面试复盘</h1>
-          <p class="page-desc">回顾面试表现，发现提升空间，持续精进</p>
+          <h1 class="page-title">
+            面试复盘
+          </h1>
+          <p class="page-desc">
+            回顾面试表现，发现提升空间，持续精进
+          </p>
         </div>
       </header>
 
       <!-- 统计概览 -->
-      <section class="overview-section animate-in" style="--delay: 1">
+      <section
+        class="overview-section animate-in"
+        style="--delay: 1"
+      >
         <div class="overview-grid">
           <div class="overview-card main">
             <div class="overview-content">
-              <h3 class="overview-title">平均得分</h3>
+              <h3 class="overview-title">
+                平均得分
+              </h3>
               <div class="overview-value">
                 <span class="value-number">{{ store.averageInterviewScore }}</span>
                 <span class="value-unit">分</span>
               </div>
               <p class="overview-trend up">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-                  <polyline points="17 6 23 6 23 12"></polyline>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                  <polyline points="17 6 23 6 23 12" />
                 </svg>
                 较上周提升 8%
               </p>
             </div>
             <div class="overview-chart">
               <div class="mini-chart">
-                <div v-for="(bar, i) in miniChartData" :key="i" class="mini-bar" :style="{ height: bar + '%' }"></div>
+                <div
+                  v-for="(bar, i) in miniChartData"
+                  :key="i"
+                  class="mini-bar"
+                  :style="{ height: bar + '%' }"
+                />
               </div>
             </div>
           </div>
           <div class="overview-card">
             <div class="stat-icon total">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
             </div>
             <div class="stat-info">
@@ -51,9 +82,20 @@
           </div>
           <div class="overview-card">
             <div class="stat-icon time">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="12 6 12 12 16 14"></polyline>
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="10"
+                />
+                <polyline points="12 6 12 12 16 14" />
               </svg>
             </div>
             <div class="stat-info">
@@ -63,9 +105,16 @@
           </div>
           <div class="overview-card">
             <div class="stat-icon improve">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
               </svg>
             </div>
             <div class="stat-info">
@@ -77,20 +126,30 @@
       </section>
 
       <!-- 最新复盘 -->
-      <section class="latest-review-section animate-in" style="--delay: 2">
+      <section
+        class="latest-review-section animate-in"
+        style="--delay: 2"
+      >
         <div class="section-header">
-          <h2 class="section-title">最新复盘</h2>
+          <h2 class="section-title">
+            最新复盘
+          </h2>
           <span class="section-badge">最近一次面试</span>
         </div>
         <div class="review-card">
           <div class="review-header">
             <div class="review-meta">
               <span class="review-type technical">技术面试</span>
-              <h3 class="review-position">{{ latestInterview?.position }}</h3>
+              <h3 class="review-position">
+                {{ latestInterview?.position }}
+              </h3>
               <span class="review-company">{{ latestInterview?.company }}</span>
             </div>
             <div class="review-score">
-              <div class="score-circle" :style="{ '--score': latestInterview?.score || 0 }">
+              <div
+                class="score-circle"
+                :style="{ '--score': latestInterview?.score || 0 }"
+              >
                 <span class="score-value">{{ latestInterview?.score }}</span>
               </div>
             </div>
@@ -106,9 +165,14 @@
                 <span class="dimension-score">{{ dim.score }}/{{ dim.maxScore }}</span>
               </div>
               <div class="dimension-bar">
-                <div class="dimension-fill" :style="{ width: (dim.score / dim.maxScore * 100) + '%' }"></div>
+                <div
+                  class="dimension-fill"
+                  :style="{ width: (dim.score / dim.maxScore * 100) + '%' }"
+                />
               </div>
-              <p class="dimension-feedback">{{ dim.feedback }}</p>
+              <p class="dimension-feedback">
+                {{ dim.feedback }}
+              </p>
             </div>
           </div>
           <div class="review-summary">
@@ -118,7 +182,12 @@
                 优势亮点
               </h4>
               <ul class="summary-list strengths">
-                <li v-for="item in store.currentReview.analysis.strengths" :key="item">{{ item }}</li>
+                <li
+                  v-for="item in store.currentReview.analysis.strengths"
+                  :key="item"
+                >
+                  {{ item }}
+                </li>
               </ul>
             </div>
             <div class="summary-section">
@@ -127,15 +196,26 @@
                 改进方向
               </h4>
               <ul class="summary-list weaknesses">
-                <li v-for="item in store.currentReview.analysis.weaknesses" :key="item">{{ item }}</li>
+                <li
+                  v-for="item in store.currentReview.analysis.weaknesses"
+                  :key="item"
+                >
+                  {{ item }}
+                </li>
               </ul>
             </div>
           </div>
           <div class="review-actions">
-            <button class="action-btn primary" @click="viewFullReview">
+            <button
+              class="action-btn primary"
+              @click="viewFullReview"
+            >
               查看完整复盘
             </button>
-            <button class="action-btn secondary" @click="practiceAgain">
+            <button
+              class="action-btn secondary"
+              @click="practiceAgain"
+            >
               再次练习
             </button>
           </div>
@@ -143,9 +223,14 @@
       </section>
 
       <!-- 历史记录列表 -->
-      <section class="history-section animate-in" style="--delay: 3">
+      <section
+        class="history-section animate-in"
+        style="--delay: 3"
+      >
         <div class="section-header">
-          <h2 class="section-title">全部记录</h2>
+          <h2 class="section-title">
+            全部记录
+          </h2>
           <div class="filter-options">
             <button
               v-for="filter in filters"
@@ -160,13 +245,27 @@
         </div>
         <div class="history-table">
           <div class="table-header">
-            <div class="col-date">日期</div>
-            <div class="col-type">类型</div>
-            <div class="col-position">岗位</div>
-            <div class="col-company">公司</div>
-            <div class="col-duration">时长</div>
-            <div class="col-score">得分</div>
-            <div class="col-action">操作</div>
+            <div class="col-date">
+              日期
+            </div>
+            <div class="col-type">
+              类型
+            </div>
+            <div class="col-position">
+              岗位
+            </div>
+            <div class="col-company">
+              公司
+            </div>
+            <div class="col-duration">
+              时长
+            </div>
+            <div class="col-score">
+              得分
+            </div>
+            <div class="col-action">
+              操作
+            </div>
           </div>
           <div class="table-body">
             <div
@@ -175,25 +274,53 @@
               class="table-row"
               :style="{ '--index': index }"
             >
-              <div class="col-date">{{ record.date }}</div>
+              <div class="col-date">
+                {{ record.date }}
+              </div>
               <div class="col-type">
-                <span class="type-tag" :class="record.type">
+                <span
+                  class="type-tag"
+                  :class="record.type"
+                >
                   {{ record.type === 'technical' ? '技术' : '行为' }}
                 </span>
               </div>
-              <div class="col-position">{{ record.position }}</div>
-              <div class="col-company">{{ record.company }}</div>
-              <div class="col-duration">{{ record.duration }}分钟</div>
+              <div class="col-position">
+                {{ record.position }}
+              </div>
+              <div class="col-company">
+                {{ record.company }}
+              </div>
+              <div class="col-duration">
+                {{ record.duration }}分钟
+              </div>
               <div class="col-score">
-                <span class="score-badge" :class="getScoreClass(record.score)">
+                <span
+                  class="score-badge"
+                  :class="getScoreClass(record.score)"
+                >
                   {{ record.score }}
                 </span>
               </div>
               <div class="col-action">
-                <button class="table-btn" @click="viewDetail(record.id)">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                    <circle cx="12" cy="12" r="3"></circle>
+                <button
+                  class="table-btn"
+                  @click="viewDetail(record.id)"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="3"
+                    />
                   </svg>
                 </button>
               </div>
@@ -203,10 +330,17 @@
       </section>
 
       <!-- 改进计划 -->
-      <section class="improvement-section animate-in" style="--delay: 4">
+      <section
+        class="improvement-section animate-in"
+        style="--delay: 4"
+      >
         <div class="section-header">
-          <h2 class="section-title">改进计划</h2>
-          <button class="edit-plan-btn">编辑计划</button>
+          <h2 class="section-title">
+            改进计划
+          </h2>
+          <button class="edit-plan-btn">
+            编辑计划
+          </button>
         </div>
         <div class="improvement-grid">
           <div
@@ -217,11 +351,16 @@
           >
             <div class="plan-header">
               <span class="plan-icon">{{ plan.category === '技术深化' ? '🔬' : '💬' }}</span>
-              <h4 class="plan-title">{{ plan.category }}</h4>
+              <h4 class="plan-title">
+                {{ plan.category }}
+              </h4>
             </div>
             <ul class="plan-items">
-              <li v-for="item in plan.items" :key="item">
-                <span class="check-box"></span>
+              <li
+                v-for="item in plan.items"
+                :key="item"
+              >
+                <span class="check-box" />
                 {{ item }}
               </li>
             </ul>

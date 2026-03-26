@@ -5,7 +5,11 @@
 
 <template>
   <div class="content-block basic-info-block">
-    <div v-for="{ key, value } in orderedFields" :key="key" class="info-row">
+    <div
+      v-for="{ key, value } in orderedFields"
+      :key="key"
+      class="info-row"
+    >
       <span class="info-label">{{ getFieldLabel(key) }}</span>
       <span class="info-value">{{ value }}</span>
     </div>

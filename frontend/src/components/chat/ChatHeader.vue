@@ -13,7 +13,10 @@
         <AIIcon :size="28" />
         <span class="title">求职助手</span>
         <!-- 模式标签 -->
-        <span class="mode-tag" :class="chatMode">
+        <span
+          class="mode-tag"
+          :class="chatMode"
+        >
           {{ chatMode === 'resume' ? '简历模式' : '通用聊天' }}
         </span>
       </div>
@@ -22,10 +25,12 @@
       <div class="resume-selector">
         <select
           :value="currentResumeId || ''"
-          @change="handleResumeChange"
           class="resume-select"
+          @change="handleResumeChange"
         >
-          <option value="">通用聊天</option>
+          <option value="">
+            通用聊天
+          </option>
           <option
             v-for="resume in resumeList"
             :key="resume.id"
@@ -34,8 +39,16 @@
             {{ resume.name }}
           </option>
         </select>
-        <svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="6 9 12 15 18 9"></polyline>
+        <svg
+          class="select-arrow"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <polyline points="6 9 12 15 18 9" />
         </svg>
       </div>
     </div>
@@ -51,10 +64,30 @@
       </button>
 
       <!-- 关闭按钮 -->
-      <button class="close-btn" @click="$emit('close')">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
+      <button
+        class="close-btn"
+        @click="$emit('close')"
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <line
+            x1="18"
+            y1="6"
+            x2="6"
+            y2="18"
+          />
+          <line
+            x1="6"
+            y1="6"
+            x2="18"
+            y2="18"
+          />
         </svg>
       </button>
     </div>

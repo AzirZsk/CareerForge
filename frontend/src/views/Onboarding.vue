@@ -12,14 +12,22 @@
           <span class="logo-icon">🎯</span>
           <span class="logo-text">LandIt</span>
         </div>
-        <h1 class="welcome-title">欢迎使用 LandIt</h1>
-        <p class="welcome-subtitle">智能求职助手，助你拿下心仪的工作</p>
+        <h1 class="welcome-title">
+          欢迎使用 LandIt
+        </h1>
+        <p class="welcome-subtitle">
+          智能求职助手，助你拿下心仪的工作
+        </p>
       </div>
 
       <!-- 上传简历 -->
       <div class="upload-section">
-        <h2 class="section-title">上传你的简历</h2>
-        <p class="section-desc">我们将通过AI解析简历，提取你的基本信息</p>
+        <h2 class="section-title">
+          上传你的简历
+        </h2>
+        <p class="section-desc">
+          我们将通过AI解析简历，提取你的基本信息
+        </p>
 
         <!-- 上传区域 -->
         <div
@@ -36,27 +44,58 @@
             accept=".jpg,.jpeg,.png,.pdf"
             class="hidden-input"
             @change="handleFileSelect"
-          />
-          <div v-if="!uploading" class="upload-content">
+          >
+          <div
+            v-if="!uploading"
+            class="upload-content"
+          >
             <div class="upload-icon">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="17 8 12 3 7 8"></polyline>
-                <line x1="12" y1="3" x2="12" y2="15"></line>
+              <svg
+                width="48"
+                height="48"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line
+                  x1="12"
+                  y1="3"
+                  x2="12"
+                  y2="15"
+                />
               </svg>
             </div>
-            <p class="upload-text">点击或拖拽上传简历</p>
-            <p class="upload-hint">支持 JPG、PNG 图片和 PDF 格式</p>
+            <p class="upload-text">
+              点击或拖拽上传简历
+            </p>
+            <p class="upload-hint">
+              支持 JPG、PNG 图片和 PDF 格式
+            </p>
           </div>
-          <div v-else class="upload-loading">
-            <div class="loading-spinner"></div>
-            <p class="loading-title">正在解析简历</p>
-            <p class="loading-desc">AI正在解析您的简历，请稍后...</p>
+          <div
+            v-else
+            class="upload-loading"
+          >
+            <div class="loading-spinner" />
+            <p class="loading-title">
+              正在解析简历
+            </p>
+            <p class="loading-desc">
+              AI正在解析您的简历，请稍后...
+            </p>
           </div>
         </div>
 
         <!-- 错误提示 -->
-        <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+        <p
+          v-if="errorMessage"
+          class="error-message"
+        >
+          {{ errorMessage }}
+        </p>
       </div>
     </div>
   </div>

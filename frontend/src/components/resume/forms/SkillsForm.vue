@@ -7,10 +7,20 @@
   <div class="skills-form">
     <div class="form-group">
       <label class="form-label">专业技能</label>
-      <p class="form-hint">添加技能名称、描述、熟练度和分类</p>
+      <p class="form-hint">
+        添加技能名称、描述、熟练度和分类
+      </p>
     </div>
-    <TransitionGroup name="skill-item" tag="div" class="skill-list">
-      <div v-for="(skill, index) in localSkills" :key="index" class="skill-item">
+    <TransitionGroup
+      name="skill-item"
+      tag="div"
+      class="skill-list"
+    >
+      <div
+        v-for="(skill, index) in localSkills"
+        :key="index"
+        class="skill-item"
+      >
         <div class="skill-row">
           <input
             v-model="skill.name"
@@ -19,18 +29,53 @@
             :class="{ 'form-input--error': hasError(`skills.${index}.name`) }"
             placeholder="技能名称"
             @input="syncToParent"
-          />
-          <select v-model="skill.level" class="form-select skill-level" @change="syncToParent">
-            <option value="">熟练度</option>
-            <option value="了解">了解</option>
-            <option value="熟悉">熟悉</option>
-            <option value="熟练">熟练</option>
-            <option value="精通">精通</option>
+          >
+          <select
+            v-model="skill.level"
+            class="form-select skill-level"
+            @change="syncToParent"
+          >
+            <option value="">
+              熟练度
+            </option>
+            <option value="了解">
+              了解
+            </option>
+            <option value="熟悉">
+              熟悉
+            </option>
+            <option value="熟练">
+              熟练
+            </option>
+            <option value="精通">
+              精通
+            </option>
           </select>
-          <button class="remove-btn" @click="removeSkill(index)" title="删除">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
+          <button
+            class="remove-btn"
+            title="删除"
+            @click="removeSkill(index)"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <line
+                x1="18"
+                y1="6"
+                x2="6"
+                y2="18"
+              />
+              <line
+                x1="6"
+                y1="6"
+                x2="18"
+                y2="18"
+              />
             </svg>
           </button>
         </div>
@@ -41,25 +86,50 @@
             class="form-input skill-category"
             placeholder="分类（如：编程语言、框架、工具）"
             @input="syncToParent"
-          />
+          >
           <input
             v-model="skill.description"
             type="text"
             class="form-input skill-desc"
             placeholder="技能描述（如：5年经验，精通并发编程）"
             @input="syncToParent"
-          />
+          >
         </div>
       </div>
     </TransitionGroup>
-    <button class="add-btn" @click="addSkill">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="12" y1="5" x2="12" y2="19"></line>
-        <line x1="5" y1="12" x2="19" y2="12"></line>
+    <button
+      class="add-btn"
+      @click="addSkill"
+    >
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <line
+          x1="12"
+          y1="5"
+          x2="12"
+          y2="19"
+        />
+        <line
+          x1="5"
+          y1="12"
+          x2="19"
+          y2="12"
+        />
       </svg>
       添加技能
     </button>
-    <p v-if="localSkills.length === 0" class="empty-hint">暂无技能，请点击上方按钮添加</p>
+    <p
+      v-if="localSkills.length === 0"
+      class="empty-hint"
+    >
+      暂无技能，请点击上方按钮添加
+    </p>
   </div>
 </template>
 

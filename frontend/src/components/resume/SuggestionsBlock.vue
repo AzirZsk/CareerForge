@@ -5,9 +5,16 @@
 =====================================================-->
 
 <template>
-  <div v-if="suggestions.length > 0" class="suggestions-block" :class="{ 'is-expanded': isExpanded }">
+  <div
+    v-if="suggestions.length > 0"
+    class="suggestions-block"
+    :class="{ 'is-expanded': isExpanded }"
+  >
     <!-- 标题栏（可折叠） -->
-    <div class="block-header" @click="toggleExpand">
+    <div
+      class="block-header"
+      @click="toggleExpand"
+    >
       <div class="header-left">
         <span class="block-title">优化建议</span>
         <span class="block-count">({{ suggestions.length }})</span>
@@ -23,16 +30,28 @@
           stroke="currentColor"
           stroke-width="2"
         >
-          <polyline points="6 9 12 15 18 9"></polyline>
+          <polyline points="6 9 12 15 18 9" />
         </svg>
       </div>
     </div>
 
     <!-- 展开内容 -->
-    <Transition @enter="onEnter" @after-enter="onAfterEnter" @leave="onLeave" @after-leave="onAfterLeave">
-      <div v-show="isExpanded" class="block-content">
+    <Transition
+      @enter="onEnter"
+      @after-enter="onAfterEnter"
+      @leave="onLeave"
+      @after-leave="onAfterLeave"
+    >
+      <div
+        v-show="isExpanded"
+        class="block-content"
+      >
         <!-- 建议列表 -->
-        <TransitionGroup name="list" tag="div" class="suggestions-list">
+        <TransitionGroup
+          name="list"
+          tag="div"
+          class="suggestions-list"
+        >
           <SuggestionCard
             v-for="suggestion in suggestions"
             :key="suggestion.id"

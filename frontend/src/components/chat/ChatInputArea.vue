@@ -7,30 +7,89 @@
 <template>
   <div class="chat-input-area">
     <!-- 多图预览列表 -->
-    <TransitionGroup name="slide-up" tag="div" class="image-preview-list" v-if="selectedImages.length > 0">
+    <TransitionGroup
+      v-if="selectedImages.length > 0"
+      name="slide-up"
+      tag="div"
+      class="image-preview-list"
+    >
       <div
         v-for="(_image, index) in selectedImages"
         :key="index"
         class="image-preview-item"
       >
-        <div class="image-preview" @click="handleImagePreview(index)">
-          <img :src="getImageUrl(index)" alt="待发送图片" />
+        <div
+          class="image-preview"
+          @click="handleImagePreview(index)"
+        >
+          <img
+            :src="getImageUrl(index)"
+            alt="待发送图片"
+          >
           <div class="image-overlay">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              <line x1="11" y1="8" x2="11" y2="14"></line>
-              <line x1="8" y1="11" x2="14" y2="11"></line>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle
+                cx="11"
+                cy="11"
+                r="8"
+              />
+              <line
+                x1="21"
+                y1="21"
+                x2="16.65"
+                y2="16.65"
+              />
+              <line
+                x1="11"
+                y1="8"
+                x2="11"
+                y2="14"
+              />
+              <line
+                x1="8"
+                y1="11"
+                x2="14"
+                y2="11"
+              />
             </svg>
           </div>
-          <button class="remove-btn" @click.stop="handleImageRemove(index)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
+          <button
+            class="remove-btn"
+            @click.stop="handleImageRemove(index)"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <line
+                x1="18"
+                y1="6"
+                x2="6"
+                y2="18"
+              />
+              <line
+                x1="6"
+                y1="6"
+                x2="18"
+                y2="18"
+              />
             </svg>
           </button>
         </div>
-        <div class="image-index">{{ index + 1 }}/{{ maxImageCount }}</div>
+        <div class="image-index">
+          {{ index + 1 }}/{{ maxImageCount }}
+        </div>
       </div>
 
       <!-- 添加更多图片按钮 -->
@@ -40,9 +99,26 @@
         class="add-more-btn"
         @click="triggerFileInput"
       >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <line
+            x1="12"
+            y1="5"
+            x2="12"
+            y2="19"
+          />
+          <line
+            x1="5"
+            y1="12"
+            x2="19"
+            y2="12"
+          />
         </svg>
       </div>
     </TransitionGroup>
@@ -52,14 +128,32 @@
       <!-- 图片上传按钮 -->
       <button
         class="upload-btn"
-        @click="triggerFileInput"
         :disabled="isStreaming || selectedImages.length >= maxImageCount"
         title="上传图片"
+        @click="triggerFileInput"
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-          <circle cx="8.5" cy="8.5" r="1.5"></circle>
-          <polyline points="21 15 16 10 5 21"></polyline>
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <rect
+            x="3"
+            y="3"
+            width="18"
+            height="18"
+            rx="2"
+            ry="2"
+          />
+          <circle
+            cx="8.5"
+            cy="8.5"
+            r="1.5"
+          />
+          <polyline points="21 15 16 10 5 21" />
         </svg>
       </button>
       <input
@@ -67,31 +161,43 @@
         type="file"
         accept="image/*"
         multiple
-        @change="handleFileSelect"
         hidden
-      />
+        @change="handleFileSelect"
+      >
 
       <!-- 文本输入框 -->
       <textarea
         v-model="inputText"
-        @keydown="handleKeydown"
-        @paste="handlePaste"
         placeholder="输入消息，按Enter发送，Ctrl+V粘贴图片..."
         :disabled="isStreaming"
         rows="1"
         class="message-input"
-      ></textarea>
+        @keydown="handleKeydown"
+        @paste="handlePaste"
+      />
 
       <!-- 发送按钮 -->
       <button
         class="send-btn"
-        @click="handleSend"
         :disabled="isStreaming || (!inputText.trim() && selectedImages.length === 0)"
         :class="{ active: inputText.trim() || selectedImages.length > 0 }"
+        @click="handleSend"
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="22" y1="2" x2="11" y2="13"></line>
-          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <line
+            x1="22"
+            y1="2"
+            x2="11"
+            y2="13"
+          />
+          <polygon points="22 2 15 22 11 13 2 9 22 2" />
         </svg>
       </button>
     </div>

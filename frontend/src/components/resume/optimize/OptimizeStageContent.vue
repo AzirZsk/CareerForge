@@ -11,68 +11,162 @@
       <div class="changes-summary">
         <div class="changes-summary-left">
           <span class="changes-count">{{ changeCount }} 处变更</span>
-          <span class="changes-improvement" v-if="data.improvementScore">预计提升 {{ data.improvementScore }} 分</span>
+          <span
+            v-if="data.improvementScore"
+            class="changes-improvement"
+          >预计提升 {{ data.improvementScore }} 分</span>
         </div>
         <button
           v-if="hasBeforeData"
           class="comparison-btn"
           @click="$emit('showComparison')"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="2" y="3" width="20" height="18" rx="2"/>
-            <line x1="12" y1="3" x2="12" y2="21"/>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <rect
+              x="2"
+              y="3"
+              width="20"
+              height="18"
+              rx="2"
+            />
+            <line
+              x1="12"
+              y1="3"
+              x2="12"
+              y2="21"
+            />
           </svg>
           对比 & 编辑
         </button>
       </div>
 
       <!-- 置信度徽章 -->
-      <div class="confidence-badge" :class="data.confidence || 'medium'" v-if="data.confidence">
+      <div
+        v-if="data.confidence"
+        class="confidence-badge"
+        :class="data.confidence || 'medium'"
+      >
         置信度: {{ data.confidence }}
       </div>
 
       <!-- 变更列表 -->
-      <div class="changes-list" v-if="data.changes?.length">
-        <div class="change-item" v-for="(change, idx) in data.changes" :key="idx">
+      <div
+        v-if="data.changes?.length"
+        class="changes-list"
+      >
+        <div
+          v-for="(change, idx) in data.changes"
+          :key="idx"
+          class="change-item"
+        >
           <div class="change-header">
-            <span class="change-type" :class="change.type">{{ change.typeLabel || change.type || '修改' }}</span>
+            <span
+              class="change-type"
+              :class="change.type"
+            >{{ change.typeLabel || change.type || '修改' }}</span>
             <span class="change-field">{{ change.fieldLabel || change.field }}</span>
           </div>
-          <div class="change-content" v-if="hasValueToShow(change)">
+          <div
+            v-if="hasValueToShow(change)"
+            class="change-content"
+          >
             <!-- 新增类型：只显示新增的值 -->
-            <div class="change-added" v-if="change.type === 'added'">
-              <ol v-if="isArray(change.afterValue)" class="change-value-list">
-                <li v-for="(val, vIdx) in change.afterValue" :key="vIdx">{{ val }}</li>
+            <div
+              v-if="change.type === 'added'"
+              class="change-added"
+            >
+              <ol
+                v-if="isArray(change.afterValue)"
+                class="change-value-list"
+              >
+                <li
+                  v-for="(val, vIdx) in change.afterValue"
+                  :key="vIdx"
+                >
+                  {{ val }}
+                </li>
               </ol>
-              <pre v-else class="change-value-text">{{ change.afterValue }}</pre>
+              <pre
+                v-else
+                class="change-value-text"
+              >{{ change.afterValue }}</pre>
             </div>
 
             <!-- 修改类型：保持前后对比 -->
             <template v-else>
-              <div class="change-before" v-if="change.beforeValue !== null">
+              <div
+                v-if="change.beforeValue !== null"
+                class="change-before"
+              >
                 <span class="change-label">前:</span>
-                <ol v-if="isArray(change.beforeValue)" class="change-value-list">
-                  <li v-for="(val, vIdx) in change.beforeValue" :key="vIdx">{{ val }}</li>
+                <ol
+                  v-if="isArray(change.beforeValue)"
+                  class="change-value-list"
+                >
+                  <li
+                    v-for="(val, vIdx) in change.beforeValue"
+                    :key="vIdx"
+                  >
+                    {{ val }}
+                  </li>
                 </ol>
-                <pre v-else class="change-value-text">{{ change.beforeValue }}</pre>
+                <pre
+                  v-else
+                  class="change-value-text"
+                >{{ change.beforeValue }}</pre>
               </div>
-              <div class="change-after" v-if="change.afterValue !== null">
+              <div
+                v-if="change.afterValue !== null"
+                class="change-after"
+              >
                 <span class="change-label">后:</span>
-                <ol v-if="isArray(change.afterValue)" class="change-value-list">
-                  <li v-for="(val, vIdx) in change.afterValue" :key="vIdx">{{ val }}</li>
+                <ol
+                  v-if="isArray(change.afterValue)"
+                  class="change-value-list"
+                >
+                  <li
+                    v-for="(val, vIdx) in change.afterValue"
+                    :key="vIdx"
+                  >
+                    {{ val }}
+                  </li>
                 </ol>
-                <pre v-else class="change-value-text">{{ change.afterValue }}</pre>
+                <pre
+                  v-else
+                  class="change-value-text"
+                >{{ change.afterValue }}</pre>
               </div>
             </template>
           </div>
-          <div class="change-reason" v-if="change.reason">{{ change.reason }}</div>
+          <div
+            v-if="change.reason"
+            class="change-reason"
+          >
+            {{ change.reason }}
+          </div>
         </div>
       </div>
 
       <!-- 优化提示 -->
-      <div class="tips-section" v-if="data.tips?.length">
-        <div class="tips-title">优化提示</div>
-        <div class="tip-item" v-for="(tip, idx) in data.tips" :key="idx">
+      <div
+        v-if="data.tips?.length"
+        class="tips-section"
+      >
+        <div class="tips-title">
+          优化提示
+        </div>
+        <div
+          v-for="(tip, idx) in data.tips"
+          :key="idx"
+          class="tip-item"
+        >
           • {{ tip }}
         </div>
       </div>

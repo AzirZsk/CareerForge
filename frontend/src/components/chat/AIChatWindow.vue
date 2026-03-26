@@ -7,7 +7,10 @@
 <template>
   <Teleport to="body">
     <Transition name="fullscreen-slide">
-      <div v-if="open" class="chat-fullscreen">
+      <div
+        v-if="open"
+        class="chat-fullscreen"
+      >
         <div class="chat-container">
           <!-- 头部 -->
           <ChatHeader

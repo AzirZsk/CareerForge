@@ -7,7 +7,10 @@
 <template>
   <div class="section-header">
     <h3>
-      <span class="section-title-text" :class="diffClass">
+      <span
+        class="section-title-text"
+        :class="diffClass"
+      >
         {{ title }}
       </span>
     </h3>

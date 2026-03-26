@@ -11,11 +11,14 @@
       <button
         v-if="!state.isWindowOpen"
         class="float-button"
-        @click="toggleWindow"
         title="AI简历助手"
+        @click="toggleWindow"
       >
         <!-- AI图标 -->
-        <AIIcon class="ai-icon" :size="26" />
+        <AIIcon
+          class="ai-icon"
+          :size="26"
+        />
       </button>
     </Transition>
 

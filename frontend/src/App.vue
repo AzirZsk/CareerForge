@@ -7,9 +7,9 @@
   <div class="app-container">
     <!-- 背景装饰 -->
     <div class="bg-decoration">
-      <div class="glow-orb glow-orb-1"></div>
-      <div class="glow-orb glow-orb-2"></div>
-      <div class="noise-overlay"></div>
+      <div class="glow-orb glow-orb-1" />
+      <div class="glow-orb glow-orb-2" />
+      <div class="noise-overlay" />
     </div>
 
     <!-- 导航栏 -->
@@ -18,7 +18,10 @@
     <!-- 主内容区 -->
     <main class="main-content">
       <router-view v-slot="{ Component }">
-        <transition name="page" mode="out-in">
+        <transition
+          name="page"
+          mode="out-in"
+        >
           <component :is="Component" />
         </transition>
       </router-view>

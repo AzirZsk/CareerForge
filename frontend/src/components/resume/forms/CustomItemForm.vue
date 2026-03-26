@@ -14,7 +14,7 @@
         class="form-input"
         :class="{ 'form-input--error': hasError('name') }"
         placeholder="请输入名称"
-      />
+      >
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -24,7 +24,7 @@
           type="text"
           class="form-input"
           placeholder="请输入角色或职位"
-        />
+        >
       </div>
       <div class="form-group">
         <label class="form-label">时间段</label>
@@ -33,7 +33,7 @@
           type="text"
           class="form-input"
           placeholder="例如：2023.01 - 2023.06"
-        />
+        >
       </div>
     </div>
     <div class="form-group">
@@ -43,7 +43,7 @@
         class="form-textarea"
         rows="3"
         placeholder="请输入详细描述"
-      ></textarea>
+      />
     </div>
     <div class="form-group">
       <label class="form-label">成果/要点</label>

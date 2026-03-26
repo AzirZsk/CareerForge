@@ -7,7 +7,9 @@
 
 <template>
   <div class="quick-commands">
-    <div class="commands-label">快捷指令</div>
+    <div class="commands-label">
+      快捷指令
+    </div>
     <div class="commands-list">
       <button
         v-for="cmd in displayCommands"

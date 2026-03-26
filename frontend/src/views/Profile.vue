@@ -7,16 +7,41 @@
   <div class="profile-page">
     <div class="container">
       <!-- 个人信息卡片 -->
-      <section class="profile-card animate-in" style="--delay: 0">
+      <section
+        class="profile-card animate-in"
+        style="--delay: 0"
+      >
         <div class="profile-avatar">
           <div class="avatar-circle">
-            <img v-if="store.user.avatar" :src="store.user.avatar" alt="头像" class="avatar-image" />
-            <span v-else class="avatar-text">{{ userInitial }}</span>
+            <img
+              v-if="store.user.avatar"
+              :src="store.user.avatar"
+              alt="头像"
+              class="avatar-image"
+            >
+            <span
+              v-else
+              class="avatar-text"
+            >{{ userInitial }}</span>
           </div>
-          <button class="change-avatar-btn" @click="triggerAvatarUpload">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-              <circle cx="12" cy="13" r="4"></circle>
+          <button
+            class="change-avatar-btn"
+            @click="triggerAvatarUpload"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+              <circle
+                cx="12"
+                cy="13"
+                r="4"
+              />
             </svg>
           </button>
           <input
@@ -25,21 +50,34 @@
             accept="image/*"
             class="hidden-input"
             @change="handleAvatarUpload"
-          />
+          >
         </div>
         <div class="profile-info">
-          <h1 class="profile-name">{{ store.user.name }}</h1>
-          <p class="profile-gender">{{ genderText }}</p>
+          <h1 class="profile-name">
+            {{ store.user.name }}
+          </h1>
+          <p class="profile-gender">
+            {{ genderText }}
+          </p>
         </div>
       </section>
 
       <!-- 基本信息编辑 -->
-      <section class="info-section animate-in" style="--delay: 1">
-        <h2 class="section-title">基本信息</h2>
+      <section
+        class="info-section animate-in"
+        style="--delay: 1"
+      >
+        <h2 class="section-title">
+          基本信息
+        </h2>
         <div class="info-form">
           <div class="form-group">
             <label class="form-label">姓名</label>
-            <input type="text" class="form-input" v-model="userInfo.name" />
+            <input
+              v-model="userInfo.name"
+              type="text"
+              class="form-input"
+            >
           </div>
           <div class="form-group">
             <label class="form-label">性别</label>
@@ -66,12 +104,25 @@
       </section>
 
       <!-- 保存按钮 -->
-      <div class="save-bar animate-in" style="--delay: 2">
-        <button class="save-btn" @click="saveProfile">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-            <polyline points="17 21 17 13 7 13 7 21"></polyline>
-            <polyline points="7 3 7 8 15 8"></polyline>
+      <div
+        class="save-bar animate-in"
+        style="--delay: 2"
+      >
+        <button
+          class="save-btn"
+          @click="saveProfile"
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+            <polyline points="17 21 17 13 7 13 7 21" />
+            <polyline points="7 3 7 8 15 8" />
           </svg>
           保存更改
         </button>

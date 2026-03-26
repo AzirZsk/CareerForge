@@ -75,12 +75,37 @@
     />
 
     <!-- 聚合类型无数据提示 -->
-    <div class="empty-block" v-else-if="isAggregateSection && !hasItems">
-      <p class="empty-text">暂无记录</p>
-      <button class="add-item-btn" @click="$emit('add-item')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
+    <div
+      v-else-if="isAggregateSection && !hasItems"
+      class="empty-block"
+    >
+      <p class="empty-text">
+        暂无记录
+      </p>
+      <button
+        class="add-item-btn"
+        @click="$emit('add-item')"
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <line
+            x1="12"
+            y1="5"
+            x2="12"
+            y2="19"
+          />
+          <line
+            x1="5"
+            y1="12"
+            x2="19"
+            y2="12"
+          />
         </svg>
         添加第一条记录
       </button>

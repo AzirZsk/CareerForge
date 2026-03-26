@@ -5,7 +5,10 @@
 =====================================================-->
 
 <template>
-  <div class="resume-section basic-info-section" :class="{ editable: showEdit }">
+  <div
+    class="resume-section basic-info-section"
+    :class="{ editable: showEdit }"
+  >
     <SectionHeader
       :title="section.title"
       :diff-type="titleDiffType"
@@ -13,7 +16,10 @@
       @edit="handleEdit"
     />
     <div class="info-grid">
-      <template v-for="{ key, value } in orderedFields" :key="key">
+      <template
+        v-for="{ key, value } in orderedFields"
+        :key="key"
+      >
         <div
           class="info-item"
           :class="[
@@ -22,7 +28,10 @@
           ]"
         >
           <span class="info-label">{{ getFieldLabel(key) }}</span>
-          <span class="info-value" :class="{ 'summary-text': key === 'summary' }">
+          <span
+            class="info-value"
+            :class="{ 'summary-text': key === 'summary' }"
+          >
             {{ value }}
           </span>
         </div>

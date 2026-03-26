@@ -11,25 +11,66 @@
     </div>
 
     <!-- 建议列表 -->
-    <div class="suggestions-list" v-if="data.suggestions?.length">
-      <div class="suggestion-item" v-for="(sug, idx) in data.suggestions" :key="idx">
+    <div
+      v-if="data.suggestions?.length"
+      class="suggestions-list"
+    >
+      <div
+        v-for="(sug, idx) in data.suggestions"
+        :key="idx"
+        class="suggestion-item"
+      >
         <div class="sug-header">
-          <span class="sug-type" :class="sug.type">{{ getSuggestionTypeLabel(sug.type) }}</span>
-          <span class="sug-impact-badge" :class="sug.impact">{{ getSuggestionImpactLabel(sug.impact) }}</span>
+          <span
+            class="sug-type"
+            :class="sug.type"
+          >{{ getSuggestionTypeLabel(sug.type) }}</span>
+          <span
+            class="sug-impact-badge"
+            :class="sug.impact"
+          >{{ getSuggestionImpactLabel(sug.impact) }}</span>
           <span class="sug-title">{{ sug.title }}</span>
         </div>
-        <div class="sug-section">位置: {{ sug.position || sug.category }}</div>
-        <div class="sug-problem" v-if="sug.problem">问题: {{ sug.problem }}</div>
-        <div class="sug-direction">方向：{{ sug.direction }}</div>
-        <div class="sug-example" v-if="sug.example">示例：{{ sug.example }}</div>
-        <div class="sug-value" v-if="sug.value">价值: {{ sug.value }}</div>
+        <div class="sug-section">
+          位置: {{ sug.position || sug.category }}
+        </div>
+        <div
+          v-if="sug.problem"
+          class="sug-problem"
+        >
+          问题: {{ sug.problem }}
+        </div>
+        <div class="sug-direction">
+          方向：{{ sug.direction }}
+        </div>
+        <div
+          v-if="sug.example"
+          class="sug-example"
+        >
+          示例：{{ sug.example }}
+        </div>
+        <div
+          v-if="sug.value"
+          class="sug-value"
+        >
+          价值: {{ sug.value }}
+        </div>
       </div>
     </div>
 
     <!-- 快速改进项 -->
-    <div class="quickwins-section" v-if="data.quickWins?.length">
-      <div class="quickwins-title">快速改进项</div>
-      <div class="quickwin-item" v-for="(quickWin, idx) in data.quickWins" :key="idx">
+    <div
+      v-if="data.quickWins?.length"
+      class="quickwins-section"
+    >
+      <div class="quickwins-title">
+        快速改进项
+      </div>
+      <div
+        v-for="(quickWin, idx) in data.quickWins"
+        :key="idx"
+        class="quickwin-item"
+      >
         ✓ {{ quickWin.action || quickWin }}
       </div>
     </div>

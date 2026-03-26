@@ -12,9 +12,12 @@
         :class="{ 'modal-overlay--high': overlay }"
         @click.self="handleClose"
       >
-        <div class="modal-container" :class="{
-          'modal-container--fullscreen': tailorState.isTailoring || tailorState.isCompleted
-        }">
+        <div
+          class="modal-container"
+          :class="{
+            'modal-container--fullscreen': tailorState.isTailoring || tailorState.isCompleted
+          }"
+        >
           <!-- 头部 -->
           <ModalHeader
             :is-optimizing="tailorState.isTailoring"
@@ -36,7 +39,10 @@
           <!-- 进度展示（进行中/完成时显示） -->
           <template v-else>
             <!-- 定制职位 -->
-            <div class="target-info" v-if="formData.targetPosition">
+            <div
+              v-if="formData.targetPosition"
+              class="target-info"
+            >
               <span class="target-label">定制职位</span>
               <span class="target-value">{{ formData.targetPosition }}</span>
             </div>
@@ -62,39 +68,104 @@
             </div>
 
             <!-- 错误信息 -->
-            <div v-if="tailorState.hasError" class="error-section">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="12"/>
-                <line x1="12" y1="16" x2="12.01" y2="16"/>
+            <div
+              v-if="tailorState.hasError"
+              class="error-section"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="10"
+                />
+                <line
+                  x1="12"
+                  y1="8"
+                  x2="12"
+                  y2="12"
+                />
+                <line
+                  x1="12"
+                  y1="16"
+                  x2="12.01"
+                  y2="16"
+                />
               </svg>
               <span>{{ tailorState.errorMessage }}</span>
             </div>
           </template>
 
           <!-- 底部操作 -->
-          <div v-if="tailorState.isTailoring || tailorState.isCompleted" class="modal-footer">
+          <div
+            v-if="tailorState.isTailoring || tailorState.isCompleted"
+            class="modal-footer"
+          >
             <template v-if="tailorState.hasError">
-              <button class="footer-btn secondary" @click="handleClose">退出</button>
+              <button
+                class="footer-btn secondary"
+                @click="handleClose"
+              >
+                退出
+              </button>
             </template>
             <template v-else-if="tailorState.isTailoring">
-              <button class="footer-btn secondary" @click="handleCancel">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="18" y1="6" x2="6" y2="18"/>
-                  <line x1="6" y1="6" x2="18" y2="18"/>
+              <button
+                class="footer-btn secondary"
+                @click="handleCancel"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <line
+                    x1="18"
+                    y1="6"
+                    x2="6"
+                    y2="18"
+                  />
+                  <line
+                    x1="6"
+                    y1="6"
+                    x2="18"
+                    y2="18"
+                  />
                 </svg>
                 取消
               </button>
             </template>
             <template v-else-if="tailorState.isCompleted">
-              <button class="footer-btn secondary" @click="handleClose">
+              <button
+                class="footer-btn secondary"
+                @click="handleClose"
+              >
                 不保存
               </button>
-              <button class="footer-btn primary" @click="handleSaveTailor">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                  <polyline points="17 21 17 13 7 13 7 21"/>
-                  <polyline points="7 3 7 8 15 8"/>
+              <button
+                class="footer-btn primary"
+                @click="handleSaveTailor"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                  <polyline points="17 21 17 13 7 13 7 21" />
+                  <polyline points="7 3 7 8 15 8" />
                 </svg>
                 保存定制简历
               </button>
@@ -107,14 +178,39 @@
     <!-- 全屏简历对比 -->
     <Teleport to="body">
       <Transition name="fullscreen-comparison">
-        <div v-if="showComparisonView" class="fullscreen-comparison-overlay">
+        <div
+          v-if="showComparisonView"
+          class="fullscreen-comparison-overlay"
+        >
           <div class="fullscreen-comparison-container">
             <div class="fullscreen-comparison-header">
-              <h3 class="fullscreen-comparison-title">简历对比</h3>
-              <button class="fullscreen-comparison-close" @click="showComparisonView = false">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="18" y1="6" x2="6" y2="18"/>
-                  <line x1="6" y1="6" x2="18" y2="18"/>
+              <h3 class="fullscreen-comparison-title">
+                简历对比
+              </h3>
+              <button
+                class="fullscreen-comparison-close"
+                @click="showComparisonView = false"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <line
+                    x1="18"
+                    y1="6"
+                    x2="6"
+                    y2="18"
+                  />
+                  <line
+                    x1="6"
+                    y1="6"
+                    x2="18"
+                    y2="18"
+                  />
                 </svg>
               </button>
             </div>
@@ -128,7 +224,10 @@
                 mode="tailor"
                 @edit-section="handleEditSection"
               />
-              <div v-else class="comparison-empty">
+              <div
+                v-else
+                class="comparison-empty"
+              >
                 <p>暂无对比数据</p>
               </div>
             </div>
