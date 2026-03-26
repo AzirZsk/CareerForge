@@ -231,7 +231,7 @@ public class AIChatService {
 
     /**
      * 加载简历上下文
-     * 遍历所有区块，拼接完整内容
+     * 遍历所有区块，拼接完整内容（包含简历ID和区块ID）
      */
     private String loadResumeContext(String resumeId) {
         try {
@@ -241,8 +241,9 @@ public class AIChatService {
             }
 
             StringBuilder context = new StringBuilder();
-            // 基本信息拼接
+            // 基本信息拼接（包含简历ID）
             context.append("## 简历基本信息\n");
+            context.append("- 简历ID：").append(resume.getId()).append("\n");
             context.append("- 简历名称：").append(resume.getName()).append("\n");
             context.append("- 目标岗位：").append(resume.getTargetPosition()).append("\n");
             if (resume.getOverallScore() != null) {
@@ -269,11 +270,13 @@ public class AIChatService {
     }
 
     /**
-     * 拼接单个区块内容到上下文
+     * 拼接单个区块内容到上下文（包含区块ID）
      */
     private void appendSectionContent(StringBuilder context, ResumeDetailVO.ResumeSectionVO section) {
         String typeLabel = getSectionTypeLabel(section.getType());
         context.append("### ").append(typeLabel);
+        // 添加区块ID，便于AI在生成修改建议时准确定位
+        context.append(" [区块ID: ").append(section.getId()).append("]");
 
         String title = section.getTitle();
         if (title != null && !title.isEmpty()) {
