@@ -4,7 +4,7 @@ import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.skills.SkillsAgentHook;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.skills.registry.SkillRegistry;
-import com.alibaba.cloud.ai.graph.skills.registry.filesystem.FileSystemSkillRegistry;
+import com.alibaba.cloud.ai.graph.skills.registry.classpath.ClasspathSkillRegistry;
 import com.landit.chat.tools.AddSectionTool;
 import com.landit.chat.tools.CreateResumeTool;
 import com.landit.chat.tools.DeleteSectionTool;
@@ -39,12 +39,12 @@ public class ChatAgentConfig {
 
     /**
      * 创建技能注册表
-     * 从项目根目录的 skills/ 文件夹加载技能
+     * 从 classpath:skills/ 加载技能（打包进 JAR）
      */
     @Bean
     public SkillRegistry skillRegistry() {
-        SkillRegistry registry = FileSystemSkillRegistry.builder()
-                .projectSkillsDirectory("./skills")
+        SkillRegistry registry = ClasspathSkillRegistry.builder()
+                .classpathPath("skills")
                 .build();
         log.info("[SkillRegistry] 初始化完成, 技能数量={}", registry.size());
         return registry;
