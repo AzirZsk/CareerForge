@@ -105,18 +105,18 @@
           v-html="formattedContent"
         />
 
-        <!-- 建议卡片 -->
+        <!-- 操作卡片 -->
         <div
-          v-if="message.suggestions && message.suggestions.length > 0"
-          class="suggestions-wrapper"
+          v-if="message.actions && message.actions.length > 0"
+          class="actions-wrapper"
           :class="{ 'no-content': !message.content }"
         >
           <!-- 折叠头部 -->
           <div
-            class="suggestions-header"
-            @click="toggleSuggestions"
+            class="actions-header"
+            @click="toggleActions"
           >
-            <span class="suggestions-title">
+            <span class="actions-title">
               <svg
                 width="14"
                 height="14"
@@ -128,26 +128,26 @@
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
               </svg>
-              {{ message.suggestions.length }} 项修改建议
+              {{ message.actions.length }} 项修改建议
             </span>
-            <span class="collapse-icon">{{ isSuggestionsExpanded ? '▼' : '▶' }}</span>
+            <span class="collapse-icon">{{ isActionsExpanded ? '▼' : '▶' }}</span>
           </div>
 
-          <!-- 建议卡片列表 -->
+          <!-- 操作卡片列表 -->
           <div
-            v-show="isSuggestionsExpanded"
-            class="suggestions-container"
+            v-show="isActionsExpanded"
+            class="actions-container"
           >
             <SectionChangeCard
-              v-for="(change, index) in message.suggestions"
+              v-for="(change, index) in message.actions"
               :key="index"
               :change="change"
             />
             <!-- 操作按钮 -->
             <button
-              v-if="!message.applied"
+              v-if="message.actionStatus === 'pending'"
               class="apply-btn"
-              @click="handleApplySuggestion"
+              @click="handleApplyActions"
             >
               <svg
                 width="16"
@@ -162,8 +162,8 @@
               应用修改
             </button>
             <div
-              v-else
-              class="applied-status"
+              v-else-if="message.actionStatus === 'applied'"
+              class="action-status applied"
             >
               <svg
                 width="16"
@@ -176,6 +176,44 @@
                 <polyline points="20 6 9 17 4 12" />
               </svg>
               已应用
+            </div>
+            <div
+              v-else-if="message.actionStatus === 'failed'"
+              class="action-status failed"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="10"
+                />
+                <line
+                  x1="15"
+                  y1="9"
+                  x2="9"
+                  y2="15"
+                />
+                <line
+                  x1="9"
+                  y1="9"
+                  x2="15"
+                  y2="15"
+                />
+              </svg>
+              应用失败
+              <button
+                class="retry-btn"
+                @click="handleApplyActions"
+              >
+                重试
+              </button>
             </div>
           </div>
         </div>
@@ -208,20 +246,20 @@ const emit = defineEmits<{
 
 const { renderMarkdown } = useMarkdown()
 
-// 建议卡片折叠状态，默认展开
-const isSuggestionsExpanded = ref(true)
+// 操作卡片折叠状态，默认展开
+const isActionsExpanded = ref(true)
 
 const formattedContent = computed(() => renderMarkdown(props.message.content))
 
-function toggleSuggestions() {
-  isSuggestionsExpanded.value = !isSuggestionsExpanded.value
+function toggleActions() {
+  isActionsExpanded.value = !isActionsExpanded.value
 }
 
 function handleImageClick(url: string) {
   emit('preview-image', url)
 }
 
-function handleApplySuggestion() {
+function handleApplyActions() {
   emit('apply-suggestion', props.message.id)
 }
 
@@ -537,8 +575,8 @@ function formatTime(timestamp: number): string {
   text-align: left;
 }
 
-// 建议卡片包装器
-.suggestions-wrapper {
+// 操作卡片包装器
+.actions-wrapper {
   margin-top: $spacing-md;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   padding-top: $spacing-md;
@@ -551,8 +589,8 @@ function formatTime(timestamp: number): string {
   }
 }
 
-// 建议卡片折叠头部
-.suggestions-header {
+// 操作卡片折叠头部
+.actions-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -568,7 +606,7 @@ function formatTime(timestamp: number): string {
   }
 }
 
-.suggestions-title {
+.actions-title {
   display: flex;
   align-items: center;
   gap: $spacing-xs;
@@ -587,8 +625,8 @@ function formatTime(timestamp: number): string {
   transition: transform $transition-fast;
 }
 
-// 建议卡片容器
-.suggestions-container {
+// 操作卡片容器
+.actions-container {
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
@@ -620,7 +658,7 @@ function formatTime(timestamp: number): string {
   }
 }
 
-.applied-status {
+.action-status {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -629,9 +667,34 @@ function formatTime(timestamp: number): string {
   margin-top: $spacing-sm;
   font-size: $text-sm;
   font-weight: $weight-medium;
-  color: $color-success;
-  background: rgba($color-success, 0.1);
-  border: 1px solid rgba($color-success, 0.2);
   border-radius: $radius-sm;
+
+  &.applied {
+    color: $color-success;
+    background: rgba($color-success, 0.1);
+    border: 1px solid rgba($color-success, 0.2);
+  }
+
+  &.failed {
+    color: $color-error;
+    background: rgba($color-error, 0.1);
+    border: 1px solid rgba($color-error, 0.2);
+
+    .retry-btn {
+      margin-left: $spacing-sm;
+      padding: $spacing-xs $spacing-sm;
+      font-size: $text-xs;
+      color: $color-error;
+      background: transparent;
+      border: 1px solid rgba($color-error, 0.3);
+      border-radius: $radius-sm;
+      cursor: pointer;
+      transition: all $transition-fast;
+
+      &:hover {
+        background: rgba($color-error, 0.1);
+      }
+    }
+  }
 }
 </style>

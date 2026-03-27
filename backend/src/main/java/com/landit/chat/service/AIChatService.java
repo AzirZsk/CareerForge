@@ -136,13 +136,25 @@ public class AIChatService {
                     })
                     .concatWith(Flux.defer(() -> {
                         // 流结束后：
-                        // 1. 保存 AI 回复到数据库
-                        chatMessageService.saveMessage(finalSessionId, resumeId, "assistant", aiResponse.toString());
+                        // 1. 收集所有 suggestion 事件中的 actions
+                        List<SectionChange> allActions = pendingSuggestions.stream()
+                                .filter(e -> "suggestion".equals(e.getType()))
+                                .map(e -> {
+                                    @SuppressWarnings("unchecked")
+                                    List<SectionChange> changes = (List<SectionChange>) e.getContent();
+                                    return changes;
+                                })
+                                .flatMap(List::stream)
+                                .toList();
 
-                        // 2. 先发送缓存的 suggestion 事件（如果有）
+                        // 2. 保存 AI 回复到数据库（携带 actions）
+                        chatMessageService.saveMessage(finalSessionId, resumeId, "assistant",
+                                aiResponse.toString(), allActions);
+
+                        // 3. 先发送缓存的 suggestion 事件（如果有）
                         Flux<ChatEvent> suggestionFlux = Flux.fromIterable(pendingSuggestions);
 
-                        // 3. 再发送 complete 事件
+                        // 4. 再发送 complete 事件
                         return suggestionFlux.concatWith(Flux.just(ChatEvent.complete("对话完成")));
                     }))
                     .onErrorResume(e -> {

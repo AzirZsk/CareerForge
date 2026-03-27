@@ -290,3 +290,9 @@ CREATE TABLE IF NOT EXISTS t_chat_message (
 CREATE INDEX IF NOT EXISTS idx_chat_message_resume_id ON t_chat_message(resume_id);
 CREATE INDEX IF NOT EXISTS idx_chat_message_session_id ON t_chat_message(session_id);
 CREATE INDEX IF NOT EXISTS idx_chat_message_created_at ON t_chat_message(created_at);
+
+-- ----------------------------------------------------------------------------
+-- AI聊天消息表扩展：操作卡片和状态字段
+-- ----------------------------------------------------------------------------
+ALTER TABLE t_chat_message ADD COLUMN actions TEXT;
+ALTER TABLE t_chat_message ADD COLUMN action_status VARCHAR(20) DEFAULT 'pending';

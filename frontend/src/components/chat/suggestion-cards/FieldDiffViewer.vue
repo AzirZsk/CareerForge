@@ -431,7 +431,9 @@
         :key="idx"
         class="custom-block"
       >
-        <div class="custom-block-title">{{ item.title?.value || '' }}</div>
+        <div class="custom-block-title">
+          {{ item.title?.value || '' }}
+        </div>
         <p
           v-if="item.description?.value"
           class="extra-value description"
@@ -448,7 +450,9 @@
         :key="idx"
         class="generic-item"
       >
-        <div class="item-title">{{ item.title }}</div>
+        <div class="item-title">
+          {{ item.title }}
+        </div>
         <div
           v-for="field in item.fields"
           :key="field.key"

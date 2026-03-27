@@ -36,4 +36,14 @@ public class ChatMessage extends BaseEntity {
      * 消息内容
      */
     private String content;
+
+    /**
+     * 操作卡片列表（JSON格式，存储 SectionChange 列表）
+     */
+    private String actions;
+
+    /**
+     * 操作状态（pending-待应用 / applied-已应用 / failed-应用失败）
+     */
+    private String actionStatus;
 }

@@ -29,7 +29,7 @@
               :messages="state.messages"
               :is-streaming="state.isStreaming"
               @preview-image="handleImagePreview"
-              @apply-suggestion="applySuggestionFromMessage"
+              @apply-suggestion="applyActionsFromMessage"
             />
 
             <!-- 快捷指令 -->
@@ -109,7 +109,7 @@ const {
   sendMessage,
   handleResumeChange,
   handleQuickCommand,
-  applySuggestionFromMessage,
+  applyActionsFromMessage,
   handleImageSelect,
   handleImageRemove,
   startNewSession

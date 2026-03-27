@@ -36,7 +36,10 @@ export default [
         HTMLElement: 'readonly',
         HTMLInputElement: 'readonly',
         HTMLSelectElement: 'readonly',
-        Element: 'readonly'
+        HTMLTextAreaElement: 'readonly',
+        Element: 'readonly',
+        getComputedStyle: 'readonly',
+        parseFloat: 'readonly'
       }
     },
     rules: {

@@ -1,14 +1,23 @@
 package com.landit.chat.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.landit.chat.dto.ChatMessageVO;
+import com.landit.chat.dto.SectionChange;
 import com.landit.chat.entity.ChatMessage;
 import com.landit.chat.mapper.ChatMessageMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 /**
  * AI聊天消息服务
@@ -17,8 +26,17 @@ import java.util.List;
  *
  * @author Azir
  */
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class ChatMessageService extends ServiceImpl<ChatMessageMapper, ChatMessage> {
+
+    private final ObjectMapper objectMapper;
+
+    /**
+     * 有效操作状态集合
+     */
+    private static final Set<String> VALID_ACTION_STATUSES = Set.of("pending", "applied", "failed");
 
     /**
      * 保存消息（简历模式）
@@ -29,11 +47,34 @@ public class ChatMessageService extends ServiceImpl<ChatMessageMapper, ChatMessa
      * @param content   消息内容
      */
     public void saveMessage(String sessionId, String resumeId, String role, String content) {
+        saveMessage(sessionId, resumeId, role, content, null);
+    }
+
+    /**
+     * 保存消息（带操作卡片）
+     *
+     * @param sessionId 会话ID
+     * @param resumeId  简历ID（可选）
+     * @param role      角色
+     * @param content   消息内容
+     * @param actions   操作卡片列表（可选）
+     */
+    public void saveMessage(String sessionId, String resumeId, String role,
+                            String content, List<SectionChange> actions) {
         ChatMessage msg = new ChatMessage();
         msg.setSessionId(sessionId);
         msg.setResumeId(resumeId);
         msg.setRole(role);
         msg.setContent(content);
+        // 序列化操作卡片
+        if (actions != null && !actions.isEmpty()) {
+            try {
+                msg.setActions(objectMapper.writeValueAsString(actions));
+                msg.setActionStatus("pending");
+            } catch (JsonProcessingException e) {
+                log.error("[ChatMessage] 序列化 actions 失败", e);
+            }
+        }
         save(msg);
     }
 
@@ -64,6 +105,59 @@ public class ChatMessageService extends ServiceImpl<ChatMessageMapper, ChatMessa
                 .orderByAsc(ChatMessage::getCreatedAt));
 
         return result.getRecords();
+    }
+
+    /**
+     * 获取历史消息（VO格式，包含反序列化的操作卡片）
+     *
+     * @param sessionId 会话ID
+     * @param limit     限制条数
+     * @return VO消息列表
+     */
+    public List<ChatMessageVO> getHistoryVO(String sessionId, int limit) {
+        List<ChatMessage> messages = getHistory(sessionId, limit);
+        return messages.stream().map(this::toVO).toList();
+    }
+
+    /**
+     * 实体转VO（含 actions 反序列化）
+     */
+    private ChatMessageVO toVO(ChatMessage msg) {
+        ChatMessageVO vo = new ChatMessageVO();
+        vo.setId(msg.getId());
+        vo.setRole(msg.getRole());
+        vo.setContent(msg.getContent());
+        vo.setCreatedAt(msg.getCreatedAt());
+        vo.setActionStatus(msg.getActionStatus());
+        // 反序列化 actions
+        if (msg.getActions() != null && !msg.getActions().isEmpty()) {
+            try {
+                List<SectionChange> actions = objectMapper.readValue(
+                        msg.getActions(),
+                        new TypeReference<>() {}
+                );
+                vo.setActions(actions);
+            } catch (JsonProcessingException e) {
+                log.error("[ChatMessage] 反序列化 actions 失败", e);
+            }
+        }
+        return vo;
+    }
+
+    /**
+     * 更新操作状态
+     *
+     * @param messageId 消息ID
+     * @param status    新状态（pending / applied / failed）
+     */
+    public void updateActionStatus(String messageId, String status) {
+        // 校验状态有效性
+        if (status == null || !VALID_ACTION_STATUSES.contains(status.toLowerCase())) {
+            throw new IllegalArgumentException("无效的操作状态: " + status);
+        }
+        update(new LambdaUpdateWrapper<ChatMessage>()
+                .eq(ChatMessage::getId, messageId)
+                .set(ChatMessage::getActionStatus, status.toLowerCase()));
     }
 
     /**

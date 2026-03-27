@@ -6,7 +6,7 @@
 import { reactive, onUnmounted } from 'vue'
 import type { ChatMessage, SectionChange, AIChatState } from '@/types/ai-chat'
 import { MAX_IMAGE_COUNT } from '@/types/ai-chat'
-import { streamChat, applyChanges as apiApplyChanges, getChatHistory, clearChatHistory } from '@/api/aiChat'
+import { streamChat, applyChanges as apiApplyChanges, getChatHistory, clearChatHistory, updateActionStatus as apiUpdateActionStatus } from '@/api/aiChat'
 import { getResumes } from '@/api/resume'
 import { useToast } from './useToast'
 
@@ -68,7 +68,9 @@ export function useAIChat() {
         id: m.id,
         role: m.role as 'user' | 'assistant' | 'system',
         content: m.content,
-        timestamp: new Date(m.createdAt).getTime()
+        timestamp: new Date(m.createdAt).getTime(),
+        actions: m.actions,
+        actionStatus: m.actionStatus
       }))
     } catch (error) {
       console.error('[AIChat] 加载历史失败', error)
@@ -131,7 +133,7 @@ export function useAIChat() {
         handleChunkEvent(event.content as string)
         break
       case 'suggestion':
-        handleSuggestionEvent(event.content as SectionChange[])
+        handleActionEvent(event.content as SectionChange[])
         break
       case 'complete':
         handleCompleteEvent()
@@ -157,36 +159,41 @@ export function useAIChat() {
     currentAiMessage.content += content
   }
 
-  function handleSuggestionEvent(changes: SectionChange[]): void {
-    // 把建议拼接到当前AI消息中，而不是创建新消息
+  function handleActionEvent(changes: SectionChange[]): void {
+    // 把操作卡片拼接到当前AI消息中，而不是创建新消息
     if (currentAiMessage) {
-      currentAiMessage.suggestions = changes
-      currentAiMessage.applied = false
+      currentAiMessage.actions = changes
+      currentAiMessage.actionStatus = 'pending'
     } else {
       // 如果没有当前消息（理论上不应该发生），创建新消息
       state.messages.push({
         id: generateId(),
         role: 'assistant',
         content: '',
-        suggestions: changes,
-        applied: false,
+        actions: changes,
+        actionStatus: 'pending',
         timestamp: Date.now()
       })
     }
   }
 
-  async function applySuggestionFromMessage(messageId: string): Promise<void> {
+  async function applyActionsFromMessage(messageId: string): Promise<void> {
     const message = state.messages.find(m => m.id === messageId)
-    if (!message?.suggestions || !state.currentResumeId) return
+    if (!message?.actions || !state.currentResumeId) return
 
     const toast = useToast()
 
     try {
-      await apiApplyChanges(state.currentResumeId, message.suggestions)
-      message.applied = true
+      await apiApplyChanges(state.currentResumeId, message.actions)
+      message.actionStatus = 'applied'
+      // 同步更新后端状态
+      await apiUpdateActionStatus(messageId, 'applied')
       toast.success('修改已应用成功！')
     } catch (error) {
       console.error('[AIChat] 应用修改失败', error)
+      message.actionStatus = 'failed'
+      // 同步更新后端状态
+      await apiUpdateActionStatus(messageId, 'failed')
       toast.error('应用修改失败，请稍后重试')
     }
   }
@@ -380,7 +387,7 @@ export function useAIChat() {
     handleApplyChanges,
     handleRegenerate,
     handleCancelChanges,
-    applySuggestionFromMessage,
+    applyActionsFromMessage,
     handleImageSelect,
     handleImageRemove,
     handleImageRemoveAll,

@@ -3,7 +3,7 @@
 // @author Azir
 // =====================================================
 
-import type { ChatEvent, SectionChange } from '@/types/ai-chat'
+import type { ActionStatusType, ChatEvent, SectionChange } from '@/types/ai-chat'
 
 const API_BASE = '/landit'
 
@@ -15,6 +15,8 @@ export interface ChatHistoryMessage {
   role: string
   content: string
   createdAt: string
+  actions?: SectionChange[]
+  actionStatus?: ActionStatusType
 }
 
 /**
@@ -163,5 +165,24 @@ export async function applyChanges(
   const result = await response.json()
   if (result.code !== 200) {
     throw new Error(result.message || '应用修改失败')
+  }
+}
+
+/**
+ * 更新消息操作状态
+ * @param messageId 消息ID
+ * @param status 操作状态（pending / applied / failed）
+ */
+export async function updateActionStatus(
+  messageId: string,
+  status: ActionStatusType
+): Promise<void> {
+  const response = await fetch(
+    `${API_BASE}/chat/messages/${messageId}/status?status=${status}`,
+    { method: 'PATCH' }
+  )
+  const result = await response.json()
+  if (result.code !== 200) {
+    throw new Error(result.message || '更新状态失败')
   }
 }

@@ -9,6 +9,11 @@
 export type ChatMode = 'general' | 'resume'
 
 /**
+ * 操作状态类型
+ */
+export type ActionStatusType = 'pending' | 'applied' | 'failed'
+
+/**
  * 最大图片数量
  */
 export const MAX_IMAGE_COUNT = 10
@@ -24,8 +29,8 @@ export interface ChatMessage {
   imageUrls?: string[]
   timestamp: number
   isStreaming?: boolean
-  suggestions?: SectionChange[]
-  applied?: boolean
+  actions?: SectionChange[]
+  actionStatus?: ActionStatusType
 }
 
 /**

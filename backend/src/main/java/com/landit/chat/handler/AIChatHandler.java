@@ -1,8 +1,12 @@
 package com.landit.chat.handler;
 
+import com.landit.chat.dto.ApplyChangesRequest;
 import com.landit.chat.dto.ChatEvent;
+import com.landit.chat.dto.ChatMessageVO;
 import com.landit.chat.dto.ChatStreamRequest;
+import com.landit.chat.dto.SectionChange;
 import com.landit.chat.service.AIChatService;
+import com.landit.chat.service.ChatMessageService;
 import com.landit.resume.util.GraphSseHelper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * AI聊天处理器
@@ -24,7 +29,10 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class AIChatHandler {
 
+    private static final int DEFAULT_HISTORY_LIMIT = 50;
+
     private final AIChatService chatService;
+    private final ChatMessageService chatMessageService;
 
     /**
      * SSE超时时间（5分钟，单位毫秒）
@@ -93,5 +101,47 @@ public class AIChatHandler {
             log.error("[AIChat] 发送失败", e);
             emitter.completeWithError(e);
         }
+    }
+
+    /**
+     * 获取聊天历史
+     *
+     * @param sessionId 会话ID
+     * @return 历史消息列表
+     */
+    public List<ChatMessageVO> getHistory(String sessionId) {
+        return chatMessageService.getHistoryVO(sessionId, DEFAULT_HISTORY_LIMIT);
+    }
+
+    /**
+     * 更新消息操作状态
+     *
+     * @param messageId 消息ID
+     * @param status    状态（pending/applied/failed）
+     */
+    public void updateActionStatus(String messageId, String status) {
+        log.info("[AIChatHandler] 更新消息操作状态: messageId={}, status={}", messageId, status);
+        chatMessageService.updateActionStatus(messageId, status);
+    }
+
+    /**
+     * 清空聊天历史
+     *
+     * @param sessionId 会话ID
+     */
+    public void clearHistory(String sessionId) {
+        chatMessageService.clearHistory(sessionId);
+        log.info("[AIChatHandler] 已清空会话 {} 的聊天历史", sessionId);
+    }
+
+    /**
+     * 应用修改
+     *
+     * @param request 修改请求
+     */
+    public void applyChanges(ApplyChangesRequest request) {
+        log.info("[AIChatHandler] 应用修改请求: resumeId={}, changes={}",
+                request.getResumeId(), request.getChanges().size());
+        chatService.applyChanges(request.getResumeId(), request.getChanges());
     }
 }
