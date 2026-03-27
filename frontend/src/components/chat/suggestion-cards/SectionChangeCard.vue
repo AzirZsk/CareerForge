@@ -8,9 +8,9 @@
 <template>
   <div
     class="section-change-card"
-    :class="change.changeType"
+    :class="[change.changeType, { 'is-rejected': change.status === 'rejected', 'is-applied': change.status === 'applied' }]"
   >
-    <!-- 头部：图标 + 操作类型 + 模块名 -->
+    <!-- 头部：图标 + 操作类型 + 模块名 + 状态 -->
     <div class="card-header">
       <span class="section-icon">{{ sectionIcon }}</span>
       <span
@@ -20,6 +20,15 @@
         {{ getTypeLabel(change.changeType) }}
       </span>
       <span class="section-title">{{ change.sectionTitle || change.sectionType || '内容修改' }}</span>
+      <!-- 状态标记 -->
+      <span
+        v-if="change.status === 'applied'"
+        class="status-tag applied"
+      >已应用</span>
+      <span
+        v-if="change.status === 'rejected'"
+        class="status-tag rejected"
+      >已忽略</span>
     </div>
 
     <!-- 描述 -->
@@ -68,6 +77,54 @@
           side="before"
         />
       </div>
+    </div>
+
+    <!-- 单卡片操作按钮：仅 pending 状态显示 -->
+    <div
+      v-if="change.status === 'pending' || !change.status"
+      class="card-actions"
+    >
+      <button
+        class="btn-apply"
+        @click="emit('apply')"
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+        应用
+      </button>
+      <button
+        class="btn-ignore"
+        @click="emit('ignore')"
+      >
+        忽略
+      </button>
+    </div>
+
+    <!-- failed 状态：显示重试 -->
+    <div
+      v-else-if="change.status === 'failed'"
+      class="card-actions"
+    >
+      <button
+        class="btn-retry"
+        @click="emit('apply')"
+      >
+        重试
+      </button>
+      <button
+        class="btn-ignore"
+        @click="emit('ignore')"
+      >
+        忽略
+      </button>
     </div>
   </div>
 </template>
@@ -129,6 +186,10 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const emit = defineEmits<{
+  'apply': []
+  'ignore': []
+}>()
 
 const { getSectionIcon } = useSectionHelper()
 
@@ -348,6 +409,93 @@ function getTypeLabel(type: string): string {
   .diff-label {
     color: $color-accent;
     background: rgba($color-accent, 0.1);
+  }
+}
+
+// 状态样式
+.section-change-card {
+  &.is-rejected {
+    opacity: 0.45;
+    pointer-events: none;
+  }
+
+  &.is-applied {
+    border-color: rgba($color-success, 0.15);
+  }
+}
+
+.status-tag {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: $radius-sm;
+  font-size: $text-xs;
+  font-weight: $weight-medium;
+  flex-shrink: 0;
+
+  &.applied {
+    color: $color-success;
+    background: rgba($color-success, 0.15);
+  }
+
+  &.rejected {
+    color: $color-text-tertiary;
+    background: rgba(255, 255, 255, 0.05);
+  }
+}
+
+// 卡片操作按钮
+.card-actions {
+  display: flex;
+  gap: $spacing-sm;
+  margin-top: $spacing-sm;
+  padding-top: $spacing-sm;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: $spacing-xs $spacing-sm;
+    font-size: $text-xs;
+    font-weight: $weight-medium;
+    border-radius: $radius-sm;
+    cursor: pointer;
+    transition: all $transition-fast;
+    border: none;
+  }
+
+  .btn-apply {
+    color: $color-bg-primary;
+    background: $color-accent;
+
+    &:hover {
+      background: $color-accent-light;
+    }
+
+    &:active {
+      transform: scale(0.96);
+    }
+  }
+
+  .btn-retry {
+    color: $color-error;
+    background: rgba($color-error, 0.1);
+    border: 1px solid rgba($color-error, 0.2);
+
+    &:hover {
+      background: rgba($color-error, 0.15);
+    }
+  }
+
+  .btn-ignore {
+    color: $color-text-tertiary;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+
+    &:hover {
+      color: $color-text-secondary;
+      background: rgba(255, 255, 255, 0.04);
+    }
   }
 }
 </style>

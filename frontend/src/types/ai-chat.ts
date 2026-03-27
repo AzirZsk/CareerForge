@@ -9,9 +9,9 @@
 export type ChatMode = 'general' | 'resume'
 
 /**
- * 操作状态类型
+ * 操作状态类型（消息级 + 单条变更级共用）
  */
-export type ActionStatusType = 'pending' | 'applied' | 'failed'
+export type ActionStatusType = 'pending' | 'applied' | 'rejected' | 'failed'
 
 /**
  * 最大图片数量
@@ -66,6 +66,7 @@ export interface SectionChange {
   beforeContent?: string
   afterContent: string
   description: string
+  status?: ActionStatusType
 }
 
 /**

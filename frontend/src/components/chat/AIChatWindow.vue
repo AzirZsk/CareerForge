@@ -26,7 +26,9 @@
               :messages="state.messages"
               :is-streaming="state.isStreaming"
               @preview-image="handleImagePreview"
-              @apply-suggestion="applyActionsFromMessage"
+              @apply-single-change="applySingleChange"
+              @ignore-change="ignoreChange"
+              @apply-all-changes="applyAllChanges"
             />
 
             <!-- 快捷指令 -->
@@ -105,7 +107,9 @@ const {
   state,
   sendMessage,
   handleQuickCommand,
-  applyActionsFromMessage,
+  applySingleChange,
+  ignoreChange,
+  applyAllChanges,
   handleImageSelect,
   handleImageRemove,
   startNewSession

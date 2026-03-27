@@ -15,7 +15,9 @@
         :key="message.id"
         :message="message"
         @preview-image="emit('preview-image', $event)"
-        @apply-suggestion="emit('apply-suggestion', $event)"
+        @apply-single-change="(msgId: string, idx: number) => emit('apply-single-change', msgId, idx)"
+        @ignore-change="(msgId: string, idx: number) => emit('ignore-change', msgId, idx)"
+        @apply-all-changes="emit('apply-all-changes', $event)"
       />
 
       <!-- 加载中提示 -->
@@ -47,7 +49,9 @@ interface Props {
 const props = defineProps<Props>()
 const emit = defineEmits<{
   'preview-image': [url: string]
-  'apply-suggestion': [messageId: string]
+  'apply-single-change': [messageId: string, index: number]
+  'ignore-change': [messageId: string, index: number]
+  'apply-all-changes': [messageId: string]
 }>()
 
 const messageListRef = ref<HTMLElement | null>(null)

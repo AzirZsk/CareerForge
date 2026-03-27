@@ -142,12 +142,14 @@
               v-for="(change, index) in message.actions"
               :key="index"
               :change="change"
+              @apply="emit('apply-single-change', message.id, index)"
+              @ignore="emit('ignore-change', message.id, index)"
             />
-            <!-- 操作按钮 -->
+            <!-- 全部应用按钮：仅当有多个 pending 且至少两个 pending 时显示 -->
             <button
-              v-if="message.actionStatus === 'pending'"
-              class="apply-btn"
-              @click="handleApplyActions"
+              v-if="hasMultiplePending"
+              class="apply-all-btn"
+              @click="emit('apply-all-changes', message.id)"
             >
               <svg
                 width="16"
@@ -159,62 +161,8 @@
               >
                 <polyline points="20 6 9 17 4 12" />
               </svg>
-              应用修改
+              全部应用
             </button>
-            <div
-              v-else-if="message.actionStatus === 'applied'"
-              class="action-status applied"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              已应用
-            </div>
-            <div
-              v-else-if="message.actionStatus === 'failed'"
-              class="action-status failed"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="10"
-                />
-                <line
-                  x1="15"
-                  y1="9"
-                  x2="9"
-                  y2="15"
-                />
-                <line
-                  x1="9"
-                  y1="9"
-                  x2="15"
-                  y2="15"
-                />
-              </svg>
-              应用失败
-              <button
-                class="retry-btn"
-                @click="handleApplyActions"
-              >
-                重试
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -241,7 +189,9 @@ interface Props {
 const props = defineProps<Props>()
 const emit = defineEmits<{
   'preview-image': [url: string]
-  'apply-suggestion': [messageId: string]
+  'apply-single-change': [messageId: string, index: number]
+  'ignore-change': [messageId: string, index: number]
+  'apply-all-changes': [messageId: string]
 }>()
 
 const { renderMarkdown } = useMarkdown()
@@ -259,9 +209,12 @@ function handleImageClick(url: string) {
   emit('preview-image', url)
 }
 
-function handleApplyActions() {
-  emit('apply-suggestion', props.message.id)
-}
+// 是否有多个 pending 卡片（控制"全部应用"按钮）
+const hasMultiplePending = computed(() => {
+  if (!props.message.actions) return false
+  const pendingCount = props.message.actions.filter(a => a.status === 'pending' || !a.status).length
+  return pendingCount >= 2
+})
 
 function formatTime(timestamp: number): string {
   const date = new Date(timestamp)
@@ -644,7 +597,7 @@ function formatTime(timestamp: number): string {
   margin-top: $spacing-sm;
 }
 
-.apply-btn {
+.apply-all-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -666,46 +619,6 @@ function formatTime(timestamp: number): string {
 
   &:active {
     transform: scale(0.98);
-  }
-}
-
-.action-status {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: $spacing-xs;
-  padding: $spacing-sm $spacing-lg;
-  margin-top: $spacing-sm;
-  font-size: $text-sm;
-  font-weight: $weight-medium;
-  border-radius: $radius-sm;
-
-  &.applied {
-    color: $color-success;
-    background: rgba($color-success, 0.1);
-    border: 1px solid rgba($color-success, 0.2);
-  }
-
-  &.failed {
-    color: $color-error;
-    background: rgba($color-error, 0.1);
-    border: 1px solid rgba($color-error, 0.2);
-
-    .retry-btn {
-      margin-left: $spacing-sm;
-      padding: $spacing-xs $spacing-sm;
-      font-size: $text-xs;
-      color: $color-error;
-      background: transparent;
-      border: 1px solid rgba($color-error, 0.3);
-      border-radius: $radius-sm;
-      cursor: pointer;
-      transition: all $transition-fast;
-
-      &:hover {
-        background: rgba($color-error, 0.1);
-      }
-    }
   }
 }
 </style>
