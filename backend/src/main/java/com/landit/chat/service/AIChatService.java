@@ -7,6 +7,7 @@ import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.landit.chat.dto.ChatEvent;
 import com.landit.chat.dto.ChatStreamRequest;
 import com.landit.chat.dto.SectionChange;
+import com.landit.chat.dto.tool.SelectResumeResponse;
 import com.landit.chat.dto.tool.SectionSuggestionResponse;
 import com.landit.common.config.AIPromptProperties;
 import com.landit.common.enums.SectionType;
@@ -315,15 +316,16 @@ public class AIChatService {
     }
 
     /**
-     * 构建工具执行完成的 suggestion 事件
-     * 解析工具返回的 SectionSuggestionResponse，转换为 ChatEvent
+     * 构建工具执行完成的事件
+     * 解析工具返回的响应，根据类型转换为不同的 ChatEvent
+     * 支持：SectionSuggestionResponse（简历修改建议）、SelectResumeResponse（简历选择）
      * 返回单个 ChatEvent（用于缓存），如果无效则返回 null
      */
     private ChatEvent buildSuggestionEvent(StreamingOutput so) {
         try {
             Message message = so.message();
             if (!(message instanceof ToolResponseMessage toolResponseMessage)) {
-                log.warn("非工具调用");
+                log.warn("[AIChat] 非ToolResponseMessage类型: {}", message.getClass().getSimpleName());
                 return null;
             }
             String toolResult = null;
@@ -336,7 +338,22 @@ public class AIChatService {
                 return null;
             }
 
-            // 解析 JSON 为 SectionSuggestionResponse
+            // 尝试解析为 SelectResumeResponse（简历选择响应）
+            if (toolResult.contains("\"responseType\":\"resume_selected\"")) {
+                SelectResumeResponse selectResponse = JsonParseHelper.parseToEntity(
+                        toolResult, SelectResumeResponse.class);
+                if (selectResponse != null && Boolean.TRUE.equals(selectResponse.getSuccess())) {
+                    log.info("[AIChat] AI选择简历: resumeId={}, resumeName={}",
+                            selectResponse.getResumeId(), selectResponse.getResumeName());
+                    return ChatEvent.resumeSelected(
+                            selectResponse.getResumeId(),
+                            selectResponse.getResumeName()
+                    );
+                }
+                return null;
+            }
+
+            // 解析为 SectionSuggestionResponse（简历修改建议）
             SectionSuggestionResponse response = JsonParseHelper.parseToEntity(
                     toolResult, SectionSuggestionResponse.class);
 

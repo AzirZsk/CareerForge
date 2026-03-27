@@ -14,10 +14,7 @@
         <div class="chat-container">
           <!-- 头部 -->
           <ChatHeader
-            :resume-list="state.resumeList"
-            :current-resume-id="state.currentResumeId"
-            :chat-mode="state.chatMode"
-            @resume-change="handleResumeChange"
+            :detected-resume="state.detectedResume"
             @close="handleClose"
             @new-session="startNewSession"
           />
@@ -107,7 +104,6 @@ watch(
 const {
   state,
   sendMessage,
-  handleResumeChange,
   handleQuickCommand,
   applyActionsFromMessage,
   handleImageSelect,

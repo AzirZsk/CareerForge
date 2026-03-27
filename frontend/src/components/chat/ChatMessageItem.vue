@@ -318,11 +318,14 @@ function formatTime(timestamp: number): string {
     max-width: 100%;
 
     .message-content {
-      background: rgba($color-info, 0.1);
-      border: 1px solid rgba($color-info, 0.2);
+      background: rgba($color-accent, 0.08);
+      border: 1px solid rgba($color-accent, 0.15);
+      border-radius: $radius-sm;
+      padding: $spacing-xs $spacing-md;
       text-align: center;
-      font-size: $text-sm;
-      color: $color-text-secondary;
+      font-size: $text-xs;
+      color: $color-accent;
+      line-height: 1.5;
     }
 
     .message-body {

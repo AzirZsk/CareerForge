@@ -36,14 +36,22 @@ export interface ChatMessage {
 /**
  * SSE事件类型
  */
-export type ChatEventType = 'chunk' | 'suggestion' | 'complete' | 'error'
+export type ChatEventType = 'chunk' | 'suggestion' | 'complete' | 'error' | 'resume_selected'
+
+/**
+ * 简历选择事件内容
+ */
+export interface ResumeSelectedContent {
+  resumeId: string
+  resumeName: string
+}
 
 /**
  * SSE事件
  */
 export interface ChatEvent {
   type: ChatEventType
-  content: string | SectionChange[]
+  content: string | SectionChange[] | ResumeSelectedContent
   timestamp: number
 }
 
@@ -104,12 +112,16 @@ export interface AIChatState {
   // 聊天模式
   chatMode: ChatMode
 
-  // 会话ID（通用模式使用UUID，简历模式使用resumeId）
+  // 会话ID
   sessionId: string | null
 
-  // 简历上下文
+  // 简历上下文（AI自动识别或用户在对话中指定）
   currentResumeId: string | null
-  resumeList: ResumeOption[]
+  // AI识别到的简历信息（用于头部显示）
+  detectedResume: {
+    id: string
+    name: string
+  } | null
 
   // 消息
   messages: ChatMessage[]
@@ -236,8 +248,3 @@ export const RESUME_QUICK_COMMANDS: QuickCommandItem[] = [
     mode: 'resume'
   }
 ]
-
-/**
- * 所有快捷指令（向后兼容）
- */
-export const QUICK_COMMANDS: QuickCommandItem[] = RESUME_QUICK_COMMANDS

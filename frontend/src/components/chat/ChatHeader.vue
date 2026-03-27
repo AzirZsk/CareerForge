@@ -1,7 +1,7 @@
 <!--=====================================================
   聊天窗口头部组件
-  包含简历选择器和关闭按钮
-  支持通用聊天和简历对话两种模式
+  显示AI识别到的简历信息
+  支持新会话和关闭操作
   @author Azir
 =====================================================-->
 
@@ -12,44 +12,25 @@
       <div class="header-title">
         <AIIcon :size="28" />
         <span class="title">求职助手</span>
-        <!-- 模式标签 -->
+        <!-- 显示AI识别到的简历 -->
         <span
-          class="mode-tag"
-          :class="chatMode"
+          v-if="detectedResume"
+          class="resume-badge"
+          @click="showSwitchTip"
         >
-          {{ chatMode === 'resume' ? '简历模式' : '通用聊天' }}
-        </span>
-      </div>
-
-      <!-- 简历选择器 -->
-      <div class="resume-selector">
-        <select
-          :value="currentResumeId || ''"
-          class="resume-select"
-          @change="handleResumeChange"
-        >
-          <option value="">
-            通用聊天
-          </option>
-          <option
-            v-for="resume in resumeList"
-            :key="resume.id"
-            :value="resume.id"
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
           >
-            {{ resume.name }}
-          </option>
-        </select>
-        <svg
-          class="select-arrow"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+          </svg>
+          {{ detectedResume.name }}
+        </span>
       </div>
     </div>
 
@@ -91,37 +72,78 @@
         </svg>
       </button>
     </div>
+
+    <!-- 切换简历提示 -->
+    <Transition name="fade">
+      <div
+        v-if="showTip"
+        class="switch-tip"
+      >
+        <span>在对话中告诉我想操作哪份简历，例如："帮我优化腾讯那份简历"</span>
+        <button
+          class="tip-close"
+          @click="showTip = false"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line
+              x1="18"
+              y1="6"
+              x2="6"
+              y2="18"
+            />
+            <line
+              x1="6"
+              y1="6"
+              x2="18"
+              y2="18"
+            />
+          </svg>
+        </button>
+      </div>
+    </Transition>
   </header>
 </template>
 
 <script setup lang="ts">
-import type { ResumeOption, ChatMode } from '@/types/ai-chat'
+import { ref } from 'vue'
 import AIIcon from '@/components/common/AIIcon.vue'
 
 interface Props {
-  resumeList: ResumeOption[]
-  currentResumeId: string | null
-  chatMode: ChatMode
+  detectedResume: {
+    id: string
+    name: string
+  } | null
 }
 
 interface Emits {
-  (e: 'resumeChange', resumeId: string | null): void
   (e: 'close'): void
   (e: 'newSession'): void
 }
 
 defineProps<Props>()
-const emit = defineEmits<Emits>()
+defineEmits<Emits>()
 
-function handleResumeChange(event: Event) {
-  const target = event.target as HTMLSelectElement
-  const resumeId = target.value || null
-  emit('resumeChange', resumeId)
+const showTip = ref(false)
+
+function showSwitchTip() {
+  showTip.value = true
+  // 3秒后自动关闭
+  setTimeout(() => {
+    showTip.value = false
+  }, 3000)
 }
 </script>
 
 <style lang="scss" scoped>
 .chat-header {
+  position: relative;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -155,55 +177,29 @@ function handleResumeChange(event: Event) {
   }
 }
 
-.mode-tag {
-  padding: 2px 8px;
+.resume-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: rgba($color-accent, 0.15);
+  border: 1px solid rgba($color-accent, 0.3);
   border-radius: $radius-full;
-  font-size: $text-xs;
+  font-size: $text-sm;
   font-weight: $weight-medium;
+  color: $color-accent;
+  cursor: pointer;
+  transition: all 0.2s ease;
 
-  &.general {
-    background: rgba($color-info, 0.15);
-    color: $color-info;
+  &:hover {
+    background: rgba($color-accent, 0.25);
+    border-color: rgba($color-accent, 0.5);
   }
 
-  &.resume {
-    background: rgba($color-accent, 0.15);
-    color: $color-accent;
-  }
-}
-
-.resume-selector {
-  position: relative;
-
-  .resume-select {
-    appearance: none;
-    padding: $spacing-sm $spacing-xl $spacing-sm $spacing-md;
-    background: $color-bg-secondary;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: $radius-sm;
-    color: $color-text-secondary;
-    font-size: $text-sm;
-    cursor: pointer;
-    min-width: 180px;
-
-    &:focus {
-      outline: none;
-      border-color: $color-accent;
-    }
-
-    option {
-      background: $color-bg-secondary;
-      color: $color-text-primary;
-    }
-  }
-
-  .select-arrow {
-    position: absolute;
-    right: $spacing-sm;
-    top: 50%;
-    transform: translateY(-50%);
-    pointer-events: none;
-    color: $color-text-tertiary;
+  svg {
+    width: 14px;
+    height: 14px;
+    opacity: 0.8;
   }
 }
 
@@ -246,5 +242,50 @@ function handleResumeChange(event: Event) {
     color: $color-accent;
     background: rgba(212, 168, 83, 0.1);
   }
+}
+
+.switch-tip {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-md $spacing-lg;
+  background: $color-bg-elevated;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: $radius-md;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  font-size: $text-sm;
+  color: $color-text-secondary;
+  z-index: 10;
+  white-space: nowrap;
+
+  .tip-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    color: $color-text-tertiary;
+    border-radius: $radius-sm;
+    transition: all 0.2s ease;
+
+    &:hover {
+      color: $color-text-primary;
+      background: rgba(255, 255, 255, 0.1);
+    }
+  }
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-8px);
 }
 </style>

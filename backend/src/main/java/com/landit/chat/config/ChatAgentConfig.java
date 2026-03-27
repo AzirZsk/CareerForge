@@ -8,8 +8,10 @@ import com.alibaba.cloud.ai.graph.skills.registry.classpath.ClasspathSkillRegist
 import com.landit.chat.tools.AddSectionTool;
 import com.landit.chat.tools.CreateResumeTool;
 import com.landit.chat.tools.DeleteSectionTool;
+import com.landit.chat.tools.GetResumeListTool;
 import com.landit.chat.tools.GetResumeTool;
 import com.landit.chat.tools.GetSectionTool;
+import com.landit.chat.tools.SelectResumeTool;
 import com.landit.chat.tools.UpdateSectionTool;
 import com.landit.common.config.AIPromptProperties;
 import com.landit.resume.handler.ResumeHandler;
@@ -75,7 +77,9 @@ public class ChatAgentConfig {
             UpdateSectionTool.createCallback(resumeHandler),
             AddSectionTool.createCallback(resumeHandler),
             DeleteSectionTool.createCallback(resumeHandler),
-            CreateResumeTool.createCallback(resumeHandler)
+            CreateResumeTool.createCallback(resumeHandler),
+            GetResumeListTool.createCallback(resumeHandler),
+            SelectResumeTool.createCallback(resumeHandler)
         );
         log.info("[ResumeTools] 创建 {} 个简历工具", tools.size());
         return tools;

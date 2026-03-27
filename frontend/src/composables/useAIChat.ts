@@ -4,10 +4,9 @@
 // =====================================================
 
 import { reactive, onUnmounted } from 'vue'
-import type { ChatMessage, SectionChange, AIChatState } from '@/types/ai-chat'
+import type { ChatMessage, SectionChange, AIChatState, ResumeSelectedContent } from '@/types/ai-chat'
 import { MAX_IMAGE_COUNT } from '@/types/ai-chat'
 import { streamChat, applyChanges as apiApplyChanges, getChatHistory, clearChatHistory, updateActionStatus as apiUpdateActionStatus } from '@/api/aiChat'
-import { getResumes } from '@/api/resume'
 import { useToast } from './useToast'
 
 function generateId(): string {
@@ -29,7 +28,7 @@ function getState(): AIChatState {
       chatMode: 'general',
       sessionId: generateSessionId(),
       currentResumeId: null,
-      resumeList: [],
+      detectedResume: null,
       messages: [],
       isStreaming: false,
       showApplyDialog: false,
@@ -44,19 +43,6 @@ function getState(): AIChatState {
 
 export function useAIChat() {
   const state = getState()
-
-  async function loadResumeList(): Promise<void> {
-    try {
-      const list = await getResumes()
-      state.resumeList = list.map(r => ({
-        id: r.id,
-        name: r.name || '未命名简历'
-      }))
-    } catch (error) {
-      console.error('[AIChat] 加载简历列表失败', error)
-      state.error = '加载简历列表失败'
-    }
-  }
 
   /**
    * 从后端加载聊天历史
@@ -82,8 +68,6 @@ export function useAIChat() {
     const message = state.currentInput.trim()
     if (!message && state.selectedImages.length === 0) return
 
-    // 移除简历检查，允许通用聊天模式
-
     const userMessage: ChatMessage = {
       id: generateId(),
       role: 'user',
@@ -102,13 +86,10 @@ export function useAIChat() {
     currentAiMessage = null
 
     try {
-      // sessionId 每次会话必须传递
-      // 简历模式：sessionId = resumeId
-      // 通用模式：sessionId = UUID
+      // 不再传递 resumeId，让 AI 自动识别
       for await (const event of streamChat(
         message,
         state.sessionId!,
-        state.currentResumeId,
         imagesToSend
       )) {
         handleEvent(event)
@@ -135,6 +116,9 @@ export function useAIChat() {
       case 'suggestion':
         handleActionEvent(event.content as SectionChange[])
         break
+      case 'resume_selected':
+        handleResumeSelectedEvent(event.content as ResumeSelectedContent)
+        break
       case 'complete':
         handleCompleteEvent()
         break
@@ -160,12 +144,10 @@ export function useAIChat() {
   }
 
   function handleActionEvent(changes: SectionChange[]): void {
-    // 把操作卡片拼接到当前AI消息中，而不是创建新消息
     if (currentAiMessage) {
       currentAiMessage.actions = changes
       currentAiMessage.actionStatus = 'pending'
     } else {
-      // 如果没有当前消息（理论上不应该发生），创建新消息
       state.messages.push({
         id: generateId(),
         role: 'assistant',
@@ -177,6 +159,27 @@ export function useAIChat() {
     }
   }
 
+  /**
+   * 处理简历选择事件
+   * AI 选择简历后，更新当前简历上下文
+   */
+  function handleResumeSelectedEvent(content: ResumeSelectedContent): void {
+    console.log('[AIChat] AI选择简历:', content)
+    state.currentResumeId = content.resumeId
+    state.chatMode = 'resume'
+    state.detectedResume = {
+      id: content.resumeId,
+      name: content.resumeName
+    }
+    // 添加系统提示
+    state.messages.push({
+      id: generateId(),
+      role: 'system',
+      content: `已切换到「${content.resumeName}」`,
+      timestamp: Date.now()
+    })
+  }
+
   async function applyActionsFromMessage(messageId: string): Promise<void> {
     const message = state.messages.find(m => m.id === messageId)
     if (!message?.actions || !state.currentResumeId) return
@@ -186,13 +189,11 @@ export function useAIChat() {
     try {
       await apiApplyChanges(state.currentResumeId, message.actions)
       message.actionStatus = 'applied'
-      // 同步更新后端状态
       await apiUpdateActionStatus(messageId, 'applied')
       toast.success('修改已应用成功！')
     } catch (error) {
       console.error('[AIChat] 应用修改失败', error)
       message.actionStatus = 'failed'
-      // 同步更新后端状态
       await apiUpdateActionStatus(messageId, 'failed')
       toast.error('应用修改失败，请稍后重试')
     }
@@ -213,48 +214,6 @@ export function useAIChat() {
         id: generateId(),
         role: 'system',
         content: `❌ 错误：${errorMessage}`,
-        timestamp: Date.now()
-      })
-    }
-  }
-
-  /**
-   * 切换简历或切换到通用聊天模式
-   */
-  async function handleResumeChange(resumeId: string | null): Promise<void> {
-    state.currentResumeId = resumeId
-    state.pendingChanges = []
-    state.showApplyDialog = false
-
-    if (resumeId) {
-      // 简历模式：sessionId = resumeId
-      state.chatMode = 'resume'
-      state.sessionId = resumeId
-
-      // 从后端加载历史消息
-      await loadHistory(resumeId)
-
-      // 如果没有历史消息，添加欢迎提示
-      if (state.messages.length === 0) {
-        const resume = state.resumeList.find(r => r.id === resumeId)
-        state.messages.push({
-          id: generateId(),
-          role: 'system',
-          content: `已选择简历「${resume?.name}」，您现在可以询问关于这份简历的任何问题。`,
-          timestamp: Date.now()
-        })
-      }
-    } else {
-      // 通用聊天模式：生成新的 sessionId
-      state.chatMode = 'general'
-      state.sessionId = generateSessionId()
-      state.messages = []
-
-      // 添加通用模式欢迎提示
-      state.messages.push({
-        id: generateId(),
-        role: 'system',
-        content: '欢迎使用 LandIt 求职助手！我可以帮您解答求职相关问题，或者帮您创建简历。',
         timestamp: Date.now()
       })
     }
@@ -301,34 +260,24 @@ export function useAIChat() {
     if (!currentSessionId) return
 
     try {
-      // 调用后端清空历史
       await clearChatHistory(currentSessionId)
 
-      // 生成新的 sessionId
+      // 重置状态
       state.sessionId = generateSessionId()
-
-      // 清空前端消息列表
+      state.currentResumeId = null
+      state.detectedResume = null
+      state.chatMode = 'general'
       state.messages = []
       state.pendingChanges = []
       state.showApplyDialog = false
 
       // 添加欢迎提示
-      if (state.chatMode === 'resume' && state.currentResumeId) {
-        const resume = state.resumeList.find(r => r.id === state.currentResumeId)
-        state.messages.push({
-          id: generateId(),
-          role: 'system',
-          content: `已开始新会话，您可以继续询问关于「${resume?.name}」的问题。`,
-          timestamp: Date.now()
-        })
-      } else {
-        state.messages.push({
-          id: generateId(),
-          role: 'system',
-          content: '已开始新会话，请问有什么可以帮您的？',
-          timestamp: Date.now()
-        })
-      }
+      state.messages.push({
+        id: generateId(),
+        role: 'system',
+        content: '欢迎使用 LandIt 求职助手！我可以帮您解答求职相关问题，优化简历，或提供面试建议。您可以直接告诉我您想做什么。',
+        timestamp: Date.now()
+      })
     } catch (error) {
       console.error('[AIChat] 清空历史失败', error)
       state.messages.push({
@@ -359,10 +308,6 @@ export function useAIChat() {
 
   function toggleWindow(): void {
     state.isWindowOpen = !state.isWindowOpen
-    // 窗口打开时加载简历列表
-    if (state.isWindowOpen && state.resumeList.length === 0) {
-      loadResumeList()
-    }
   }
 
   function closeWindow(): void {
@@ -379,10 +324,8 @@ export function useAIChat() {
 
   return {
     state,
-    loadResumeList,
     loadHistory,
     sendMessage,
-    handleResumeChange,
     handleQuickCommand,
     handleApplyChanges,
     handleRegenerate,

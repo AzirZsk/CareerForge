@@ -43,24 +43,18 @@ function parseSseLine(line: string): ChatEvent | null {
 
 /**
  * 流式聊天
- * 支持两种模式：简历对话（resumeId）和通用聊天（sessionId）
- * sessionId 每次会话必须传递，简历模式下 sessionId = resumeId
+ * AI 会自动识别用户意图并选择相应的简历
+ * sessionId 用于维护对话上下文
  */
 export async function* streamChat(
   message: string,
   sessionId: string,
-  resumeId: string | null = null,
   images: File[] = []
 ): AsyncGenerator<ChatEvent, void, unknown> {
   const formData = new FormData()
 
   // sessionId 每次会话必须传递
   formData.append('sessionId', sessionId)
-
-  // resumeId 可选，简历模式时传递
-  if (resumeId) {
-    formData.append('resumeId', resumeId)
-  }
 
   formData.append('currentUserMessage', message)
 

@@ -76,4 +76,34 @@ public class ChatEvent {
                 .timestamp(System.currentTimeMillis())
                 .build();
     }
+
+    /**
+     * 创建简历选择事件
+     * AI选择简历后通知前端
+     *
+     * @param resumeId   简历ID
+     * @param resumeName 简历名称
+     */
+    public static ChatEvent resumeSelected(String resumeId, String resumeName) {
+        return ChatEvent.builder()
+                .type("resume_selected")
+                .content(ResumeSelectedContent.of(resumeId, resumeName))
+                .timestamp(System.currentTimeMillis())
+                .build();
+    }
+
+    /**
+     * 简历选择事件内容
+     */
+    @Data
+    @lombok.AllArgsConstructor
+    @lombok.NoArgsConstructor
+    public static class ResumeSelectedContent {
+        private String resumeId;
+        private String resumeName;
+
+        public static ResumeSelectedContent of(String resumeId, String resumeName) {
+            return new ResumeSelectedContent(resumeId, resumeName);
+        }
+    }
 }
