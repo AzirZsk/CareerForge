@@ -488,7 +488,7 @@ function formatTime(timestamp: number): string {
   margin-bottom: $spacing-sm;
 
   .message-image {
-    width: calc(50% - #{$spacing-xs / 2});
+    width: calc(50% - $spacing-xs / 2);
     max-width: 200px;
     position: relative;
     cursor: pointer;

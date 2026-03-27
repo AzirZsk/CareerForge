@@ -122,11 +122,9 @@ public class AIChatService {
                                 return Flux.empty();
                             }
                             case AGENT_TOOL_FINISHED -> {
-                                // 缓存 suggestion 事件，等 AI 回复完成后再发送
-                                // 这样前端会先显示 AI 的回复，然后再弹窗
-                                ChatEvent suggestion = buildSuggestionEvent(so);
-                                if (suggestion != null) {
-                                    pendingSuggestions.add(suggestion);
+                                List<ChatEvent> suggestions = buildSuggestionEvents(so);
+                                if (!suggestions.isEmpty()) {
+                                    pendingSuggestions.addAll(suggestions);
                                 }
                                 return Flux.empty();
                             }
@@ -316,74 +314,77 @@ public class AIChatService {
     }
 
     /**
-     * 构建工具执行完成的事件
-     * 解析工具返回的响应，根据类型转换为不同的 ChatEvent
-     * 支持：SectionSuggestionResponse（简历修改建议）、SelectResumeResponse（简历选择）
-     * 返回单个 ChatEvent（用于缓存），如果无效则返回 null
+     * 构建工具执行完成的事件列表
+     * 遍历所有 ToolResponse（支持并行 tool 调用），根据工具名称路由处理
      */
-    private ChatEvent buildSuggestionEvent(StreamingOutput so) {
+    private List<ChatEvent> buildSuggestionEvents(StreamingOutput so) {
         try {
             Message message = so.message();
             if (!(message instanceof ToolResponseMessage toolResponseMessage)) {
                 log.warn("[AIChat] 非ToolResponseMessage类型: {}", message.getClass().getSimpleName());
-                return null;
+                return List.of();
             }
-            String toolResult = null;
+
             List<ToolResponseMessage.ToolResponse> responses = toolResponseMessage.getResponses();
-            if (!responses.isEmpty()) {
-                toolResult = responses.get(0).responseData();
-            }
-            log.info("[AIChat] 工具执行完成: node={}, result={}", so.node(), toolResult);
-            if (toolResult == null || toolResult.isEmpty()) {
-                return null;
+            if (responses.isEmpty()) {
+                return List.of();
             }
 
-            // 尝试解析为 SelectResumeResponse（简历选择响应）
-            if (toolResult.contains("\"responseType\":\"resume_selected\"")) {
-                SelectResumeResponse selectResponse = JsonParseHelper.parseToEntity(
-                        toolResult, SelectResumeResponse.class);
-                if (selectResponse != null && Boolean.TRUE.equals(selectResponse.getSuccess())) {
-                    log.info("[AIChat] AI选择简历: resumeId={}, resumeName={}",
-                            selectResponse.getResumeId(), selectResponse.getResumeName());
-                    return ChatEvent.resumeSelected(
-                            selectResponse.getResumeId(),
-                            selectResponse.getResumeName()
-                    );
+            List<ChatEvent> events = new ArrayList<>();
+            for (ToolResponseMessage.ToolResponse toolResponse : responses) {
+                String toolName = toolResponse.name();
+                String toolResult = toolResponse.responseData();
+                log.info("[AIChat] 工具执行完成: toolName={}", toolName);
+
+                if (toolResult.isEmpty()) {
+                    continue;
                 }
-                return null;
+
+                switch (toolName) {
+                    case "select_resume" -> handleSelectResume(toolResult, events);
+                    case "update_section", "add_section", "delete_section" -> handleSectionSuggestion(toolResult, events);
+                    default -> {} // 查询类工具不生成前端事件
+                }
             }
-
-            // 解析为 SectionSuggestionResponse（简历修改建议）
-            SectionSuggestionResponse response = JsonParseHelper.parseToEntity(
-                    toolResult, SectionSuggestionResponse.class);
-
-            if (response == null || !Boolean.TRUE.equals(response.getSuccess())) {
-                log.debug("[AIChat] 工具结果不是有效的建议响应，跳过");
-                return null;
-            }
-
-            // 检查 action 字段是否有效（只有 add/update/delete 才是建议类响应）
-            String action = response.getAction();
-            if (action == null || action.isEmpty()) {
-                log.debug("[AIChat] 工具结果不是建议类型响应（无action字段），跳过");
-                return null;
-            }
-
-            // 转换为 SectionChange
-            SectionChange change = convertToSectionChange(response);
-            if (change == null) {
-                return null;
-            }
-
-            log.info("[AIChat] 生成修改建议: action={}, sectionType={}, sectionTitle={}",
-                    response.getAction(), response.getSectionType(), response.getSectionTitle());
-
-            return ChatEvent.suggestion(List.of(change));
-
+            return events;
         } catch (Exception e) {
             log.error("[AIChat] 处理工具结果失败", e);
-            return null;
+            return List.of();
         }
+    }
+
+    /**
+     * 处理 select_resume 工具响应
+     */
+    private void handleSelectResume(String toolResult, List<ChatEvent> events) {
+        SelectResumeResponse response = JsonParseHelper.parseToEntity(toolResult, SelectResumeResponse.class);
+        if (response != null && Boolean.TRUE.equals(response.getSuccess())) {
+            log.info("[AIChat] AI选择简历: resumeId={}, resumeName={}",
+                    response.getResumeId(), response.getResumeName());
+            events.add(ChatEvent.resumeSelected(response.getResumeId(), response.getResumeName()));
+        }
+    }
+
+    /**
+     * 处理区块操作工具响应（update/add/delete）
+     */
+    private void handleSectionSuggestion(String toolResult, List<ChatEvent> events) {
+        SectionSuggestionResponse response = JsonParseHelper.parseToEntity(
+                toolResult, SectionSuggestionResponse.class);
+
+        if (response == null || !Boolean.TRUE.equals(response.getSuccess())) {
+            return;
+        }
+
+        SectionChange change = convertToSectionChange(response);
+        if (change == null) {
+            return;
+        }
+
+        log.info("[AIChat] 生成修改建议: action={}, sectionType={}, sectionTitle={}",
+                response.getAction(), response.getSectionType(), response.getSectionTitle());
+
+        events.add(ChatEvent.suggestion(List.of(change)));
     }
 
     /**

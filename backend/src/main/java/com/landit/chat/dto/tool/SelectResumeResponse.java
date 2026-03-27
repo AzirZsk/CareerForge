@@ -1,6 +1,5 @@
 package com.landit.chat.dto.tool;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,15 +16,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SelectResumeResponse extends ToolResponse {
-
-    private static final String RESPONSE_TYPE = "resume_selected";
-
-    /**
-     * 响应类型，固定为 "resume_selected"
-     * 用于 AIChatService 识别这是简历选择响应
-     */
-    @JsonProperty("responseType")
-    private String responseType = RESPONSE_TYPE;
 
     /**
      * 选中的简历ID

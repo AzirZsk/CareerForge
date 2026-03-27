@@ -30,19 +30,24 @@
     <!-- 全局 Toast 通知 -->
     <Toast ref="toastRef" />
 
-    <!-- AI聊天悬浮窗口 -->
-    <AIChatFloat />
+    <!-- AI聊天悬浮窗口（公开页面不显示） -->
+    <AIChatFloat v-if="showAIChat" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import AppNavbar from '@/components/common/AppNavbar.vue'
 import Toast from '@/components/common/Toast.vue'
 import AIChatFloat from '@/components/chat/AIChatFloat.vue'
 import { setToastInstance } from '@/composables/useToast'
 
+const route = useRoute()
 const toastRef = ref<InstanceType<typeof Toast> | null>(null)
+
+// 公开页面不显示AI悬浮球
+const showAIChat = computed(() => !(route.meta.public as boolean))
 
 onMounted(() => {
   if (toastRef.value) {
