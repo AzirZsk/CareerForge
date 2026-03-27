@@ -115,6 +115,7 @@ function scrollToBottom() {
   gap: $spacing-md;
   width: 100%;
   padding: 0 $spacing-lg;
+  overflow: hidden;
 }
 
 .loading-indicator {

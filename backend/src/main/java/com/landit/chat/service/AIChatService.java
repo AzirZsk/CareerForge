@@ -97,8 +97,8 @@ public class AIChatService {
             // 7. 用于收集 AI 回复的 StringBuilder
             StringBuilder aiResponse = new StringBuilder();
 
-            // 8. 用于缓存 suggestion 事件（等 AI 回复完成后再发送，实现"先显示 AI 回复，再弹窗"）
-            List<ChatEvent> pendingSuggestions = new ArrayList<>();
+            // 8. 用于收集工具调用产生的 actions（仅用于数据库保存，事件即时发送）
+            List<SectionChange> collectedActions = new ArrayList<>();
 
             // 9. 构建 UserMessage（包含文本和图片）
             UserMessage userMessage = UserMessage.builder()
@@ -122,11 +122,15 @@ public class AIChatService {
                                 return Flux.empty();
                             }
                             case AGENT_TOOL_FINISHED -> {
-                                List<ChatEvent> suggestions = buildSuggestionEvents(so);
-                                if (!suggestions.isEmpty()) {
-                                    pendingSuggestions.addAll(suggestions);
+                                List<ChatEvent> events = buildSuggestionEvents(so);
+                                for (ChatEvent event : events) {
+                                    if ("suggestion".equals(event.getType())) {
+                                        @SuppressWarnings("unchecked")
+                                        List<SectionChange> changes = (List<SectionChange>) event.getContent();
+                                        collectedActions.addAll(changes);
+                                    }
                                 }
-                                return Flux.empty();
+                                return Flux.fromIterable(events);
                             }
                             default -> {
                                 return Flux.empty();
@@ -134,27 +138,13 @@ public class AIChatService {
                         }
                     })
                     .concatWith(Flux.defer(() -> {
-                        // 流结束后：
-                        // 1. 收集所有 suggestion 事件中的 actions
-                        List<SectionChange> allActions = pendingSuggestions.stream()
-                                .filter(e -> "suggestion".equals(e.getType()))
-                                .map(e -> {
-                                    @SuppressWarnings("unchecked")
-                                    List<SectionChange> changes = (List<SectionChange>) e.getContent();
-                                    return changes;
-                                })
-                                .flatMap(List::stream)
-                                .toList();
-
-                        // 2. 保存 AI 回复到数据库（携带 actions）
+                        // 流结束后：保存 AI 回复到数据库（携带收集到的 actions）
                         chatMessageService.saveMessage(finalSessionId, resumeId, "assistant",
-                                aiResponse.toString(), allActions);
+                                aiResponse.toString(),
+                                collectedActions.isEmpty() ? null : collectedActions);
 
-                        // 3. 先发送缓存的 suggestion 事件（如果有）
-                        Flux<ChatEvent> suggestionFlux = Flux.fromIterable(pendingSuggestions);
-
-                        // 4. 再发送 complete 事件
-                        return suggestionFlux.concatWith(Flux.just(ChatEvent.complete("对话完成")));
+                        // 发送 complete 事件
+                        return Flux.just(ChatEvent.complete("对话完成"));
                     }))
                     .onErrorResume(e -> {
                         log.error("[AIChat] Agent 对话异常", e);

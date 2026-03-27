@@ -145,17 +145,24 @@ export function useAIChat() {
 
   function handleActionEvent(changes: SectionChange[]): void {
     if (currentAiMessage) {
-      currentAiMessage.actions = changes
+      // 追加模式：支持多轮工具调用分批到达
+      if (!currentAiMessage.actions) {
+        currentAiMessage.actions = []
+      }
+      currentAiMessage.actions.push(...changes)
       currentAiMessage.actionStatus = 'pending'
     } else {
-      state.messages.push({
+      // suggestion 先于 chunk 到达（罕见），创建新消息并绑定指针
+      const newMessage: ChatMessage = {
         id: generateId(),
         role: 'assistant',
         content: '',
-        actions: changes,
+        actions: [...changes],
         actionStatus: 'pending',
         timestamp: Date.now()
-      })
+      }
+      state.messages.push(newMessage)
+      currentAiMessage = newMessage
     }
   }
 

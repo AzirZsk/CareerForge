@@ -276,6 +276,7 @@ function formatTime(timestamp: number): string {
   display: flex;
   gap: $spacing-sm;
   max-width: 85%;
+  min-width: 0;
 
   &.message-user {
     align-self: flex-end;
@@ -360,11 +361,13 @@ function formatTime(timestamp: number): string {
   flex-direction: column;
   gap: 4px;
   max-width: 100%;
+  min-width: 0;
 }
 
 .message-content {
   padding: $spacing-md;
   border-radius: $radius-md;
+  min-width: 0;
 
   :deep(p) {
     margin: 0 0 $spacing-sm 0;
@@ -403,14 +406,19 @@ function formatTime(timestamp: number): string {
     code {
       background: transparent;
       padding: 0;
+      white-space: pre;
+      display: block;
     }
   }
 
   :deep(table) {
     width: 100%;
+    max-width: 100%;
     border-collapse: collapse;
     margin: $spacing-sm 0;
     font-size: $text-sm;
+    display: block;
+    overflow-x: auto;
 
     th,
     td {
