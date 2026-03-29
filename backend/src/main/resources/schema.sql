@@ -296,3 +296,4 @@ CREATE INDEX IF NOT EXISTS idx_chat_message_created_at ON t_chat_message(created
 -- ----------------------------------------------------------------------------
 ALTER TABLE t_chat_message ADD COLUMN actions TEXT;
 ALTER TABLE t_chat_message ADD COLUMN action_status VARCHAR(20) DEFAULT 'pending';
+ALTER TABLE t_chat_message ADD COLUMN segments TEXT;

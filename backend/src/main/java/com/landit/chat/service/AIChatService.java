@@ -4,6 +4,7 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
+import com.landit.chat.dto.ChatMessageVO;
 import com.landit.chat.dto.ChatEvent;
 import com.landit.chat.dto.ChatStreamRequest;
 import com.landit.chat.dto.SectionChange;
@@ -94,11 +95,15 @@ public class AIChatService {
             log.info("[AIChat] 开始 Agent 对话: sessionId={}, resumeId={}, threadId={}, imageCount={}",
                     finalSessionId, resumeId, config.threadId(), mediaList.size());
 
-            // 7. 用于收集 AI 回复的 StringBuilder
+            // 7. 用于收集 AI 回复
             StringBuilder aiResponse = new StringBuilder();
 
             // 8. 用于收集工具调用产生的 actions（仅用于数据库保存，事件即时发送）
             List<SectionChange> collectedActions = new ArrayList<>();
+
+            // 9. 用于记录内容分片（文字和操作卡片的穿插顺序）
+            List<ChatMessageVO.ContentSegment> segments = new ArrayList<>();
+            segments.add(new ChatMessageVO.ContentSegment("text", "", null));
 
             // 9. 构建 UserMessage（包含文本和图片）
             UserMessage userMessage = UserMessage.builder()
@@ -117,6 +122,8 @@ public class AIChatService {
                                 String chunk = so.message().getText();
                                 if (chunk != null && !chunk.isEmpty()) {
                                     aiResponse.append(chunk);
+                                    // 追加到最后一个text分片
+                                    appendToLastTextSegment(segments, chunk);
                                     return Flux.just(ChatEvent.chunk(chunk));
                                 }
                                 return Flux.empty();
@@ -127,7 +134,14 @@ public class AIChatService {
                                     if ("suggestion".equals(event.getType())) {
                                         @SuppressWarnings("unchecked")
                                         List<SectionChange> changes = (List<SectionChange>) event.getContent();
+                                        int startIndex = collectedActions.size();
                                         collectedActions.addAll(changes);
+                                        // 追加action分片
+                                        for (int i = 0; i < changes.size(); i++) {
+                                            segments.add(new ChatMessageVO.ContentSegment("action", null, startIndex + i));
+                                        }
+                                        // 新建空text分片给后续chunk用
+                                        segments.add(new ChatMessageVO.ContentSegment("text", "", null));
                                     }
                                 }
                                 return Flux.fromIterable(events);
@@ -138,10 +152,11 @@ public class AIChatService {
                         }
                     })
                     .concatWith(Flux.defer(() -> {
-                        // 流结束后：保存 AI 回复到数据库（携带收集到的 actions）
+                        // 流结束后：保存 AI 回复到数据库（携带收集到的 actions 和 segments）
                         chatMessageService.saveMessage(finalSessionId, resumeId, "assistant",
                                 aiResponse.toString(),
-                                collectedActions.isEmpty() ? null : collectedActions);
+                                collectedActions.isEmpty() ? null : collectedActions,
+                                segments);
 
                         // 发送 complete 事件
                         return Flux.just(ChatEvent.complete("对话完成"));
@@ -437,5 +452,22 @@ public class AIChatService {
         }
 
         log.info("[AIChat] 所有修改已应用成功: resumeId={}", resumeId);
+    }
+
+    /**
+     * 追加文本到最后一个text分片
+     * 如果最后一个分片不是text类型，新建一个text分片
+     */
+    private void appendToLastTextSegment(List<ChatMessageVO.ContentSegment> segments, String text) {
+        if (segments.isEmpty()) {
+            segments.add(new ChatMessageVO.ContentSegment("text", text, null));
+            return;
+        }
+        ChatMessageVO.ContentSegment last = segments.get(segments.size() - 1);
+        if ("text".equals(last.getType())) {
+            last.setContent(last.getContent() + text);
+        } else {
+            segments.add(new ChatMessageVO.ContentSegment("text", text, null));
+        }
     }
 }

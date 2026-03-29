@@ -14,6 +14,13 @@ export type ChatMode = 'general' | 'resume'
 export type ActionStatusType = 'pending' | 'applied' | 'rejected' | 'failed'
 
 /**
+ * 内容分片 - 记录文字和操作卡片的穿插顺序
+ */
+export type ContentSegment =
+  | { type: 'text'; content: string }
+  | { type: 'action'; actionIndex: number }
+
+/**
  * 最大图片数量
  */
 export const MAX_IMAGE_COUNT = 10
@@ -31,6 +38,7 @@ export interface ChatMessage {
   isStreaming?: boolean
   actions?: SectionChange[]
   actionStatus?: ActionStatusType
+  segments?: ContentSegment[]
 }
 
 /**

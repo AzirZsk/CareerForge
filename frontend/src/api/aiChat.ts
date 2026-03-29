@@ -3,7 +3,7 @@
 // @author Azir
 // =====================================================
 
-import type { ActionStatusType, ChatEvent, SectionChange } from '@/types/ai-chat'
+import type { ActionStatusType, ChatEvent, ContentSegment, SectionChange } from '@/types/ai-chat'
 
 const API_BASE = '/landit'
 
@@ -17,6 +17,7 @@ export interface ChatHistoryMessage {
   createdAt: string
   actions?: SectionChange[]
   actionStatus?: ActionStatusType
+  segments?: ContentSegment[]
 }
 
 /**

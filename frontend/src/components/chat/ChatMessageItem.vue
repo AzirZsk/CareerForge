@@ -97,74 +97,57 @@
           </div>
         </div>
 
-        <!-- 文本内容 -->
-        <div
-          v-if="message.content"
-          class="message-text"
-          :class="{ 'is-streaming': message.isStreaming }"
-          v-html="formattedContent"
-        />
-
-        <!-- 操作卡片 -->
-        <div
-          v-if="message.actions && message.actions.length > 0"
-          class="actions-wrapper"
-          :class="{ 'no-content': !message.content }"
-        >
-          <!-- 折叠头部 -->
-          <div
-            class="actions-header"
-            @click="toggleActions"
-          >
-            <span class="actions-title">
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-              </svg>
-              {{ message.actions.length }} 项修改建议
-            </span>
-            <span class="collapse-icon">{{ isActionsExpanded ? '▼' : '▶' }}</span>
-          </div>
-
-          <!-- 操作卡片列表 -->
-          <div
-            v-show="isActionsExpanded"
-            class="actions-container"
-          >
-            <SectionChangeCard
-              v-for="(change, index) in message.actions"
-              :key="index"
-              :change="change"
-              @apply="emit('apply-single-change', message.id, index)"
-              @ignore="emit('ignore-change', message.id, index)"
+        <!-- 按 segments 顺序渲染（文字和操作卡片穿插） -->
+        <template v-if="message.segments && message.segments.length > 0">
+          <template v-for="(segment, segIndex) in message.segments" :key="segIndex">
+            <!-- 文本分片 -->
+            <div
+              v-if="segment.type === 'text' && segment.content"
+              class="message-text"
+              :class="{ 'is-streaming': message.isStreaming && segIndex === message.segments!.length - 1 }"
+              v-html="renderSegmentMarkdown(segment.content)"
             />
-            <!-- 全部应用按钮：仅当有多个 pending 且至少两个 pending 时显示 -->
-            <button
-              v-if="hasMultiplePending"
-              class="apply-all-btn"
-              @click="emit('apply-all-changes', message.id)"
+            <!-- 操作卡片分片：内联渲染 -->
+            <div
+              v-else-if="segment.type === 'action' && message.actions?.[segment.actionIndex]"
+              class="inline-action-card"
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              全部应用
-            </button>
-          </div>
-        </div>
+              <SectionChangeCard
+                :change="message.actions[segment.actionIndex]"
+                @apply="emit('apply-single-change', message.id, segment.actionIndex)"
+                @ignore="emit('ignore-change', message.id, segment.actionIndex)"
+              />
+            </div>
+          </template>
+          <!-- 全部应用按钮（有多个 pending 时显示） -->
+          <button
+            v-if="hasMultiplePending"
+            class="apply-all-btn"
+            @click="emit('apply-all-changes', message.id)"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            全部应用
+          </button>
+        </template>
+
+        <!-- 纯文本消息（用户消息、系统消息等） -->
+        <template v-else>
+          <div
+            v-if="message.content"
+            class="message-text"
+            :class="{ 'is-streaming': message.isStreaming }"
+            v-html="formattedContent"
+          />
+        </template>
       </div>
 
       <!-- 时间戳 -->
@@ -176,7 +159,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import type { ChatMessage } from '@/types/ai-chat'
 import { useMarkdown } from '@/composables/useMarkdown'
 import AIIcon from '@/components/common/AIIcon.vue'
@@ -196,13 +179,12 @@ const emit = defineEmits<{
 
 const { renderMarkdown } = useMarkdown()
 
-// 操作卡片折叠状态，默认展开
-const isActionsExpanded = ref(true)
-
+// Markdown 渲染工具（分段和纯文本共用）
 const formattedContent = computed(() => renderMarkdown(props.message.content))
 
-function toggleActions() {
-  isActionsExpanded.value = !isActionsExpanded.value
+// 分片文本的 Markdown 渲染
+function renderSegmentMarkdown(text: string): string {
+  return renderMarkdown(text)
 }
 
 function handleImageClick(url: string) {
@@ -539,62 +521,9 @@ function formatTime(timestamp: number): string {
   text-align: left;
 }
 
-// 操作卡片包装器
-.actions-wrapper {
-  margin-top: $spacing-md;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  padding-top: $spacing-md;
-
-  // 当没有文本内容时，去掉上边距和边框
-  &.no-content {
-    margin-top: 0;
-    border-top: none;
-    padding-top: 0;
-  }
-}
-
-// 操作卡片折叠头部
-.actions-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: $spacing-sm;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: $radius-sm;
-  cursor: pointer;
-  transition: background-color $transition-fast;
-  user-select: none;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.06);
-  }
-}
-
-.actions-title {
-  display: flex;
-  align-items: center;
-  gap: $spacing-xs;
-  font-size: $text-sm;
-  font-weight: $weight-medium;
-  color: $color-accent;
-
-  svg {
-    opacity: 0.8;
-  }
-}
-
-.collapse-icon {
-  font-size: $text-xs;
-  color: $color-text-tertiary;
-  transition: transform $transition-fast;
-}
-
-// 操作卡片容器
-.actions-container {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-  margin-top: $spacing-sm;
+// 内联操作卡片
+.inline-action-card {
+  margin: $spacing-sm 0;
 }
 
 .apply-all-btn {

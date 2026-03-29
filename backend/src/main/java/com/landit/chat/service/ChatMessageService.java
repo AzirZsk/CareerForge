@@ -61,6 +61,22 @@ public class ChatMessageService extends ServiceImpl<ChatMessageMapper, ChatMessa
      */
     public void saveMessage(String sessionId, String resumeId, String role,
                             String content, List<SectionChange> actions) {
+        saveMessage(sessionId, resumeId, role, content, actions, null);
+    }
+
+    /**
+     * 保存消息（带操作卡片和内容分片）
+     *
+     * @param sessionId 会话ID
+     * @param resumeId  简历ID（可选）
+     * @param role      角色
+     * @param content   消息内容
+     * @param actions   操作卡片列表（可选）
+     * @param segments  内容分片列表（可选，记录文字和操作卡片的穿插顺序）
+     */
+    public void saveMessage(String sessionId, String resumeId, String role,
+                            String content, List<SectionChange> actions,
+                            List<ChatMessageVO.ContentSegment> segments) {
         ChatMessage msg = new ChatMessage();
         msg.setSessionId(sessionId);
         msg.setResumeId(resumeId);
@@ -73,6 +89,14 @@ public class ChatMessageService extends ServiceImpl<ChatMessageMapper, ChatMessa
                 msg.setActionStatus("pending");
             } catch (JsonProcessingException e) {
                 log.error("[ChatMessage] 序列化 actions 失败", e);
+            }
+        }
+        // 序列化内容分片
+        if (segments != null && !segments.isEmpty()) {
+            try {
+                msg.setSegments(objectMapper.writeValueAsString(segments));
+            } catch (JsonProcessingException e) {
+                log.error("[ChatMessage] 序列化 segments 失败", e);
             }
         }
         save(msg);
@@ -139,6 +163,18 @@ public class ChatMessageService extends ServiceImpl<ChatMessageMapper, ChatMessa
                 vo.setActions(actions);
             } catch (JsonProcessingException e) {
                 log.error("[ChatMessage] 反序列化 actions 失败", e);
+            }
+        }
+        // 反序列化 segments
+        if (msg.getSegments() != null && !msg.getSegments().isEmpty()) {
+            try {
+                List<ChatMessageVO.ContentSegment> segments = objectMapper.readValue(
+                        msg.getSegments(),
+                        new TypeReference<>() {}
+                );
+                vo.setSegments(segments);
+            } catch (JsonProcessingException e) {
+                log.error("[ChatMessage] 反序列化 segments 失败", e);
             }
         }
         return vo;

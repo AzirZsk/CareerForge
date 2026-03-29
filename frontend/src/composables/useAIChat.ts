@@ -56,7 +56,8 @@ export function useAIChat() {
         content: m.content,
         timestamp: new Date(m.createdAt).getTime(),
         actions: m.actions,
-        actionStatus: m.actionStatus
+        actionStatus: m.actionStatus,
+        segments: m.segments
       }))
     } catch (error) {
       console.error('[AIChat] 加载历史失败', error)
@@ -134,13 +135,23 @@ export function useAIChat() {
         id: generateId(),
         role: 'assistant',
         content: '',
+        segments: [{ type: 'text', content: '' }],
         timestamp: Date.now(),
-        isStreaming: true
-      }
+        isStreaming: true      }
       state.messages.push(newMessage)
       currentAiMessage = state.messages[state.messages.length - 1]
     }
-    currentAiMessage.content += content
+        // 追加文本内容和分片
+        currentAiMessage.content += content
+        if (!currentAiMessage.segments) {
+          currentAiMessage.segments = []
+        }
+        const lastSeg = currentAiMessage.segments[currentAiMessage.segments.length - 1]
+        if (lastSeg && lastSeg.type === 'text') {
+          lastSeg.content += content
+        } else {
+          currentAiMessage.segments.push({ type: 'text', content })
+        }
   }
 
   function handleActionEvent(changes: SectionChange[]): void {
@@ -152,8 +163,18 @@ export function useAIChat() {
       if (!currentAiMessage.actions) {
         currentAiMessage.actions = []
       }
+      const startIndex = currentAiMessage.actions.length
       currentAiMessage.actions.push(...changesWithStatus)
       currentAiMessage.actionStatus = 'pending'
+
+      // 追加 action 分片 + 新建空 text 分片
+      if (!currentAiMessage.segments) {
+        currentAiMessage.segments = []
+      }
+      for (let i = 0; i < changesWithStatus.length; i++) {
+        currentAiMessage.segments.push({ type: 'action', actionIndex: startIndex + i })
+      }
+      currentAiMessage.segments.push({ type: 'text', content: '' })
     } else {
       // suggestion 先于 chunk 到达（罕见），创建新消息并绑定指针
       const newMessage: ChatMessage = {
@@ -162,8 +183,13 @@ export function useAIChat() {
         content: '',
         actions: [...changesWithStatus],
         actionStatus: 'pending',
+        segments: [],
         timestamp: Date.now()
       }
+      for (let i = 0; i < changesWithStatus.length; i++) {
+        newMessage.segments!.push({ type: 'action', actionIndex: i })
+      }
+      newMessage.segments!.push({ type: 'text', content: '' })
       state.messages.push(newMessage)
       currentAiMessage = newMessage
     }
