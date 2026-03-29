@@ -359,6 +359,15 @@ function handlePaste(event: ClipboardEvent): void {
   }
   // 如果没有图片，保持默认的文本粘贴行为
 }
+
+// SSE响应结束后自动聚焦输入框，别让用户手动点
+watch(() => props.isStreaming, (newVal, oldVal) => {
+  if (oldVal && !newVal) {
+    nextTick(() => {
+      textareaRef.value?.focus()
+    })
+  }
+})
 </script>
 
 <style lang="scss" scoped>

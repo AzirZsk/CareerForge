@@ -96,7 +96,7 @@ public class AIChatHandler {
             emitter.send(SseEmitter.event()
                     .name("message")
                     .data(event));
-            log.debug("[AIChat] 发送事件: type={}", event.getType());
+//            log.debug("[AIChat] 发送事件: type={}", event.getType());
         } catch (IOException e) {
             log.error("[AIChat] 发送失败", e);
             emitter.completeWithError(e);

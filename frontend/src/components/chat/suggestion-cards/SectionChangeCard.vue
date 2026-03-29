@@ -10,37 +10,63 @@
     class="section-change-card"
     :class="[change.changeType, { 'is-rejected': change.status === 'rejected', 'is-applied': change.status === 'applied' }]"
   >
-    <!-- 头部：图标 + 操作类型 + 模块名 + 状态 -->
-    <div class="card-header">
-      <span class="section-icon">{{ sectionIcon }}</span>
-      <span
-        class="change-type-badge"
-        :class="change.changeType"
-      >
-        {{ getTypeLabel(change.changeType) }}
-      </span>
-      <span class="section-title">{{ change.sectionTitle || change.sectionType || '内容修改' }}</span>
-      <!-- 状态标记 -->
-      <span
-        v-if="change.status === 'applied'"
-        class="status-tag applied"
-      >已应用</span>
-      <span
-        v-if="change.status === 'rejected'"
-        class="status-tag rejected"
-      >已忽略</span>
+    <!-- 头部：点击可折叠 -->
+    <div
+      class="card-header"
+      @click="isCollapsed = !isCollapsed"
+    >
+      <div class="header-left">
+        <span class="section-icon">{{ sectionIcon }}</span>
+        <span
+          class="change-type-badge"
+          :class="change.changeType"
+        >
+          {{ getTypeLabel(change.changeType) }}
+        </span>
+        <span class="section-title">{{ change.sectionTitle || change.sectionType || '内容修改' }}</span>
+      </div>
+      <div class="header-right">
+        <!-- 状态标记 -->
+        <span
+          v-if="change.status === 'applied'"
+          class="status-tag applied"
+        >已应用</span>
+        <span
+          v-if="change.status === 'rejected'"
+          class="status-tag rejected"
+        >已忽略</span>
+        <!-- 折叠箭头 -->
+        <span
+          class="collapse-toggle"
+          :class="{ 'is-expanded': !isCollapsed }"
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </span>
+      </div>
     </div>
 
-    <!-- 描述 -->
+    <!-- 描述（折叠时隐藏） -->
     <div
-      v-if="change.description"
+      v-if="!isCollapsed && change.description"
       class="card-desc"
     >
       {{ change.description }}
     </div>
 
-    <!-- 内容对比 -->
-    <div class="card-content">
+    <!-- 内容对比（折叠时隐藏） -->
+    <div
+      v-if="!isCollapsed"
+      class="card-content"
+    >
       <!-- update 模式：字段级对比 -->
       <FieldDiffViewer
         v-if="change.changeType === 'update'"
@@ -79,9 +105,9 @@
       </div>
     </div>
 
-    <!-- 单卡片操作按钮：仅 pending 状态显示 -->
+    <!-- 单卡片操作按钮：仅 pending 且展开时显示 -->
     <div
-      v-if="change.status === 'pending' || !change.status"
+      v-if="!isCollapsed && (change.status === 'pending' || !change.status)"
       class="card-actions"
     >
       <button
@@ -108,9 +134,9 @@
       </button>
     </div>
 
-    <!-- failed 状态：显示重试 -->
+    <!-- failed 状态：展开时显示重试 -->
     <div
-      v-else-if="change.status === 'failed'"
+      v-else-if="!isCollapsed && change.status === 'failed'"
       class="card-actions"
     >
       <button
@@ -130,7 +156,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineComponent, h } from 'vue'
+import { computed, defineComponent, h, ref } from 'vue'
 import type { SectionChange } from '@/types/ai-chat'
 import type { ResumeSection } from '@/types'
 import { useSectionHelper } from '@/composables/useSectionHelper'
@@ -193,6 +219,9 @@ const emit = defineEmits<{
 
 const { getSectionIcon } = useSectionHelper()
 
+// 折叠状态，默认展开
+const isCollapsed = ref(false)
+
 // 获取模块图标
 const sectionIcon = computed(() => {
   return getSectionIcon(props.change.sectionType || '')
@@ -254,8 +283,31 @@ function getTypeLabel(type: string): string {
 .card-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: $spacing-sm;
   margin-bottom: $spacing-xs;
+  cursor: pointer;
+  user-select: none;
+
+  &:hover {
+    .section-title {
+      color: $color-text-primary;
+    }
+  }
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  min-width: 0;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-shrink: 0;
 }
 
 .section-icon {
@@ -425,7 +477,6 @@ function getTypeLabel(type: string): string {
 }
 
 .status-tag {
-  margin-left: auto;
   padding: 2px 8px;
   border-radius: $radius-sm;
   font-size: $text-xs;
@@ -440,6 +491,19 @@ function getTypeLabel(type: string): string {
   &.rejected {
     color: $color-text-tertiary;
     background: rgba(255, 255, 255, 0.05);
+  }
+}
+
+// 折叠箭头
+.collapse-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $color-text-tertiary;
+  transition: transform $transition-fast;
+
+  &.is-expanded {
+    transform: rotate(180deg);
   }
 }
 
