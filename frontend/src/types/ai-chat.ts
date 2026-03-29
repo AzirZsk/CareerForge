@@ -118,6 +118,9 @@ export interface AIChatState {
   // 窗口状态
   isWindowOpen: boolean
 
+  // 外部弹窗打开时隐藏悬浮球
+  hideFloat: boolean
+
   // 聊天模式
   chatMode: ChatMode
 
