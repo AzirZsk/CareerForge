@@ -9,7 +9,7 @@
     <!-- 悬浮按钮 -->
     <Transition name="float-fade">
       <button
-        v-if="!state.isWindowOpen"
+        v-if="!state.isWindowOpen && !state.hideFloat"
         class="float-button"
         title="AI简历助手"
         @click="toggleWindow"

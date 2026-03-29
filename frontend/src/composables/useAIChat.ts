@@ -25,6 +25,7 @@ function getState(): AIChatState {
   if (!stateInstance) {
     stateInstance = reactive<AIChatState>({
       isWindowOpen: false,
+      hideFloat: false,
       chatMode: 'general',
       sessionId: generateSessionId(),
       currentResumeId: null,

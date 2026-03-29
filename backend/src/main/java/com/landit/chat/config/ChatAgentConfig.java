@@ -86,13 +86,22 @@ public class ChatAgentConfig {
     }
 
     /**
+     * 创建对话记忆存储（内存）
+     * 提取为Bean方便Service层检查是否服务重启后丢失了上下文
+     */
+    @Bean
+    public MemorySaver chatMemorySaver() {
+        return new MemorySaver();
+    }
+
+    /**
      * 创建 AI 聊天 Agent
-     * 使用 MemorySaver 维护对话历史（内存存储，服务重启后丢失）
+     * 使用共享的 MemorySaver 维护对话上下文
      * 通过 SkillsAgentHook 支持技能系统
      * 通过 tools 注入简历操作工具
      */
     @Bean
-    public ReactAgent chatAgent(SkillsAgentHook skillsAgentHook) {
+    public ReactAgent chatAgent(SkillsAgentHook skillsAgentHook, MemorySaver chatMemorySaver) {
         String systemPrompt = aiPromptProperties.getChat()
                 .getAdvisorConfig()
                 .getSystemPrompt();
@@ -107,7 +116,7 @@ public class ChatAgentConfig {
                 .model(chatModel)
                 .enableLogging(true)
                 .systemPrompt(systemPrompt)
-                .saver(new MemorySaver())
+                .saver(chatMemorySaver)
                 .hooks(List.of(skillsAgentHook))
                 .tools(resumeTools)
                 .build();

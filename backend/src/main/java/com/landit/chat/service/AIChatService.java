@@ -2,6 +2,7 @@ package com.landit.chat.service;
 
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.landit.chat.dto.ChatMessageVO;
@@ -50,6 +51,7 @@ public class AIChatService {
     private final FileToImageService fileToImageService;
     private final AIPromptProperties aiPromptProperties;
     private final ChatMessageService chatMessageService;
+    private final MemorySaver chatMemorySaver;
 
     /**
      * 处理聊天请求，返回Flux流
@@ -75,8 +77,17 @@ public class AIChatService {
             // 2. 先判断是否首次对话（必须在保存消息之前判断，否则 isFirstMessage 永远返回 false）
             boolean isFirst = chatMessageService.isFirstMessage(finalSessionId);
 
-            // 3. 构建 instruction（包含简历上下文或通用提示词）
-            String instruction = buildInstruction(request, isFirst);
+            // 3. 检查 MemorySaver 上下文是否丢失（服务重启），从DB恢复历史
+            String historyContext = null;
+            if (!isFirst && !hasMemoryCheckpoint(finalSessionId)) {
+                List<ChatMessageVO> history = chatMessageService.getHistoryVO(finalSessionId, 20);
+                historyContext = buildHistoryContext(history);
+                log.info("[AIChat] MemorySaver为空（服务重启），从DB加载历史: sessionId={}, count={}",
+                        finalSessionId, history.size());
+            }
+
+            // 4. 构建 instruction（包含简历上下文或通用提示词）
+            String instruction = buildInstruction(request, isFirst, historyContext);
 
             // 4. 保存用户消息到数据库（在构建 instruction 之后保存）
             chatMessageService.saveMessage(finalSessionId, resumeId, "user", request.getCurrentUserMessage());
@@ -197,16 +208,21 @@ public class AIChatService {
 
     /**
      * 构建 instruction（包含简历上下文或通用提示词）
-     * 历史对话由 ReactAgent 的 MemorySaver 自动维护，无需手动加载
-     * 简历上下文只在首次对话时注入，后续对话只发送用户问题
+     * 非首次对话时，如果 MemorySaver 丢失了上下文（服务重启），将DB历史注入到 instruction 中
      *
-     * @param request 聊天请求
-     * @param isFirst 是否首次对话（调用方需要在保存消息之前判断）
+     * @param request        聊天请求
+     * @param isFirst        是否首次对话
+     * @param historyContext  从DB加载的历史上下文（仅在MemorySaver为空时非null）
      */
-    private String buildInstruction(ChatStreamRequest request, boolean isFirst) {
-        // 非首次对话：直接返回用户问题
+    private String buildInstruction(ChatStreamRequest request, boolean isFirst, String historyContext) {
+        // 非首次对话：检查是否需要注入历史上下文
         if (!isFirst) {
-            return request.getCurrentUserMessage();
+            StringBuilder instruction = new StringBuilder();
+            if (historyContext != null && !historyContext.isEmpty()) {
+                instruction.append(historyContext).append("\n\n");
+            }
+            instruction.append("用户最新消息：\n").append(request.getCurrentUserMessage());
+            return instruction.toString();
         }
 
         // 首次对话：注入上下文
@@ -469,5 +485,50 @@ public class AIChatService {
         } else {
             segments.add(new ChatMessageVO.ContentSegment("text", text, null));
         }
+    }
+
+    /**
+     * 检查 MemorySaver 是否有该会话的 checkpoint
+     * 用于判断服务是否重启导致上下文丢失
+     */
+    private boolean hasMemoryCheckpoint(String sessionId) {
+        try {
+            RunnableConfig config = RunnableConfig.builder().threadId(sessionId).build();
+            return chatMemorySaver.get(config).isPresent();
+        } catch (Exception e) {
+            log.warn("[AIChat] 检查MemorySaver失败, sessionId={}", sessionId, e);
+            return false;
+        }
+    }
+
+    /**
+     * 从数据库历史消息构建上下文文本
+     * 用于服务重启后恢复AI的对话记忆
+     * 对长消息进行截断以避免token溢出
+     */
+    private String buildHistoryContext(List<ChatMessageVO> history) {
+        if (history == null || history.isEmpty()) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("以下是之前的对话历史：\n\n");
+        for (ChatMessageVO msg : history) {
+            String role = msg.getRole();
+            String content = msg.getContent();
+            // 跳过空内容和system消息
+            if (content == null || content.isEmpty() || "system".equals(role)) {
+                continue;
+            }
+            // 截断过长消息，避免token溢出
+            String truncated = content.length() > 500
+                    ? content.substring(0, 500) + "..."
+                    : content;
+            if ("user".equals(role)) {
+                sb.append("[用户]: ").append(truncated).append("\n\n");
+            } else if ("assistant".equals(role)) {
+                sb.append("[助手]: ").append(truncated).append("\n\n");
+            }
+        }
+        return sb.toString();
     }
 }

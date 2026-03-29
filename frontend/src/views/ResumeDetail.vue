@@ -256,7 +256,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores'
 import EditSectionModal from '@/components/resume/EditSectionModal.vue'
@@ -269,6 +269,7 @@ import SectionList from '@/components/resume/SectionList.vue'
 import SectionContent from '@/components/resume/SectionContent.vue'
 import SuggestionsBlock from '@/components/resume/SuggestionsBlock.vue'
 import { useResumeOptimize } from '@/composables/useResumeOptimize'
+import { useAIChat } from '@/composables/useAIChat'
 import { useSectionEdit } from '@/composables/useSectionEdit'
 import { useSectionHelper } from '@/composables/useSectionHelper'
 import { useToast } from '@/composables/useToast'
@@ -283,6 +284,11 @@ const resumeId = ref<string>('')
 
 // 优化相关状态
 const showOptimizeModal = ref<boolean>(false)
+const { state: aiChatState } = useAIChat()
+// 优化弹窗打开时隐藏AI悬浮球
+watch(showOptimizeModal, (val) => {
+  aiChatState.hideFloat = val
+})
 
 // 删除确认弹窗状态
 const showDeleteConfirmModal = ref<boolean>(false)

@@ -472,7 +472,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useAppStore } from '@/stores'
 import { useRouter } from 'vue-router'
 import type { Resume, ResumeStatus } from '@/types'
@@ -480,6 +480,7 @@ import type { OptimizeStage } from '@/types/resume-optimize'
 
 // 导入优化相关
 import { useResumeOptimize } from '@/composables/useResumeOptimize'
+import { useAIChat } from '@/composables/useAIChat'
 import { useToast } from '@/composables/useToast'
 import { saveTailoredResume } from '@/api/resume'
 import OptimizeProgressModal from '@/components/resume/OptimizeProgressModal.vue'
@@ -510,6 +511,11 @@ const pendingDeleteId = ref<string | null>(null)
 // 优化相关状态
 const showOptimizeModal = ref(false)
 const showTailorModal = ref(false)
+const { state: aiChatState } = useAIChat()
+// 定制弹窗打开时隐藏AI悬浮球
+watch(showTailorModal, (val) => {
+  aiChatState.hideFloat = val
+})
 // 当前定制中的简历 ID（用于从列表中点击定制按钮时传递）
 const tailorResumeId = ref<string>('')
 const {

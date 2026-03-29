@@ -233,3 +233,42 @@ const hasItems = computed(() => {
 })
 </script>
 
+<style lang="scss" scoped>
+.empty-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-2xl;
+  text-align: center;
+}
+
+.empty-text {
+  font-size: $text-sm;
+  color: $color-text-tertiary;
+}
+
+.add-item-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-sm $spacing-md;
+  font-size: $text-sm;
+  color: $color-accent;
+  background: $color-accent-glow;
+  border: 1px dashed rgba(212, 168, 83, 0.3);
+  border-radius: $radius-md;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    background: rgba(212, 168, 83, 0.15);
+    border-color: rgba(212, 168, 83, 0.5);
+  }
+
+  svg {
+    flex-shrink: 0;
+  }
+}
+</style>
+
