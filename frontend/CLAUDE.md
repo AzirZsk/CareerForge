@@ -3,9 +3,13 @@
 ---
 
 # Frontend - 前端应用模块
-## 台更记录 (Changelog)
+
+## 变更记录 (Changelog)
+
 | 日期 | 版本 | 变更内容 |
 |------|------|----------|
+| 2026-03-30 | 2.1.0 | 新增 ImagePreviewModal/AIIcon 组件（common 3->5）、stageHelpers 工具函数、ResumeSuggestionsGroup 组件；聊天组件更新（hideFloat、resume_selected 事件、内容分片机制）；更新文件统计 |
+| 2026-03-30 | 2.0.0 | 新增 AI Chat 前端：10 个聊天组件 + useAIChat composable + aiChat API + ai-chat 类型 |
 | 2026-03-18 | 1.4.0 | AI 上下文全面扫描更新：更新文件统计（56 个 Vue 组件、 10 个 Composables、 3 个 Types） |
 | 2026-03-18 | 1.3.0 | 新增 viewer/tailor 组件目录、补充 composables（Tailor/Diff/Confirm/Toast/FormValidation） |
 | 2026-03-08 | 1.2.0 | 更新组件清单、补充 Composables 文档、完善简历区块组件 |
@@ -19,7 +23,9 @@
 前端应用模块负责提供用户界面，包括：
 - 首页数据展示
 - 简历管理与编辑
-- 简历优化进度展示
+- 简历优化进度展示（SSE 实时）
+- 简历定制工作流展示
+- AI 对话式简历优化（悬浮球全屏聊天）
 - 模拟面试进行
 - 面试复盘查看
 - 个人中心设置
@@ -60,6 +66,7 @@ VITE_API_TARGET=http://localhost:8080
 |------|------|------|
 | user | `api/user.ts` | 用户状态、初始化、信息管理 |
 | resume | `api/resume.ts` | 简历 CRUD、模块操作 |
+| aiChat | `api/aiChat.ts` | AI 聊天流式对话、历史管理、修改应用 |
 
 ### 页面路由
 | 路径 | 组件 | 标题 | 描述 | 权限 |
@@ -142,9 +149,11 @@ export default defineConfig(({ mode }) => {
 #### 核心类型文件
 | 文件 | 描述 |
 |------|------|
-| `types/index.ts` | 通用业务类型定义（445 行） |
-| `types/resume-optimize.ts` | 简历优化工作流类型定义（295 行） |
-| `types/resume-tailor.ts` | 简历定制工作流类型定义（152 行） |
+| `types/index.ts` | 通用业务类型定义 |
+| `types/ai-chat.ts` | AI 聊天类型定义（ChatMessage、SectionChange、AIChatState 等） |
+| `types/resume-optimize.ts` | 简历优化工作流类型定义 |
+| `types/resume-tailor.ts` | 简历定制工作流类型定义 |
+| `types/marked.d.ts` | marked 库类型声明 |
 
 #### 用户相关 (types/index.ts)
 ```typescript
@@ -169,6 +178,66 @@ interface UserStatusResponse {
 interface UserInitResponse {
   name: string
   gender: Gender | null
+}
+```
+
+#### AI 聊天相关 (types/ai-chat.ts)
+```typescript
+// 聊天模式
+type ChatMode = 'general' | 'resume'
+
+// 操作状态类型
+type ActionStatusType = 'pending' | 'applied' | 'rejected' | 'failed'
+
+// 内容分片（文字和操作卡片穿插顺序）
+type ContentSegment =
+  | { type: 'text'; content: string }
+  | { type: 'action'; actionIndex: number }
+
+// SSE 事件类型
+type ChatEventType = 'chunk' | 'suggestion' | 'complete' | 'error' | 'resume_selected'
+
+// 聊天消息
+interface ChatMessage {
+  id: string
+  role: 'user' | 'assistant' | 'system'
+  content: string
+  images?: File[]
+  imageUrls?: string[]
+  timestamp: number
+  isStreaming?: boolean
+  actions?: SectionChange[]
+  actionStatus?: ActionStatusType
+  segments?: ContentSegment[]
+}
+
+// 区块变更
+interface SectionChange {
+  sectionId?: string
+  sectionType?: string
+  sectionTitle?: string
+  changeType: 'update' | 'add' | 'delete'
+  beforeContent?: string
+  afterContent: string
+  description: string
+  status?: ActionStatusType
+}
+
+// AI 聊天状态
+interface AIChatState {
+  isWindowOpen: boolean
+  hideFloat: boolean       // 外部弹窗打开时隐藏悬浮球
+  chatMode: ChatMode
+  sessionId: string | null
+  currentResumeId: string | null
+  detectedResume: { id: string; name: string } | null
+  messages: ChatMessage[]
+  isStreaming: boolean
+  showApplyDialog: boolean
+  pendingChanges: SectionChange[]
+  currentInput: string
+  selectedImages: File[]
+  error: string | null
 }
 ```
 
@@ -227,17 +296,6 @@ type OptimizeStage =
   | 'optimize_section'
   | 'human_review'
   | 'end'
-
-// SSE 进度事件
-interface OptimizeProgressEvent {
-  event: OptimizeEventType
-  nodeId: OptimizeStage | null
-  progress: number | null
-  message: string
-  threadId: string | null
-  data: any
-  timestamp: number
-}
 
 // 优化状态
 interface OptimizeState {
@@ -386,6 +444,36 @@ toggleSidebar(): void
 
 ## Composables
 前端使用 **Composables（组合式函数）** 封装复用逻辑：
+
+### useAIChat (composables/useAIChat.ts)
+AI 聊天的核心组合式函数，使用**单例模式**管理全局状态：
+```typescript
+const {
+  // 状态
+  state,            // AIChatState 单例 reactive
+
+  // 方法
+  loadHistory,       // 从后端加载聊天历史
+  sendMessage,       // 发送消息（SSE 流式）
+  handleQuickCommand,// 快捷指令
+  applySingleChange, // 应用单条变更
+  ignoreChange,      // 忽略单条变更
+  applyAllChanges,   // 批量应用所有 pending 变更
+  handleImageSelect, // 选择图片（最多10张）
+  handleImageRemove, // 移除图片
+  toggleWindow,      // 切换聊天窗口
+  closeWindow,       // 关闭聊天窗口
+  startNewSession    // 开始新会话（清空历史）
+} = useAIChat()
+```
+**特性**：
+- 单例 reactive 状态管理
+- SSE 事件解析（chunk/suggestion/resume_selected/complete/error）
+- 内容分片追踪（segments，文字+操作卡片穿插渲染）
+- 操作卡片状态管理（pending/applied/rejected/failed）
+- 双模式支持（general 通用聊天 / resume 简历对话）
+- `hideFloat` 控制：外部弹窗打开时隐藏悬浮球
+
 ### useResumeOptimize (composables/useResumeOptimize.ts)
 简历优化工作流的组合式函数，封装 SSE 连接和状态管理：
 ```typescript
@@ -500,6 +588,12 @@ Toast 提示的组合式函数：
 - 错误信息收集
 - 实时验证反馈
 
+### useMarkdown (composables/useMarkdown.ts)
+Markdown 渲染的组合式函数：
+**功能**：
+- Markdown 文本渲染
+- 代码高亮
+
 ---
 
 ## 设计系统
@@ -572,12 +666,28 @@ $radius-full: 9999px;
 | ReviewDetail.vue | 复盘详情，维度分析可视化 |
 | Profile.vue | 个人信息设置 |
 
-### 公共组件 (components/common/) - 3 个
+### 公共组件 (components/common/) - 5 个
 | 组件 | 功能 |
 |------|------|
 | AppNavbar.vue | 顶部导航栏 |
 | ConfirmModal.vue | 确认弹窗 |
 | Toast.vue | Toast 提示 |
+| ImagePreviewModal.vue | 图片预览弹窗 |
+| AIIcon.vue | AI 图标组件 |
+
+### 聊天组件 (components/chat/) - 10 个
+| 组件 | 功能 |
+|------|------|
+| AIChatFloat.vue | 悬浮球入口（支持 hideFloat 控制隐藏） |
+| AIChatWindow.vue | 聊天窗口主容器（全屏模式，含图片预览） |
+| ChatHeader.vue | 聊天头部（模式切换、简历标识） |
+| ChatMessageList.vue | 消息列表（虚拟滚动） |
+| ChatMessageItem.vue | 单条消息（文字+操作卡片穿插渲染） |
+| ChatInputArea.vue | 输入区域（文本+图片，最多10张） |
+| QuickCommands.vue | 快捷指令面板（通用4个+简历8个） |
+| ApplyChangesDialog.vue | 批量修改确认弹窗 |
+| suggestion-cards/SectionChangeCard.vue | 单条区块变更卡片 |
+| suggestion-cards/FieldDiffViewer.vue | 字段级 Diff 对比视图 |
 
 ### 简历组件 (components/resume/) - 12 个
 | 组件 | 功能 |
@@ -593,6 +703,7 @@ $radius-full: 9999px;
 | SectionContent.vue | 区块内容渲染 |
 | SectionList.vue | 区块列表管理 |
 | SuggestionsBlock.vue | 建议区块 |
+| ResumeSuggestionsGroup.vue | 建议分组卡片（按简历分组展示） |
 | SuggestionCard.vue | 建议卡片 |
 
 ### 优化进度子组件 (components/resume/optimize/) - 7 个
@@ -652,6 +763,15 @@ $radius-full: 9999px;
 
 ---
 
+## 工具函数
+### stageHelpers (utils/stageHelpers.ts)
+简历优化阶段的辅助工具函数：
+- 严重性图标映射
+- 阶段状态计算
+- 格式化工具
+
+---
+
 ## Mock 数据
 ### 数据文件 (mock/data.ts)
 项目使用 Mock 数据进行前端开发，包含：
@@ -708,6 +828,17 @@ watch(() => state.currentStage, (stage) => {
 })
 ```
 
+### Q: 如何使用 AI 聊天功能？
+A:
+```typescript
+import { useAIChat } from '@/composables/useAIChat'
+
+const { state, sendMessage, applySingleChange, startNewSession } = useAIChat()
+// state 是单例 reactive 对象，包含 messages、isStreaming、chatMode、hideFloat 等
+// 支持通用聊天和简历对话双模式
+// AI 自动通过 select_resume 工具选择简历
+```
+
 ---
 
 ## 相关文件清单
@@ -730,24 +861,29 @@ frontend/
 │   │   └── index.ts             # Pinia Store
 │   ├── types/
 │   │   ├── index.ts             # 通用类型定义
+│   │   ├── ai-chat.ts           # AI 聊天类型（ChatMessage、SectionChange、AIChatState 等）
 │   │   ├── resume-optimize.ts   # 简历优化类型
-│   │   └── resume-tailor.ts     # 简历定制类型
+│   │   ├── resume-tailor.ts     # 简历定制类型
+│   │   └── marked.d.ts          # marked 类型声明
 │   ├── api/
 │   │   ├── user.ts              # 用户 API
-│   │   └── resume.ts            # 简历 API
-│   ├── composables/             # 10 个 Composables
-│   │   ├── useResumeOptimize.ts # 简历优化 Composable
-│   │   ├── useResumeTailor.ts   # 简历定制 Composable
-│   │   ├── useSectionEdit.ts    # 区块编辑 Composable
+│   │   ├── resume.ts            # 简历 API
+│   │   └── aiChat.ts            # AI 聊天 API（流式/历史/修改应用）
+│   ├── utils/
+│   │   └── stageHelpers.ts      # 阶段辅助工具函数
+│   ├── composables/             # 12 个 Composables
+│   │   ├── useAIChat.ts         # AI 聊天（单例，SSE，双模式）
+│   │   ├── useResumeOptimize.ts # 简历优化
+│   │   ├── useResumeTailor.ts   # 简历定制
+│   │   ├── useSectionEdit.ts    # 区块编辑
 │   │   ├── useSectionHelper.ts  # 区块辅助工具
 │   │   ├── useSectionDiff.ts    # 区块差异对比
-│   │   ├── useStageEdit.ts      # 阶段编辑 Composable
-│   │   ├── useStageTimer.ts     # 阶段计时器 Composable
+│   │   ├── useStageEdit.ts      # 阶段编辑
+│   │   ├── useStageTimer.ts     # 阶段计时器
+│   │   ├── useMarkdown.ts       # Markdown 渲染
 │   │   ├── useConfirm.ts        # 确认弹窗
 │   │   ├── useToast.ts          # Toast 提示
 │   │   └── useFormValidation.ts # 表单验证
-│   ├── utils/
-│   │   └── stageHelpers.ts      # 阶段辅助工具函数
 │   ├── views/                   # 页面组件（9 个）
 │   │   ├── Onboarding.vue
 │   │   ├── Home.vue
@@ -759,10 +895,24 @@ frontend/
 │   │   ├── ReviewDetail.vue
 │   │   └── Profile.vue
 │   ├── components/
-│   │   ├── common/              # 公共组件（3 个）
+│   │   ├── common/              # 公共组件（5 个）
 │   │   │   ├── AppNavbar.vue
 │   │   │   ├── ConfirmModal.vue
-│   │   │   └── Toast.vue
+│   │   │   ├── Toast.vue
+│   │   │   ├── ImagePreviewModal.vue
+│   │   │   └── AIIcon.vue
+│   │   ├── chat/                # 聊天组件（10 个）
+│   │   │   ├── AIChatFloat.vue
+│   │   │   ├── AIChatWindow.vue
+│   │   │   ├── ChatHeader.vue
+│   │   │   ├── ChatMessageList.vue
+│   │   │   ├── ChatMessageItem.vue
+│   │   │   ├── ChatInputArea.vue
+│   │   │   ├── QuickCommands.vue
+│   │   │   ├── ApplyChangesDialog.vue
+│   │   │   └── suggestion-cards/
+│   │   │       ├── SectionChangeCard.vue
+│   │   │       └── FieldDiffViewer.vue
 │   │   └── resume/
 │   │       ├── EditSectionModal.vue
 │   │       ├── AddSectionModal.vue
@@ -775,6 +925,7 @@ frontend/
 │   │       ├── SectionContent.vue
 │   │       ├── SectionList.vue
 │   │       ├── SuggestionsBlock.vue
+│   │       ├── ResumeSuggestionsGroup.vue
 │   │       ├── SuggestionCard.vue
 │   │       ├── optimize/           # 优化进度子组件（7 个）
 │   │       │   ├── _shared.scss
@@ -829,7 +980,7 @@ frontend/
 ---
 
 ## 测试与质量
-**当前状态**：项目暂无测试文件
+**当前状态**：项目暂无前端测试文件
 **建议补充**：
 1. 组件测试：`src/__tests__/components/`
 2. Store 测试：`src/__tests__/stores/`
