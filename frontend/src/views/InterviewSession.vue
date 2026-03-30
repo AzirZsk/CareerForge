@@ -1,5 +1,6 @@
 <!--=====================================================
   LandIt 面试进行中页面
+  支持语音模式（半语音/全语音）
   @author Azir
 =====================================================-->
 
@@ -12,10 +13,8 @@
         style="--delay: 0"
       >
         <div class="header-left">
-          <span class="session-badge">面试进行中</span>
-          <h2 class="session-title">
-            技术面试 - 高级前端工程师
-          </h2>
+          <span class="session-badge" :class="sessionBadgeClass">{{ sessionBadgeText }}</span>
+          <h2 class="session-title">{{ interviewTitle }}</h2>
         </div>
         <div class="header-right">
           <div class="timer">
@@ -56,7 +55,7 @@
         style="--delay: 1"
       >
         <div
-          v-for="(_q, i) in questions"
+          v-for="(_q, i) in totalQuestions"
           :key="i"
           class="progress-dot"
           :class="{ active: i === currentQuestionIndex, completed: i < currentQuestionIndex }"
@@ -67,176 +66,102 @@
         </div>
       </div>
 
-      <!-- 对话区域 -->
-      <main
-        class="conversation-area animate-in"
-        style="--delay: 2"
-      >
-        <div
-          ref="messagesContainer"
-          class="messages-container"
-        >
-          <div
-            v-for="(msg, index) in messages"
-            :key="msg.id"
-            class="message"
-            :class="msg.role"
-            :style="{ '--index': index }"
-          >
-            <div class="message-avatar">
-              <span v-if="msg.role === 'interviewer'">AI</span>
-              <span v-else>我</span>
+      <!-- 主内容区 -->
+      <div class="main-content">
+        <!-- 对话区域 -->
+        <main class="conversation-area animate-in" style="--delay: 2">
+          <div class="messages-container" ref="messagesContainer">
+            <div
+              v-for="(msg, index) in messages"
+              :key="msg.id"
+              class="message"
+              :class="msg.role"
+              :style="{ '--index': index }"
+            >
+              <div class="message-avatar">
+                <span v-if="msg.role === 'interviewer'">AI</span>
+                <span v-else-if="msg.role === 'assistant'">🤖</span>
+                <span v-else>我</span>
+              </div>
+              <div class="message-content">
+                <p class="message-text">{{ msg.content }}</p>
+                <span class="message-time">{{ formatMessageTime(msg.timestamp) }}</span>
+              </div>
             </div>
-            <div class="message-content">
-              <p class="message-text">
-                {{ msg.content }}
-              </p>
-              <span class="message-time">{{ formatMessageTime(msg.timestamp) }}</span>
-              <div
-                v-if="msg.score"
-                class="message-feedback"
-              >
-                <span class="feedback-score">{{ msg.score }}分</span>
-                <span class="feedback-text">{{ msg.feedback }}</span>
+            <div v-if="isAIResponding" class="message interviewer typing">
+              <div class="message-avatar">AI</div>
+              <div class="message-content">
+                <div class="typing-indicator">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              </div>
+            </div>
+            <!-- 实时转录显示 -->
+            <div v-if="partialTranscript && !partialTranscript.isFinal" class="message partial-transcript">
+              <div class="message-avatar">
+                <span v-if="partialTranscript.role === 'interviewer'">AI</span>
+                <span v-else>我</span>
+              </div>
+              <div class="message-content">
+                <p class="message-text">{{ partialTranscript.text }}<span class="cursor-blink">|</span></p>
               </div>
             </div>
           </div>
-          <div
-            v-if="isAIResponding"
-            class="message interviewer typing"
-          >
-            <div class="message-avatar">
-              AI
-            </div>
-            <div class="message-content">
-              <div class="typing-indicator">
-                <span />
-                <span />
-                <span />
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
+        </main>
 
-      <!-- 输入区域 -->
-      <footer
-        class="input-area animate-in"
-        style="--delay: 3"
-      >
-        <div class="input-container">
-          <textarea
-            v-model="userInput"
-            placeholder="输入你的回答..."
-            class="answer-input"
-            :disabled="isAIResponding"
-            rows="3"
-            @keydown.enter.exact.prevent="submitAnswer"
+        <!-- 右侧面板 -->
+        <aside class="side-panel animate-in" style="--delay: 3">
+          <!-- 语音控制 -->
+          <VoiceControls
+            v-model="voiceMode"
+            :is-recording="isRecording"
+            :is-processing="isProcessing"
+            :status-text="statusText"
+            :status-type="statusType"
+            @toggle-recording="toggleRecording"
+            @volume-change="handleVolumeChange"
+            @mute-change="handleMuteChange"
           />
-          <div class="input-actions">
-            <div class="action-hints">
-              <span class="hint">按 Enter 发送</span>
-              <span class="hint">Shift + Enter 换行</span>
-            </div>
-            <button
-              class="submit-btn"
-              :disabled="!userInput.trim() || isAIResponding"
-              @click="submitAnswer"
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <line
-                  x1="22"
-                  y1="2"
-                  x2="11"
-                  y2="13"
-                />
-                <polygon points="22 2 15 22 11 13 2 9 22 2" />
-              </svg>
-              发送回答
-            </button>
-          </div>
-        </div>
-      </footer>
 
-      <!-- 工具栏 -->
-      <aside
-        class="tools-panel animate-in"
-        style="--delay: 4"
-      >
-        <div class="tool-card">
-          <h4 class="tool-title">
-            面试提示
-          </h4>
-          <div class="tips-list">
-            <div class="tip-item">
-              <span class="tip-icon">💡</span>
-              <p class="tip-text">
-                回答时注意结构化，可以先总述再分点说明
-              </p>
+          <!-- 助手面板（冻结状态时显示） -->
+          <AssistantPanel
+            v-if="isFrozen"
+            :content="assistantContent"
+            :is-loading="isAssistLoading"
+            :assist-remaining="assistRemaining"
+            :assist-limit="assistLimit"
+            :audio-chunks="assistantAudioChunks"
+            @return="handleResumeInterview"
+            @assist="handleAssist"
+          />
+
+          <!-- 工具栏（非冻结状态时显示） -->
+          <template v-if="!isFrozen">
+            <div class="tool-card">
+              <h4 class="tool-title">面试提示</h4>
+              <div class="tips-list">
+                <div class="tip-item">
+                  <span class="tip-icon">💡</span>
+                  <p class="tip-text">回答时注意结构化，可以先总述再分点说明</p>
+                </div>
+                <div class="tip-item">
+                  <span class="tip-icon">🎯</span>
+                  <p class="tip-text">结合实际项目经验会让回答更有说服力</p>
+                </div>
+              </div>
             </div>
-            <div class="tip-item">
-              <span class="tip-icon">🎯</span>
-              <p class="tip-text">
-                结合实际项目经验会让回答更有说服力
-              </p>
-            </div>
-            <div class="tip-item">
-              <span class="tip-icon">⏱️</span>
-              <p class="tip-text">
-                遇到不会的问题可以诚实说明，展示学习态度
-              </p>
-            </div>
-          </div>
-        </div>
-        <div class="tool-card">
-          <h4 class="tool-title">
-            当前问题要点
-          </h4>
-          <ul class="key-points-list">
-            <li
-              v-for="point in currentKeyPoints"
-              :key="point"
-            >
-              <span class="point-check" />
-              {{ point }}
-            </li>
-          </ul>
-        </div>
-        <button
-          class="hint-btn"
-          @click="requestHint"
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <circle
-              cx="12"
-              cy="12"
-              r="10"
+
+            <!-- 快捷求助按钮 -->
+            <QuickAssistButtons
+              :remaining="assistRemaining"
+              :limit="assistLimit"
+              @assist="handleAssist"
             />
-            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-            <line
-              x1="12"
-              y1="17"
-              x2="12.01"
-              y2="17"
-            />
-          </svg>
-          请求提示
-        </button>
-      </aside>
+          </template>
+        </aside>
+      </div>
     </div>
 
     <!-- 结束确认弹窗 -->
@@ -253,18 +178,8 @@
           当前面试尚未完成，结束后将根据已回答的问题生成复盘报告。
         </p>
         <div class="modal-actions">
-          <button
-            class="modal-btn secondary"
-            @click="showEndModal = false"
-          >
-            继续面试
-          </button>
-          <button
-            class="modal-btn primary"
-            @click="endInterview"
-          >
-            确认结束
-          </button>
+          <button class="modal-btn secondary" @click="showEndModal = false">继续面试</button>
+          <button class="modal-btn primary" @click="handleEndInterview">确认结束</button>
         </div>
       </div>
     </div>
@@ -272,73 +187,196 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
-import type { SessionQuestion, SessionMessage } from '@/types'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import VoiceControls from '@/components/interview/voice/VoiceControls.vue'
+import AssistantPanel from '@/components/interview/voice/AssistantPanel.vue'
+import QuickAssistButtons from '@/components/interview/voice/QuickAssistButtons.vue'
+import { useInterviewVoice } from '@/composables/useInterviewVoice'
+import { useStreamAssist } from '@/composables/useStreamAssist'
+import type { VoiceMode, AssistType } from '@/types/interview-voice'
 
 const router = useRouter()
+const route = useRoute()
 
-const userInput = ref<string>('')
-const elapsedTime = ref<number>(0)
-const currentQuestionIndex = ref<number>(0)
-const isAIResponding = ref<boolean>(false)
-const showEndModal = ref<boolean>(false)
-const messagesContainer = ref<HTMLElement | null>(null)
+// 从路由获取会话ID
+const sessionId = computed(() => route.params.id as string || `session_${Date.now()}`)
 
-const totalQuestions: number = 10
+// ============================================================================
+// 语音面试相关
+// ============================================================================
 
-const questions = ref<SessionQuestion[]>([
-  { id: '1', category: 'Vue.js', question: '请解释 Vue 3 的响应式原理', keyPoints: ['Proxy', 'Reflect', '依赖收集', '触发更新'] },
-  { id: '2', category: 'JavaScript', question: '请解释事件循环机制', keyPoints: ['调用栈', '任务队列', '宏任务', '微任务'] },
-  { id: '3', category: '性能优化', question: '如何优化大型单页应用的首次加载', keyPoints: ['代码分割', '懒加载', '缓存', 'CDN'] }
-])
+// 语音模式（默认半语音）
+const voiceMode = ref<VoiceMode>('half_voice')
 
-const messages = ref<SessionMessage[]>([
-  {
-    id: '1',
-    role: 'interviewer',
-    content: '你好，我是今天的面试官。我们将进行一场前端技术面试，主要考察Vue.js、JavaScript基础和性能优化方面的知识。准备好了吗？',
-    timestamp: new Date(Date.now() - 60000)
-  },
-  {
-    id: '2',
-    role: 'candidate',
-    content: '准备好了，请开始吧！',
-    timestamp: new Date(Date.now() - 55000)
-  },
-  {
-    id: '3',
-    role: 'interviewer',
-    content: '好的，首先请你介绍一下自己，重点说说你的技术背景和项目经验。',
-    timestamp: new Date(Date.now() - 50000)
-  },
-  {
-    id: '4',
-    role: 'candidate',
-    content: '我叫Azir，有5年前端开发经验，目前在字节跳动负责抖音创作者平台的前端架构工作。主要技术栈是Vue和React，对性能优化和工程化有深入研究。',
-    timestamp: new Date(Date.now() - 40000),
-    score: 90,
-    feedback: '自我介绍清晰，技术重点突出'
-  }
-])
+// 语音面试 composable
+const voiceInterview = useInterviewVoice(sessionId.value)
 
-const currentKeyPoints = computed<string[]>(() => {
-  return questions.value[currentQuestionIndex.value]?.keyPoints || []
+// 流式求助 composable
+const streamAssist = useStreamAssist(sessionId.value)
+
+// 从 voiceInterview 获取状态
+const isRecording = voiceInterview.isRecording
+const isFrozen = voiceInterview.isFrozen
+const isCompleted = voiceInterview.isCompleted
+const currentQuestionIndex = computed(() => voiceInterview.currentQuestion.value)
+const totalQuestions = computed(() => voiceInterview.totalQuestions.value)
+const elapsedTime = computed(() => voiceInterview.elapsedTime.value)
+const messages = voiceInterview.messages
+const assistRemaining = voiceInterview.assistRemaining
+const assistLimit = voiceInterview.assistLimit
+const partialTranscript = voiceInterview.partialTranscript
+
+// 处理状态（基于实时转录状态）
+const isProcessing = computed(() => !!partialTranscript.value && !partialTranscript.value.isFinal)
+const statusText = computed(() => {
+  if (voiceInterview.isPlaying.value) return 'AI 正在说话...'
+  if (isRecording.value) return '正在录音...'
+  if (isProcessing.value) return '正在识别...'
+  if (voiceInterview.error.value) return '连接错误'
+  return ''
+})
+const statusType = computed(() => {
+  if (voiceInterview.isPlaying.value) return 'synthesizing'
+  if (isRecording.value) return 'recording'
+  if (isProcessing.value) return 'recognizing'
+  if (voiceInterview.error.value) return 'error'
+  return 'idle'
 })
 
-let timer: ReturnType<typeof setInterval> | null = null
+// AI 响应状态（与音频播放状态同步）
+const isAIResponding = computed(() => voiceInterview.isPlaying.value)
 
-onMounted(() => {
-  timer = setInterval(() => {
-    elapsedTime.value++
-  }, 1000)
+// ============================================================================
+// 助手相关
+// ============================================================================
+
+const assistantContent = ref('')
+const assistantAudioChunks = ref<string[]>([])
+const isAssistLoading = ref(false)
+
+// ============================================================================
+// UI 状态
+// ============================================================================
+
+const showEndModal = ref(false)
+const messagesContainer = ref<HTMLElement | null>(null)
+
+// 面试标题
+const interviewTitle = computed(() => '技术面试 - 高级前端工程师')
+
+// 会话徽章
+const sessionBadgeClass = computed(() => {
+  if (isFrozen.value) return 'frozen'
+  if (isCompleted.value) return 'completed'
+  return 'active'
+})
+
+const sessionBadgeText = computed(() => {
+  if (isFrozen.value) return '求助中'
+  if (isCompleted.value) return '已结束'
+  return '面试进行中'
+})
+
+// ============================================================================
+// 生命周期
+// ============================================================================
+
+onMounted(async () => {
+  // 初始化语音面试
+  await voiceInterview.init()
 })
 
 onUnmounted(() => {
-  if (timer) {
-    clearInterval(timer)
-  }
+  voiceInterview.dispose()
 })
+
+// 监听消息变化，自动滚动到底部
+watch(() => messages.value.length, () => {
+  nextTick(() => {
+    if (messagesContainer.value) {
+      messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+    }
+  })
+})
+
+// ============================================================================
+// 录音控制
+// ============================================================================
+
+function toggleRecording() {
+  if (isRecording.value) {
+    voiceInterview.stopRecording()
+    statusText.value = ''
+    statusType.value = 'idle'
+  } else {
+    voiceInterview.startRecording()
+    statusText.value = '正在录音...'
+    statusType.value = 'recording'
+  }
+}
+
+function handleVolumeChange(volume: number) {
+  voiceInterview.setVolume(volume)
+}
+
+function handleMuteChange(muted: boolean) {
+  if (muted) {
+    voiceInterview.toggleMute()
+  }
+}
+
+// ============================================================================
+// 助手相关
+// ============================================================================
+
+async function handleAssist(type: AssistType, question?: string) {
+  // 冻结面试
+  voiceInterview.freeze()
+  isAssistLoading.value = true
+  assistantContent.value = ''
+  assistantAudioChunks.value = []
+
+  try {
+    await streamAssist.requestAssist({
+      type,
+      question
+    })
+  } catch (e) {
+    console.error('Assist error:', e)
+  } finally {
+    isAssistLoading.value = false
+  }
+}
+
+// 监听助手内容变化
+watch(() => streamAssist.textContent.value, (content) => {
+  assistantContent.value = content
+})
+
+function handleResumeInterview() {
+  voiceInterview.resumeInterview()
+  assistantContent.value = ''
+  assistantAudioChunks.value = []
+}
+
+// ============================================================================
+// 面试结束
+// ============================================================================
+
+function confirmEnd() {
+  showEndModal.value = true
+}
+
+function handleEndInterview() {
+  voiceInterview.endInterview()
+  voiceInterview.dispose()
+  router.push('/review')
+}
+
+// ============================================================================
+// 辅助方法
+// ============================================================================
 
 function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60)
@@ -346,67 +384,14 @@ function formatTime(seconds: number): string {
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
 }
 
-function formatMessageTime(date: Date): string {
-  return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
-}
-
-async function submitAnswer(): Promise<void> {
-  if (!userInput.value.trim() || isAIResponding.value) return
-  messages.value.push({
-    id: String(messages.value.length + 1),
-    role: 'candidate',
-    content: userInput.value,
-    timestamp: new Date()
-  })
-  userInput.value = ''
-  await nextTick()
-  scrollToBottom()
-  isAIResponding.value = true
-  setTimeout(() => {
-    isAIResponding.value = false
-    const nextQuestion = questions.value[currentQuestionIndex.value + 1]
-    messages.value.push({
-      id: String(messages.value.length + 1),
-      role: 'interviewer',
-      content: '好的回答。那我们继续下一个问题：' + (nextQuestion?.question || ''),
-      timestamp: new Date()
-    })
-    currentQuestionIndex.value++
-    scrollToBottom()
-  }, 2000)
-}
-
-function scrollToBottom(): void {
-  if (messagesContainer.value) {
-    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
-  }
+function formatMessageTime(timestamp: number): string {
+  return new Date(timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
 }
 
 function goToQuestion(index: number): void {
   if (index <= currentQuestionIndex.value) {
-    currentQuestionIndex.value = index
+    // voiceInterview 不支持跳转，这里只是视觉反馈
   }
-}
-
-function confirmEnd(): void {
-  showEndModal.value = true
-}
-
-function endInterview(): void {
-  if (timer) {
-    clearInterval(timer)
-  }
-  router.push('/review')
-}
-
-function requestHint(): void {
-  messages.value.push({
-    id: String(messages.value.length + 1),
-    role: 'interviewer',
-    content: '提示：在回答时可以从以下角度考虑 - ' + currentKeyPoints.value.join('、'),
-    timestamp: new Date()
-  })
-  scrollToBottom()
 }
 </script>
 
@@ -419,18 +404,16 @@ function requestHint(): void {
 
 .session-container {
   flex: 1;
-  display: grid;
-  grid-template-rows: auto auto 1fr auto;
-  grid-template-columns: 1fr 280px;
-  gap: 0;
+  display: flex;
+  flex-direction: column;
   max-width: 1400px;
   margin: 0 auto;
   padding: $spacing-lg;
+  gap: $spacing-md;
 }
 
 // 头部
 .session-header {
-  grid-column: 1 / -1;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -442,12 +425,25 @@ function requestHint(): void {
 
 .session-badge {
   padding: $spacing-xs $spacing-sm;
-  background: rgba(52, 211, 153, 0.15);
-  color: $color-success;
   font-size: $text-xs;
   font-weight: $weight-medium;
   border-radius: $radius-sm;
-  animation: pulse 2s ease-in-out infinite;
+
+  &.active {
+    background: rgba(52, 211, 153, 0.15);
+    color: $color-success;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  &.frozen {
+    background: rgba(251, 191, 36, 0.15);
+    color: $color-warning;
+  }
+
+  &.completed {
+    background: rgba(96, 165, 250, 0.15);
+    color: $color-info;
+  }
 }
 
 .session-title {
@@ -504,7 +500,6 @@ function requestHint(): void {
 
 // 进度条
 .progress-bar {
-  grid-column: 1 / -1;
   display: flex;
   justify-content: center;
   gap: $spacing-sm;
@@ -541,9 +536,17 @@ function requestHint(): void {
   }
 }
 
+// 主内容区
+.main-content {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: $spacing-md;
+  min-height: 0;
+}
+
 // 对话区域
 .conversation-area {
-  grid-column: 1;
   background: $gradient-card;
   border-radius: $radius-lg;
   border: 1px solid rgba(255, 255, 255, 0.05);
@@ -586,6 +589,12 @@ function requestHint(): void {
       align-items: flex-end;
     }
   }
+  &.assistant {
+    align-self: flex-start;
+    .message-avatar {
+      background: rgba(52, 211, 153, 0.2);
+    }
+  }
 }
 
 .message-avatar {
@@ -620,26 +629,6 @@ function requestHint(): void {
   color: $color-text-tertiary;
 }
 
-.message-feedback {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  padding: $spacing-xs $spacing-sm;
-  background: $color-success-bg;
-  border-radius: $radius-sm;
-}
-
-.feedback-score {
-  font-size: $text-xs;
-  font-weight: $weight-semibold;
-  color: $color-success;
-}
-
-.feedback-text {
-  font-size: $text-xs;
-  color: $color-success;
-}
-
 .typing-indicator {
   display: flex;
   gap: 4px;
@@ -663,88 +652,11 @@ function requestHint(): void {
   30% { transform: translateY(-8px); }
 }
 
-// 输入区域
-.input-area {
-  grid-column: 1;
-  background: $gradient-card;
-  border-radius: $radius-lg;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  padding: $spacing-lg;
-}
-
-.input-container {
+// 侧边面板
+.side-panel {
   display: flex;
   flex-direction: column;
   gap: $spacing-md;
-}
-
-.answer-input {
-  width: 100%;
-  padding: $spacing-md;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: $radius-md;
-  color: $color-text-primary;
-  font-size: $text-sm;
-  resize: none;
-  font-family: $font-body;
-  &:focus {
-    outline: none;
-    border-color: $color-accent;
-  }
-  &::placeholder {
-    color: $color-text-tertiary;
-  }
-  &:disabled {
-    opacity: 0.5;
-  }
-}
-
-.input-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.action-hints {
-  display: flex;
-  gap: $spacing-md;
-}
-
-.hint {
-  font-size: $text-xs;
-  color: $color-text-tertiary;
-}
-
-.submit-btn {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  padding: $spacing-sm $spacing-lg;
-  background: $gradient-gold;
-  color: $color-bg-deep;
-  font-size: $text-sm;
-  font-weight: $weight-medium;
-  border-radius: $radius-md;
-  transition: all $transition-fast;
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  &:not(:disabled):hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(212, 168, 83, 0.3);
-  }
-}
-
-// 工具栏
-.tools-panel {
-  grid-row: 3 / 5;
-  grid-column: 2;
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-lg;
-  padding-left: $spacing-lg;
 }
 
 .tool-card {
@@ -780,45 +692,6 @@ function requestHint(): void {
   font-size: $text-xs;
   color: $color-text-secondary;
   line-height: $leading-relaxed;
-}
-
-.key-points-list {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-  li {
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-    font-size: $text-sm;
-    color: $color-text-secondary;
-  }
-}
-
-.point-check {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: $radius-sm;
-}
-
-.hint-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: $spacing-sm;
-  padding: $spacing-md;
-  background: rgba(255, 255, 255, 0.05);
-  color: $color-text-secondary;
-  font-size: $text-sm;
-  border-radius: $radius-md;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all $transition-fast;
-  &:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: $color-accent;
-    border-color: rgba(212, 168, 83, 0.3);
-  }
 }
 
 // 弹窗
@@ -890,5 +763,45 @@ function requestHint(): void {
   animation: slideUp 0.5s ease forwards;
   animation-delay: calc(var(--delay) * 0.1s);
   opacity: 0;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+// 实时转录样式
+.partial-transcript {
+  opacity: 0.7;
+  .message-text {
+    background: rgba(212, 168, 83, 0.1);
+    border: 1px dashed rgba(212, 168, 83, 0.3);
+  }
+}
+
+.cursor-blink {
+  animation: blink 1s step-end infinite;
+  color: $color-accent;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
 </style>

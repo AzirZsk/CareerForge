@@ -44,6 +44,46 @@ springdoc:
   api-docs:
     path: /v3/api-docs
 
+# 语音服务配置
+landit:
+  voice:
+    provider: aliyun  # aliyun, openai, azure（启动时确定，不支持运行时切换）
+
+    aliyun:
+      api-key: ${ALIYUN_API_KEY:}
+      asr:
+        model: paraformer-realtime-v2
+        format: pcm
+        sample-rate: 16000
+        enable-punctuation: true
+        enable-itn: true
+        language: zh
+        enable-vad: true
+      tts:
+        model: cosyvoice-v2
+        format: wav
+        sample-rate: 16000
+      voices:
+        interviewer: longxiaochun_v2
+        assistant: zhimiao_emo_v2
+
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      asr:
+        model: whisper-1
+      tts:
+        model: tts-1
+        default-voice: alloy
+
+    azure:
+      subscription-key: ${AZURE_SPEECH_KEY:}
+      region: eastasia
+      asr:
+        language: zh-CN
+      tts:
+        interviewer-voice: zh-CN-XiaoxiaoNeural
+        assistant-voice: zh-CN-YunxiNeural
+
 # 日志配置 - 打印 AI 请求详情
 logging:
   level:
