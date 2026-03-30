@@ -6,58 +6,136 @@
 <template>
   <div class="content-block custom-block">
     <!-- 单条模式标题 -->
-    <h4 v-if="isSingleItem && title" class="custom-section-title">{{ title }}</h4>
+    <h4
+      v-if="isSingleItem && title"
+      class="custom-section-title"
+    >
+      {{ title }}
+    </h4>
     <!-- 自定义区块 item（从侧边栏选中） -->
-    <div class="custom-content-items" v-if="isSingleItem">
+    <div
+      v-if="isSingleItem"
+      class="custom-content-items"
+    >
       <div
-        class="content-item"
         v-for="(contentItem, idx) in contentItems"
         :key="idx"
+        class="content-item"
       >
         <div class="content-item-header">
           <span class="content-item-name">{{ contentItem.name }}</span>
-          <span class="content-item-period" v-if="contentItem.period">{{ contentItem.period }}</span>
+          <span
+            v-if="contentItem.period"
+            class="content-item-period"
+          >{{ contentItem.period }}</span>
         </div>
-        <p class="exp-position" v-if="contentItem.role">{{ contentItem.role }}</p>
-        <p class="exp-desc" v-if="contentItem.description">{{ contentItem.description }}</p>
-        <div v-if="contentItem.highlights?.length" class="content-item-highlights">
-          <span v-for="h in contentItem.highlights" :key="h" class="highlight-tag">{{ h }}</span>
+        <p
+          v-if="contentItem.role"
+          class="exp-position"
+        >
+          {{ contentItem.role }}
+        </p>
+        <p
+          v-if="contentItem.description"
+          class="exp-desc"
+        >
+          {{ contentItem.description }}
+        </p>
+        <div
+          v-if="contentItem.highlights?.length"
+          class="content-item-highlights"
+        >
+          <span
+            v-for="h in contentItem.highlights"
+            :key="h"
+            class="highlight-tag"
+          >{{ h }}</span>
         </div>
       </div>
       <!-- 空状态提示 -->
-      <div v-if="contentItems.length === 0" class="empty-content">
-        <p class="empty-text">暂无内容</p>
+      <div
+        v-if="contentItems.length === 0"
+        class="empty-content"
+      >
+        <p class="empty-text">
+          暂无内容
+        </p>
       </div>
     </div>
     <!-- 自定义区块列表 -->
-    <div v-else class="custom-section-list">
+    <div
+      v-else
+      class="custom-section-list"
+    >
       <div
-        class="content-item"
         v-for="(item, index) in flatContentItems"
         :key="index"
+        class="content-item"
       >
         <div class="content-item-header">
           <span class="content-item-name">{{ item.name }}</span>
-          <span class="content-item-period" v-if="item.period">{{ item.period }}</span>
+          <span
+            v-if="item.period"
+            class="content-item-period"
+          >{{ item.period }}</span>
           <div class="exp-actions">
-            <button class="item-btn edit" @click="$emit('edit-item', index)" title="编辑">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            <button
+              class="item-btn edit"
+              title="编辑"
+              @click="$emit('edit-item', index)"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
               </svg>
             </button>
-            <button class="item-btn delete" @click="$emit('delete-item', index)" title="删除">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            <button
+              class="item-btn delete"
+              title="删除"
+              @click="$emit('delete-item', index)"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
               </svg>
             </button>
           </div>
         </div>
-        <p class="exp-position" v-if="item.role">{{ item.role }}</p>
-        <p class="exp-desc" v-if="item.description">{{ item.description }}</p>
-        <div v-if="item.highlights?.length" class="content-item-highlights">
-          <span v-for="h in item.highlights" :key="h" class="highlight-tag">{{ h }}</span>
+        <p
+          v-if="item.role"
+          class="exp-position"
+        >
+          {{ item.role }}
+        </p>
+        <p
+          v-if="item.description"
+          class="exp-desc"
+        >
+          {{ item.description }}
+        </p>
+        <div
+          v-if="item.highlights?.length"
+          class="content-item-highlights"
+        >
+          <span
+            v-for="h in item.highlights"
+            :key="h"
+            class="highlight-tag"
+          >{{ h }}</span>
         </div>
       </div>
     </div>

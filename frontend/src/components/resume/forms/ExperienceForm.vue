@@ -15,18 +15,33 @@
           class="form-input"
           :class="{ 'form-input--error': hasError('school') }"
           placeholder="请输入学校名称"
-        />
+        >
       </div>
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">学历</label>
-          <select v-model="localData.degree" class="form-select">
-            <option value="">请选择</option>
-            <option value="高中">高中</option>
-            <option value="大专">大专</option>
-            <option value="本科">本科</option>
-            <option value="硕士">硕士</option>
-            <option value="博士">博士</option>
+          <select
+            v-model="localData.degree"
+            class="form-select"
+          >
+            <option value="">
+              请选择
+            </option>
+            <option value="高中">
+              高中
+            </option>
+            <option value="大专">
+              大专
+            </option>
+            <option value="本科">
+              本科
+            </option>
+            <option value="硕士">
+              硕士
+            </option>
+            <option value="博士">
+              博士
+            </option>
           </select>
         </div>
         <div class="form-group">
@@ -36,7 +51,7 @@
             type="text"
             class="form-input"
             placeholder="请输入专业名称"
-          />
+          >
         </div>
       </div>
       <div class="form-row">
@@ -47,7 +62,7 @@
             type="text"
             class="form-input"
             placeholder="例如：2020.09 - 2024.06"
-          />
+          >
         </div>
         <div class="form-group">
           <label class="form-label">绩点（GPA）</label>
@@ -56,16 +71,24 @@
             type="text"
             class="form-input"
             placeholder="例如：3.8/4.0"
-          />
+          >
         </div>
       </div>
       <div class="form-group">
         <label class="form-label">主修课程</label>
         <div class="tags-input">
           <div class="tags-list">
-            <span v-for="(course, index) in localCourses" :key="index" class="tag-item">
+            <span
+              v-for="(course, index) in localCourses"
+              :key="index"
+              class="tag-item"
+            >
               {{ course }}
-              <button class="tag-remove" @click="removeCourse(index)" type="button">×</button>
+              <button
+                class="tag-remove"
+                type="button"
+                @click="removeCourse(index)"
+              >×</button>
             </span>
           </div>
           <input
@@ -74,7 +97,7 @@
             class="form-input tag-input"
             placeholder="输入课程后按回车添加（如：数据结构、操作系统）"
             @keydown.enter="addCourse"
-          />
+          >
         </div>
       </div>
       <div class="form-group">
@@ -97,7 +120,7 @@
           class="form-input"
           :class="{ 'form-input--error': hasError('company') }"
           placeholder="请输入公司名称"
-        />
+        >
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -107,7 +130,7 @@
             type="text"
             class="form-input"
             placeholder="请输入职位名称"
-          />
+          >
         </div>
         <div class="form-group">
           <label class="form-label">时间段</label>
@@ -116,7 +139,7 @@
             type="text"
             class="form-input"
             placeholder="例如：2022.03 - 至今"
-          />
+          >
         </div>
       </div>
       <div class="form-row">
@@ -127,7 +150,7 @@
             type="text"
             class="form-input"
             placeholder="例如：北京市"
-          />
+          >
         </div>
         <div class="form-group">
           <label class="form-label">公司行业</label>
@@ -136,7 +159,7 @@
             type="text"
             class="form-input"
             placeholder="例如：互联网/金融/制造业"
-          />
+          >
         </div>
       </div>
       <div class="form-group">
@@ -146,7 +169,7 @@
           class="form-textarea"
           rows="4"
           placeholder="请描述工作内容和职责"
-        ></textarea>
+        />
       </div>
       <div class="form-group">
         <label class="form-label">工作成果</label>
@@ -160,9 +183,17 @@
         <label class="form-label">技术栈</label>
         <div class="tags-input">
           <div class="tags-list">
-            <span v-for="(tag, index) in localTechnologies" :key="index" class="tag-item">
+            <span
+              v-for="(tag, index) in localTechnologies"
+              :key="index"
+              class="tag-item"
+            >
               {{ tag }}
-              <button class="tag-remove" @click="removeTechnology(index)" type="button">×</button>
+              <button
+                class="tag-remove"
+                type="button"
+                @click="removeTechnology(index)"
+              >×</button>
             </span>
           </div>
           <input
@@ -171,7 +202,7 @@
             class="form-input tag-input"
             placeholder="输入技术后按回车添加（如：Java、Spring）"
             @keydown.enter="addTechnology"
-          />
+          >
         </div>
       </div>
       <div class="form-group">
@@ -194,7 +225,7 @@
           class="form-input"
           :class="{ 'form-input--error': hasError('name') }"
           placeholder="请输入项目名称"
-        />
+        >
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -204,7 +235,7 @@
             type="text"
             class="form-input"
             placeholder="请输入你的角色"
-          />
+          >
         </div>
         <div class="form-group">
           <label class="form-label">时间段</label>
@@ -213,7 +244,7 @@
             type="text"
             class="form-input"
             placeholder="例如：2023.01 - 2023.06"
-          />
+          >
         </div>
       </div>
       <div class="form-group">
@@ -223,7 +254,7 @@
           type="text"
           class="form-input"
           placeholder="项目在线地址或仓库链接"
-        />
+        >
       </div>
       <div class="form-group">
         <label class="form-label">项目描述</label>
@@ -232,15 +263,23 @@
           class="form-textarea"
           rows="4"
           placeholder="请描述项目内容和技术栈"
-        ></textarea>
+        />
       </div>
       <div class="form-group">
         <label class="form-label">技术栈</label>
         <div class="tags-input">
           <div class="tags-list">
-            <span v-for="(tech, index) in localTechnologies" :key="index" class="tag-item">
+            <span
+              v-for="(tech, index) in localTechnologies"
+              :key="index"
+              class="tag-item"
+            >
               {{ tech }}
-              <button class="tag-remove" @click="removeTechnology(index)" type="button">×</button>
+              <button
+                class="tag-remove"
+                type="button"
+                @click="removeTechnology(index)"
+              >×</button>
             </span>
           </div>
           <input
@@ -249,7 +288,7 @@
             class="form-input tag-input"
             placeholder="输入技术后按回车添加（如：Vue、Spring Boot）"
             @keydown.enter="addTechnology"
-          />
+          >
         </div>
       </div>
       <div class="form-group">
@@ -272,7 +311,7 @@
           class="form-input"
           :class="{ 'form-input--error': hasError('name') }"
           placeholder="请输入证书或荣誉名称"
-        />
+        >
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -282,7 +321,7 @@
             type="text"
             class="form-input"
             placeholder="例如：2023年6月"
-          />
+          >
         </div>
         <div class="form-group">
           <label class="form-label">颁发机构</label>
@@ -291,7 +330,7 @@
             type="text"
             class="form-input"
             placeholder="例如：中国信息通信研究院"
-          />
+          >
         </div>
       </div>
       <div class="form-row">
@@ -302,7 +341,7 @@
             type="text"
             class="form-input"
             placeholder="例如：CERT-2023-XXXXX"
-          />
+          >
         </div>
         <div class="form-group">
           <label class="form-label">证书链接</label>
@@ -311,7 +350,7 @@
             type="text"
             class="form-input"
             placeholder="证书在线验证链接"
-          />
+          >
         </div>
       </div>
     </template>
@@ -326,7 +365,7 @@
           class="form-input"
           :class="{ 'form-input--error': hasError('projectName') }"
           placeholder="请输入开源项目名称"
-        />
+        >
       </div>
       <div class="form-group">
         <label class="form-label">项目链接</label>
@@ -335,7 +374,7 @@
           type="text"
           class="form-input"
           placeholder="例如：https://github.com/xxx/xxx"
-        />
+        >
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -345,7 +384,7 @@
             type="text"
             class="form-input"
             placeholder="例如：核心贡献者、维护者"
-          />
+          >
         </div>
         <div class="form-group">
           <label class="form-label">时间段</label>
@@ -354,7 +393,7 @@
             type="text"
             class="form-input"
             placeholder="例如：2023.01 - 至今"
-          />
+          >
         </div>
       </div>
       <div class="form-group">
@@ -364,7 +403,7 @@
           class="form-textarea"
           rows="4"
           placeholder="请描述项目内容和你贡献的内容"
-        ></textarea>
+        />
       </div>
       <div class="form-group">
         <label class="form-label">主要成果</label>
@@ -386,7 +425,7 @@
           class="form-input"
           :class="{ 'form-input--error': hasError('title') }"
           placeholder="例如：游戏经历、志愿者经历、竞赛经历"
-        />
+        >
       </div>
       <div class="form-group">
         <label class="form-label">内容项</label>
@@ -398,10 +437,31 @@
           >
             <div class="item-header">
               <span class="item-index">内容项 {{ index + 1 }}</span>
-              <button class="remove-item-btn" @click="removeContentItem(index)" type="button">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
+              <button
+                class="remove-item-btn"
+                type="button"
+                @click="removeContentItem(index)"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <line
+                    x1="18"
+                    y1="6"
+                    x2="6"
+                    y2="18"
+                  />
+                  <line
+                    x1="6"
+                    y1="6"
+                    x2="18"
+                    y2="18"
+                  />
                 </svg>
               </button>
             </div>
@@ -413,21 +473,36 @@
                 class="form-input"
                 :class="{ 'form-input--error': hasError(`items.${index}.name`) }"
                 placeholder="请输入名称"
-              />
+              >
             </div>
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label">角色/职位</label>
-                <input v-model="item.role" type="text" class="form-input" placeholder="请输入角色或职位" />
+                <input
+                  v-model="item.role"
+                  type="text"
+                  class="form-input"
+                  placeholder="请输入角色或职位"
+                >
               </div>
               <div class="form-group">
                 <label class="form-label">时间段</label>
-                <input v-model="item.period" type="text" class="form-input" placeholder="例如：2023.01 - 2023.06" />
+                <input
+                  v-model="item.period"
+                  type="text"
+                  class="form-input"
+                  placeholder="例如：2023.01 - 2023.06"
+                >
               </div>
             </div>
             <div class="form-group">
               <label class="form-label">详细描述</label>
-              <textarea v-model="item.description" class="form-textarea" rows="3" placeholder="请输入详细描述"></textarea>
+              <textarea
+                v-model="item.description"
+                class="form-textarea"
+                rows="3"
+                placeholder="请输入详细描述"
+              />
             </div>
             <div class="form-group">
               <label class="form-label">成果/要点</label>
@@ -438,10 +513,31 @@
               />
             </div>
           </div>
-          <button class="add-item-btn" @click="addContentItem" type="button">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
+          <button
+            class="add-item-btn"
+            type="button"
+            @click="addContentItem"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <line
+                x1="12"
+                y1="5"
+                x2="12"
+                y2="19"
+              />
+              <line
+                x1="5"
+                y1="12"
+                x2="19"
+                y2="12"
+              />
             </svg>
             添加内容项
           </button>

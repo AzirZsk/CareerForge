@@ -7,91 +7,198 @@
   <div class="resume-page">
     <div class="container">
       <!-- 页面标题 -->
-      <header class="page-header animate-in" style="--delay: 0">
+      <header
+        class="page-header animate-in"
+        style="--delay: 0"
+      >
         <div class="header-content">
-          <h1 class="page-title">简历管理</h1>
-          <p class="page-desc">创建、管理和优化你的求职简历</p>
+          <h1 class="page-title">
+            简历管理
+          </h1>
+          <p class="page-desc">
+            创建、管理和优化你的求职简历
+          </p>
         </div>
-        <button class="create-btn" @click="createNewResume">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
+        <button
+          class="create-btn"
+          @click="createNewResume"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line
+              x1="12"
+              y1="5"
+              x2="12"
+              y2="19"
+            />
+            <line
+              x1="5"
+              y1="12"
+              x2="19"
+              y2="12"
+            />
           </svg>
           创建新简历
         </button>
       </header>
 
       <!-- 主简历卡片 -->
-      <section class="primary-resume-section animate-in" style="--delay: 1" v-if="store.primaryResume">
+      <section
+        v-if="store.primaryResume"
+        class="primary-resume-section animate-in"
+        style="--delay: 1"
+      >
         <div class="section-label">
-          <span class="label-dot"></span>
+          <span class="label-dot" />
           主简历
         </div>
         <div class="primary-resume-card">
           <div class="resume-main">
             <div class="resume-icon">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <line x1="16" y1="13" x2="8" y2="13"></line>
-                <line x1="16" y1="17" x2="8" y2="17"></line>
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line
+                  x1="16"
+                  y1="13"
+                  x2="8"
+                  y2="13"
+                />
+                <line
+                  x1="16"
+                  y1="17"
+                  x2="8"
+                  y2="17"
+                />
               </svg>
             </div>
             <div class="resume-info">
-              <h3 class="resume-name">{{ store.primaryResume.name }}</h3>
-              <p class="resume-target">目标岗位：{{ store.primaryResume.targetPosition || '暂未设置目标职位' }}</p>
+              <h3 class="resume-name">
+                {{ store.primaryResume.name }}
+              </h3>
+              <p class="resume-target">
+                目标岗位：{{ store.primaryResume.targetPosition || '暂未设置目标职位' }}
+              </p>
             </div>
           </div>
           <div class="resume-stats">
             <div class="stat-item">
-              <div class="stat-ring" :style="{ '--score': store.primaryResume.analyzed ? (store.primaryResume.score || 0) : 0 }">
+              <div
+                class="stat-ring"
+                :style="{ '--score': store.primaryResume.analyzed ? (store.primaryResume.score || 0) : 0 }"
+              >
                 <span class="ring-value">{{ store.primaryResume.analyzed ? (store.primaryResume.score || 0) : '~' }}</span>
               </div>
               <span class="stat-label">简历评分</span>
             </div>
             <div class="stat-item">
-              <div class="stat-ring" :style="{ '--score': store.primaryResume.analyzed ? (store.primaryResume.completeness || 0) : 0 }">
+              <div
+                class="stat-ring"
+                :style="{ '--score': store.primaryResume.analyzed ? (store.primaryResume.completeness || 0) : 0 }"
+              >
                 <span class="ring-value">{{ store.primaryResume.analyzed ? (store.primaryResume.completeness || 0) + '%' : '~' }}</span>
               </div>
               <span class="stat-label">完整度</span>
             </div>
           </div>
           <div class="resume-actions">
-            <button class="action-btn primary" @click="viewResume(store.primaryResume.id)">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                <circle cx="12" cy="12" r="3"></circle>
+            <button
+              class="action-btn primary"
+              @click="viewResume(store.primaryResume.id)"
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="3"
+                />
               </svg>
               查看详情
             </button>
             <div class="action-btn-wrapper">
-              <button class="action-btn secondary" @click="showTailorModal = true" :disabled="!store.primaryResume.analyzed">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                  <polyline points="14 2 14 8 20 8"></polyline>
-                  <line x1="16" y1="13" x2="8" y2="13"></line>
-                  <line x1="16" y1="17" x2="8" y2="17"></line>
-                  <polyline points="10 9 9 9 8 9"></polyline>
+              <button
+                class="action-btn secondary"
+                :disabled="!store.primaryResume.analyzed"
+                @click="showTailorModal = true"
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line
+                    x1="16"
+                    y1="13"
+                    x2="8"
+                    y2="13"
+                  />
+                  <line
+                    x1="16"
+                    y1="17"
+                    x2="8"
+                    y2="17"
+                  />
+                  <polyline points="10 9 9 9 8 9" />
                 </svg>
                 定制简历
               </button>
-              <div class="action-tooltip" v-if="store.primaryResume.analyzed">
+              <div
+                v-if="store.primaryResume.analyzed"
+                class="action-tooltip"
+              >
                 根据目标岗位JD自动调整简历内容
               </div>
-              <div class="disabled-tooltip" v-if="!store.primaryResume.analyzed">
-                <p class="tooltip-title">简历尚未完成AI诊断分析</p>
-                <p class="tooltip-hint">请先在简历详情页点击"开始优化"</p>
+              <div
+                v-if="!store.primaryResume.analyzed"
+                class="disabled-tooltip"
+              >
+                <p class="tooltip-title">
+                  简历尚未完成AI诊断分析
+                </p>
+                <p class="tooltip-hint">
+                  请先在简历详情页点击"开始优化"
+                </p>
               </div>
             </div>
-
           </div>
         </div>
       </section>
 
       <!-- 其他简历列表 -->
-      <section class="resumes-section animate-in" style="--delay: 2">
+      <section
+        class="resumes-section animate-in"
+        style="--delay: 2"
+      >
         <div class="section-header">
-          <h2 class="section-title">所有简历</h2>
+          <h2 class="section-title">
+            所有简历
+          </h2>
           <div class="filter-tabs">
             <button
               v-for="filter in filters"
@@ -115,8 +222,16 @@
           >
             <div class="card-header">
               <div class="resume-badges">
-                <div class="resume-badge primary-badge" v-if="resume.isPrimary">主简历</div>
-                <div class="resume-badge" :class="getStatusClass(resume.status)">
+                <div
+                  v-if="resume.isPrimary"
+                  class="resume-badge primary-badge"
+                >
+                  主简历
+                </div>
+                <div
+                  class="resume-badge"
+                  :class="getStatusClass(resume.status)"
+                >
                   {{ getStatusText(resume.status) }}
                 </div>
               </div>
@@ -125,47 +240,108 @@
                 <span class="score-max">/100</span>
               </div>
             </div>
-            <h4 class="card-title">{{ resume.name }}</h4>
-            <p class="card-target">{{ resume.targetPosition || '暂未设置目标职位' }}</p>
+            <h4 class="card-title">
+              {{ resume.name }}
+            </h4>
+            <p class="card-target">
+              {{ resume.targetPosition || '暂未设置目标职位' }}
+            </p>
             <div class="card-progress">
               <div class="progress-bar">
-                <div class="progress-fill" :style="{ width: resume.completeness + '%' }"></div>
+                <div
+                  class="progress-fill"
+                  :style="{ width: resume.completeness + '%' }"
+                />
               </div>
               <span class="progress-text">完整度 {{ resume.completeness }}%</span>
             </div>
             <div class="card-footer">
               <span class="update-time">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <polyline points="12 6 12 12 16 14"></polyline>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                  />
+                  <polyline points="12 6 12 12 16 14" />
                 </svg>
                 {{ resume.updatedAt }}
               </span>
               <div class="card-actions">
                 <!-- 定制简历按钮（已优化的简历才显示） -->
-                <div class="icon-action-wrapper" v-if="resume.status === 'optimized' && !resume.isPrimary">
+                <div
+                  v-if="resume.status === 'optimized' && !resume.isPrimary"
+                  class="icon-action-wrapper"
+                >
                   <button
                     class="icon-action tailor-action"
                     @click.stop="openTailorModal(resume.id)"
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                      <polyline points="14 2 14 8 20 8"></polyline>
-                      <line x1="16" y1="13" x2="8" y2="13"></line>
-                      <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line
+                        x1="16"
+                        y1="13"
+                        x2="8"
+                        y2="13"
+                      />
+                      <line
+                        x1="16"
+                        y1="17"
+                        x2="8"
+                        y2="17"
+                      />
                     </svg>
                   </button>
-                  <div class="icon-tooltip">根据目标岗位JD定制简历</div>
+                  <div class="icon-tooltip">
+                    根据目标岗位JD定制简历
+                  </div>
                 </div>
-                <button class="icon-action" @click.stop="setPrimary(resume.id)" v-if="!resume.isPrimary">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                <button
+                  v-if="!resume.isPrimary"
+                  class="icon-action"
+                  @click.stop="setPrimary(resume.id)"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                   </svg>
                 </button>
-                <button class="icon-action delete-action" @click.stop="deleteResume(resume.id)">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <button
+                  class="icon-action delete-action"
+                  @click.stop="deleteResume(resume.id)"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                   </svg>
                 </button>
               </div>
@@ -173,11 +349,31 @@
           </div>
 
           <!-- 新建简历卡片 -->
-          <div class="new-resume-card" @click="createNewResume">
+          <div
+            class="new-resume-card"
+            @click="createNewResume"
+          >
             <div class="new-icon">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <line
+                  x1="12"
+                  y1="5"
+                  x2="12"
+                  y2="19"
+                />
+                <line
+                  x1="5"
+                  y1="12"
+                  x2="19"
+                  y2="12"
+                />
               </svg>
             </div>
             <span class="new-text">创建新简历</span>
@@ -186,14 +382,22 @@
       </section>
 
       <!-- AI优化建议 -->
-      <section class="suggestions-section animate-in" style="--delay: 3">
+      <section
+        class="suggestions-section animate-in"
+        style="--delay: 3"
+      >
         <div class="section-header">
-          <h2 class="section-title">AI优化建议</h2>
+          <h2 class="section-title">
+            AI优化建议
+          </h2>
           <span class="suggestion-count">{{ totalSuggestionCount }} 条建议</span>
         </div>
 
         <!-- 按简历分组展示 -->
-        <div class="suggestion-groups" v-if="store.suggestionsByResume.length > 0">
+        <div
+          v-if="store.suggestionsByResume.length > 0"
+          class="suggestion-groups"
+        >
           <ResumeSuggestionsGroup
             v-for="(group, index) in store.suggestionsByResume"
             :key="group.resumeId"
@@ -203,11 +407,35 @@
         </div>
 
         <!-- 空状态 -->
-        <div class="empty-suggestions" v-else>
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        <div
+          v-else
+          class="empty-suggestions"
+        >
+          <svg
+            width="48"
+            height="48"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1"
+          >
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+            />
+            <line
+              x1="12"
+              y1="8"
+              x2="12"
+              y2="12"
+            />
+            <line
+              x1="12"
+              y1="16"
+              x2="12.01"
+              y2="16"
+            />
           </svg>
           <p>暂无优化建议</p>
           <span>完成简历优化后，这里会显示改进建议</span>
@@ -244,7 +472,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useAppStore } from '@/stores'
 import { useRouter } from 'vue-router'
 import type { Resume, ResumeStatus } from '@/types'
@@ -252,6 +480,7 @@ import type { OptimizeStage } from '@/types/resume-optimize'
 
 // 导入优化相关
 import { useResumeOptimize } from '@/composables/useResumeOptimize'
+import { useAIChat } from '@/composables/useAIChat'
 import { useToast } from '@/composables/useToast'
 import { saveTailoredResume } from '@/api/resume'
 import OptimizeProgressModal from '@/components/resume/OptimizeProgressModal.vue'
@@ -282,6 +511,11 @@ const pendingDeleteId = ref<string | null>(null)
 // 优化相关状态
 const showOptimizeModal = ref(false)
 const showTailorModal = ref(false)
+const { state: aiChatState } = useAIChat()
+// 定制弹窗打开时隐藏AI悬浮球
+watch(showTailorModal, (val) => {
+  aiChatState.hideFloat = val
+})
 // 当前定制中的简历 ID（用于从列表中点击定制按钮时传递）
 const tailorResumeId = ref<string>('')
 const {

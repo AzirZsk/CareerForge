@@ -13,15 +13,24 @@
         class="form-input"
         :class="{ 'form-input--error': hasError('name') }"
         placeholder="请输入姓名"
-      />
+      >
     </div>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">性别</label>
-        <select v-model="localData.gender" class="form-select">
-          <option value="">请选择</option>
-          <option value="男">男</option>
-          <option value="女">女</option>
+        <select
+          v-model="localData.gender"
+          class="form-select"
+        >
+          <option value="">
+            请选择
+          </option>
+          <option value="男">
+            男
+          </option>
+          <option value="女">
+            女
+          </option>
         </select>
       </div>
       <div class="form-group">
@@ -31,7 +40,7 @@
           type="text"
           class="form-input"
           placeholder="如 1995-03 或 1995-03-15"
-        />
+        >
       </div>
       <div class="form-group">
         <label class="form-label">年龄</label>
@@ -40,7 +49,7 @@
           type="text"
           class="form-input"
           placeholder="如 28"
-        />
+        >
       </div>
     </div>
     <div class="form-row">
@@ -52,7 +61,7 @@
           class="form-input"
           :class="{ 'form-input--error': hasError('phone') }"
           placeholder="请输入手机号"
-        />
+        >
       </div>
       <div class="form-group">
         <label class="form-label required">邮箱</label>
@@ -62,7 +71,7 @@
           class="form-input"
           :class="{ 'form-input--error': hasError('email') }"
           placeholder="请输入邮箱地址"
-        />
+        >
       </div>
     </div>
     <div class="form-group">
@@ -72,7 +81,7 @@
         type="text"
         class="form-input"
         placeholder="请输入目标岗位"
-      />
+      >
     </div>
     <div class="form-group">
       <label class="form-label">个人简介</label>
@@ -81,7 +90,7 @@
         class="form-textarea"
         rows="4"
         placeholder="请输入个人简介"
-      ></textarea>
+      />
     </div>
     <div class="form-group">
       <label class="form-label">所在地</label>
@@ -90,7 +99,7 @@
         type="text"
         class="form-input"
         placeholder="如 北京、上海、深圳"
-      />
+      >
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -100,7 +109,7 @@
           type="text"
           class="form-input"
           placeholder="LinkedIn 主页链接"
-        />
+        >
       </div>
       <div class="form-group">
         <label class="form-label">GitHub</label>
@@ -109,7 +118,7 @@
           type="text"
           class="form-input"
           placeholder="GitHub 主页链接"
-        />
+        >
       </div>
     </div>
     <div class="form-group">
@@ -119,7 +128,7 @@
         type="text"
         class="form-input"
         placeholder="个人网站或博客链接"
-      />
+      >
     </div>
   </div>
 </template>

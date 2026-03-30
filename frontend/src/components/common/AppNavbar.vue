@@ -7,7 +7,11 @@
   <header class="navbar">
     <div class="navbar-inner">
       <!-- Logo -->
-      <router-link to="/" class="logo" @click="store.setActiveNav('home')">
+      <router-link
+        to="/"
+        class="logo"
+        @click="store.setActiveNav('home')"
+      >
         <span class="logo-icon">L</span>
         <span class="logo-text">Land<span class="accent">It</span></span>
       </router-link>
@@ -22,9 +26,15 @@
           :class="{ active: isActive(item.key) }"
           @click="store.setActiveNav(item.key)"
         >
-          <span class="nav-icon" v-html="item.icon"></span>
+          <span
+            class="nav-icon"
+            v-html="item.icon"
+          />
           <span class="nav-label">{{ item.label }}</span>
-          <span v-if="item.badge" class="nav-badge">{{ item.badge }}</span>
+          <span
+            v-if="item.badge"
+            class="nav-badge"
+          >{{ item.badge }}</span>
         </router-link>
       </nav>
 
@@ -32,22 +42,32 @@
       <div class="user-area">
         <!-- 通知 -->
         <button class="icon-btn notification-btn">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
           </svg>
-          <span class="notification-dot"></span>
+          <span class="notification-dot" />
         </button>
 
         <!-- 用户头像 -->
-        <div class="user-avatar" @click="goToProfile">
+        <div
+          class="user-avatar"
+          @click="goToProfile"
+        >
           <span class="avatar-text">{{ userInitial }}</span>
         </div>
       </div>
     </div>
 
     <!-- 底部装饰线 -->
-    <div class="navbar-glow"></div>
+    <div class="navbar-glow" />
   </header>
 </template>
 

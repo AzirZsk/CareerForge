@@ -20,29 +20,29 @@ $color-text-muted: #52525b;
 $color-accent: #d4a853;
 $color-accent-light: #e8c47a;
 $color-accent-dark: #b8923f;
-$color-accent-glow: rgba(212, 168, 83, 0.15);
+$color-accent-glow: rgb(212 168 83 / 15%);
 
 // 功能色
 $color-success: #34d399;
-$color-success-bg: rgba(52, 211, 153, 0.1);
+$color-success-bg: rgb(52 211 153 / 10%);
 $color-warning: #fbbf24;
-$color-warning-bg: rgba(251, 191, 36, 0.1);
+$color-warning-bg: rgb(251 191 36 / 10%);
 $color-error: #f87171;
-$color-error-bg: rgba(248, 113, 113, 0.1);
+$color-error-bg: rgb(248 113 113 / 10%);
 $color-info: #60a5fa;
-$color-info-bg: rgba(96, 165, 250, 0.1);
+$color-info-bg: rgb(96 165 250 / 10%);
 
 // 渐变
 $gradient-gold: linear-gradient(135deg, $color-accent 0%, $color-accent-light 50%, $color-accent 100%);
 $gradient-dark: linear-gradient(180deg, $color-bg-primary 0%, $color-bg-deep 100%);
 $gradient-card: linear-gradient(145deg, $color-bg-secondary 0%, $color-bg-tertiary 100%);
-$gradient-glow: radial-gradient(ellipse at 50% 0%, rgba(212, 168, 83, 0.08) 0%, transparent 70%);
+$gradient-glow: radial-gradient(ellipse at 50% 0%, rgb(212 168 83 / 8%) 0%, transparent 70%);
 
 // 字体
-$font-display: 'Crimson Pro', Georgia, serif;
+$font-display: 'Crimson Pro', georgia, serif;
 $font-body: 'Outfit', -apple-system, sans-serif;
-$font-mono: 'Fira Code', 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', 'Droid Sans Mono', 'Source Code Pro', Consolas, monospace;
-$font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
+$font-mono: 'Fira Code', 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', 'Droid Sans Mono', 'Source Code Pro', consolas, monospace;
+$font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', consolas, monospace;
 
 // 字重
 $weight-light: 300;
@@ -79,6 +79,7 @@ $spacing-3xl: 4rem;
 $spacing-4xl: 6rem;
 
 // 圆角
+$radius-xs: 4px;
 $radius-sm: 6px;
 $radius-md: 10px;
 $radius-lg: 16px;
@@ -86,11 +87,11 @@ $radius-xl: 24px;
 $radius-full: 9999px;
 
 // 阴影
-$shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-$shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-$shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-$shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.6);
-$shadow-glow: 0 0 40px rgba(212, 168, 83, 0.15);
+$shadow-sm: 0 1px 2px rgb(0 0 0 / 30%);
+$shadow-md: 0 4px 12px rgb(0 0 0 / 40%);
+$shadow-lg: 0 8px 32px rgb(0 0 0 / 50%);
+$shadow-xl: 0 16px 48px rgb(0 0 0 / 60%);
+$shadow-glow: 0 0 40px rgb(212 168 83 / 15%);
 
 // 过渡
 $transition-fast: 150ms ease;
@@ -114,3 +115,8 @@ $z-overlay: 1000;           // 全屏遮罩层（如对比视图）
 $z-modal-overlay: 1100;     // 需要在全屏遮罩之上显示的弹窗
 $z-toast: 1200;
 $z-tooltip: 1300;
+
+// AI聊天窗口层级
+$z-chat-float: 900;         // 悬浮按钮
+$z-chat-window: 1000;       // 聊天窗口
+$z-chat-dialog: 1020;       // 聊天窗口内的对话框

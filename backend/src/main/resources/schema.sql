@@ -272,3 +272,28 @@ CREATE INDEX IF NOT EXISTS idx_review_interview_id ON t_interview_review(intervi
 CREATE INDEX IF NOT EXISTS idx_session_user_id ON t_interview_session(user_id);
 CREATE INDEX IF NOT EXISTS idx_conversation_session_id ON t_conversation(session_id);
 CREATE INDEX IF NOT EXISTS idx_suggestion_section_id ON t_resume_suggestion(section_id);
+
+-- ----------------------------------------------------------------------------
+-- AI聊天消息表
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS t_chat_message (
+    id VARCHAR(64) PRIMARY KEY,              -- 主键ID（雪花ID字符串）
+    resume_id VARCHAR(64),                   -- 关联的简历ID（可选，通用聊天模式为空）
+    session_id VARCHAR(64),                  -- 会话ID（通用聊天模式使用UUID，简历模式使用resumeId）
+    role VARCHAR(20) NOT NULL,               -- 角色（user / assistant）
+    content TEXT NOT NULL,                   -- 消息内容
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    deleted INTEGER DEFAULT 0                -- 逻辑删除标记（0-未删除 1-已删除）
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_message_resume_id ON t_chat_message(resume_id);
+CREATE INDEX IF NOT EXISTS idx_chat_message_session_id ON t_chat_message(session_id);
+CREATE INDEX IF NOT EXISTS idx_chat_message_created_at ON t_chat_message(created_at);
+
+-- ----------------------------------------------------------------------------
+-- AI聊天消息表扩展：操作卡片和状态字段
+-- ----------------------------------------------------------------------------
+ALTER TABLE t_chat_message ADD COLUMN actions TEXT;
+ALTER TABLE t_chat_message ADD COLUMN action_status VARCHAR(20) DEFAULT 'pending';
+ALTER TABLE t_chat_message ADD COLUMN segments TEXT;

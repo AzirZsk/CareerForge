@@ -6,7 +6,10 @@
 <template>
   <div class="progress-section">
     <div class="progress-bar">
-      <div class="progress-fill" :style="{ width: progress + '%' }"></div>
+      <div
+        class="progress-fill"
+        :style="{ width: progress + '%' }"
+      />
     </div>
     <div class="progress-info">
       <span class="progress-text">{{ message }}</span>

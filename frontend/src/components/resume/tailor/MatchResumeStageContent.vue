@@ -8,8 +8,11 @@
     <!-- 匹配度状态栏 -->
     <div class="match-header">
       <span class="match-title">匹配分析</span>
-      <div class="match-badge" :class="matchLevel">
-        <span class="match-dot"></span>
+      <div
+        class="match-badge"
+        :class="matchLevel"
+      >
+        <span class="match-dot" />
         <span class="match-percent">{{ data.matchScore }}%</span>
         <span class="match-level-text">{{ matchLevelText }}</span>
       </div>
@@ -18,34 +21,72 @@
     <!-- 匹配详情 -->
     <div class="match-details">
       <!-- 已匹配技能 -->
-      <div class="match-section" v-if="data.matchedSkills?.length">
-        <div class="match-title success">已匹配技能</div>
+      <div
+        v-if="data.matchedSkills?.length"
+        class="match-section"
+      >
+        <div class="match-title success">
+          已匹配技能
+        </div>
         <div class="match-tags">
-          <span v-for="skill in data.matchedSkills" :key="skill" class="match-tag success">{{ skill }}</span>
+          <span
+            v-for="skill in data.matchedSkills"
+            :key="skill"
+            class="match-tag success"
+          >{{ skill }}</span>
         </div>
       </div>
 
       <!-- 缺失技能 -->
-      <div class="match-section" v-if="data.missingSkills?.length">
-        <div class="match-title warning">缺失技能</div>
+      <div
+        v-if="data.missingSkills?.length"
+        class="match-section"
+      >
+        <div class="match-title warning">
+          缺失技能
+        </div>
         <div class="match-tags">
-          <span v-for="skill in data.missingSkills" :key="skill" class="match-tag warning">{{ skill }}</span>
+          <span
+            v-for="skill in data.missingSkills"
+            :key="skill"
+            class="match-tag warning"
+          >{{ skill }}</span>
         </div>
       </div>
 
       <!-- 相关经验 -->
-      <div class="match-section" v-if="data.relevantExperiences?.length">
-        <div class="match-title info">相关经验</div>
+      <div
+        v-if="data.relevantExperiences?.length"
+        class="match-section"
+      >
+        <div class="match-title info">
+          相关经验
+        </div>
         <ul class="match-list">
-          <li v-for="(exp, idx) in data.relevantExperiences" :key="idx">{{ exp }}</li>
+          <li
+            v-for="(exp, idx) in data.relevantExperiences"
+            :key="idx"
+          >
+            {{ exp }}
+          </li>
         </ul>
       </div>
 
       <!-- 优化建议 -->
-      <div class="match-section" v-if="data.adjustmentSuggestions?.length">
-        <div class="match-title accent">优化建议</div>
+      <div
+        v-if="data.adjustmentSuggestions?.length"
+        class="match-section"
+      >
+        <div class="match-title accent">
+          优化建议
+        </div>
         <ul class="match-list">
-          <li v-for="(suggestion, idx) in data.adjustmentSuggestions" :key="idx">{{ suggestion }}</li>
+          <li
+            v-for="(suggestion, idx) in data.adjustmentSuggestions"
+            :key="idx"
+          >
+            {{ suggestion }}
+          </li>
         </ul>
       </div>
     </div>

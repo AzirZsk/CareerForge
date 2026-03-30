@@ -8,6 +8,8 @@
 
 | 日期 | 版本 | 变更内容 |
 |------|------|----------|
+| 2026-03-30 | 2.1.0 | Graph 子包重组（optimize/tailor 分包）、新增 BaseGraphConstants 公共常量基类、新增 ResumeChangeApplier 工具类、测试文件增至 2 个 |
+| 2026-03-30 | 2.0.0 | 新增 AI Chat 模块（30 个 Java 文件）：ReactAgent + 技能系统 + 8 个工具 + MemorySaver + SSE 流式输出 |
 | 2026-03-18 | 1.5.0 | AI 上下文全面扫描更新：更新文件统计（110 个 Java 文件、8 个控制器、11 个服务、8 个 Handler） |
 | 2026-03-18 | 1.4.0 | 定制简历限制条件改为"仅已优化简历" |
 | 2026-03-08 | 1.3.0 | 更新工作流结构（简化为三节点）、更新文件清单、补充 Composables 说明 |
@@ -22,6 +24,8 @@
 后端服务模块负责提供所有业务 API 接口，包括：
 - 用户信息管理
 - 简历管理、优化、导出
+- 简历优化/定制工作流（StateGraph 状态机）
+- AI 对话式简历优化（ReactAgent + 技能系统）
 - 面试会话与答题流程
 - 面试复盘与分析
 - 数据统计
@@ -70,6 +74,7 @@ export AI_MODEL=gpt-4o
 | resume | `/resumes` | ResumeController | 简历CRUD与优化 |
 | resume-workflow | `/resumes` | ResumeOptimizeGraphController | 简历优化工作流 |
 | resume-tailor | `/resumes` | TailorResumeController | 简历定制工作流 |
+| **chat** | `/chat` | **AIChatController** | **AI 对话式简历优化** |
 | interview | `/interviews` | InterviewController | 面试会话管理 |
 | review | `/reviews` | ReviewController | 面试复盘 |
 | statistics | `/statistics` | StatisticsController | 数据统计 |
@@ -100,7 +105,7 @@ ApiResponse<T> {
 | lombok | - | 代码简化 |
 | hutool-all | 5.8.34 | 工具库 |
 | springdoc-openapi-starter-webmvc-ui | 2.8.4 | API 文档 |
-| spring-ai-alibaba-agent-framework | 1.1.2.0 | 工作流引擎 |
+| spring-ai-alibaba-agent-framework | 1.1.2.0 | 工作流引擎 + ReactAgent |
 | spring-ai-starter-model-openai | 1.1.2 | AI 大模型（OpenAI 协议） |
 | pdfbox | 3.0.4 | PDF 处理 |
 | poi-ooxml | 5.3.0 | Word 处理 |
@@ -137,6 +142,39 @@ mybatis-plus:
 
 ## 核心架构
 
+### AI 聊天 Agent（ReactAgent）
+
+AI 聊天模块基于 ReactAgent 构建，支持双模式（通用聊天/简历对话）：
+
+**配置类（ChatAgentConfig）：**
+- `skillRegistry()` - 从 classpath:skills/ 加载技能
+- `skillsAgentHook()` - 注册 read_skill 工具
+- `chatMemorySaver()` - 内存存储对话记忆
+- `chatAgent()` - 创建 ReactAgent（系统提示词 + 工具 + 技能 Hook）
+
+**SSE 事件处理流程：**
+1. 用户消息通过 `ChatStreamRequest`（FormData）接收
+2. `AIChatService.chat()` 构建上下文（简历内容/通用提示词）
+3. `chatAgent.stream()` 返回 Flux
+4. 处理 `AGENT_MODEL_STREAMING`（文本片段）和 `AGENT_TOOL_FINISHED`（工具结果）
+5. 工具结果路由：`select_resume` -> 简历选择事件，`update/add/delete_section` -> 修改建议事件
+6. `AIChatHandler.streamChat()` 包装为 SseEmitter
+
+**服务重启恢复：**
+- `AIChatService.hasMemoryCheckpoint()` 检查 MemorySaver 是否有上下文
+- 如果丢失（服务重启），从数据库加载最近 20 条历史，截断 >500 字符
+- 将历史注入到 instruction 中恢复对话上下文
+
+**关键 DTO：**
+
+| DTO | 字段 | 说明 |
+|-----|------|------|
+| ChatStreamRequest | resumeId, sessionId, currentUserMessage, images | 流式请求（FormData） |
+| ChatEvent | type, content, timestamp | SSE 事件（chunk/suggestion/complete/error/resume_selected） |
+| ChatMessageVO | id, role, content, createdAt, actions, actionStatus, segments | 消息 VO |
+| SectionChange | sectionId, sectionType, sectionTitle, changeType, beforeContent, afterContent, description | 区块变更明细 |
+| ApplyChangesRequest | resumeId, changes | 批量应用请求 |
+
 ### 简历优化工作流 Graph
 
 简历优化功能基于 Spring AI Alibaba Agent Framework 构建状态机工作流：
@@ -148,19 +186,20 @@ START --> DiagnoseQuick --> GenerateSuggestions --> OptimizeSection --> END
 
 **当前工作流为简化版本，仅包含三个核心节点：**
 
-| 节点 | 类名 | 职责 |
-|------|------|------|
-| diagnose_quick | DiagnoseResumeNode | 快速诊断简历问题（评分、建议） |
-| generate_suggestions | GenerateSuggestionsNode | 基于诊断结果生成优化建议 |
-| optimize_section | OptimizeSectionNode | 根据建议优化简历内容 |
+| 节点 | 类名 | 位置 | 职责 |
+|------|------|------|------|
+| diagnose_quick | DiagnoseResumeNode | `graph/optimize/` | 快速诊断简历问题（评分、建议） |
+| generate_suggestions | GenerateSuggestionsNode | `graph/optimize/` | 基于诊断结果生成优化建议 |
+| optimize_section | OptimizeSectionNode | `graph/optimize/` | 根据建议优化简历内容 |
 
 **工作流配置文件：**
 
-| 文件 | 职责 |
-|------|------|
-| `ResumeOptimizeGraphConfig.java` | 定义工作流节点、边、状态策略 |
-| `ResumeOptimizeGraphService.java` | 执行、恢复、状态管理工作流 |
-| `ResumeOptimizeGraphConstants.java` | 统一管理状态键、节点名称等常量 |
+| 文件 | 位置 | 职责 |
+|------|------|------|
+| `BaseGraphConstants.java` | `graph/` | 公共常量基类（STATE_RESUME_CONTENT, STATE_MESSAGES 等） |
+| `ResumeOptimizeGraphConfig.java` | `graph/optimize/` | 定义工作流节点、边、状态策略 |
+| `ResumeOptimizeGraphService.java` | `graph/optimize/` | 执行、恢复、状态管理工作流 |
+| `ResumeOptimizeGraphConstants.java` | `graph/optimize/` | 统一管理状态键、节点名称等常量 |
 
 **工作流 API：**
 
@@ -183,19 +222,19 @@ START --> AnalyzeJD --> MatchResume --> GenerateTailored --> END
 
 **工作流节点：**
 
-| 节点 | 类名 | 职责 |
-|------|------|------|
-| analyze_jd | AnalyzeJDNode | 分析职位描述，提取必备技能、关键词等 |
-| match_resume | MatchResumeNode | 匹配简历与 JD，计算匹配度 |
-| generate_tailored | GenerateTailoredResumeNode | 根据匹配分析生成定制简历 |
+| 节点 | 类名 | 位置 | 职责 |
+|------|------|------|------|
+| analyze_jd | AnalyzeJDNode | `graph/tailor/` | 分析职位描述，提取必备技能、关键词等 |
+| match_resume | MatchResumeNode | `graph/tailor/` | 匹配简历与 JD，计算匹配度 |
+| generate_tailored | GenerateTailoredResumeNode | `graph/tailor/` | 根据匹配分析生成定制简历 |
 
 **工作流配置文件：**
 
-| 文件 | 职责 |
-|------|------|
-| `TailorResumeGraphConfig.java` | 定义工作流节点、边、状态策略 |
-| `TailorResumeGraphService.java` | 执行、恢复、状态管理工作流 |
-| `TailorResumeGraphConstants.java` | 统一管理状态键、节点名称等常量 |
+| 文件 | 位置 | 职责 |
+|------|------|------|
+| `TailorResumeGraphConfig.java` | `graph/tailor/` | 定义工作流节点、边、状态策略 |
+| `TailorResumeGraphService.java` | `graph/tailor/` | 执行、恢复、状态管理工作流 |
+| `TailorResumeGraphConstants.java` | `graph/tailor/` | 统一管理状态键、节点名称等常量 |
 
 ### 区块类型系统
 
@@ -232,6 +271,8 @@ AI 功能通过 `AIPromptProperties` 配置类管理提示词：
 
 **提示词类别**：
 - `resume.parse` - 简历解析提示词
+- `chat.advisorConfig` - AI 聊天系统提示词（简历模式）
+- `chat.generalConfig` - AI 聊天系统提示词（通用模式）
 - `graph.diagnoseQuickConfig` - 工作流快速诊断提示词（拆分版：systemPrompt + userPromptTemplate）
 - `graph.generateSuggestionsConfig` - 生成建议提示词（拆分版）
 - `graph.optimizeSectionConfig` - 内容优化提示词（拆分版）
@@ -263,6 +304,7 @@ AI 功能通过 `AIPromptProperties` 配置类管理提示词：
 | t_question_analysis | QuestionAnalysis | 问题分析 |
 | t_improvement_plan | ImprovementPlan | 改进计划 |
 | t_job | Job | 职位推荐 |
+| t_chat_message | ChatMessage | AI 聊天消息（含 actions、action_status、segments 字段） |
 
 ### 基础实体 (BaseEntity)
 ```java
@@ -330,10 +372,11 @@ public abstract class BaseEntity {
 
 ### resume - 简历模块
 - **路径**：`src/main/java/com/landit/resume/`
-- **文件统计**：39 个 Java 文件
+- **文件统计**：64 个 Java 文件（含 graph 子模块）
 - **实体**：Resume, ResumeSection, ResumeSuggestion, ResumeVersion
-- **控制器**：ResumeController, ResumeOptimizeGraphController, TailorResumeController
-- **Handler**：ResumeHandler, ResumeOptimizeGraphHandler, TailorResumeGraphHandler
+- **控制器**：ResumeController, ResumeOptimizeGraphController, TailorResumeController, ResumeSuggestionController
+- **Handler**：ResumeHandler, ResumeOptimizeGraphHandler, TailorResumeGraphHandler, ResumeSuggestionHandler
+- **工具类**：ChangeFieldTranslator, ResumeChangeApplier, ResumeSectionShortener, TailoredResumeToSectionConverter, GraphSseHelper
 - **核心功能**：
   - 简历 CRUD
   - 版本管理与回滚
@@ -342,14 +385,25 @@ public abstract class BaseEntity {
   - PDF 导出
   - 模块级 CRUD
 
-### resume/graph - 简历优化/定制工作流
+### resume/graph - 简历工作流
 - **路径**：`src/main/java/com/landit/resume/graph/`
 - **文件统计**：13 个 Java 文件
-- **优化节点**：DiagnoseResumeNode, GenerateSuggestionsNode, OptimizeSectionNode
-- **定制节点**：AnalyzeJDNode, MatchResumeNode, GenerateTailoredResumeNode
-- **配置**：ResumeOptimizeGraphConfig, ResumeOptimizeGraphConstants, TailorResumeGraphConfig, TailorResumeGraphConstants
-- **服务**：ResumeOptimizeGraphService, TailorResumeGraphService
-- **Handler**：ResumeOptimizeGraphHandler, TailorResumeGraphHandler
+- **公共**：BaseGraphConstants（常量基类）
+- **optimize 子包**：DiagnoseResumeNode, GenerateSuggestionsNode, OptimizeSectionNode, ResumeOptimizeGraphConfig, ResumeOptimizeGraphConstants, ResumeOptimizeGraphService
+- **tailor 子包**：AnalyzeJDNode, MatchResumeNode, GenerateTailoredResumeNode, TailorResumeGraphConfig, TailorResumeGraphConstants, TailorResumeGraphService
+
+### chat - AI 聊天模块
+- **路径**：`src/main/java/com/landit/chat/`
+- **文件统计**：30 个 Java 文件
+- **config/** - ChatAgentConfig（ReactAgent 创建、技能注册、工具注入）
+- **controller/** - AIChatController（SSE 流式聊天、历史管理、修改应用）
+- **handler/** - AIChatHandler（SSE 事件管理，5分钟超时）
+- **service/** - AIChatService（Agent 执行、上下文构建、重启恢复）, ChatMessageService（消息 CRUD）
+- **entity/** - ChatMessage（含 actions, actionStatus, segments 字段）
+- **dto/** - ChatStreamRequest, ChatEvent, ChatMessageVO, SectionChange, ApplyChangesRequest
+- **dto/tool/** - ToolResponse, ToolErrorResponse, SectionSuggestionResponse, GetResumeResponse, GetSectionResponse, CreateResumeResponse, ResumeBriefVO, SelectResumeResponse
+- **mapper/** - ChatMessageMapper
+- **tools/** - ToolUtils, GetResumeTool, GetSectionTool, UpdateSectionTool, AddSectionTool, DeleteSectionTool, CreateResumeTool, GetResumeListTool, SelectResumeTool
 
 ### interview - 面试模块
 - **路径**：`src/main/java/com/landit/interview/`
@@ -411,11 +465,17 @@ A:
 
 ### Q: 如何添加新的工作流节点？
 A:
-1. 在 `resume/graph/` 下创建 Node 类，实现 `AsyncNodeAction` 接口
-2. 在 `ResumeOptimizeGraphConstants` 中定义节点名称常量
-3. 在 `ResumeOptimizeGraphConfig` 中使用 `addNode()` 注册节点
-4. 在 `resumeOptimizeKeyStrategyFactory` 中添加节点需要的状态策略
+1. 在 `resume/graph/optimize/` 或 `resume/graph/tailor/` 下创建 Node 类，实现 `AsyncNodeAction` 接口
+2. 在对应 `*GraphConstants` 中定义节点名称常量
+3. 在对应 `*GraphConfig` 中使用 `addNode()` 注册节点
+4. 在对应 `keyStrategyFactory` 中添加节点需要的状态策略
 5. 使用 `addEdge()` 或 `addConditionalEdges()` 连接节点
+
+### Q: 如何添加新的 AI Chat 工具？
+A:
+1. 在 `chat/tools/` 下创建工具类，使用 `ToolUtils.createCallback()` 包装
+2. 在 `ChatAgentConfig.createResumeTools()` 中注册到工具列表
+3. 如果需要生成前端事件，在 `AIChatService.buildSuggestionEvents()` 中添加路由逻辑
 
 ### Q: 如何添加新的业务模块？
 A:
@@ -443,6 +503,7 @@ backend/
 │   │   ├── common/                      # 公共模块（33 个文件）
 │   │   │   ├── annotation/              # @SchemaField 注解
 │   │   │   ├── config/                  # 配置类（AI、MyBatis、SQLite、Jackson）
+│   │   │   ├── constant/                # 常量
 │   │   │   ├── entity/                  # 基础实体
 │   │   │   ├── enums/                   # 枚举定义（11 个）
 │   │   │   ├── exception/               # 异常处理
@@ -452,16 +513,28 @@ backend/
 │   │   │   ├── service/                 # 公共服务（AI、文件、搜索）
 │   │   │   └── util/                    # 工具类
 │   │   ├── user/                        # 用户模块（11 个文件）
-│   │   ├── resume/                      # 简历模块（39 个文件）
-│   │   │   ├── controller/              # 控制器
+│   │   ├── resume/                      # 简历模块（64 个文件）
+│   │   │   ├── controller/              # 控制器（4 个）
 │   │   │   ├── convertor/               # 转换器
 │   │   │   ├── dto/                     # 数据传输对象
 │   │   │   ├── entity/                  # 实体类
-│   │   │   ├── graph/                   # 工作流节点（13 个文件）
-│   │   │   ├── handler/                 # 业务处理器
+│   │   │   ├── graph/                   # 工作流（13 个文件）
+│   │   │   │   ├── BaseGraphConstants.java    # 公共常量基类
+│   │   │   │   ├── optimize/            # 优化工作流子包
+│   │   │   │   └── tailor/              # 定制工作流子包
+│   │   │   ├── handler/                 # 业务处理器（4 个）
 │   │   │   ├── mapper/                  # 数据访问
 │   │   │   ├── service/                 # 服务层
-│   │   │   └── util/                    # 工具类
+│   │   │   └── util/                    # 工具类（5 个）
+│   │   ├── chat/                        # AI 聊天模块（30 个文件）
+│   │   │   ├── config/                  # Agent 配置
+│   │   │   ├── controller/              # 控制器
+│   │   │   ├── dto/                     # DTO（含 tool 子包）
+│   │   │   ├── entity/                  # 实体
+│   │   │   ├── handler/                 # Handler
+│   │   │   ├── mapper/                  # Mapper
+│   │   │   ├── service/                 # 服务层
+│   │   │   └── tools/                   # 工具（9 个）
 │   │   ├── interview/                   # 面试模块（20 个文件）
 │   │   ├── review/                      # 复盘模块（13 个文件）
 │   │   ├── statistics/                  # 统计模块（4 个文件）
@@ -469,15 +542,24 @@ backend/
 │   └── resources/
 │       ├── application.yml              # 应用配置
 │       ├── logback-spring.xml           # 日志配置
-│       └── schema.sql                   # 数据库结构
-└── src/test/                            # 测试目录（1 个测试文件）
+│       ├── schema.sql                   # 数据库结构
+│       └── skills/                      # AI 技能定义
+│           ├── resume-diagnosis/
+│           ├── resume-optimizer/
+│           └── resume-suggestions/
+└── src/test/                            # 测试目录（2 个测试文件）
+    └── java/com/landit/resume/util/
+        ├── ChangeFieldTranslatorTest.java
+        └── ResumeChangeApplierTest.java
 ```
 
 ---
 
 ## 测试与质量
 
-**当前状态**：项目有 1 个测试文件
+**当前状态**：项目有 2 个测试文件
+- `ChangeFieldTranslatorTest.java` - 字段翻译工具测试
+- `ResumeChangeApplierTest.java` - 简历修改应用工具测试
 
 **建议补充**：
 1. 单元测试：Service 层业务逻辑测试

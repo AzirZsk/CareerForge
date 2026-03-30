@@ -14,20 +14,48 @@
       >
         <div class="modal-container">
           <header class="modal-header">
-            <h3 class="modal-title">添加模块</h3>
-            <button class="close-btn" @click="$emit('update:visible', false)">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
+            <h3 class="modal-title">
+              添加模块
+            </h3>
+            <button
+              class="close-btn"
+              @click="$emit('update:visible', false)"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <line
+                  x1="18"
+                  y1="6"
+                  x2="6"
+                  y2="18"
+                />
+                <line
+                  x1="6"
+                  y1="6"
+                  x2="18"
+                  y2="18"
+                />
               </svg>
             </button>
           </header>
 
           <div class="modal-body">
-            <p v-if="availableTypes.length === 0" class="empty-hint">
+            <p
+              v-if="availableTypes.length === 0"
+              class="empty-hint"
+            >
               所有模块类型已存在，无需添加
             </p>
-            <div v-else class="section-types-grid">
+            <div
+              v-else
+              class="section-types-grid"
+            >
               <button
                 v-for="typeInfo in availableTypes"
                 :key="typeInfo.type"
@@ -36,7 +64,10 @@
               >
                 <span class="type-icon">{{ typeInfo.icon }}</span>
                 <span class="type-label">{{ typeInfo.label }}</span>
-                <span v-if="typeInfo.tooltip" class="tooltip">{{ typeInfo.tooltip }}</span>
+                <span
+                  v-if="typeInfo.tooltip"
+                  class="tooltip"
+                >{{ typeInfo.tooltip }}</span>
               </button>
             </div>
           </div>

@@ -7,27 +7,42 @@
   <div class="data-content">
     <!-- 评分环 -->
     <div class="score-display">
-      <div class="score-ring" :style="{ '--score': data.overallScore }">
+      <div
+        class="score-ring"
+        :style="{ '--score': data.overallScore }"
+      >
         <span>{{ data.overallScore }}</span>
       </div>
       <span class="score-label">综合评分</span>
     </div>
 
     <!-- 维度网格 -->
-    <div class="dimensions-grid" v-if="data.dimensionScores">
-      <div class="dimension-item" v-for="(dim, key) in data.dimensionScores" :key="key">
+    <div
+      v-if="data.dimensionScores"
+      class="dimensions-grid"
+    >
+      <div
+        v-for="(dim, key) in data.dimensionScores"
+        :key="key"
+        class="dimension-item"
+      >
         <span class="dim-name">{{ getDimensionLabel(String(key)) }}</span>
         <span class="dim-score">{{ dim }}</span>
       </div>
     </div>
 
     <!-- 待改进项 -->
-    <div class="issues-section" v-if="data.weaknesses?.length">
-      <div class="issues-title">待改进 ({{ data.weaknesses.length }})</div>
+    <div
+      v-if="data.weaknesses?.length"
+      class="issues-section"
+    >
+      <div class="issues-title">
+        待改进 ({{ data.weaknesses.length }})
+      </div>
       <div
-        class="issue-item"
         v-for="(weakness, idx) in data.weaknesses"
         :key="idx"
+        class="issue-item"
         :class="getWeaknessSeverity(weakness)"
       >
         <span class="issue-severity">
@@ -38,15 +53,35 @@
     </div>
 
     <!-- 亮点 -->
-    <div class="highlights-section" v-if="data.strengths?.length">
-      <div class="highlights-title">亮点</div>
-      <div class="highlight-tag" v-for="(h, idx) in data.strengths" :key="idx">{{ h }}</div>
+    <div
+      v-if="data.strengths?.length"
+      class="highlights-section"
+    >
+      <div class="highlights-title">
+        亮点
+      </div>
+      <div
+        v-for="(h, idx) in data.strengths"
+        :key="idx"
+        class="highlight-tag"
+      >
+        {{ h }}
+      </div>
     </div>
 
     <!-- 快速改进建议（仅精准诊断阶段展示） -->
-    <div class="quickwins-section" v-if="isPrecise && data.quickWins?.length">
-      <div class="quickwins-title">快速改进建议</div>
-      <div class="quickwin-item" v-for="(quickWin, idx) in data.quickWins" :key="idx">
+    <div
+      v-if="isPrecise && data.quickWins?.length"
+      class="quickwins-section"
+    >
+      <div class="quickwins-title">
+        快速改进建议
+      </div>
+      <div
+        v-for="(quickWin, idx) in data.quickWins"
+        :key="idx"
+        class="quickwin-item"
+      >
         ✓ {{ quickWin }}
       </div>
     </div>

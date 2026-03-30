@@ -1,7 +1,8 @@
 # 虚拟面试语音交互功能 - 技术方案
 
-> 版本：1.3.0
+> 版本：1.4.0
 > 创建日期：2026-03-12
+> 更新日期：2026-03-25
 > 状态：设计阶段
 
 ---
@@ -98,16 +99,26 @@
     ┌────────────────┼────────────────┐
     │                │                │
     ▼                ▼                ▼
-┌─────────┐    ┌─────────┐     ┌───────────┐
-│   ASR   │    │   LLM   │     │    TTS    │
-│ 语音识别 │    │ 大模型  │     │ 语音合成  │
-└────┬────┘    └────┬────┘     └─────┬─────┘
-     │              │                │
-     └──────────────┼────────────────┘
-                    │ WebSocket / HTTP
-                    ▼
+┌──────────┐   ┌─────────┐    ┌──────────┐
+│ASRService│   │   LLM   │    │TTSService│    ◀── 语音服务接口层（抽象）
+│  (接口)   │   │  大模型  │    │  (接口)   │
+└────┬─────┘   └────┬────┘    └────┬─────┘
+     │              │              │
+     └──────────────┼──────────────┘
+                    │
+    ┌───────────────┼───────────────┐
+    │               │               │
+    ▼               ▼               ▼
+┌──────────┐  ┌──────────┐  ┌──────────┐
+│ Aliyun   │  │ OpenAI   │  │  Azure   │         ◀── 实现层（可扩展）
+│ Impl     │  │ (预留)    │  │  (预留)  │
+└────┬─────┘  └────┬─────┘  └────┬─────┘
+     │             │             │
+     └─────────────┼─────────────┘
+                   │ WebSocket / HTTP
+                   ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                       阿里云百炼服务                                      │
+│                       阿里云百炼服务（默认实现）                           │
 │                                                                         │
 │  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐       │
 │  │   Paraformer     │  │   通义千问        │  │   CosyVoice      │       │
@@ -303,9 +314,357 @@
 
 ---
 
-## 三、求助助手功能设计
+## 三、语音服务接口抽象
 
-### 3.1 快捷求助按钮
+> **设计目标**：ASR 和 TTS 抽象为接口，支持阿里云、OpenAI、Azure 等多种实现，通过配置切换。
+
+### 3.1 架构分层
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           业务层 (VoiceDialogService)                    │
+│                      通过 VoiceServiceFactory 获取服务实例               │
+└───────────────────────────────────┬─────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          接口层 (ASRService / TTSService)                │
+│                                                                         │
+│   ASRService                            TTSService                       │
+│   ├── getProvider()                     ├── getProvider()                │
+│   ├── streamRecognize()                 ├── streamSynthesize()           │
+│   └── recognize()                       ├── streamSynthesizeBySentence() │
+│                                          └── synthesize()                │
+└───────────────────────────────────┬─────────────────────────────────────┘
+                                    │
+                    ┌───────────────┼───────────────┐
+                    │               │               │
+                    ▼               ▼               ▼
+┌─────────────────────┐ ┌─────────────────────┐ ┌─────────────────────┐
+│   AliyunASRService  │ │  OpenAIASRService   │ │  AzureASRService    │
+│   AliyunTTSService  │ │  OpenAITTSService   │ │  AzureTTSService    │
+│   (Phase 1 已实现)   │ │   (Phase 2 预留)    │ │   (Phase 2 预留)    │
+└─────────────────────┘ └─────────────────────┘ └─────────────────────┘
+```
+
+### 3.2 ASR 接口定义
+
+```java
+/**
+ * ASR（语音识别）服务接口
+ * 支持流式识别和同步识别
+ */
+public interface ASRService {
+
+    /**
+     * 获取服务提供商标识
+     * @return "aliyun", "openai", "azure" 等
+     */
+    String getProvider();
+
+    /**
+     * 流式语音识别（实时场景）
+     * @param audioStream 音频流（PCM 格式）
+     * @param config 识别配置
+     * @return 识别结果流
+     */
+    Flux<ASRResult> streamRecognize(Flux<byte[]> audioStream, ASRConfig config);
+
+    /**
+     * 同步语音识别（短音频）
+     * @param audioData 音频数据
+     * @param config 识别配置
+     * @return 识别结果
+     */
+    ASRResult recognize(byte[] audioData, ASRConfig config);
+}
+```
+
+### 3.3 TTS 接口定义
+
+```java
+/**
+ * TTS（语音合成）服务接口
+ * 支持流式合成和同步合成
+ */
+public interface TTSService {
+
+    /**
+     * 获取服务提供商标识
+     * @return "aliyun", "openai", "azure" 等
+     */
+    String getProvider();
+
+    /**
+     * 流式语音合成（单句）
+     * @param text 要合成的文本
+     * @param config 合成配置
+     * @return 音频片段流
+     */
+    Flux<byte[]> streamSynthesize(String text, TTSConfig config);
+
+    /**
+     * 分句流式合成（长文本，边生成边播放）
+     * @param textStream 文本流（LLM 输出）
+     * @param config 合成配置
+     * @return 合成块流（包含文本和音频）
+     */
+    Flux<TTSChunk> streamSynthesizeBySentence(Flux<String> textStream, TTSConfig config);
+
+    /**
+     * 同步语音合成
+     * @param text 要合成的文本
+     * @param config 合成配置
+     * @return 完整音频数据
+     */
+    byte[] synthesize(String text, TTSConfig config);
+}
+```
+
+### 3.4 配置类与结果类
+
+#### ASRConfig
+
+```java
+/**
+ * ASR 配置
+ */
+@Data
+@Builder
+public class ASRConfig {
+    private String format;           // 音频格式：pcm, wav, mp3
+    private Integer sampleRate;      // 采样率：16000, 24000
+    private Boolean enablePunctuation;   // 是否启用标点
+    private Boolean enableITN;       // 是否启用逆文本正则化（数字转阿拉伯）
+    private String language;         // 语言：zh, en
+    private Boolean enableVAD;       // 是否启用语音活动检测
+}
+```
+
+#### ASRResult
+
+```java
+/**
+ * ASR 识别结果
+ */
+@Data
+@Builder
+public class ASRResult {
+    private String text;             // 识别文本
+    private Boolean isFinal;         // 是否最终结果（false=中间结果）
+    private Double confidence;       // 置信度 0-1
+    private Long startTime;          // 开始时间（毫秒）
+    private Long endTime;            // 结束时间（毫秒）
+}
+```
+
+#### TTSConfig
+
+```java
+/**
+ * TTS 配置
+ */
+@Data
+@Builder
+public class TTSConfig {
+    private String voice;            // 音色ID
+    private String format;           // 输出格式：pcm, wav, mp3
+    private Integer sampleRate;      // 采样率：16000, 24000
+    private Double speechRate;       // 语速：0.5-2.0
+    private Double volume;           // 音量：0-1
+    private Double pitch;            // 音调：-1 到 1
+}
+```
+
+#### TTSChunk
+
+```java
+/**
+ * TTS 合成块（用于流式合成）
+ */
+@Data
+@AllArgsConstructor
+public class TTSChunk {
+    private String text;             // 对应的文本片段
+    private byte[] audio;            // 音频数据
+    private Boolean isFinal;         // 是否最后一个块
+}
+```
+
+### 3.5 VoiceServiceFactory
+
+```java
+/**
+ * 语音服务工厂
+ * 根据配置获取对应的 ASR/TTS 服务实例
+ */
+@Component
+@RequiredArgsConstructor
+public class VoiceServiceFactory {
+
+    private final VoiceProperties voiceProperties;
+    private final Map<String, ASRService> asrServices;
+    private final Map<String, TTSService> ttsServices;
+
+    /**
+     * 获取当前配置的 ASR 服务
+     */
+    public ASRService getASRService() {
+        String provider = voiceProperties.getProvider();
+        return getASRService(provider);
+    }
+
+    /**
+     * 获取指定提供商的 ASR 服务
+     */
+    public ASRService getASRService(String provider) {
+        ASRService service = asrServices.get(provider);
+        if (service == null) {
+            throw new BusinessException("不支持的 ASR 服务提供商: " + provider);
+        }
+        return service;
+    }
+
+    /**
+     * 获取当前配置的 TTS 服务
+     */
+    public TTSService getTTSService() {
+        String provider = voiceProperties.getProvider();
+        return getTTSService(provider);
+    }
+
+    /**
+     * 获取指定提供商的 TTS 服务
+     */
+    public TTSService getTTSService(String provider) {
+        TTSService service = ttsServices.get(provider);
+        if (service == null) {
+            throw new BusinessException("不支持的 TTS 服务提供商: " + provider);
+        }
+        return service;
+    }
+}
+```
+
+### 3.6 配置属性
+
+```yaml
+# application.yml
+landit:
+  voice:
+    provider: aliyun  # aliyun, openai, azure（启动时确定，不支持运行时切换）
+
+    aliyun:
+      api-key: ${ALIYUN_API_KEY:}
+      asr:
+        model: paraformer-realtime-v2
+        format: pcm
+        sample-rate: 16000
+        enable-punctuation: true
+        enable-itn: true
+      tts:
+        model: cosyvoice-v2
+        format: wav
+        sample-rate: 16000
+        interviewer-voice: longxiaochun_v2
+        assistant-voice: zhimiao_emo_v2
+
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      asr:
+        model: whisper-1
+      tts:
+        model: tts-1
+        default-voice: alloy
+```
+
+### 3.7 条件装配
+
+使用 Spring Boot 条件注解实现自动切换：
+
+```java
+@Configuration
+@ConditionalOnProperty(name = "landit.voice.provider", havingValue = "aliyun")
+public class AliyunVoiceAutoConfiguration {
+
+    @Bean
+    public ASRService aliyunASRService(VoiceProperties properties) {
+        return new AliyunASRService(properties.getAliyun());
+    }
+
+    @Bean
+    public TTSService aliyunTTSService(VoiceProperties properties) {
+        return new AliyunTTSService(properties.getAliyun());
+    }
+}
+
+@Configuration
+@ConditionalOnProperty(name = "landit.voice.provider", havingValue = "openai")
+public class OpenAIVoiceAutoConfiguration {
+
+    @Bean
+    public ASRService openaiASRService(VoiceProperties properties) {
+        return new OpenAIASRService(properties.getOpenai());
+    }
+
+    @Bean
+    public TTSService openaiTTSService(VoiceProperties properties) {
+        return new OpenAITTSService(properties.getOpenai());
+    }
+}
+```
+
+### 3.8 使用示例
+
+```java
+@Service
+@RequiredArgsConstructor
+public class VoiceDialogService {
+
+    private final VoiceServiceFactory voiceServiceFactory;
+
+    /**
+     * 完整的语音对话流程
+     */
+    public Flux<VoiceDialogEvent> streamVoiceDialog(
+        Flux<byte[]> audioInput,
+        InterviewContext context
+    ) {
+        // 获取配置的服务实例
+        ASRService asrService = voiceServiceFactory.getASRService();
+        TTSService ttsService = voiceServiceFactory.getTTSService();
+
+        // 构建配置
+        ASRConfig asrConfig = ASRConfig.builder()
+            .format("pcm")
+            .sampleRate(16000)
+            .enablePunctuation(true)
+            .build();
+
+        TTSConfig ttsConfig = TTSConfig.builder()
+            .voice(context.isInterviewer() ? "longxiaochun_v2" : "zhimiao_emo_v2")
+            .format("wav")
+            .sampleRate(16000)
+            .build();
+
+        // ASR 识别
+        Flux<ASRResult> asrStream = asrService.streamRecognize(audioInput, asrConfig);
+
+        // ... LLM 处理 ...
+
+        // TTS 合成
+        Flux<TTSChunk> ttsStream = ttsService.streamSynthesizeBySentence(llmStream, ttsConfig);
+
+        return buildEventStream(asrStream, ttsStream);
+    }
+}
+```
+
+---
+
+## 四、求助助手功能设计
+
+### 4.1 快捷求助按钮
 
 | 按钮 | 功能 | 助手行为 |
 |------|------|----------|
@@ -314,7 +673,7 @@
 | **✍️ 帮我润色** | 优化已输入内容 | 检查候选人已输入的草稿，给出优化建议 |
 | **💬 自由提问** | 自由对话 | 展开文本输入框，自由提问 |
 
-### 3.2 UI 布局
+### 4.2 UI 布局
 
 #### 面试进行中
 
@@ -390,7 +749,7 @@
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-### 3.3 求助模式配置
+### 4.3 求助模式配置
 
 | 模式 | 助手限制 | 适用场景 |
 |------|----------|----------|
@@ -400,9 +759,9 @@
 
 ---
 
-## 四、数据库设计
+## 五、数据库设计
 
-### 4.1 表结构变更
+### 5.1 表结构变更
 
 #### 扩展 t_interview_session
 
@@ -470,9 +829,9 @@ CREATE TABLE t_recording_index (
 
 ---
 
-## 五、后端接口设计
+## 六、后端接口设计
 
-### 5.1 REST API
+### 6.1 REST API
 
 #### 求助助手（SSE 流式）
 
@@ -570,7 +929,7 @@ public interface RecordingInfo {
  */
 ```
 
-### 5.2 WebSocket 端点（实时语音）
+### 6.2 WebSocket 端点（实时语音）
 
 ```java
 /**
@@ -627,7 +986,7 @@ public interface StateData {
 
 ---
 
-## 六、前端类型定义
+## 七、前端类型定义
 
 ```typescript
 // types/interview-voice.ts
@@ -759,9 +1118,9 @@ export interface TranscriptEntry {
 
 ---
 
-## 七、阿里云百炼集成
+## 八、阿里云百炼集成
 
-### 7.1 依赖配置
+### 8.1 依赖配置
 
 ```xml
 <!-- pom.xml -->
@@ -771,7 +1130,7 @@ export interface TranscriptEntry {
 </dependency>
 ```
 
-### 7.2 配置文件
+### 8.2 配置文件
 
 ```yaml
 # application.yml
@@ -810,7 +1169,7 @@ spring:
           assistant: zhimiao_emo_v2        # 助手音色（更亲切）
 ```
 
-### 7.3 ASR 服务（Paraformer）
+### 8.3 ASR 服务（Paraformer）
 
 #### 实时语音识别客户端
 
@@ -894,7 +1253,7 @@ public class ASRResult {
 }
 ```
 
-### 7.4 TTS 服务（CosyVoice）
+### 8.4 TTS 服务（CosyVoice）
 
 #### 流式语音合成客户端
 
@@ -996,7 +1355,7 @@ public class TTSChunk {
 }
 ```
 
-### 7.5 LLM 服务（通义千问）
+### 8.5 LLM 服务（通义千问）
 
 可以使用现有的 OpenAI 协议配置，或切换为阿里云通义千问：
 
@@ -1021,7 +1380,7 @@ public class StreamLLMService {
 }
 ```
 
-### 7.6 组合服务（ASR + LLM + TTS）
+### 8.6 组合服务（ASR + LLM + TTS）
 
 ```java
 @Service
@@ -1142,7 +1501,7 @@ public class VoiceDialogEvent {
 }
 ```
 
-### 7.7 API 参考
+### 8.7 API 参考
 
 | API | 说明 | 文档链接 |
 |-----|------|----------|
@@ -1153,9 +1512,9 @@ public class VoiceDialogEvent {
 
 ---
 
-## 八、前端流式播放实现
+## 九、前端流式播放实现
 
-### 8.1 SSE 事件处理
+### 9.1 SSE 事件处理
 
 ```typescript
 // composables/useStreamAssist.ts
@@ -1288,7 +1647,7 @@ export function useStreamAssist(sessionId: string) {
 }
 ```
 
-### 8.2 实时语音录制与发送
+### 9.2 实时语音录制与发送
 
 ```typescript
 // composables/useAudioRecorder.ts
@@ -1419,9 +1778,9 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
 
 ---
 
-## 九、录音回放功能
+## 十、录音回放功能
 
-### 8.1 录音存储策略
+### 10.1 录音存储策略
 
 ```
 backend/data/recordings/
@@ -1435,7 +1794,7 @@ backend/data/recordings/
 │   └── metadata.json            # 元数据（时间戳、文字记录）
 ```
 
-### 8.2 录音合并流程
+### 10.2 录音合并流程
 
 ```java
 @Service
@@ -1473,9 +1832,9 @@ public class RecordingMergeService {
 
 ---
 
-## 十、项目结构变更
+## 十一、项目结构变更
 
-### 10.1 后端
+### 11.1 后端
 
 ```
 backend/src/main/java/com/landit/
@@ -1515,7 +1874,7 @@ backend/src/main/java/com/landit/
 │   └── ...existing files
 ```
 
-### 10.2 前端
+### 11.2 前端
 
 ```
 frontend/src/
@@ -1544,7 +1903,7 @@ frontend/src/
 
 ---
 
-## 十一、开发排期
+## 十二、开发排期
 
 | 阶段 | 内容 | 预估工作量 |
 |------|------|-----------|
@@ -1571,7 +1930,7 @@ frontend/src/
 
 ---
 
-## 十二、待确认事项
+## 十三、待确认事项
 
 - [x] 语音服务提供商：阿里云百炼
 - [x] 实时语音对话：需要
@@ -1586,6 +1945,7 @@ frontend/src/
 
 | 日期 | 版本 | 变更内容 |
 |------|------|----------|
+| 2026-03-25 | 1.4.0 | 新增「语音服务接口抽象」章节，支持多服务商切换（阿里云/OpenAI/Azure），更新架构图体现接口层 |
 | 2026-03-12 | 1.3.0 | 改为 ASR + LLM + TTS 分开调用架构，删除端到端方案，更新为 Paraformer + 通义千问 + CosyVoice |
 | 2026-03-12 | 1.2.0 | 改为 ASR + LLM + TTS 分开调用架构，删除端到端方案，新增完整的数据流向图 |
 | 2026-03-12 | 1.1.0 | 新增流式语音合成方案、SSE 接口设计、前端流式播放实现 |

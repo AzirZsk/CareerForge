@@ -6,7 +6,10 @@
 <template>
   <Teleport to="body">
     <Transition name="modal">
-      <div v-if="visible" class="modal-overlay">
+      <div
+        v-if="visible"
+        class="modal-overlay"
+      >
         <div class="modal-container">
           <!-- 头部 -->
           <ModalHeader
@@ -17,7 +20,10 @@
           />
 
           <!-- 目标岗位 -->
-          <div class="target-info" v-if="state.targetPosition">
+          <div
+            v-if="state.targetPosition"
+            class="target-info"
+          >
             <span class="target-label">目标岗位</span>
             <span class="target-value">{{ state.targetPosition }}</span>
           </div>
@@ -41,51 +47,114 @@
           <!-- 底部操作 -->
           <div class="modal-footer">
             <template v-if="state.hasError">
-              <button class="footer-btn secondary" @click="handleClose">
+              <button
+                class="footer-btn secondary"
+                @click="handleClose"
+              >
                 退出
               </button>
-              <button class="footer-btn primary" @click="handleRetry">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="23 4 23 10 17 10"/>
-                  <polyline points="1 20 1 14 7 14"/>
-                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+              <button
+                class="footer-btn primary"
+                @click="handleRetry"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <polyline points="23 4 23 10 17 10" />
+                  <polyline points="1 20 1 14 7 14" />
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
                 </svg>
                 重试
               </button>
             </template>
             <template v-else-if="state.isOptimizing">
-              <button class="footer-btn secondary" @click="handleCancel">
+              <button
+                class="footer-btn secondary"
+                @click="handleCancel"
+              >
                 退出
               </button>
             </template>
             <template v-else-if="state.isCompleted">
-              <div v-if="showCloseConfirm" class="close-confirm-group">
+              <div
+                v-if="showCloseConfirm"
+                class="close-confirm-group"
+              >
                 <span class="close-confirm-text">未应用的变更将丢失</span>
-                <button class="footer-btn danger-text" @click="confirmClose">
+                <button
+                  class="footer-btn danger-text"
+                  @click="confirmClose"
+                >
                   确认退出
                 </button>
-                <button class="footer-btn secondary" @click="showCloseConfirm = false">
+                <button
+                  class="footer-btn secondary"
+                  @click="showCloseConfirm = false"
+                >
                   取消
                 </button>
               </div>
               <template v-else>
                 <!-- 应用变更提示 -->
-                <div v-if="hasOptimizedSections && !state.isApplying" class="apply-hint">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="12" y1="16" x2="12" y2="12"/>
-                    <line x1="12" y1="8" x2="12.01" y2="8"/>
+                <div
+                  v-if="hasOptimizedSections && !state.isApplying"
+                  class="apply-hint"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="10"
+                    />
+                    <line
+                      x1="12"
+                      y1="16"
+                      x2="12"
+                      y2="12"
+                    />
+                    <line
+                      x1="12"
+                      y1="8"
+                      x2="12.01"
+                      y2="8"
+                    />
                   </svg>
                   <span>应用后将重新进行 AI 评分</span>
                 </div>
-                <button v-if="hasEdits" class="footer-btn secondary" @click="resetEdits">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="1 4 1 10 7 10"></polyline>
-                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                <button
+                  v-if="hasEdits"
+                  class="footer-btn secondary"
+                  @click="resetEdits"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <polyline points="1 4 1 10 7 10" />
+                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
                   </svg>
                   重置
                 </button>
-                <button class="footer-btn secondary" @click="handleCloseClick">
+                <button
+                  class="footer-btn secondary"
+                  @click="handleCloseClick"
+                >
                   退出
                 </button>
                 <button
@@ -94,16 +163,33 @@
                   :disabled="state.isApplying || !hasOptimizedSections"
                   @click="handleApply"
                 >
-                  <svg v-if="state.isApplying" class="spinner-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10" stroke-opacity="0.3"/>
-                    <path d="M12 2a10 10 0 0 1 10 10"/>
+                  <svg
+                    v-if="state.isApplying"
+                    class="spinner-icon"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke-opacity="0.3"
+                    />
+                    <path d="M12 2a10 10 0 0 1 10 10" />
                   </svg>
                   {{ state.isApplying ? '评分中...' : '应用变更' }}
                 </button>
               </template>
             </template>
             <template v-else>
-              <button class="footer-btn secondary" @click="handleClose">
+              <button
+                class="footer-btn secondary"
+                @click="handleClose"
+              >
                 关闭
               </button>
             </template>
@@ -115,14 +201,39 @@
     <!-- 全屏简历对比 -->
     <Teleport to="body">
       <Transition name="fullscreen-comparison">
-        <div v-if="showFullComparison" class="fullscreen-comparison-overlay">
+        <div
+          v-if="showFullComparison"
+          class="fullscreen-comparison-overlay"
+        >
           <div class="fullscreen-comparison-container">
             <div class="fullscreen-comparison-header">
-              <h3 class="fullscreen-comparison-title">简历对比</h3>
-              <button class="fullscreen-comparison-close" @click="showFullComparison = false">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="18" y1="6" x2="6" y2="18"/>
-                  <line x1="6" y1="6" x2="18" y2="18"/>
+              <h3 class="fullscreen-comparison-title">
+                简历对比
+              </h3>
+              <button
+                class="fullscreen-comparison-close"
+                @click="showFullComparison = false"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <line
+                    x1="18"
+                    y1="6"
+                    x2="6"
+                    y2="18"
+                  />
+                  <line
+                    x1="6"
+                    y1="6"
+                    x2="18"
+                    y2="18"
+                  />
                 </svg>
               </button>
             </div>

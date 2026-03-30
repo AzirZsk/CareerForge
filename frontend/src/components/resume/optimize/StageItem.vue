@@ -19,11 +19,25 @@
       <div class="stage-left">
         <!-- 阶段指示器 -->
         <div class="stage-indicator">
-          <svg v-if="item.completed" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="20 6 9 17 4 12"/>
+          <svg
+            v-if="item.completed"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <polyline points="20 6 9 17 4 12" />
           </svg>
-          <div v-else-if="isActive" class="spinner"></div>
-          <div v-else class="dot"></div>
+          <div
+            v-else-if="isActive"
+            class="spinner"
+          />
+          <div
+            v-else
+            class="dot"
+          />
         </div>
         <!-- 阶段标签 -->
         <span class="stage-label">{{ getStageLabel(item.stage) }}</span>
@@ -37,7 +51,10 @@
         </span>
       </div>
       <!-- 展开指示器 -->
-      <div v-if="item.completed && item.data" class="expand-indicator">
+      <div
+        v-if="item.completed && item.data"
+        class="expand-indicator"
+      >
         <svg
           width="16"
           height="16"
@@ -47,14 +64,17 @@
           stroke-width="2"
           :class="{ rotated: item.expanded }"
         >
-          <polyline points="6 9 12 15 18 9"/>
+          <polyline points="6 9 12 15 18 9" />
         </svg>
       </div>
     </div>
 
     <!-- 展开的数据区域 -->
     <Transition name="expand">
-      <div v-if="item.expanded && item.data" class="stage-data-wrapper">
+      <div
+        v-if="item.expanded && item.data"
+        class="stage-data-wrapper"
+      >
         <div class="stage-data">
           <!-- 诊断数据 -->
           <DiagnoseStageContent
@@ -74,7 +94,10 @@
             @show-comparison="$emit('showComparison')"
           />
           <!-- 默认 JSON 显示 -->
-          <div v-else class="data-content">
+          <div
+            v-else
+            class="data-content"
+          >
             <pre class="json-display">{{ JSON.stringify(item.data, null, 2) }}</pre>
           </div>
         </div>

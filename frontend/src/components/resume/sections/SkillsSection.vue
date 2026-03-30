@@ -5,13 +5,28 @@
 
 <template>
   <div class="content-block skills-block">
-    <div v-for="(skill, idx) in skills" :key="idx" class="skill-item">
+    <div
+      v-for="(skill, idx) in skills"
+      :key="idx"
+      class="skill-item"
+    >
       <div class="skill-header">
         <span class="skill-name">{{ skill.name }}</span>
-        <span v-if="skill.level" class="skill-level">{{ skill.level }}</span>
+        <span
+          v-if="skill.level"
+          class="skill-level"
+        >{{ skill.level }}</span>
       </div>
-      <p v-if="skill.description" class="skill-description">{{ skill.description }}</p>
-      <span v-if="skill.category" class="skill-category">{{ skill.category }}</span>
+      <p
+        v-if="skill.description"
+        class="skill-description"
+      >
+        {{ skill.description }}
+      </p>
+      <span
+        v-if="skill.category"
+        class="skill-category"
+      >{{ skill.category }}</span>
     </div>
   </div>
 </template>

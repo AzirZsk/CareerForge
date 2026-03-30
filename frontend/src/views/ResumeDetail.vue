@@ -7,11 +7,29 @@
   <div class="resume-detail-page">
     <div class="container">
       <!-- 返回导航 -->
-      <nav class="back-nav animate-in" style="--delay: 0">
-        <router-link to="/resume" class="back-link">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="19" y1="12" x2="5" y2="12"></line>
-            <polyline points="12 19 5 12 12 5"></polyline>
+      <nav
+        class="back-nav animate-in"
+        style="--delay: 0"
+      >
+        <router-link
+          to="/resume"
+          class="back-link"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line
+              x1="19"
+              y1="12"
+              x2="5"
+              y2="12"
+            />
+            <polyline points="12 19 5 12 12 5" />
           </svg>
           返回简历列表
         </router-link>
@@ -51,7 +69,11 @@
         />
 
         <!-- 详情面板 -->
-        <section v-if="currentSectionDetail" class="detail-panel animate-in" style="--delay: 4">
+        <section
+          v-if="currentSectionDetail"
+          class="detail-panel animate-in"
+          style="--delay: 4"
+        >
           <!-- 优化建议区块（头部） -->
           <SuggestionsBlock
             v-if="currentSectionDetail"
@@ -61,29 +83,74 @@
           />
 
           <div class="panel-header">
-            <h2 class="panel-title">{{ currentSectionDetail?.title }}</h2>
+            <h2 class="panel-title">
+              {{ currentSectionDetail?.title }}
+            </h2>
             <div class="panel-actions">
               <!-- 单条类型或 CUSTOM_ITEM：显示编辑按钮 -->
-              <button v-if="!isAggregateSection || isCustomItem" class="panel-btn" @click="openEditModal">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              <button
+                v-if="!isAggregateSection || isCustomItem"
+                class="panel-btn"
+                @click="openEditModal"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                 </svg>
                 编辑
               </button>
               <!-- 聚合类型（非 CUSTOM_ITEM）：显示添加按钮 -->
-              <button v-else class="panel-btn primary" @click="openAddItemModal">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
+              <button
+                v-else
+                class="panel-btn primary"
+                @click="openAddItemModal"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <line
+                    x1="12"
+                    y1="5"
+                    x2="12"
+                    y2="19"
+                  />
+                  <line
+                    x1="5"
+                    y1="12"
+                    x2="19"
+                    y2="12"
+                  />
                 </svg>
                 添加
               </button>
               <!-- 删除按钮：除了基本信息之外都可以删除 -->
-              <button v-if="canDeleteSection" class="panel-btn danger" @click="handleDeleteSection">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="3 6 5 6 21 6"></polyline>
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              <button
+                v-if="canDeleteSection"
+                class="panel-btn danger"
+                @click="handleDeleteSection"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                 </svg>
                 删除
               </button>
@@ -101,13 +168,26 @@
         </section>
 
         <!-- 空状态提示 -->
-        <section v-else class="detail-panel empty-panel animate-in" style="--delay: 4">
+        <section
+          v-else
+          class="detail-panel empty-panel animate-in"
+          style="--delay: 4"
+        >
           <div class="empty-state">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+            >
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
             </svg>
-            <p class="empty-text">暂无简历模块，请在左侧添加</p>
+            <p class="empty-text">
+              暂无简历模块，请在左侧添加
+            </p>
           </div>
         </section>
       </div>
@@ -176,7 +256,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores'
 import EditSectionModal from '@/components/resume/EditSectionModal.vue'
@@ -189,6 +269,7 @@ import SectionList from '@/components/resume/SectionList.vue'
 import SectionContent from '@/components/resume/SectionContent.vue'
 import SuggestionsBlock from '@/components/resume/SuggestionsBlock.vue'
 import { useResumeOptimize } from '@/composables/useResumeOptimize'
+import { useAIChat } from '@/composables/useAIChat'
 import { useSectionEdit } from '@/composables/useSectionEdit'
 import { useSectionHelper } from '@/composables/useSectionHelper'
 import { useToast } from '@/composables/useToast'
@@ -203,6 +284,11 @@ const resumeId = ref<string>('')
 
 // 优化相关状态
 const showOptimizeModal = ref<boolean>(false)
+const { state: aiChatState } = useAIChat()
+// 优化弹窗打开时隐藏AI悬浮球
+watch(showOptimizeModal, (val) => {
+  aiChatState.hideFloat = val
+})
 
 // 删除确认弹窗状态
 const showDeleteConfirmModal = ref<boolean>(false)

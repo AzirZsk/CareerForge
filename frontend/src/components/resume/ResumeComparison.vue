@@ -11,7 +11,10 @@
         <h4>{{ beforeTitle }}</h4>
       </div>
       <div class="vs-divider">
-        <span class="improvement-badge" v-if="improvementScore">
+        <span
+          v-if="improvementScore"
+          class="improvement-badge"
+        >
           +{{ improvementScore }} 分
         </span>
       </div>
@@ -29,7 +32,10 @@
           :before-sections="beforeSection"
           :after-sections="afterSection"
         />
-        <div v-else class="empty-state">
+        <div
+          v-else
+          class="empty-state"
+        >
           <p>暂无对比数据</p>
         </div>
       </div>
@@ -43,7 +49,10 @@
           :editable="editable"
           @edit="handleEdit"
         />
-        <div v-else class="empty-state">
+        <div
+          v-else
+          class="empty-state"
+        >
           <p>暂无对比数据</p>
         </div>
       </div>

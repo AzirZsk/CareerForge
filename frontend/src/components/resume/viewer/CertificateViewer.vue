@@ -5,9 +5,15 @@
 =====================================================-->
 
 <template>
-  <div class="resume-section" :class="{ editable: showEdit }">
+  <div
+    class="resume-section"
+    :class="{ editable: showEdit }"
+  >
     <h3>
-      <span class="section-title-text" :class="titleDiffClass">
+      <span
+        class="section-title-text"
+        :class="titleDiffClass"
+      >
         {{ section.title }}
       </span>
     </h3>
@@ -24,23 +30,57 @@
         @click="handleEdit(idx)"
       />
       <div class="cert-header">
-        <span class="cert-name" :class="getFieldClass('name', idx)">
+        <span
+          class="cert-name"
+          :class="getFieldClass('name', idx)"
+        >
           {{ item.name }}
-          <a v-if="item.url" :href="item.url" target="_blank" class="cert-link" title="查看证书">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-              <polyline points="15 3 21 3 21 9"></polyline>
-              <line x1="10" y1="14" x2="21" y2="3"></line>
+          <a
+            v-if="item.url"
+            :href="item.url"
+            target="_blank"
+            class="cert-link"
+            title="查看证书"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+              <polyline points="15 3 21 3 21 9" />
+              <line
+                x1="10"
+                y1="14"
+                x2="21"
+                y2="3"
+              />
             </svg>
           </a>
         </span>
-        <span v-if="item.date" class="cert-date" :class="getFieldClass('date', idx)">
+        <span
+          v-if="item.date"
+          class="cert-date"
+          :class="getFieldClass('date', idx)"
+        >
           {{ item.date }}
         </span>
       </div>
-      <div v-if="item.issuer || item.credentialId" class="cert-meta">
-        <span v-if="item.issuer" class="cert-issuer">{{ item.issuer }}</span>
-        <span v-if="item.credentialId" class="cert-credential">
+      <div
+        v-if="item.issuer || item.credentialId"
+        class="cert-meta"
+      >
+        <span
+          v-if="item.issuer"
+          class="cert-issuer"
+        >{{ item.issuer }}</span>
+        <span
+          v-if="item.credentialId"
+          class="cert-credential"
+        >
           编号: {{ item.credentialId }}
         </span>
       </div>

@@ -5,9 +5,15 @@
 =====================================================-->
 
 <template>
-  <div class="resume-section" :class="{ editable: showEdit }">
+  <div
+    class="resume-section"
+    :class="{ editable: showEdit }"
+  >
     <h3>
-      <span class="section-title-text" :class="titleDiffClass">
+      <span
+        class="section-title-text"
+        :class="titleDiffClass"
+      >
         {{ section.title }}
       </span>
     </h3>
@@ -26,12 +32,21 @@
         />
         <div class="skill-header">
           <span class="skill-name">{{ skill.name }}</span>
-          <span v-if="skill.level" class="skill-level">{{ skill.level }}</span>
+          <span
+            v-if="skill.level"
+            class="skill-level"
+          >{{ skill.level }}</span>
         </div>
-        <p v-if="skill.description" class="skill-description">
+        <p
+          v-if="skill.description"
+          class="skill-description"
+        >
           {{ skill.description }}
         </p>
-        <span v-if="skill.category" class="skill-category">
+        <span
+          v-if="skill.category"
+          class="skill-category"
+        >
           {{ skill.category }}
         </span>
       </div>

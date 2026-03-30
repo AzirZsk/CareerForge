@@ -5,9 +5,15 @@
 =====================================================-->
 
 <template>
-  <div class="resume-section" :class="{ editable: showEdit }">
+  <div
+    class="resume-section"
+    :class="{ editable: showEdit }"
+  >
     <h3>
-      <span class="section-title-text" :class="titleDiffClass">
+      <span
+        class="section-title-text"
+        :class="titleDiffClass"
+      >
         {{ section.title }}
       </span>
     </h3>
@@ -24,20 +30,39 @@
         @click="handleEdit(itemIdx)"
       />
       <div class="exp-header">
-        <span class="exp-title" :class="getFieldClass('name', itemIdx)">
+        <span
+          class="exp-title"
+          :class="getFieldClass('name', itemIdx)"
+        >
           {{ item.name }}
         </span>
-        <span v-if="item.period" class="exp-period" :class="getFieldClass('period', itemIdx)">
+        <span
+          v-if="item.period"
+          class="exp-period"
+          :class="getFieldClass('period', itemIdx)"
+        >
           {{ item.period }}
         </span>
       </div>
-      <div v-if="item.role" class="exp-role" :class="getFieldClass('role', itemIdx)">
+      <div
+        v-if="item.role"
+        class="exp-role"
+        :class="getFieldClass('role', itemIdx)"
+      >
         {{ item.role }}
       </div>
-      <p v-if="item.description" class="exp-description" :class="getFieldClass('description', itemIdx)">
+      <p
+        v-if="item.description"
+        class="exp-description"
+        :class="getFieldClass('description', itemIdx)"
+      >
         {{ item.description }}
       </p>
-      <div v-if="item.highlights?.length" class="exp-achievements" :class="getFieldClass('highlights', itemIdx)">
+      <div
+        v-if="item.highlights?.length"
+        class="exp-achievements"
+        :class="getFieldClass('highlights', itemIdx)"
+      >
         <div
           v-for="(highlight, hIdx) in item.highlights"
           :key="hIdx"

@@ -7,16 +7,32 @@
   <div class="interview-session-page">
     <div class="session-container">
       <!-- 顶部状态栏 -->
-      <header class="session-header animate-in" style="--delay: 0">
+      <header
+        class="session-header animate-in"
+        style="--delay: 0"
+      >
         <div class="header-left">
           <span class="session-badge">面试进行中</span>
-          <h2 class="session-title">技术面试 - 高级前端工程师</h2>
+          <h2 class="session-title">
+            技术面试 - 高级前端工程师
+          </h2>
         </div>
         <div class="header-right">
           <div class="timer">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="12 6 12 12 16 14"></polyline>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle
+                cx="12"
+                cy="12"
+                r="10"
+              />
+              <polyline points="12 6 12 12 16 14" />
             </svg>
             <span class="timer-value">{{ formatTime(elapsedTime) }}</span>
           </div>
@@ -25,12 +41,20 @@
             <span class="progress-sep">/</span>
             <span class="progress-total">{{ totalQuestions }}</span>
           </div>
-          <button class="end-btn" @click="confirmEnd">结束面试</button>
+          <button
+            class="end-btn"
+            @click="confirmEnd"
+          >
+            结束面试
+          </button>
         </div>
       </header>
 
       <!-- 进度条 -->
-      <div class="progress-bar animate-in" style="--delay: 1">
+      <div
+        class="progress-bar animate-in"
+        style="--delay: 1"
+      >
         <div
           v-for="(_q, i) in questions"
           :key="i"
@@ -44,8 +68,14 @@
       </div>
 
       <!-- 对话区域 -->
-      <main class="conversation-area animate-in" style="--delay: 2">
-        <div class="messages-container" ref="messagesContainer">
+      <main
+        class="conversation-area animate-in"
+        style="--delay: 2"
+      >
+        <div
+          ref="messagesContainer"
+          class="messages-container"
+        >
           <div
             v-for="(msg, index) in messages"
             :key="msg.id"
@@ -58,21 +88,31 @@
               <span v-else>我</span>
             </div>
             <div class="message-content">
-              <p class="message-text">{{ msg.content }}</p>
+              <p class="message-text">
+                {{ msg.content }}
+              </p>
               <span class="message-time">{{ formatMessageTime(msg.timestamp) }}</span>
-              <div v-if="msg.score" class="message-feedback">
+              <div
+                v-if="msg.score"
+                class="message-feedback"
+              >
                 <span class="feedback-score">{{ msg.score }}分</span>
                 <span class="feedback-text">{{ msg.feedback }}</span>
               </div>
             </div>
           </div>
-          <div v-if="isAIResponding" class="message interviewer typing">
-            <div class="message-avatar">AI</div>
+          <div
+            v-if="isAIResponding"
+            class="message interviewer typing"
+          >
+            <div class="message-avatar">
+              AI
+            </div>
             <div class="message-content">
               <div class="typing-indicator">
-                <span></span>
-                <span></span>
-                <span></span>
+                <span />
+                <span />
+                <span />
               </div>
             </div>
           </div>
@@ -80,16 +120,19 @@
       </main>
 
       <!-- 输入区域 -->
-      <footer class="input-area animate-in" style="--delay: 3">
+      <footer
+        class="input-area animate-in"
+        style="--delay: 3"
+      >
         <div class="input-container">
           <textarea
             v-model="userInput"
             placeholder="输入你的回答..."
             class="answer-input"
             :disabled="isAIResponding"
-            @keydown.enter.exact.prevent="submitAnswer"
             rows="3"
-          ></textarea>
+            @keydown.enter.exact.prevent="submitAnswer"
+          />
           <div class="input-actions">
             <div class="action-hints">
               <span class="hint">按 Enter 发送</span>
@@ -100,9 +143,21 @@
               :disabled="!userInput.trim() || isAIResponding"
               @click="submitAnswer"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="22" y1="2" x2="11" y2="13"></line>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <line
+                  x1="22"
+                  y1="2"
+                  x2="11"
+                  y2="13"
+                />
+                <polygon points="22 2 15 22 11 13 2 9 22 2" />
               </svg>
               发送回答
             </button>
@@ -111,38 +166,73 @@
       </footer>
 
       <!-- 工具栏 -->
-      <aside class="tools-panel animate-in" style="--delay: 4">
+      <aside
+        class="tools-panel animate-in"
+        style="--delay: 4"
+      >
         <div class="tool-card">
-          <h4 class="tool-title">面试提示</h4>
+          <h4 class="tool-title">
+            面试提示
+          </h4>
           <div class="tips-list">
             <div class="tip-item">
               <span class="tip-icon">💡</span>
-              <p class="tip-text">回答时注意结构化，可以先总述再分点说明</p>
+              <p class="tip-text">
+                回答时注意结构化，可以先总述再分点说明
+              </p>
             </div>
             <div class="tip-item">
               <span class="tip-icon">🎯</span>
-              <p class="tip-text">结合实际项目经验会让回答更有说服力</p>
+              <p class="tip-text">
+                结合实际项目经验会让回答更有说服力
+              </p>
             </div>
             <div class="tip-item">
               <span class="tip-icon">⏱️</span>
-              <p class="tip-text">遇到不会的问题可以诚实说明，展示学习态度</p>
+              <p class="tip-text">
+                遇到不会的问题可以诚实说明，展示学习态度
+              </p>
             </div>
           </div>
         </div>
         <div class="tool-card">
-          <h4 class="tool-title">当前问题要点</h4>
+          <h4 class="tool-title">
+            当前问题要点
+          </h4>
           <ul class="key-points-list">
-            <li v-for="point in currentKeyPoints" :key="point">
-              <span class="point-check"></span>
+            <li
+              v-for="point in currentKeyPoints"
+              :key="point"
+            >
+              <span class="point-check" />
               {{ point }}
             </li>
           </ul>
         </div>
-        <button class="hint-btn" @click="requestHint">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"></circle>
-            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        <button
+          class="hint-btn"
+          @click="requestHint"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+            />
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+            <line
+              x1="12"
+              y1="17"
+              x2="12.01"
+              y2="17"
+            />
           </svg>
           请求提示
         </button>
@@ -150,13 +240,31 @@
     </div>
 
     <!-- 结束确认弹窗 -->
-    <div v-if="showEndModal" class="modal-overlay" @click.self="showEndModal = false">
+    <div
+      v-if="showEndModal"
+      class="modal-overlay"
+      @click.self="showEndModal = false"
+    >
       <div class="modal-content">
-        <h3 class="modal-title">确认结束面试？</h3>
-        <p class="modal-desc">当前面试尚未完成，结束后将根据已回答的问题生成复盘报告。</p>
+        <h3 class="modal-title">
+          确认结束面试？
+        </h3>
+        <p class="modal-desc">
+          当前面试尚未完成，结束后将根据已回答的问题生成复盘报告。
+        </p>
         <div class="modal-actions">
-          <button class="modal-btn secondary" @click="showEndModal = false">继续面试</button>
-          <button class="modal-btn primary" @click="endInterview">确认结束</button>
+          <button
+            class="modal-btn secondary"
+            @click="showEndModal = false"
+          >
+            继续面试
+          </button>
+          <button
+            class="modal-btn primary"
+            @click="endInterview"
+          >
+            确认结束
+          </button>
         </div>
       </div>
     </div>

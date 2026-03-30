@@ -13,7 +13,7 @@
         class="form-input"
         placeholder="如：高级Java工程师"
         @input="updateField('targetPosition', ($event.target as HTMLInputElement).value)"
-      />
+      >
     </div>
 
     <div class="form-group">
@@ -24,7 +24,7 @@
         placeholder="粘贴目标职位的 JD 内容..."
         rows="8"
         @input="updateField('jobDescription', ($event.target as HTMLTextAreaElement).value)"
-      ></textarea>
+      />
     </div>
 
     <div class="form-group">
@@ -35,18 +35,30 @@
         class="form-input"
         placeholder="如：高级Java工程师定制版"
         @input="updateField('resumeName', ($event.target as HTMLInputElement).value)"
-      />
+      >
     </div>
 
     <div class="form-actions">
-      <button class="btn-cancel" @click="$emit('cancel')">取消</button>
+      <button
+        class="btn-cancel"
+        @click="$emit('cancel')"
+      >
+        取消
+      </button>
       <button
         class="btn-submit"
         :disabled="!isFormValid"
         @click="$emit('submit')"
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
         </svg>
         生成定制简历
       </button>

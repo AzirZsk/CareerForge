@@ -5,13 +5,38 @@
 =====================================================-->
 
 <template>
-  <section class="sections-panel animate-in" style="--delay: 3">
+  <section
+    class="sections-panel animate-in"
+    style="--delay: 3"
+  >
     <div class="panel-header">
-      <h2 class="panel-title">简历模块</h2>
-      <button class="add-section-btn" @click="$emit('add-section')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
+      <h2 class="panel-title">
+        简历模块
+      </h2>
+      <button
+        class="add-section-btn"
+        @click="$emit('add-section')"
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <line
+            x1="12"
+            y1="5"
+            x2="12"
+            y2="19"
+          />
+          <line
+            x1="5"
+            y1="12"
+            x2="19"
+            y2="12"
+          />
         </svg>
         添加模块
       </button>
@@ -30,12 +55,21 @@
             <span class="section-icon">{{ getSectionIcon(section.type) }}</span>
             <span class="section-name">{{ section.title }}</span>
           </div>
-          <div class="section-score" :class="analyzed ? getScoreClass(section.score) : ''">
+          <div
+            class="section-score"
+            :class="analyzed ? getScoreClass(section.score) : ''"
+          >
             {{ analyzed ? section.score : '~' }}
           </div>
         </div>
-        <p class="section-preview">{{ getSectionPreview(section) }}</p>
-        <div v-if="section.suggestions?.length" class="section-hint" :class="getHighestPriorityClass(section.suggestions)">
+        <p class="section-preview">
+          {{ getSectionPreview(section) }}
+        </p>
+        <div
+          v-if="section.suggestions?.length"
+          class="section-hint"
+          :class="getHighestPriorityClass(section.suggestions)"
+        >
           <span class="hint-icon">{{ getSuggestionIcon(section.suggestions) }}</span>
           {{ section.suggestions.length }} 条建议
         </div>

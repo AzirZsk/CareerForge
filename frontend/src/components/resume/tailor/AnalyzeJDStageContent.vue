@@ -6,44 +6,87 @@
 <template>
   <div class="data-content">
     <!-- 必备技能 -->
-    <div class="skills-section" v-if="data.requiredSkills?.length">
-      <div class="skills-title">必备技能</div>
+    <div
+      v-if="data.requiredSkills?.length"
+      class="skills-section"
+    >
+      <div class="skills-title">
+        必备技能
+      </div>
       <div class="skill-tags">
-        <span v-for="skill in data.requiredSkills" :key="skill" class="skill-tag required">{{ skill }}</span>
+        <span
+          v-for="skill in data.requiredSkills"
+          :key="skill"
+          class="skill-tag required"
+        >{{ skill }}</span>
       </div>
     </div>
 
     <!-- 优先技能 -->
-    <div class="skills-section" v-if="data.preferredSkills?.length">
-      <div class="skills-title">优先技能</div>
+    <div
+      v-if="data.preferredSkills?.length"
+      class="skills-section"
+    >
+      <div class="skills-title">
+        优先技能
+      </div>
       <div class="skill-tags">
-        <span v-for="skill in data.preferredSkills" :key="skill" class="skill-tag preferred">{{ skill }}</span>
+        <span
+          v-for="skill in data.preferredSkills"
+          :key="skill"
+          class="skill-tag preferred"
+        >{{ skill }}</span>
       </div>
     </div>
 
     <!-- 关键词 -->
-    <div class="skills-section" v-if="data.keywords?.length">
-      <div class="skills-title">关键词</div>
+    <div
+      v-if="data.keywords?.length"
+      class="skills-section"
+    >
+      <div class="skills-title">
+        关键词
+      </div>
       <div class="skill-tags">
-        <span v-for="keyword in data.keywords" :key="keyword" class="skill-tag keyword">{{ keyword }}</span>
+        <span
+          v-for="keyword in data.keywords"
+          :key="keyword"
+          class="skill-tag keyword"
+        >{{ keyword }}</span>
       </div>
     </div>
 
     <!-- 职位职责 -->
-    <div class="responsibilities-section" v-if="data.responsibilities?.length">
-      <div class="skills-title">职位职责</div>
+    <div
+      v-if="data.responsibilities?.length"
+      class="responsibilities-section"
+    >
+      <div class="skills-title">
+        职位职责
+      </div>
       <ul class="responsibilities-list">
-        <li v-for="(resp, idx) in data.responsibilities" :key="idx">{{ resp }}</li>
+        <li
+          v-for="(resp, idx) in data.responsibilities"
+          :key="idx"
+        >
+          {{ resp }}
+        </li>
       </ul>
     </div>
 
     <!-- 资历级别和行业领域 -->
     <div class="info-grid">
-      <div class="info-item" v-if="data.seniorityLevel">
+      <div
+        v-if="data.seniorityLevel"
+        class="info-item"
+      >
         <span class="info-label">资历级别</span>
         <span class="info-value">{{ data.seniorityLevel }}</span>
       </div>
-      <div class="info-item" v-if="data.industryDomain">
+      <div
+        v-if="data.industryDomain"
+        class="info-item"
+      >
         <span class="info-label">行业领域</span>
         <span class="info-value">{{ data.industryDomain }}</span>
       </div>

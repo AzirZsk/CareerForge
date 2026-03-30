@@ -7,9 +7,9 @@
   <div class="app-container">
     <!-- 背景装饰 -->
     <div class="bg-decoration">
-      <div class="glow-orb glow-orb-1"></div>
-      <div class="glow-orb glow-orb-2"></div>
-      <div class="noise-overlay"></div>
+      <div class="glow-orb glow-orb-1" />
+      <div class="glow-orb glow-orb-2" />
+      <div class="noise-overlay" />
     </div>
 
     <!-- 导航栏 -->
@@ -18,7 +18,10 @@
     <!-- 主内容区 -->
     <main class="main-content">
       <router-view v-slot="{ Component }">
-        <transition name="page" mode="out-in">
+        <transition
+          name="page"
+          mode="out-in"
+        >
           <component :is="Component" />
         </transition>
       </router-view>
@@ -26,16 +29,25 @@
 
     <!-- 全局 Toast 通知 -->
     <Toast ref="toastRef" />
+
+    <!-- AI聊天悬浮窗口（公开页面不显示） -->
+    <AIChatFloat v-if="showAIChat" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import AppNavbar from '@/components/common/AppNavbar.vue'
 import Toast from '@/components/common/Toast.vue'
+import AIChatFloat from '@/components/chat/AIChatFloat.vue'
 import { setToastInstance } from '@/composables/useToast'
 
+const route = useRoute()
 const toastRef = ref<InstanceType<typeof Toast> | null>(null)
+
+// 公开页面不显示AI悬浮球
+const showAIChat = computed(() => !(route.meta.public as boolean))
 
 onMounted(() => {
   if (toastRef.value) {

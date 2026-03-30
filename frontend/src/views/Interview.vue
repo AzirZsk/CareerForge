@@ -7,31 +7,52 @@
   <div class="interview-page">
     <div class="container">
       <!-- 页面标题 -->
-      <header class="page-header animate-in" style="--delay: 0">
+      <header
+        class="page-header animate-in"
+        style="--delay: 0"
+      >
         <div class="header-content">
-          <h1 class="page-title">面试试演</h1>
-          <p class="page-desc">AI模拟真实面试场景，帮助你从容应对每一次挑战</p>
+          <h1 class="page-title">
+            面试试演
+          </h1>
+          <p class="page-desc">
+            AI模拟真实面试场景，帮助你从容应对每一次挑战
+          </p>
         </div>
       </header>
 
       <!-- 开始面试区域 -->
-      <section class="start-section animate-in" style="--delay: 1">
+      <section
+        class="start-section animate-in"
+        style="--delay: 1"
+      >
         <div class="start-card">
           <div class="start-visual">
             <div class="visual-circle">
-              <div class="circle-ring ring-1"></div>
-              <div class="circle-ring ring-2"></div>
-              <div class="circle-ring ring-3"></div>
+              <div class="circle-ring ring-1" />
+              <div class="circle-ring ring-2" />
+              <div class="circle-ring ring-3" />
               <div class="circle-core">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                <svg
+                  width="48"
+                  height="48"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                >
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                 </svg>
               </div>
             </div>
           </div>
           <div class="start-content">
-            <h2 class="start-title">准备好开始了吗？</h2>
-            <p class="start-desc">选择面试类型，我们将为你定制专属的模拟面试体验</p>
+            <h2 class="start-title">
+              准备好开始了吗？
+            </h2>
+            <p class="start-desc">
+              选择面试类型，我们将为你定制专属的模拟面试体验
+            </p>
             <div class="interview-types">
               <button
                 v-for="type in interviewTypes"
@@ -45,9 +66,20 @@
                 <span class="type-desc">{{ type.desc }}</span>
               </button>
             </div>
-            <button class="start-btn" @click="startInterview" :disabled="!selectedType">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            <button
+              class="start-btn"
+              :disabled="!selectedType"
+              @click="startInterview"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polygon points="5 3 19 12 5 21 5 3" />
               </svg>
               开始面试
             </button>
@@ -56,17 +88,33 @@
       </section>
 
       <!-- 面试设置 -->
-      <section class="settings-section animate-in" style="--delay: 2">
-        <h3 class="settings-title">面试设置</h3>
+      <section
+        class="settings-section animate-in"
+        style="--delay: 2"
+      >
+        <h3 class="settings-title">
+          面试设置
+        </h3>
         <div class="settings-grid">
           <div class="setting-item">
             <label class="setting-label">目标岗位</label>
             <div class="setting-value">
-              <select v-model="settings.position" class="setting-select">
-                <option value="frontend">前端工程师</option>
-                <option value="backend">后端工程师</option>
-                <option value="fullstack">全栈工程师</option>
-                <option value="architect">架构师</option>
+              <select
+                v-model="settings.position"
+                class="setting-select"
+              >
+                <option value="frontend">
+                  前端工程师
+                </option>
+                <option value="backend">
+                  后端工程师
+                </option>
+                <option value="fullstack">
+                  全栈工程师
+                </option>
+                <option value="architect">
+                  架构师
+                </option>
               </select>
             </div>
           </div>
@@ -87,9 +135,19 @@
           <div class="setting-item">
             <label class="setting-label">问题数量</label>
             <div class="question-counter">
-              <button class="counter-btn" @click="decreaseQuestions">-</button>
+              <button
+                class="counter-btn"
+                @click="decreaseQuestions"
+              >
+                -
+              </button>
               <span class="counter-value">{{ settings.questionCount }}</span>
-              <button class="counter-btn" @click="increaseQuestions">+</button>
+              <button
+                class="counter-btn"
+                @click="increaseQuestions"
+              >
+                +
+              </button>
             </div>
           </div>
           <div class="setting-item">
@@ -102,10 +160,17 @@
       </section>
 
       <!-- 历史记录 -->
-      <section class="history-section animate-in" style="--delay: 3">
+      <section
+        class="history-section animate-in"
+        style="--delay: 3"
+      >
         <div class="section-header">
-          <h2 class="section-title">历史记录</h2>
-          <button class="view-all-btn">查看全部</button>
+          <h2 class="section-title">
+            历史记录
+          </h2>
+          <button class="view-all-btn">
+            查看全部
+          </button>
         </div>
         <div class="history-list">
           <div
@@ -115,44 +180,113 @@
             :style="{ '--index': index }"
             @click="viewHistory(record.id)"
           >
-            <div class="history-icon" :class="record.type">
+            <div
+              class="history-icon"
+              :class="record.type"
+            >
               <span v-if="record.type === 'technical'">🔬</span>
               <span v-else>💬</span>
             </div>
             <div class="history-info">
               <div class="history-header">
-                <h4 class="history-position">{{ record.position }}</h4>
+                <h4 class="history-position">
+                  {{ record.position }}
+                </h4>
                 <span class="history-company">{{ record.company }}</span>
               </div>
               <div class="history-meta">
                 <span class="meta-item">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="16" y1="2" x2="16" y2="6"></line>
-                    <line x1="8" y1="2" x2="8" y2="6"></line>
-                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <rect
+                      x="3"
+                      y="4"
+                      width="18"
+                      height="18"
+                      rx="2"
+                      ry="2"
+                    />
+                    <line
+                      x1="16"
+                      y1="2"
+                      x2="16"
+                      y2="6"
+                    />
+                    <line
+                      x1="8"
+                      y1="2"
+                      x2="8"
+                      y2="6"
+                    />
+                    <line
+                      x1="3"
+                      y1="10"
+                      x2="21"
+                      y2="10"
+                    />
                   </svg>
                   {{ record.date }}
                 </span>
                 <span class="meta-item">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <polyline points="12 6 12 12 16 14"></polyline>
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="10"
+                    />
+                    <polyline points="12 6 12 12 16 14" />
                   </svg>
                   {{ record.duration }}分钟
                 </span>
                 <span class="meta-item">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="12" y1="16" x2="12" y2="12"></line>
-                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="10"
+                    />
+                    <line
+                      x1="12"
+                      y1="16"
+                      x2="12"
+                      y2="12"
+                    />
+                    <line
+                      x1="12"
+                      y1="8"
+                      x2="12.01"
+                      y2="8"
+                    />
                   </svg>
                   {{ record.questions }}题
                 </span>
               </div>
             </div>
             <div class="history-score">
-              <div class="score-ring" :style="{ '--score': record.score }">
+              <div
+                class="score-ring"
+                :style="{ '--score': record.score }"
+              >
                 <span>{{ record.score }}</span>
               </div>
             </div>
@@ -161,9 +295,14 @@
       </section>
 
       <!-- 热门题目 -->
-      <section class="questions-section animate-in" style="--delay: 4">
+      <section
+        class="questions-section animate-in"
+        style="--delay: 4"
+      >
         <div class="section-header">
-          <h2 class="section-title">热门题目</h2>
+          <h2 class="section-title">
+            热门题目
+          </h2>
           <div class="category-tabs">
             <button
               v-for="cat in categories"
@@ -185,20 +324,35 @@
           >
             <div class="question-header">
               <span class="question-category">{{ q.category }}</span>
-              <span class="question-difficulty" :class="q.difficulty">
+              <span
+                class="question-difficulty"
+                :class="q.difficulty"
+              >
                 {{ getDifficultyText(q.difficulty) }}
               </span>
             </div>
-            <p class="question-text">{{ q.question }}</p>
+            <p class="question-text">
+              {{ q.question }}
+            </p>
             <div class="question-footer">
               <span class="key-points">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="9 11 12 14 22 4"></polyline>
-                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <polyline points="9 11 12 14 22 4" />
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
                 </svg>
                 {{ q.keyPoints.length }} 个要点
               </span>
-              <button class="practice-btn" @click="practiceQuestion(q)">
+              <button
+                class="practice-btn"
+                @click="practiceQuestion(q)"
+              >
                 练习此题
               </button>
             </div>

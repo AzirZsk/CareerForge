@@ -5,9 +5,15 @@
 =====================================================-->
 
 <template>
-  <div class="resume-section" :class="{ editable: showEdit }">
+  <div
+    class="resume-section"
+    :class="{ editable: showEdit }"
+  >
     <h3>
-      <span class="section-title-text" :class="titleDiffClass">
+      <span
+        class="section-title-text"
+        :class="titleDiffClass"
+      >
         {{ section.title }}
       </span>
     </h3>
@@ -24,31 +30,65 @@
         @click="handleEdit(idx)"
       />
       <div class="exp-header">
-        <span class="exp-title" :class="getFieldClass('school', idx)">
+        <span
+          class="exp-title"
+          :class="getFieldClass('school', idx)"
+        >
           {{ item.school }}
         </span>
-        <span class="exp-period" :class="getFieldClass('period', idx)">
+        <span
+          class="exp-period"
+          :class="getFieldClass('period', idx)"
+        >
           {{ item.period }}
         </span>
       </div>
       <div class="exp-meta">
-        <span v-if="item.degree" class="exp-degree" :class="getFieldClass('degree', idx)">
+        <span
+          v-if="item.degree"
+          class="exp-degree"
+          :class="getFieldClass('degree', idx)"
+        >
           {{ item.degree }}
         </span>
-        <span v-if="item.major" class="exp-major" :class="getFieldClass('major', idx)">
+        <span
+          v-if="item.major"
+          class="exp-major"
+          :class="getFieldClass('major', idx)"
+        >
           {{ item.major }}
         </span>
-        <span v-if="item.gpa" class="exp-gpa" :class="getFieldClass('gpa', idx)">
+        <span
+          v-if="item.gpa"
+          class="exp-gpa"
+          :class="getFieldClass('gpa', idx)"
+        >
           GPA: {{ item.gpa }}
         </span>
       </div>
-      <div v-if="item.courses?.length" class="exp-courses" :class="getFieldClass('courses', idx)">
-        <span v-for="course in item.courses" :key="course" class="course-tag">
+      <div
+        v-if="item.courses?.length"
+        class="exp-courses"
+        :class="getFieldClass('courses', idx)"
+      >
+        <span
+          v-for="course in item.courses"
+          :key="course"
+          class="course-tag"
+        >
           {{ course }}
         </span>
       </div>
-      <div v-if="item.honors?.length" class="exp-honors" :class="getFieldClass('honors', idx)">
-        <span v-for="honor in item.honors" :key="honor" class="honor-tag">
+      <div
+        v-if="item.honors?.length"
+        class="exp-honors"
+        :class="getFieldClass('honors', idx)"
+      >
+        <span
+          v-for="honor in item.honors"
+          :key="honor"
+          class="honor-tag"
+        >
           {{ honor }}
         </span>
       </div>

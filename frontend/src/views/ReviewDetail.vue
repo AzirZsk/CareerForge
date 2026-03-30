@@ -7,34 +7,71 @@
   <div class="review-detail-page">
     <div class="container">
       <!-- 返回导航 -->
-      <nav class="back-nav animate-in" style="--delay: 0">
-        <router-link to="/review" class="back-link">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="19" y1="12" x2="5" y2="12"></line>
-            <polyline points="12 19 5 12 12 5"></polyline>
+      <nav
+        class="back-nav animate-in"
+        style="--delay: 0"
+      >
+        <router-link
+          to="/review"
+          class="back-link"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line
+              x1="19"
+              y1="12"
+              x2="5"
+              y2="12"
+            />
+            <polyline points="12 19 5 12 12 5" />
           </svg>
           返回复盘列表
         </router-link>
       </nav>
 
       <!-- 头部概览 -->
-      <header class="review-header animate-in" style="--delay: 1">
+      <header
+        class="review-header animate-in"
+        style="--delay: 1"
+      >
         <div class="header-main">
           <div class="review-meta">
             <span class="review-type technical">技术面试</span>
             <span class="review-date">{{ store.currentInterview.date }}</span>
           </div>
-          <h1 class="review-title">{{ store.currentInterview.position }}</h1>
+          <h1 class="review-title">
+            {{ store.currentInterview.position }}
+          </h1>
           <p class="review-company">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-              <circle cx="12" cy="10" r="3"></circle>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+              <circle
+                cx="12"
+                cy="10"
+                r="3"
+              />
             </svg>
             {{ store.currentInterview.company }}
           </p>
         </div>
         <div class="header-score">
-          <div class="score-circle" :style="{ '--score': store.currentInterview.score }">
+          <div
+            class="score-circle"
+            :style="{ '--score': store.currentInterview.score }"
+          >
             <span class="score-value">{{ store.currentInterview.score }}</span>
             <span class="score-label">综合评分</span>
           </div>
@@ -42,8 +79,13 @@
       </header>
 
       <!-- 能力维度 -->
-      <section class="dimensions-section animate-in" style="--delay: 2">
-        <h2 class="section-title">能力维度分析</h2>
+      <section
+        class="dimensions-section animate-in"
+        style="--delay: 2"
+      >
+        <h2 class="section-title">
+          能力维度分析
+        </h2>
         <div class="dimensions-grid">
           <div
             v-for="(dim, index) in store.currentReview.dimensions"
@@ -56,8 +98,18 @@
               <span class="dim-score">{{ dim.score }}/{{ dim.maxScore }}</span>
             </div>
             <div class="dim-progress">
-              <svg viewBox="0 0 100 10" class="dim-svg">
-                <rect x="0" y="3" width="100" height="4" rx="2" fill="rgba(255,255,255,0.1)" />
+              <svg
+                viewBox="0 0 100 10"
+                class="dim-svg"
+              >
+                <rect
+                  x="0"
+                  y="3"
+                  width="100"
+                  height="4"
+                  rx="2"
+                  fill="rgba(255,255,255,0.1)"
+                />
                 <rect
                   x="0"
                   y="3"
@@ -68,15 +120,22 @@
                 />
               </svg>
             </div>
-            <p class="dim-feedback">{{ dim.feedback }}</p>
+            <p class="dim-feedback">
+              {{ dim.feedback }}
+            </p>
           </div>
         </div>
       </section>
 
       <!-- 对话回放 -->
-      <section class="conversation-section animate-in" style="--delay: 3">
+      <section
+        class="conversation-section animate-in"
+        style="--delay: 3"
+      >
         <div class="section-header">
-          <h2 class="section-title">对话回放</h2>
+          <h2 class="section-title">
+            对话回放
+          </h2>
           <span class="conversation-count">{{ store.currentInterview.conversation.length }} 条对话</span>
         </div>
         <div class="conversation-list">
@@ -95,13 +154,20 @@
                 <span class="conv-role">{{ msg.role === 'interviewer' ? '面试官' : '我的回答' }}</span>
                 <span class="conv-time">{{ formatTime(msg.timestamp) }}</span>
               </div>
-              <p class="conv-text">{{ msg.content }}</p>
-              <div v-if="msg.score" class="conv-evaluation">
+              <p class="conv-text">
+                {{ msg.content }}
+              </p>
+              <div
+                v-if="msg.score"
+                class="conv-evaluation"
+              >
                 <div class="eval-score">
                   <span class="eval-value">{{ msg.score }}</span>
                   <span class="eval-label">分</span>
                 </div>
-                <p class="eval-feedback">{{ msg.feedback }}</p>
+                <p class="eval-feedback">
+                  {{ msg.feedback }}
+                </p>
               </div>
             </div>
           </div>
@@ -109,9 +175,14 @@
       </section>
 
       <!-- 题目分析 -->
-      <section class="questions-section animate-in" style="--delay: 4">
+      <section
+        class="questions-section animate-in"
+        style="--delay: 4"
+      >
         <div class="section-header">
-          <h2 class="section-title">题目分析</h2>
+          <h2 class="section-title">
+            题目分析
+          </h2>
         </div>
         <div class="questions-list">
           <div
@@ -122,32 +193,54 @@
           >
             <div class="qa-header">
               <span class="qa-number">Q{{ index + 1 }}</span>
-              <div class="qa-score" :class="getScoreClass(q.score)">
+              <div
+                class="qa-score"
+                :class="getScoreClass(q.score)"
+              >
                 {{ q.score }}分
               </div>
             </div>
-            <h4 class="qa-question">{{ q.question }}</h4>
+            <h4 class="qa-question">
+              {{ q.question }}
+            </h4>
             <div class="qa-answer">
               <span class="qa-label">你的回答</span>
-              <p class="qa-text">{{ q.yourAnswer }}</p>
+              <p class="qa-text">
+                {{ q.yourAnswer }}
+              </p>
             </div>
             <div class="qa-points">
               <div class="points-row covered">
                 <span class="points-label">已覆盖要点</span>
                 <div class="points-tags">
-                  <span v-for="p in q.keyPointsCovered" :key="p" class="point-tag covered">{{ p }}</span>
+                  <span
+                    v-for="p in q.keyPointsCovered"
+                    :key="p"
+                    class="point-tag covered"
+                  >{{ p }}</span>
                 </div>
               </div>
               <div class="points-row missed">
                 <span class="points-label">遗漏要点</span>
                 <div class="points-tags">
-                  <span v-for="p in q.keyPointsMissed" :key="p" class="point-tag missed">{{ p }}</span>
+                  <span
+                    v-for="p in q.keyPointsMissed"
+                    :key="p"
+                    class="point-tag missed"
+                  >{{ p }}</span>
                 </div>
               </div>
             </div>
             <div class="qa-suggestion">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
               <span>{{ q.suggestion }}</span>
             </div>
@@ -156,46 +249,95 @@
       </section>
 
       <!-- 综合评估 -->
-      <section class="summary-section animate-in" style="--delay: 5">
+      <section
+        class="summary-section animate-in"
+        style="--delay: 5"
+      >
         <div class="summary-grid">
           <div class="summary-card strengths">
             <div class="summary-header">
               <span class="summary-icon">✨</span>
-              <h3 class="summary-title">优势亮点</h3>
+              <h3 class="summary-title">
+                优势亮点
+              </h3>
             </div>
             <ul class="summary-list">
-              <li v-for="item in store.currentReview.analysis.strengths" :key="item">{{ item }}</li>
+              <li
+                v-for="item in store.currentReview.analysis.strengths"
+                :key="item"
+              >
+                {{ item }}
+              </li>
             </ul>
           </div>
           <div class="summary-card weaknesses">
             <div class="summary-header">
               <span class="summary-icon">🎯</span>
-              <h3 class="summary-title">待改进</h3>
+              <h3 class="summary-title">
+                待改进
+              </h3>
             </div>
             <ul class="summary-list">
-              <li v-for="item in store.currentReview.analysis.weaknesses" :key="item">{{ item }}</li>
+              <li
+                v-for="item in store.currentReview.analysis.weaknesses"
+                :key="item"
+              >
+                {{ item }}
+              </li>
             </ul>
           </div>
         </div>
         <div class="overall-feedback">
-          <h3 class="feedback-title">整体反馈</h3>
-          <p class="feedback-text">{{ store.currentReview.analysis.overallFeedback }}</p>
+          <h3 class="feedback-title">
+            整体反馈
+          </h3>
+          <p class="feedback-text">
+            {{ store.currentReview.analysis.overallFeedback }}
+          </p>
         </div>
       </section>
 
       <!-- 操作按钮 -->
-      <div class="action-bar animate-in" style="--delay: 6">
-        <button class="action-btn primary" @click="practiceAgain">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+      <div
+        class="action-bar animate-in"
+        style="--delay: 6"
+      >
+        <button
+          class="action-btn primary"
+          @click="practiceAgain"
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <polygon points="5 3 19 12 5 21 5 3" />
           </svg>
           再次练习
         </button>
-        <button class="action-btn secondary" @click="exportReport">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
+        <button
+          class="action-btn secondary"
+          @click="exportReport"
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line
+              x1="12"
+              y1="15"
+              x2="12"
+              y2="3"
+            />
           </svg>
           导出报告
         </button>

@@ -7,12 +7,21 @@
 
 <template>
   <div class="resume-content-viewer">
-    <div v-if="isEmpty" class="empty-state">
+    <div
+      v-if="isEmpty"
+      class="empty-state"
+    >
       <p>暂无简历内容</p>
     </div>
 
-    <div v-else class="resume-content">
-      <template v-for="(section, sectionIdx) in sortedSections" :key="section.id">
+    <div
+      v-else
+      class="resume-content"
+    >
+      <template
+        v-for="(section, sectionIdx) in sortedSections"
+        :key="section.id"
+      >
         <!-- 基本信息 -->
         <BasicInfoViewer
           v-if="section.type === 'BASIC_INFO'"
@@ -110,7 +119,10 @@
         />
 
         <!-- 默认渲染（未知区块类型） -->
-        <div v-else class="resume-section">
+        <div
+          v-else
+          class="resume-section"
+        >
           <h3>{{ section.title }}</h3>
           <pre class="raw-content">{{ JSON.stringify(section, null, 2) }}</pre>
         </div>

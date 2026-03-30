@@ -14,11 +14,33 @@
       >
         <div class="modal-container">
           <div class="modal-header">
-            <h3 class="modal-title">{{ modalTitle }}</h3>
-            <button class="close-btn" @click="handleCancel">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
+            <h3 class="modal-title">
+              {{ modalTitle }}
+            </h3>
+            <button
+              class="close-btn"
+              @click="handleCancel"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <line
+                  x1="18"
+                  y1="6"
+                  x2="6"
+                  y2="18"
+                />
+                <line
+                  x1="6"
+                  y1="6"
+                  x2="18"
+                  y2="18"
+                />
               </svg>
             </button>
           </div>
@@ -46,8 +68,17 @@
             />
           </div>
           <div class="modal-footer">
-            <button class="btn cancel" @click="handleCancel">取消</button>
-            <button class="btn save" :disabled="saving" @click="handleSave">
+            <button
+              class="btn cancel"
+              @click="handleCancel"
+            >
+              取消
+            </button>
+            <button
+              class="btn save"
+              :disabled="saving"
+              @click="handleSave"
+            >
               {{ saving ? '保存中...' : '保存' }}
             </button>
           </div>
