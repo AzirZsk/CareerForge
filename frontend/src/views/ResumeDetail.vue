@@ -45,6 +45,7 @@
         :structure-score="store.currentResume.structureScore"
         :has-content="hasAnalyzableContent"
         @optimize="optimizeResume"
+        @rewrite="startRewrite"
         @update="handleUpdateResumeBasicInfo"
       />
 
@@ -252,6 +253,13 @@
       @confirm="handleConfirm"
       @cancel="handleConfirmCancel"
     />
+
+    <!-- 风格改写弹窗 -->
+    <RewriteResumeModal
+      v-model:visible="showRewriteModal"
+      :resume-id="resumeId"
+      :overlay="true"
+    />
   </div>
 </template>
 
@@ -262,6 +270,7 @@ import { useAppStore } from '@/stores'
 import EditSectionModal from '@/components/resume/EditSectionModal.vue'
 import AddSectionModal from '@/components/resume/AddSectionModal.vue'
 import OptimizeProgressModal from '@/components/resume/OptimizeProgressModal.vue'
+import RewriteResumeModal from '@/components/resume/RewriteResumeModal.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import ResumeHeader from '@/components/resume/ResumeHeader.vue'
 import MetricsSection from '@/components/resume/MetricsSection.vue'
@@ -287,6 +296,13 @@ const showOptimizeModal = ref<boolean>(false)
 const { state: aiChatState } = useAIChat()
 // 优化弹窗打开时隐藏AI悬浮球
 watch(showOptimizeModal, (val) => {
+  aiChatState.hideFloat = val
+})
+
+// 风格改写相关状态
+const showRewriteModal = ref<boolean>(false)
+// 风格改写弹窗打开时隐藏AI悬浮球
+watch(showRewriteModal, (val) => {
   aiChatState.hideFloat = val
 })
 
@@ -475,6 +491,12 @@ function optimizeResume(): void {
     mode: 'quick',
     targetPosition
   })
+}
+
+// 开始风格改写
+function startRewrite(): void {
+  if (!resumeId.value) return
+  showRewriteModal.value = true
 }
 
 // 更新简历基本信息

@@ -100,6 +100,26 @@
       </div>
       <div class="header-actions">
         <button
+          class="action-btn secondary"
+          :class="{ disabled: !hasContent }"
+          :disabled="!hasContent"
+          :title="hasContent ? '' : '请先填写简历内容'"
+          @click="hasContent && $emit('rewrite')"
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M12 3v12c13 5v2c13-7v7h-1V1z" />
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+          </svg>
+          风格改写
+        </button>
+        <button
           class="action-btn primary"
           :class="{ disabled: !hasContent }"
           :disabled="!hasContent"
@@ -139,6 +159,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   optimize: []
   update: [data: { name: string; targetPosition?: string }]
+  rewrite: []
 }>()
 
 // 编辑状态

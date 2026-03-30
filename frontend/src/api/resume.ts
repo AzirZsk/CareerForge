@@ -5,6 +5,7 @@
 
 import type { ApiResponse, PrimaryResumeVO, ResumeDetail, ResumeListItem, CreateResumeRequest, ResumeSuggestion, ResumeSuggestionsGroup } from '@/types'
 import type { DeriveResumeRequest, SaveTailoredResumeRequest } from '@/types/resume-tailor'
+import type { ParseReferenceResponse } from '@/types/resume-rewrite'
 
 // API 基础路径
 const API_BASE = '/landit'
@@ -337,4 +338,43 @@ export async function saveTailoredResume(
     throw new Error(result.message || '保存定制简历失败')
   }
   return result.data
+}
+
+// ==================== 风格改写 API ====================
+
+/**
+ * 解析参考简历文件
+ * 上传参考简历（PDF/Word），AI解析后返回 tempKey 用于后续改写
+ * @param resumeId 简历ID
+ * @param file 参考简历文件
+ */
+export async function parseReferenceResume(
+  resumeId: string,
+  file: File
+): Promise<ParseReferenceResponse> {
+  const formData = new FormData()
+  formData.append('file', file)
+  const response = await fetch(`${API_BASE}/resumes/${resumeId}/rewrite/parse-reference`, {
+    method: 'POST',
+    body: formData
+  })
+  const result: ApiResponse<ParseReferenceResponse> = await response.json()
+  if (result.code !== 200) {
+    throw new Error(result.message || '解析参考简历失败')
+  }
+  return result.data
+}
+
+/**
+ * 创建风格改写 SSE 连接
+ * @param resumeId 简历ID
+ * @param tempKey 参考简历缓存key
+ * @returns EventSource 实例
+ */
+export function createRewriteResumeStream(
+  resumeId: string,
+  tempKey: string
+): EventSource {
+  const url = `${API_BASE}/resumes/${resumeId}/rewrite/stream?tempKey=${encodeURIComponent(tempKey)}`
+  return new EventSource(url)
 }

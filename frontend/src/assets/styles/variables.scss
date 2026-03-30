@@ -41,7 +41,6 @@ $gradient-glow: radial-gradient(ellipse at 50% 0%, rgb(212 168 83 / 8%) 0%, tran
 // 字体
 $font-display: 'Crimson Pro', georgia, serif;
 $font-body: 'Outfit', -apple-system, sans-serif;
-$font-mono: 'Fira Code', 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', 'Droid Sans Mono', 'Source Code Pro', consolas, monospace;
 $font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', consolas, monospace;
 
 // 字重
@@ -92,6 +91,9 @@ $shadow-md: 0 4px 12px rgb(0 0 0 / 40%);
 $shadow-lg: 0 8px 32px rgb(0 0 0 / 50%);
 $shadow-xl: 0 16px 48px rgb(0 0 0 / 60%);
 $shadow-glow: 0 0 40px rgb(212 168 83 / 15%);
+
+// 边框颜色
+$color-border: rgba(255, 255, 255, 0.15);
 
 // 过渡
 $transition-fast: 150ms ease;
