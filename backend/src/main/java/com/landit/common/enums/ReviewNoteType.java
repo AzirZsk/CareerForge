@@ -15,6 +15,9 @@ public enum ReviewNoteType implements BaseEnum {
     MANUAL("manual", "手动复盘"),
     AI_ANALYSIS("ai_analysis", "AI分析复盘");
 
+    private final String code;
+    private final String description;
+
     public static ReviewNoteType fromCode(String code) {
         return BaseEnum.fromCode(ReviewNoteType.class, code);
     }

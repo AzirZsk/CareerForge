@@ -20,6 +20,9 @@ public enum RoundType implements BaseEnum {
     FINAL("final", "终面"),
     CUSTOM("custom", "自定义");
 
+    private final String code;
+    private final String description;
+
     public static RoundType fromCode(String code) {
         return BaseEnum.fromCode(RoundType.class, code);
     }

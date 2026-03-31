@@ -17,6 +17,9 @@ public enum InterviewResult implements BaseEnum {
     FAILED("failed", "未通过"),
     PENDING("pending", "待定");
 
+    private final String code;
+    private final String description;
+
     public static InterviewResult fromCode(String code) {
         return BaseEnum.fromCode(InterviewResult.class, code);
     }

@@ -17,6 +17,9 @@ public enum PreparationItemType implements BaseEnum {
     TODO("todo", "准备事项"),
     MANUAL("manual", "手动记录");
 
+    private final String code;
+    private final String description;
+
     public static PreparationItemType fromCode(String code) {
         return BaseEnum.fromCode(PreparationItemType.class, code);
     }

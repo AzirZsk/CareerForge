@@ -19,6 +19,9 @@ public enum RoundStatus implements BaseEnum {
     PENDING_RESULT("pending_result", "待定"),
     CANCELLED("cancelled", "已取消");
 
+    private final String code;
+    private final String description;
+
     public boolean isTerminal() {
         return this == PASSED || this == FAILED || this == CANCELLED;
     }

@@ -16,6 +16,9 @@ public enum InterviewSource implements BaseEnum {
     REAL("real", "真实面试"),
     MOCK("mock", "模拟面试");
 
+    private final String code;
+    private final String description;
+
     public static InterviewSource fromCode(String code) {
         return BaseEnum.fromCode(InterviewSource.class, code);
     }
