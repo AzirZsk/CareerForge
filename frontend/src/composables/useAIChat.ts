@@ -61,15 +61,43 @@ export function useAIChat() {
   async function loadHistory(sessionId: string): Promise<void> {
     try {
       const history = await getChatHistory(sessionId)
+
       state.messages = history.map(m => ({
         id: m.id,
         role: m.role as 'user' | 'assistant' | 'system',
         content: m.content,
         timestamp: new Date(m.createdAt).getTime(),
-        actions: m.actions,
+        // 根据 actionStatus 初始化每个 change 的 status
+        actions: m.actions?.map(action => ({
+          ...action,
+          status: action.status || (m.actionStatus === 'applied' ? 'applied' :
+                                   m.actionStatus === 'rejected' ? 'rejected' :
+                                   m.actionStatus === 'failed' ? 'failed' : 'pending')
+        })) || [],
         actionStatus: m.actionStatus,
-        segments: m.segments
+        segments: m.segments,
+        resumeId: m.resumeId
       }))
+
+      // 恢复简历上下文：取最新的有 resumeId 的消息
+      const latestResumeMsg = [...state.messages].reverse().find(m => m.resumeId)
+      if (latestResumeMsg?.resumeId) {
+        state.currentResumeId = latestResumeMsg.resumeId
+        state.chatMode = 'resume'
+        // 从历史消息中查找简历名称（如果有 resume_selected 系统消息）
+        const resumeSelectedMsg = state.messages.find(m =>
+          m.role === 'system' && m.content.includes('已切换到')
+        )
+        if (resumeSelectedMsg) {
+          const match = resumeSelectedMsg.content.match(/已切换到「(.+)」/)
+          if (match) {
+            state.detectedResume = {
+              id: latestResumeMsg.resumeId,
+              name: match[1]
+            }
+          }
+        }
+      }
     } catch (error) {
       console.error('[AIChat] 加载历史失败', error)
       state.messages = []
@@ -202,7 +230,7 @@ export function useAIChat() {
       }
       newMessage.segments!.push({ type: 'text', content: '' })
       state.messages.push(newMessage)
-      currentAiMessage = newMessage
+      currentAiMessage = state.messages[state.messages.length - 1]
     }
   }
 
@@ -232,14 +260,16 @@ export function useAIChat() {
    */
   async function applySingleChange(messageId: string, index: number): Promise<void> {
     const message = state.messages.find(m => m.id === messageId)
-    if (!message?.actions?.[index] || !state.currentResumeId) return
+    // 优先使用消息自身的 resumeId，没有的话用全局的
+    const resumeId = message?.resumeId || state.currentResumeId
+    if (!message?.actions?.[index] || !resumeId) return
 
     const change = message.actions[index]
     const toast = useToast()
 
     try {
       change.status = 'applied'
-      await apiApplyChanges(state.currentResumeId, [change])
+      await apiApplyChanges(resumeId, [change])
       toast.success(`「${change.sectionTitle || '修改'}」已应用`)
       syncMessageStatus(message)
       await apiUpdateActionStatus(messageId, message.actionStatus!)
@@ -268,7 +298,9 @@ export function useAIChat() {
    */
   async function applyAllChanges(messageId: string): Promise<void> {
     const message = state.messages.find(m => m.id === messageId)
-    if (!message?.actions || !state.currentResumeId) return
+    // 优先使用消息自身的 resumeId，没有的话用全局的
+    const resumeId = message?.resumeId || state.currentResumeId
+    if (!message?.actions || !resumeId) return
 
     const pendingChanges = message.actions.filter(a => a.status === 'pending')
     if (pendingChanges.length === 0) return
@@ -278,7 +310,7 @@ export function useAIChat() {
     try {
       // 先乐观更新状态
       pendingChanges.forEach(c => { c.status = 'applied' })
-      await apiApplyChanges(state.currentResumeId, pendingChanges)
+      await apiApplyChanges(resumeId, pendingChanges)
       toast.success(`${pendingChanges.length} 项修改已全部应用`)
       syncMessageStatus(message)
       await apiUpdateActionStatus(messageId, message.actionStatus!)

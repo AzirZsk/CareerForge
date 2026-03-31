@@ -1,78 +1,80 @@
 <template>
-  <div class="dialog-overlay" @click.self="$emit('close')">
-    <div class="dialog-content">
-      <header class="dialog-header">
-        <h2>创建面试</h2>
-        <button class="close-btn" @click="$emit('close')">×</button>
-      </header>
+  <Teleport to="body">
+    <div class="dialog-overlay" @click.self="$emit('close')">
+      <div class="dialog-content">
+        <header class="dialog-header">
+          <h2>创建面试</h2>
+          <button class="close-btn" @click="$emit('close')">×</button>
+        </header>
 
-      <form class="dialog-form" @submit.prevent="handleSubmit">
-        <div class="form-group">
-          <label class="form-label required">公司名称</label>
-          <input
-            v-model="form.companyName"
-            type="text"
-            class="form-input"
-            placeholder="请输入公司名称"
-            required
-          />
-        </div>
+        <form class="dialog-form" @submit.prevent="handleSubmit">
+          <div class="form-group">
+            <label class="form-label required">公司名称</label>
+            <input
+              v-model="form.companyName"
+              type="text"
+              class="form-input"
+              placeholder="请输入公司名称"
+              required
+            />
+          </div>
 
-        <div class="form-group">
-          <label class="form-label required">目标岗位</label>
-          <input
-            v-model="form.position"
-            type="text"
-            class="form-input"
-            placeholder="请输入目标岗位"
-            required
-          />
-        </div>
+          <div class="form-group">
+            <label class="form-label required">目标岗位</label>
+            <input
+              v-model="form.position"
+              type="text"
+              class="form-input"
+              placeholder="请输入目标岗位"
+              required
+            />
+          </div>
 
-        <div class="form-group">
-          <label class="form-label required">面试日期</label>
-          <input
-            v-model="form.interviewDate"
-            type="date"
-            class="form-input"
-            required
-          />
-        </div>
+          <div class="form-group">
+            <label class="form-label required">面试日期</label>
+            <input
+              v-model="form.interviewDate"
+              type="date"
+              class="form-input"
+              required
+            />
+          </div>
 
-        <div class="form-group">
-          <label class="form-label">JD 内容（可选）</label>
-          <textarea
-            v-model="form.jdContent"
-            class="form-textarea"
-            placeholder="粘贴职位描述..."
-            rows="4"
-          ></textarea>
-        </div>
+          <div class="form-group">
+            <label class="form-label">JD 内容（可选）</label>
+            <textarea
+              v-model="form.jdContent"
+              class="form-textarea"
+              placeholder="粘贴职位描述..."
+              rows="4"
+            ></textarea>
+          </div>
 
-        <div class="form-group">
-          <label class="form-label">备注</label>
-          <textarea
-            v-model="form.notes"
-            class="form-textarea"
-            placeholder="其他备注..."
-            rows="2"
-          ></textarea>
-        </div>
-      </form>
+          <div class="form-group">
+            <label class="form-label">备注</label>
+            <textarea
+              v-model="form.notes"
+              class="form-textarea"
+              placeholder="其他备注..."
+              rows="2"
+            ></textarea>
+          </div>
+        </form>
 
-      <footer class="dialog-footer">
-        <button type="button" class="btn btn-secondary" @click="$emit('close')">取消</button>
-        <button
-          type="button"
-          class="btn btn-primary"
-          :disabled="submitting || !isFormValid"
-          @click="handleSubmit"
-        >
-          {{ submitting ? '创建中...' : '创建' }}
-        </button>
-      </footer>
+        <footer class="dialog-footer">
+          <button type="button" class="btn btn-secondary" @click="$emit('close')">取消</button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            :disabled="submitting || !isFormValid"
+            @click="handleSubmit"
+          >
+            {{ submitting ? '创建中...' : '创建' }}
+          </button>
+        </footer>
+      </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -126,7 +128,7 @@ async function handleSubmit() {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: $z-overlay;
 }
 
 .dialog-content {

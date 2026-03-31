@@ -5,7 +5,9 @@
 
 <template>
   <div class="modal-header">
+    <!-- 非默认状态才显示图标 -->
     <div
+      v-if="isOptimizing || isCompleted || hasError"
       class="header-icon"
       :class="iconClass"
     >

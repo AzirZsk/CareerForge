@@ -230,6 +230,7 @@ defineEmits<{
   display: grid;
   grid-template-rows: 1fr;
   overflow: hidden;
+  max-height: 400px; // 限制展开区域最大高度，防止撑满整个滚动容器
 
   &:not(:empty) {
     margin-top: $spacing-sm;
@@ -240,7 +241,8 @@ defineEmits<{
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  overscroll-behavior: contain;
+  // 移除 overscroll-behavior: contain，允许滚动链传递
+  // 当内部滚动到边界时，自动触发外层滚动
 }
 
 .data-content {

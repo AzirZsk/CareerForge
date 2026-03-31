@@ -73,6 +73,56 @@ button {
   }
 }
 
+// 按钮样式系统
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-xs;
+  padding: $spacing-sm $spacing-lg;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: $radius-md;
+  transition: all $transition-fast;
+  cursor: pointer;
+  border: none;
+  line-height: 1.5;
+
+  &.btn-primary {
+    background: $color-accent;
+    color: $color-bg-primary;
+
+    &:hover:not(:disabled) {
+      background: $color-accent-light;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  &.btn-secondary {
+    background: $color-bg-tertiary;
+    color: $color-text-secondary;
+
+    &:hover:not(:disabled) {
+      background: $color-bg-elevated;
+      color: $color-text-primary;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  .icon {
+    font-size: 1.1em;
+    line-height: 1;
+  }
+}
+
 // 图片
 img {
   max-width: 100%;

@@ -240,4 +240,11 @@ onMounted(() => {
   padding: $spacing-2xl;
   color: $color-text-tertiary;
 }
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-lg;
+}
 </style>
