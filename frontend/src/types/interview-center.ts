@@ -114,6 +114,7 @@ export interface ReviewNoteVO {
 
 // 创建面试请求
 export interface CreateInterviewRequest {
+  jobPositionId?: string
   companyName: string
   position: string
   interviewDate: string

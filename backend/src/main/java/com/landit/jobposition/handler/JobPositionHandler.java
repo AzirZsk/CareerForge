@@ -1,10 +1,15 @@
 package com.landit.jobposition.handler;
 
-import com.landit.jobposition.dto.JobPositionVO;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.landit.common.response.PageResponse;
+import com.landit.jobposition.dto.*;
 import com.landit.jobposition.entity.JobPosition;
 import com.landit.jobposition.service.JobPositionService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 /**
  * 职位 Handler
@@ -12,11 +17,87 @@ import org.springframework.stereotype.Component;
  *
  * @author Azir
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JobPositionHandler {
 
     private final JobPositionService jobPositionService;
+
+    /**
+     * 获取职位列表（含面试统计）
+     *
+     * @param page 页码
+     * @param size 每页大小
+     * @return 职位列表
+     */
+    public PageResponse<JobPositionListItemVO> getJobPositionList(Integer page, Integer size) {
+        log.info("获取职位列表: page={}, size={}", page, size);
+        IPage<JobPositionListItemVO> result = jobPositionService.getJobPositionList(page, size);
+        return PageResponse.of(
+                result.getRecords(),
+                result.getTotal(),
+                (int) result.getCurrent(),
+                (int) result.getSize()
+        );
+    }
+
+    /**
+     * 创建职位
+     *
+     * @param request 创建请求
+     * @return 职位详情
+     */
+    public JobPositionDetailVO createJobPosition(CreateJobPositionRequest request) {
+        log.info("创建职位: companyName={}, title={}", request.getCompanyName(), request.getTitle());
+        return jobPositionService.createJobPosition(request);
+    }
+
+    /**
+     * 获取职位详情
+     *
+     * @param id 职位ID
+     * @return 职位详情
+     */
+    public JobPositionDetailVO getJobPositionDetail(String id) {
+        log.info("获取职位详情: id={}", id);
+        return jobPositionService.getJobPositionDetail(id);
+    }
+
+    /**
+     * 更新职位
+     *
+     * @param id      职位ID
+     * @param request 更新请求
+     * @return 职位详情
+     */
+    public JobPositionDetailVO updateJobPosition(String id, UpdateJobPositionRequest request) {
+        log.info("更新职位: id={}", id);
+        return jobPositionService.updateJobPosition(id, request);
+    }
+
+    /**
+     * 删除职位
+     *
+     * @param id 职位ID
+     */
+    public void deleteJobPosition(String id) {
+        log.info("删除职位: id={}", id);
+        jobPositionService.deleteJobPosition(id);
+    }
+
+    /**
+     * 获取职位下的面试列表
+     *
+     * @param id 职位ID
+     * @return 面试简要列表
+     */
+    public List<JobPositionDetailVO.InterviewBriefVO> getJobPositionInterviews(String id) {
+        log.info("获取职位面试列表: id={}", id);
+        return jobPositionService.getJobPositionInterviews(id);
+    }
+
+    // ===== 以下为原有方法，保持兼容 =====
 
     /**
      * 根据公司ID和职位名称获取职位信息

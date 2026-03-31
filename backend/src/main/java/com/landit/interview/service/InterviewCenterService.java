@@ -51,11 +51,16 @@ public class InterviewCenterService extends ServiceImpl<InterviewMapper, Intervi
         interview.setNotes(request.getNotes());
         interview.setCompanyResearch("{}");
         interview.setJdAnalysis("{}");
+        // 关联职位ID（如果提供）
+        if (request.getJobPositionId() != null && !request.getJobPositionId().isBlank()) {
+            interview.setJobPositionId(request.getJobPositionId());
+        }
         this.save(interview);
         if (request.getRounds() != null && !request.getRounds().isEmpty()) {
             roundService.batchCreateRounds(interview.getId(), request.getRounds());
         }
-        log.info("创建真实面试成功: id={}, company={}", interview.getId(), interview.getCompany());
+        log.info("创建真实面试成功: id={}, company={}, jobPositionId={}",
+                interview.getId(), interview.getCompany(), interview.getJobPositionId());
         return getInterviewDetail(interview.getId());
     }
 
@@ -108,7 +113,7 @@ public class InterviewCenterService extends ServiceImpl<InterviewMapper, Intervi
         if (request.getPosition() != null && !request.getPosition().isBlank()) {
             interview.setPosition(request.getPosition());
         }
-        if (request.getInterviewDate() != null && !request.getInterviewDate().toString().isBlank()) {
+        if (request.getInterviewDate() != null) {
             interview.setDate(request.getInterviewDate());
         }
         if (request.getJdContent() != null) {

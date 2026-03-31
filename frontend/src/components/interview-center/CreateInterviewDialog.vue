@@ -8,41 +8,100 @@
         </header>
 
         <form class="dialog-form" @submit.prevent="handleSubmit">
-          <div class="form-group">
-            <label class="form-label required">公司名称</label>
-            <input
-              v-model="form.companyName"
-              type="text"
-              class="form-input"
-              placeholder="请输入公司名称"
-              required
-            />
+          <!-- 模式切换 -->
+          <div class="mode-switch">
+            <button
+              type="button"
+              :class="['mode-btn', { active: mode === 'select' }]"
+              @click="mode = 'select'"
+            >
+              选择已有职位
+            </button>
+            <button
+              type="button"
+              :class="['mode-btn', { active: mode === 'new' }]"
+              @click="mode = 'new'"
+            >
+              新建职位
+            </button>
           </div>
 
-          <div class="form-group">
-            <label class="form-label required">目标岗位</label>
-            <input
-              v-model="form.position"
-              type="text"
-              class="form-input"
-              placeholder="请输入目标岗位"
-              required
-            />
-          </div>
+          <!-- 选择已有职位模式 -->
+          <template v-if="mode === 'select'">
+            <div class="form-group">
+              <label class="form-label required">选择职位</label>
+              <div class="position-select" v-if="!loadingPositions">
+                <select v-model="selectedPositionId" class="form-select" required>
+                  <option value="">请选择职位</option>
+                  <option
+                    v-for="pos in jobPositions"
+                    :key="pos.id"
+                    :value="pos.id"
+                  >
+                    {{ pos.companyName }} - {{ pos.title }}
+                  </option>
+                </select>
+              </div>
+              <div v-else class="loading-positions">
+                加载职位列表...
+              </div>
+            </div>
 
+            <div class="selected-info" v-if="selectedPosition">
+              <div class="info-item">
+                <span class="info-label">公司</span>
+                <span class="info-value">{{ selectedPosition.companyName }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">职位</span>
+                <span class="info-value">{{ selectedPosition.title }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">历史面试</span>
+                <span class="info-value">{{ selectedPosition.interviewCount }} 次</span>
+              </div>
+            </div>
+          </template>
+
+          <!-- 新建职位模式 -->
+          <template v-else>
+            <div class="form-group">
+              <label class="form-label required">公司名称</label>
+              <input
+                v-model="form.companyName"
+                type="text"
+                class="form-input"
+                placeholder="请输入公司名称"
+                :required="mode === 'new'"
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label required">目标岗位</label>
+              <input
+                v-model="form.position"
+                type="text"
+                class="form-input"
+                placeholder="请输入目标岗位"
+                :required="mode === 'new'"
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">JD 内容（可选）</label>
+              <textarea
+                v-model="form.jdContent"
+                class="form-textarea"
+                placeholder="粘贴职位描述..."
+                rows="4"
+              ></textarea>
+            </div>
+          </template>
+
+          <!-- 通用字段 -->
           <div class="form-group">
             <label class="form-label required">面试时间</label>
             <DateTimePicker v-model="form.interviewDate" />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">JD 内容（可选）</label>
-            <textarea
-              v-model="form.jdContent"
-              class="form-textarea"
-              placeholder="粘贴职位描述..."
-              rows="4"
-            ></textarea>
           </div>
 
           <div class="form-group">
@@ -73,19 +132,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { createInterview } from '@/api/interview-center'
+import { getJobPositionList } from '@/api/job-position'
 import type { CreateInterviewRequest } from '@/types/interview-center'
+import type { JobPositionListItem } from '@/types/job-position'
 import DateTimePicker from '@/components/common/DateTimePicker.vue'
+
+const props = defineProps<{
+  preselectedPosition?: { companyName: string; title: string } | null
+}>()
 
 const emit = defineEmits<{
   close: []
   created: [id: string]
 }>()
 
+const mode = ref<'select' | 'new'>('select')
 const submitting = ref(false)
+const loadingPositions = ref(false)
+const jobPositions = ref<JobPositionListItem[]>([])
+const selectedPositionId = ref('')
 
 const form = reactive<CreateInterviewRequest>({
+  jobPositionId: '',
   companyName: '',
   position: '',
   interviewDate: '',
@@ -93,16 +163,74 @@ const form = reactive<CreateInterviewRequest>({
   notes: ''
 })
 
-const isFormValid = computed(() => {
-  return form.companyName.trim() && form.position.trim() && form.interviewDate
+const selectedPosition = computed(() => {
+  if (!selectedPositionId.value) return null
+  return jobPositions.value.find(p => p.id === selectedPositionId.value)
 })
+
+const isFormValid = computed(() => {
+  if (!form.interviewDate) return false
+  if (mode.value === 'select') {
+    return !!selectedPositionId.value
+  } else {
+    return form.companyName.trim() && form.position.trim()
+  }
+})
+
+// 监听选中职位变化
+watch(selectedPositionId, (id) => {
+  form.jobPositionId = id
+  if (selectedPosition.value) {
+    form.companyName = selectedPosition.value.companyName
+    form.position = selectedPosition.value.title
+  }
+})
+
+// 监听模式切换，清空相关数据
+watch(mode, (newMode) => {
+  if (newMode === 'select') {
+    form.companyName = ''
+    form.position = ''
+    form.jdContent = ''
+    form.jobPositionId = selectedPositionId.value
+  } else {
+    selectedPositionId.value = ''
+    form.jobPositionId = ''
+  }
+})
+
+// 如果有预选职位，切换到新建模式并填充
+watch(() => props.preselectedPosition, (pos) => {
+  if (pos) {
+    mode.value = 'new'
+    form.companyName = pos.companyName
+    form.position = pos.title
+  }
+}, { immediate: true })
+
+async function loadPositions() {
+  loadingPositions.value = true
+  try {
+    const result = await getJobPositionList({ page: 1, size: 100 })
+    jobPositions.value = result?.list || []
+  } catch (error) {
+    console.error('加载职位列表失败:', error)
+    jobPositions.value = []
+  } finally {
+    loadingPositions.value = false
+  }
+}
 
 async function handleSubmit() {
   if (submitting.value || !isFormValid.value) return
 
   submitting.value = true
   try {
-    const result = await createInterview(form)
+    const requestData: CreateInterviewRequest = {
+      ...form,
+      jobPositionId: mode.value === 'select' ? selectedPositionId.value : undefined
+    }
+    const result = await createInterview(requestData)
     emit('created', result.id)
   } catch (error) {
     console.error('创建面试失败:', error)
@@ -111,6 +239,10 @@ async function handleSubmit() {
     submitting.value = false
   }
 }
+
+onMounted(() => {
+  loadPositions()
+})
 </script>
 
 <style scoped lang="scss">
@@ -167,6 +299,36 @@ async function handleSubmit() {
   padding: $spacing-lg;
 }
 
+.mode-switch {
+  display: flex;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-lg;
+  background: $color-bg-tertiary;
+  padding: 4px;
+  border-radius: $radius-md;
+}
+
+.mode-btn {
+  flex: 1;
+  padding: $spacing-sm $spacing-md;
+  border: none;
+  background: transparent;
+  color: $color-text-secondary;
+  font-size: 0.875rem;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &.active {
+    background: $color-accent;
+    color: $color-bg-primary;
+  }
+
+  &:hover:not(.active) {
+    color: $color-text-primary;
+  }
+}
+
 .form-group {
   margin-bottom: $spacing-lg;
 
@@ -188,7 +350,7 @@ async function handleSubmit() {
   }
 }
 
-.form-input, .form-textarea {
+.form-input, .form-textarea, .form-select {
   width: 100%;
   padding: $spacing-md;
   background: $color-bg-tertiary;
@@ -208,9 +370,50 @@ async function handleSubmit() {
   }
 }
 
+.form-select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2371717a' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
 .form-textarea {
   resize: vertical;
   min-height: 80px;
+}
+
+.selected-info {
+  background: $color-bg-tertiary;
+  border-radius: $radius-md;
+  padding: $spacing-md;
+  margin-bottom: $spacing-lg;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+}
+
+.info-label {
+  color: $color-text-tertiary;
+}
+
+.info-value {
+  color: $color-text-primary;
+  font-weight: 500;
+}
+
+.loading-positions {
+  padding: $spacing-md;
+  text-align: center;
+  color: $color-text-tertiary;
+  font-size: 0.875rem;
 }
 
 .dialog-footer {

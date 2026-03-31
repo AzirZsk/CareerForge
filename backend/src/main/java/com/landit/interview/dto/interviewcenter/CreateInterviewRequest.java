@@ -16,6 +16,11 @@ import java.util.List;
 @Data
 public class CreateInterviewRequest {
 
+    /**
+     * 关联职位ID（可选，如果提供则自动关联职位）
+     */
+    private String jobPositionId;
+
     @NotBlank(message = "公司名称不能为空")
     private String companyName;
 
