@@ -121,7 +121,7 @@ CREATE TABLE IF NOT EXISTS t_interview (
     type VARCHAR(20),                       -- 面试类型（technical-技术 behavioral-行为）
     position VARCHAR(100),                  -- 面试岗位
     company VARCHAR(100),                   -- 面试公司
-    date DATE,                              -- 面试日期
+    date DATETIME,                          -- 面试时间
     duration INTEGER DEFAULT 0,             -- 面试时长（分钟）
     score INTEGER DEFAULT 0,                -- 面试得分（0-100）
     status VARCHAR(20) DEFAULT 'in_progress', -- 面试状态（in_progress-进行中 completed-已完成）

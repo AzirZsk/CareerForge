@@ -32,13 +32,8 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label required">面试日期</label>
-          <input
-            v-model="form.interviewDate"
-            type="date"
-            class="form-input"
-            required
-          />
+          <label class="form-label required">面试时间</label>
+          <DateTimePicker v-model="form.interviewDate" />
         </div>
 
         <div class="form-group">
@@ -83,11 +78,7 @@
               class="form-input"
               placeholder="轮次名称"
             />
-            <input
-              v-model="round.scheduledDate"
-              type="datetime-local"
-              class="form-input"
-            />
+            <DateTimePicker v-model="round.scheduledDate" />
             <button type="button" class="btn-icon delete" @click="removeRound(index)">×</button>
           </div>
 
@@ -112,6 +103,7 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { createInterview } from '@/api/interview-center'
 import type { CreateInterviewRequest } from '@/types/interview-center'
+import DateTimePicker from '@/components/common/DateTimePicker.vue'
 
 const router = useRouter()
 const submitting = ref(false)

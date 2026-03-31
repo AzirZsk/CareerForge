@@ -31,13 +31,8 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label required">面试日期</label>
-            <input
-              v-model="form.interviewDate"
-              type="date"
-              class="form-input"
-              required
-            />
+            <label class="form-label required">面试时间</label>
+            <DateTimePicker v-model="form.interviewDate" />
           </div>
 
           <div class="form-group">
@@ -81,6 +76,7 @@
 import { ref, reactive, computed } from 'vue'
 import { createInterview } from '@/api/interview-center'
 import type { CreateInterviewRequest } from '@/types/interview-center'
+import DateTimePicker from '@/components/common/DateTimePicker.vue'
 
 const emit = defineEmits<{
   close: []

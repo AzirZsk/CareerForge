@@ -39,7 +39,7 @@
         <h3 class="company-name">{{ interview.companyName }}</h3>
         <p class="position">{{ interview.position }}</p>
         <div class="card-meta">
-          <span class="date">{{ interview.interviewDate }}</span>
+          <span class="date">{{ formatDateTime(interview.interviewDate) }}</span>
           <span class="rounds">{{ interview.completedRounds }}/{{ interview.roundCount }} 轮</span>
         </div>
       </div>
@@ -90,6 +90,18 @@ const filteredInterviews = computed(() => {
 
 function getStatusLabel(status: InterviewStatus): string {
   return INTERVIEW_STATUS_LABELS[status] || status
+}
+
+function formatDateTime(dateStr: string): string {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 }
 
 function goToDetail(id: string) {

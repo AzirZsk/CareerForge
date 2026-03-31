@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -22,8 +22,8 @@ public class CreateInterviewRequest {
     @NotBlank(message = "目标岗位不能为空")
     private String position;
 
-    @NotNull(message = "面试日期不能为空")
-    private LocalDate interviewDate;
+    @NotNull(message = "面试时间不能为空")
+    private LocalDateTime interviewDate;
 
     private String jdContent;
 

@@ -2,7 +2,6 @@ package com.landit.interview.dto.interviewcenter;
 
 import lombok.Data;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -22,7 +21,7 @@ public class InterviewDetailVO {
 
     private String position;
 
-    private LocalDate interviewDate;
+    private LocalDateTime interviewDate;
 
     private String status;
 

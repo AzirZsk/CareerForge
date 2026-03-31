@@ -196,6 +196,7 @@ public class InterviewCenterService extends ServiceImpl<InterviewMapper, Intervi
         InterviewListItemVO vo = new InterviewListItemVO();
         BeanUtils.copyProperties(interview, vo);
         vo.setCompanyName(interview.getCompany());
+        vo.setInterviewDate(interview.getDate());
         List<InterviewRound> rounds = roundService.getByInterviewId(interview.getId());
         vo.setRoundCount(rounds.size());
         vo.setCompletedRounds((int) rounds.stream().filter(r -> "passed".equals(r.getStatus())).count());
@@ -208,6 +209,7 @@ public class InterviewCenterService extends ServiceImpl<InterviewMapper, Intervi
         InterviewDetailVO vo = new InterviewDetailVO();
         BeanUtils.copyProperties(interview, vo);
         vo.setCompanyName(interview.getCompany());
+        vo.setInterviewDate(interview.getDate());
         vo.setRounds(rounds.stream().map(this::convertToRoundVO).collect(Collectors.toList()));
         vo.setPreparations(preparations.stream().map(this::convertToPreparationVO).collect(Collectors.toList()));
         if (reviewNote != null) {

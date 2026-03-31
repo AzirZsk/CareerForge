@@ -47,7 +47,7 @@
         <h1 class="company-name">{{ interview.companyName }}</h1>
         <p class="position">{{ interview.position }}</p>
         <div class="meta-info">
-          <span>面试日期：{{ interview.interviewDate }}</span>
+          <span>面试时间：{{ formatDateTime(interview.interviewDate) }}</span>
           <span v-if="interview.overallResult">
             最终结果：{{ getResultLabel(interview.overallResult) }}
           </span>

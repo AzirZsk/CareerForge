@@ -33,11 +33,7 @@
 
         <div class="form-group">
           <label class="form-label">预定时间</label>
-          <input
-            v-model="form.scheduledDate"
-            type="datetime-local"
-            class="form-input"
-          />
+          <DateTimePicker v-model="form.scheduledDate" />
         </div>
 
         <div class="form-group">
@@ -70,6 +66,7 @@
 import { ref, reactive, watch } from 'vue'
 import { addRound } from '@/api/interview-center'
 import type { AddRoundRequest } from '@/types/interview-center'
+import DateTimePicker from '@/components/common/DateTimePicker.vue'
 
 const props = defineProps<{
   interviewId: string

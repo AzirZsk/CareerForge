@@ -2,7 +2,7 @@ package com.landit.interview.dto.interviewcenter;
 
 import lombok.Data;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * 更新面试基本信息请求 DTO
@@ -16,7 +16,7 @@ public class UpdateInterviewRequest {
 
     private String position;
 
-    private LocalDate interviewDate;
+    private LocalDateTime interviewDate;
 
     private String jdContent;
 

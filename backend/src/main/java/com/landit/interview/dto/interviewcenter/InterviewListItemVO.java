@@ -2,7 +2,7 @@ package com.landit.interview.dto.interviewcenter;
 
 import lombok.Data;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * 面试列表项 VO
@@ -20,7 +20,7 @@ public class InterviewListItemVO {
 
     private String position;
 
-    private LocalDate interviewDate;
+    private LocalDateTime interviewDate;
 
     private String status;
 
@@ -30,8 +30,8 @@ public class InterviewListItemVO {
 
     private Integer completedRounds;
 
-    private LocalDate createdAt;
+    private LocalDateTime createdAt;
 
-    private LocalDate updatedAt;
+    private LocalDateTime updatedAt;
 
 }

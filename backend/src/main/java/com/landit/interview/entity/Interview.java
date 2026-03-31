@@ -5,7 +5,7 @@ import com.landit.common.entity.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * 面试记录实体类
@@ -26,7 +26,7 @@ public class Interview extends BaseEntity {
 
     private String company;
 
-    private LocalDate date;
+    private LocalDateTime date;
 
     private Integer duration;
 
