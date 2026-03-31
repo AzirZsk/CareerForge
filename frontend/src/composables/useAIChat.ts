@@ -9,6 +9,8 @@ import { MAX_IMAGE_COUNT } from '@/types/ai-chat'
 import { streamChat, applyChanges as apiApplyChanges, getChatHistory, clearChatHistory, updateActionStatus as apiUpdateActionStatus } from '@/api/aiChat'
 import { useToast } from './useToast'
 
+const SESSION_ID_KEY = 'aiChat_sessionId'
+
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }
@@ -23,11 +25,14 @@ let currentAiMessage: ChatMessage | null = null
 
 function getState(): AIChatState {
   if (!stateInstance) {
+    // 从 localStorage 读取已存在的 sessionId
+    const savedSessionId = localStorage.getItem(SESSION_ID_KEY)
+
     stateInstance = reactive<AIChatState>({
       isWindowOpen: false,
       hideFloat: false,
       chatMode: 'general',
-      sessionId: generateSessionId(),
+      sessionId: savedSessionId || generateSessionId(),
       currentResumeId: null,
       detectedResume: null,
       messages: [],
@@ -38,6 +43,11 @@ function getState(): AIChatState {
       selectedImages: [],
       error: null
     })
+
+    // 首次初始化时保存 sessionId
+    if (!savedSessionId) {
+      localStorage.setItem(SESSION_ID_KEY, stateInstance.sessionId!)
+    }
   }
   return stateInstance
 }
@@ -372,6 +382,7 @@ export function useAIChat() {
 
       // 重置状态
       state.sessionId = generateSessionId()
+      localStorage.setItem(SESSION_ID_KEY, state.sessionId!)
       state.currentResumeId = null
       state.detectedResume = null
       state.chatMode = 'general'
@@ -418,6 +429,14 @@ export function useAIChat() {
     state.isWindowOpen = !state.isWindowOpen
   }
 
+  function openWindow(): void {
+    state.isWindowOpen = true
+    // 窗口打开时加载历史（只在消息为空时加载，避免重复加载）
+    if (state.sessionId && state.messages.length === 0) {
+      loadHistory(state.sessionId)
+    }
+  }
+
   function closeWindow(): void {
     state.isWindowOpen = false
   }
@@ -445,6 +464,7 @@ export function useAIChat() {
     handleImageRemove,
     handleImageRemoveAll,
     toggleWindow,
+    openWindow,
     closeWindow,
     startNewSession
   }
