@@ -2,7 +2,6 @@ package com.landit.interview.voice.service;
 
 import com.landit.common.config.VoiceProperties;
 import com.landit.common.exception.BusinessException;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -21,7 +20,6 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class VoiceServiceFactory {
 
     private final VoiceProperties voiceProperties;
@@ -29,7 +27,7 @@ public class VoiceServiceFactory {
     private final Map<String, TTSService> ttsServices;
 
     /**
-     * 通过构造注入自动收集所有 ASRService 实现
+     * 通过构造注入自动收集所有 ASRService/TTSService 实现
      */
     public VoiceServiceFactory(
             VoiceProperties voiceProperties,

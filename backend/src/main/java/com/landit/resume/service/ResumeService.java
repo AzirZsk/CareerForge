@@ -259,7 +259,8 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
         resume.setMarkdownContent(data.getMarkdownContent());
         resume.setResumeType(ResumeType.PRIMARY.getValue());
         resume.setVersion(1);
-        resume.setStatus(ResumeStatus.DRAFT.getValue());  // 上传简历应为草稿状态，优化后才变为已优化
+        // 上传简历应为草稿状态，优化后才变为已优化
+        resume.setStatus(ResumeStatus.DRAFT.getValue());
         resume.setIsPrimary(true);
         resume.setCompleteness(calculateCompleteness(data));
         save(resume);

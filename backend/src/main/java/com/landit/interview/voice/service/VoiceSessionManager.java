@@ -1,0 +1,122 @@
+package com.landit.interview.voice.service;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.landit.interview.voice.dto.VoiceResponse;
+import jakarta.websocket.Session;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * WebSocket 会话管理器
+ * 负责管理 WebSocket 会话的生命周期和消息发送
+ *
+ * @author Azir
+ */
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class VoiceSessionManager {
+    private final ObjectMapper objectMapper;
+    private final ConcurrentHashMap<String, Session> sessions = new ConcurrentHashMap<>();
+
+    /**
+     * 注册 WebSocket 会话
+     *
+     * @param wsSessionId WebSocket 会话 ID
+     * @param session     WebSocket 会话
+     */
+    public void registerSession(String wsSessionId, Session session) {
+        sessions.put(wsSessionId, session);
+        log.debug("[VoiceSessionManager] Session registered, wsSessionId={}", wsSessionId);
+    }
+
+    /**
+     * 注销 WebSocket 会话
+     *
+     * @param wsSessionId WebSocket 会话 ID
+     */
+    public void unregisterSession(String wsSessionId) {
+        sessions.remove(wsSessionId);
+        log.debug("[VoiceSessionManager] Session unregistered, wsSessionId={}", wsSessionId);
+    }
+
+    /**
+     * 获取 WebSocket 会话
+     *
+     * @param wsSessionId WebSocket 会话 ID
+     * @return WebSocket 会话，如果不存在则返回 null
+     */
+    public Session getSession(String wsSessionId) {
+        return sessions.get(wsSessionId);
+    }
+
+    /**
+     * 发送响应消息给指定会话
+     *
+     * @param session  WebSocket 会话
+     * @param response 响应数据
+     */
+    public void sendResponse(Session session, VoiceResponse response) {
+        if (session == null || !session.isOpen()) {
+            log.warn("[VoiceSessionManager] Session is null or closed, cannot send response");
+            return;
+        }
+        try {
+            String json = objectMapper.writeValueAsString(response);
+            session.getBasicRemote().sendText(json);
+        } catch (IOException e) {
+            log.error("[VoiceSessionManager] Failed to send response", e);
+        }
+    }
+
+    /**
+     * 发送响应消息给指定 WebSocket 会话 ID
+     *
+     * @param wsSessionId WebSocket 会话 ID
+     * @param response    响应数据
+     */
+    public void sendResponse(String wsSessionId, VoiceResponse response) {
+        Session session = sessions.get(wsSessionId);
+        sendResponse(session, response);
+    }
+
+    /**
+     * 发送错误消息
+     *
+     * @param session  WebSocket 会话
+     * @param code     错误码
+     * @param message  错误消息
+     */
+    public void sendError(Session session, String code, String message) {
+        sendResponse(session, VoiceResponse.error(VoiceResponse.ErrorData.builder()
+                .code(code)
+                .message(message)
+                .build()));
+    }
+
+    /**
+     * 广播消息给所有连接的会话
+     *
+     * @param response 响应数据
+     */
+    public void broadcastAll(VoiceResponse response) {
+        sessions.values().stream()
+                .filter(Session::isOpen)
+                .forEach(session -> sendResponse(session, response));
+    }
+
+    /**
+     * 检查会话是否存在且打开
+     *
+     * @param wsSessionId WebSocket 会话 ID
+     * @return true 表示会话存在且打开
+     */
+    public boolean isSessionOpen(String wsSessionId) {
+        Session session = sessions.get(wsSessionId);
+        return session != null && session.isOpen();
+    }
+}

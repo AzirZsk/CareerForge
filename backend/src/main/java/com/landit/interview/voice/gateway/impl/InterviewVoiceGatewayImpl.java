@@ -5,6 +5,7 @@ import com.landit.interview.voice.gateway.InterviewVoiceGateway;
 import com.landit.interview.voice.handler.AssistantAgentHandler;
 import com.landit.interview.voice.handler.InterviewerAgentHandler;
 import com.landit.interview.voice.service.RecordingService;
+import com.landit.interview.voice.service.VoiceSessionManager;
 import jakarta.websocket.Session;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,7 @@ public class InterviewVoiceGatewayImpl implements InterviewVoiceGateway {
     private final InterviewerAgentHandler interviewerAgentHandler;
     private final AssistantAgentHandler assistantAgentHandler;
     private final RecordingService recordingService;
+    private final VoiceSessionManager voiceSessionManager;
 
     // 会话状态：sessionId -> SessionState
     private final Map<String, SessionState> sessionStates = new ConcurrentHashMap<>();
@@ -184,16 +186,13 @@ public class InterviewVoiceGatewayImpl implements InterviewVoiceGateway {
     public void sendResponse(String sessionId, VoiceResponse response) {
         Session wsSession = wsSessions.get(sessionId);
         if (wsSession != null && wsSession.isOpen()) {
-            com.landit.interview.voice.controller.InterviewVoiceController.sendResponse(wsSession, response);
+            voiceSessionManager.sendResponse(wsSession, response);
         }
     }
 
     @Override
     public void broadcastResponse(VoiceResponse response) {
-        wsSessions.values().stream()
-                .filter(Session::isOpen)
-                .forEach(session -> com.landit.interview.voice.controller.InterviewVoiceController
-                        .sendResponse(session, response));
+        voiceSessionManager.broadcastAll(response);
     }
 
     /**

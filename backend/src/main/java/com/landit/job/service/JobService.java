@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.landit.common.response.PageResponse;
 import com.landit.job.entity.Job;
 import com.landit.job.mapper.JobMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
  * @author Azir
  */
 @Service
+@RequiredArgsConstructor
 public class JobService extends ServiceImpl<JobMapper, Job> {
 
     /**

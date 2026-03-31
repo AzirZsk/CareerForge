@@ -6,6 +6,7 @@ import com.landit.review.dto.InterviewReviewVO;
 import com.landit.review.dto.ReviewListItemVO;
 import com.landit.review.entity.InterviewReview;
 import com.landit.review.mapper.InterviewReviewMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
  * @author Azir
  */
 @Service
+@RequiredArgsConstructor
 public class ReviewService extends ServiceImpl<InterviewReviewMapper, InterviewReview> {
 
     /**

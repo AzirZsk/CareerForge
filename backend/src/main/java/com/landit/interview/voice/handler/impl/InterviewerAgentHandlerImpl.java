@@ -11,6 +11,8 @@ import com.landit.interview.voice.service.VoiceServiceFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -35,8 +37,11 @@ public class InterviewerAgentHandlerImpl implements InterviewerAgentHandler {
     private final VoiceServiceFactory voiceServiceFactory;
     private final VoiceProperties voiceProperties;
     private final ChatClient.Builder chatClientBuilder;
-    private final InterviewVoiceGatewayImpl voiceGateway;
     private final RecordingService recordingService;
+
+    @Autowired
+    @Lazy
+    private InterviewVoiceGatewayImpl voiceGateway;
 
     // 会话上下文：sessionId -> ConversationContext
     private final ConcurrentHashMap<String, ConversationContext> contexts = new ConcurrentHashMap<>();

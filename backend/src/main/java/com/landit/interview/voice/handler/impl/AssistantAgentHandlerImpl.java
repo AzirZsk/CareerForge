@@ -9,6 +9,8 @@ import com.landit.interview.voice.service.VoiceServiceFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
@@ -29,7 +31,10 @@ public class AssistantAgentHandlerImpl implements AssistantAgentHandler {
     private final VoiceServiceFactory voiceServiceFactory;
     private final VoiceProperties voiceProperties;
     private final ChatClient.Builder chatClientBuilder;
-    private final InterviewVoiceGatewayImpl voiceGateway;
+
+    @Autowired
+    @Lazy
+    private InterviewVoiceGatewayImpl voiceGateway;
 
     // 会话上下文
     private final ConcurrentHashMap<String, AssistContext> contexts = new ConcurrentHashMap<>();
@@ -79,7 +84,8 @@ public class AssistantAgentHandlerImpl implements AssistantAgentHandler {
                     // 如果句子结束，同时触发 TTS
                     if (isSentenceEnd(textDelta)) {
                         String sentence = textBuffer.toString();
-                        textBuffer.setLength(0); // 保留最后一个字符继续缓冲
+                        // 保留最后一个字符继续缓冲
+                    textBuffer.setLength(0);
 
                         // 发送 TTS 音频
                         Flux<AssistSSEEvent> audioFlux = ttsService.streamSynthesize(sentence, ttsConfig)
@@ -220,9 +226,11 @@ public class AssistantAgentHandlerImpl implements AssistantAgentHandler {
                 .voice(voice)
                 .format(ttsConfig.getFormat())
                 .sampleRate(ttsConfig.getSampleRate())
-                .speechRate(1.1) // 助手语速稍快
+                // 助手语速稍快
+                .speechRate(1.1)
                 .volume(0.8)
-                .pitch(0.1) // 音调略高，更亲切
+                // 音调略高更亲切
+                .pitch(0.1)
                 .build();
     }
 
