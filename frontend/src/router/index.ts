@@ -31,36 +31,79 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/ResumeDetail.vue'),
     meta: { title: '简历详情' }
   },
+  // ==================== 面试中心路由（新增） ====================
+  {
+    path: '/interview-center',
+    component: () => import('@/views/interview-center/Layout.vue'),
+    children: [
+      {
+        path: '',
+        name: 'InterviewCenter',
+        component: () => import('@/views/interview-center/InterviewList.vue'),
+        meta: { title: '面试中心' }
+      },
+      {
+        path: 'create',
+        name: 'CreateInterview',
+        component: () => import('@/views/interview-center/CreateInterview.vue'),
+        meta: { title: '创建面试' }
+      },
+      {
+        path: ':id',
+        name: 'InterviewDetail',
+        component: () => import('@/views/interview-center/InterviewDetail.vue'),
+        meta: { title: '面试详情' }
+      },
+      {
+        path: 'mock',
+        name: 'MockInterviewEntry',
+        component: () => import('@/views/interview-center/MockEntry.vue'),
+        meta: { title: '模拟面试' }
+      },
+      {
+        path: 'mock/:sessionId',
+        name: 'MockInterviewSession',
+        component: () => import('@/views/InterviewSession.vue'),
+        meta: { title: '面试进行中' }
+      },
+      {
+        path: 'mock/:sessionId/recording',
+        name: 'MockInterviewRecording',
+        component: () => import('@/views/InterviewRecording.vue'),
+        meta: { title: '面试录音回放' }
+      },
+      {
+        path: 'reviews',
+        name: 'ReviewList',
+        component: () => import('@/views/Review.vue'),
+        meta: { title: '复盘历史' }
+      },
+      {
+        path: 'reviews/:id',
+        name: 'ReviewDetail',
+        component: () => import('@/views/ReviewDetail.vue'),
+        meta: { title: '复盘详情' }
+      }
+    ]
+  },
+  // ==================== 旧路由重定向（兼容性） ====================
   {
     path: '/interview',
-    name: 'Interview',
-    component: () => import('@/views/Interview.vue'),
-    meta: { title: '面试试演' }
+    redirect: '/interview-center/mock'
   },
   {
     path: '/interview/:id',
-    name: 'InterviewSession',
-    component: () => import('@/views/InterviewSession.vue'),
-    meta: { title: '面试进行中' }
-  },
-  {
-    path: '/interview/:sessionId/recording',
-    name: 'InterviewRecording',
-    component: () => import('@/views/InterviewRecording.vue'),
-    meta: { title: '面试录音回放' }
+    redirect: '/interview-center/mock/:id'
   },
   {
     path: '/review',
-    name: 'Review',
-    component: () => import('@/views/Review.vue'),
-    meta: { title: '面试复盘' }
+    redirect: '/interview-center/reviews'
   },
   {
     path: '/review/:id',
-    name: 'ReviewDetail',
-    component: () => import('@/views/ReviewDetail.vue'),
-    meta: { title: '复盘详情' }
+    redirect: '/interview-center/reviews/:id'
   },
+  // ==================== 个人中心 ====================
   {
     path: '/profile',
     name: 'Profile',

@@ -372,3 +372,115 @@ CREATE TABLE IF NOT EXISTS t_recording_index (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_recording_index_session_id ON t_recording_index(session_id);
+
+-- ============================================================================
+-- 面试生命周期管理功能（v1.5.0）
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- t_company 公司表（公司调研信息）
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS t_company (
+    id VARCHAR(64) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    research TEXT,
+    research_updated_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    deleted INTEGER DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_company_name ON t_company(name);
+
+-- ----------------------------------------------------------------------------
+-- t_job_position 职位表（JD分析信息）
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS t_job_position (
+    id VARCHAR(64) PRIMARY KEY,
+    company_id VARCHAR(64) NOT NULL,
+    title VARCHAR(100) NOT NULL,
+    jd_content TEXT,
+    jd_analysis TEXT,
+    jd_analysis_updated_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    deleted INTEGER DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_job_position_company_id ON t_job_position(company_id);
+CREATE INDEX IF NOT EXISTS idx_job_position_title ON t_job_position(title);
+
+-- ----------------------------------------------------------------------------
+-- t_interview 表扩展字段
+-- 注意：SQLite 的 ALTER TABLE ADD COLUMN 如果列已存在会报错
+-- ----------------------------------------------------------------------------
+ALTER TABLE t_interview ADD COLUMN source VARCHAR(20) DEFAULT 'mock';
+ALTER TABLE t_interview ADD COLUMN jd_content TEXT;
+ALTER TABLE t_interview ADD COLUMN overall_result VARCHAR(20);
+ALTER TABLE t_interview ADD COLUMN notes TEXT;
+ALTER TABLE t_interview ADD COLUMN company_research TEXT;
+ALTER TABLE t_interview ADD COLUMN jd_analysis TEXT;
+ALTER TABLE t_interview ADD COLUMN job_position_id VARCHAR(64);
+
+-- ----------------------------------------------------------------------------
+-- t_interview_round 表（面试轮次表）
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS t_interview_round (
+    id VARCHAR(64) PRIMARY KEY,
+    interview_id VARCHAR(64) NOT NULL,
+    round_type VARCHAR(30) NOT NULL,
+    round_name VARCHAR(100),
+    round_order INTEGER NOT NULL DEFAULT 1,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    scheduled_date DATETIME,
+    actual_date DATETIME,
+    notes TEXT,
+    self_rating INTEGER,
+    result_note TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    deleted INTEGER DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_interview_round_interview_id ON t_interview_round(interview_id);
+CREATE INDEX IF NOT EXISTS idx_interview_round_status ON t_interview_round(status);
+
+-- ----------------------------------------------------------------------------
+-- t_interview_preparation 表（面试准备事项表）
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS t_interview_preparation (
+    id VARCHAR(64) PRIMARY KEY,
+    interview_id VARCHAR(64) NOT NULL,
+    item_type VARCHAR(20) NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    content TEXT,
+    completed INTEGER DEFAULT 0,
+    source VARCHAR(20) DEFAULT 'manual',
+    sort_order INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    deleted INTEGER DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_interview_preparation_interview_id ON t_interview_preparation(interview_id);
+CREATE INDEX IF NOT EXISTS idx_interview_preparation_item_type ON t_interview_preparation(item_type);
+
+-- ----------------------------------------------------------------------------
+-- t_interview_review_note 表（面试复盘笔记表）
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS t_interview_review_note (
+    id VARCHAR(64) PRIMARY KEY,
+    interview_id VARCHAR(64) NOT NULL,
+    type VARCHAR(20) NOT NULL,
+    overall_feeling TEXT,
+    high_points TEXT,
+    weak_points TEXT,
+    lessons_learned TEXT,
+    suggestions TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    deleted INTEGER DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_interview_review_note_interview_id ON t_interview_review_note(interview_id);
+CREATE INDEX IF NOT EXISTS idx_interview_review_note_type ON t_interview_review_note(type);

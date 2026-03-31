@@ -305,14 +305,11 @@ watch(() => messages.value.length, () => {
 // ============================================================================
 
 function toggleRecording() {
+  // statusText 和 statusType 是 computed 属性，会自动根据 isRecording 状态更新
   if (isRecording.value) {
     voiceInterview.stopRecording()
-    statusText.value = ''
-    statusType.value = 'idle'
   } else {
     voiceInterview.startRecording()
-    statusText.value = '正在录音...'
-    statusType.value = 'recording'
   }
 }
 

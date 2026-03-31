@@ -1,0 +1,33 @@
+package com.landit.interview.entity;
+
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.landit.common.entity.BaseEntity;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+/**
+ * 面试准备事项实体类
+ * 管理面试准备清单
+ *
+ * @author Azir
+ */
+@Data
+@EqualsAndHashCode(callSuper = true)
+@TableName("t_interview_preparation")
+public class InterviewPreparation extends BaseEntity {
+
+    private String interviewId;
+
+    private String itemType;
+
+    private String title;
+
+    private String content;
+
+    private Boolean completed;
+
+    private String source;
+
+    private Integer sortOrder;
+
+}
