@@ -6,6 +6,7 @@ import com.landit.common.enums.RoundStatus;
 import com.landit.common.exception.BusinessException;
 import com.landit.interview.dto.interviewcenter.*;
 import com.landit.interview.entity.InterviewRound;
+import com.landit.interview.handler.InterviewCenterHandler;
 import com.landit.interview.mapper.InterviewRoundMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +33,7 @@ public class InterviewRoundService extends ServiceImpl<InterviewRoundMapper, Int
 
     @Autowired
     @Lazy
-    private InterviewCenterService interviewCenterService;
+    private InterviewCenterHandler interviewCenterHandler;
 
     /**
      * 获取面试的所有轮次（按顺序排列）
@@ -60,7 +61,7 @@ public class InterviewRoundService extends ServiceImpl<InterviewRoundMapper, Int
             round.setScheduledDate(request.getScheduledDate());
             this.save(round);
         }
-        interviewCenterService.recalculateInterviewStatus(interviewId);
+        interviewCenterHandler.recalculateInterviewStatus(interviewId);
         log.info("批量创建轮次成功: interviewId={}, count={}", interviewId, requests.size());
     }
 
@@ -77,7 +78,7 @@ public class InterviewRoundService extends ServiceImpl<InterviewRoundMapper, Int
         round.setStatus(RoundStatus.PENDING.getCode());
         round.setScheduledDate(request.getScheduledDate());
         this.save(round);
-        interviewCenterService.recalculateInterviewStatus(interviewId);
+        interviewCenterHandler.recalculateInterviewStatus(interviewId);
         log.info("添加轮次成功: interviewId={}, roundId={}", interviewId, round.getId());
         return convertToVO(round);
     }
@@ -139,7 +140,7 @@ public class InterviewRoundService extends ServiceImpl<InterviewRoundMapper, Int
             round.setActualDate(java.time.LocalDateTime.now());
         }
         this.updateById(round);
-        interviewCenterService.recalculateInterviewStatus(interviewId);
+        interviewCenterHandler.recalculateInterviewStatus(interviewId);
         log.info("更新轮次状态成功: roundId={}, status={}", roundId, status);
         return convertToVO(round);
     }
@@ -159,7 +160,7 @@ public class InterviewRoundService extends ServiceImpl<InterviewRoundMapper, Int
         }
         this.removeById(roundId);
         reorderAfterDelete(interviewId);
-        interviewCenterService.recalculateInterviewStatus(interviewId);
+        interviewCenterHandler.recalculateInterviewStatus(interviewId);
         log.info("删除轮次成功: roundId={}", roundId);
     }
 

@@ -6,7 +6,7 @@ import com.landit.common.util.ChatClientHelper;
 import com.landit.common.util.JsonParseHelper;
 import com.landit.jobposition.dto.JDAnalysisResult;
 import com.landit.jobposition.entity.JobPosition;
-import com.landit.jobposition.service.JobPositionService;
+import com.landit.jobposition.handler.JobPositionHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -31,7 +31,7 @@ import static com.landit.interview.graph.preparation.InterviewPreparationGraphCo
 public class JDAnalysisNode implements NodeAction {
 
     private final ChatClient chatClient;
-    private final JobPositionService jobPositionService;
+    private final JobPositionHandler jobPositionHandler;
 
     @Override
     public Map<String, Object> apply(OverAllState state) {
@@ -58,7 +58,7 @@ public class JDAnalysisNode implements NodeAction {
                 chatClient, systemPrompt, userPrompt, JDAnalysisResult.class
         );
         String analysisJson = JsonParseHelper.toJsonString(analysisResult);
-        JobPosition jobPosition = jobPositionService.createOrUpdateJobPosition(
+        JobPosition jobPosition = jobPositionHandler.saveAnalysis(
                 companyId, positionTitle, jdContent, analysisJson
         );
         if (jobPositionId == null) {
