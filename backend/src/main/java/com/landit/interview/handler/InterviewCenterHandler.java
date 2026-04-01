@@ -69,12 +69,11 @@ public class InterviewCenterHandler {
         interview.setCompanyResearch("{}");
         interview.setJdAnalysis("{}");
         interview.setJobPositionId(jobPositionId);
+        interview.setRoundType(request.getRoundType());
+        interview.setRoundName(request.getRoundName());
         interviewCenterService.save(interview);
-        if (request.getRounds() != null && !request.getRounds().isEmpty()) {
-            roundService.batchCreateRounds(interview.getId(), request.getRounds());
-        }
-        log.info("创建真实面试成功: id={}, company={}, jobPositionId={}",
-                interview.getId(), interview.getCompany(), interview.getJobPositionId());
+        log.info("创建真实面试成功: id={}, company={}, jobPositionId={}, roundType={}",
+                interview.getId(), interview.getCompany(), interview.getJobPositionId(), request.getRoundType());
         return getInterviewDetail(interview.getId());
     }
 
@@ -136,6 +135,12 @@ public class InterviewCenterHandler {
         }
         if (request.getNotes() != null) {
             interview.setNotes(request.getNotes());
+        }
+        if (request.getRoundType() != null && !request.getRoundType().isBlank()) {
+            interview.setRoundType(request.getRoundType());
+        }
+        if (request.getRoundName() != null) {
+            interview.setRoundName(request.getRoundName());
         }
         interviewCenterService.updateById(interview);
         log.info("更新面试成功: id={}", id);
@@ -257,9 +262,7 @@ public class InterviewCenterHandler {
         BeanUtils.copyProperties(interview, vo);
         vo.setCompanyName(interview.getCompany());
         vo.setInterviewDate(interview.getDate());
-        List<InterviewRound> rounds = roundService.getByInterviewId(interview.getId());
-        vo.setRoundCount(rounds.size());
-        vo.setCompletedRounds((int) rounds.stream().filter(r -> "passed".equals(r.getStatus())).count());
+        vo.setRoundType(interview.getRoundType());
         return vo;
     }
 
@@ -270,6 +273,8 @@ public class InterviewCenterHandler {
         BeanUtils.copyProperties(interview, vo);
         vo.setCompanyName(interview.getCompany());
         vo.setInterviewDate(interview.getDate());
+        vo.setRoundType(interview.getRoundType());
+        vo.setRoundName(interview.getRoundName());
         vo.setRounds(rounds.stream().map(this::convertToRoundVO).collect(Collectors.toList()));
         vo.setPreparations(preparations.stream().map(this::convertToPreparationVO).collect(Collectors.toList()));
         if (reviewNote != null) {

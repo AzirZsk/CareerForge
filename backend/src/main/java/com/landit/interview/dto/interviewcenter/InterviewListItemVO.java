@@ -26,6 +26,8 @@ public class InterviewListItemVO {
 
     private String overallResult;
 
+    private String roundType;
+
     private Integer roundCount;
 
     private Integer completedRounds;

@@ -18,6 +18,10 @@ public class UpdateInterviewRequest {
 
     private LocalDateTime interviewDate;
 
+    private String roundType;
+
+    private String roundName;
+
     private String jdContent;
 
     private String notes;

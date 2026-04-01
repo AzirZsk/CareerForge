@@ -57,4 +57,14 @@ public class Interview extends BaseEntity {
      */
     private String jobPositionId;
 
+    /**
+     * 轮次类型（technical_1/technical_2/hr/director/cto/final/custom）
+     */
+    private String roundType;
+
+    /**
+     * 自定义轮次名称（仅当 roundType=custom 时使用）
+     */
+    private String roundName;
+
 }

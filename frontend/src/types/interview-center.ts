@@ -38,8 +38,7 @@ export interface InterviewListItem {
   interviewDate: string
   status: InterviewStatus
   overallResult?: InterviewResult
-  roundCount: number
-  completedRounds: number
+  roundType?: RoundType
   createdAt: string
   updatedAt: string
 }
@@ -53,6 +52,8 @@ export interface InterviewDetail {
   interviewDate: string
   status: InterviewStatus
   overallResult?: InterviewResult
+  roundType?: RoundType
+  roundName?: string
   jdContent?: string
   notes?: string
   jobPositionId?: string
@@ -118,8 +119,9 @@ export interface CreateInterviewRequest {
   companyName: string
   position: string
   interviewDate: string
+  roundType: RoundType
+  roundName?: string
   jdContent?: string
-  rounds?: AddRoundRequest[]
   notes?: string
 }
 
@@ -128,6 +130,8 @@ export interface UpdateInterviewRequest {
   companyName?: string
   position?: string
   interviewDate?: string
+  roundType?: RoundType
+  roundName?: string
   jdContent?: string
   notes?: string
 }

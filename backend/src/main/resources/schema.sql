@@ -421,6 +421,8 @@ ALTER TABLE t_interview ADD COLUMN notes TEXT;
 ALTER TABLE t_interview ADD COLUMN company_research TEXT;
 ALTER TABLE t_interview ADD COLUMN jd_analysis TEXT;
 ALTER TABLE t_interview ADD COLUMN job_position_id VARCHAR(64);
+ALTER TABLE t_interview ADD COLUMN round_type VARCHAR(30);
+ALTER TABLE t_interview ADD COLUMN round_name VARCHAR(100);
 
 -- ----------------------------------------------------------------------------
 -- t_interview_round 表（面试轮次表）

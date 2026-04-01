@@ -27,6 +27,10 @@ public class InterviewDetailVO {
 
     private String overallResult;
 
+    private String roundType;
+
+    private String roundName;
+
     private String jdContent;
 
     private String notes;

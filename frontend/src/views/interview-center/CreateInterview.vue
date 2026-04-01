@@ -32,6 +32,26 @@
         </div>
 
         <div class="form-group">
+          <label class="form-label required">轮次类型</label>
+          <select v-model="form.roundType" class="form-select" required>
+            <option v-for="(label, type) in ROUND_TYPE_LABELS" :key="type" :value="type">
+              {{ label }}
+            </option>
+          </select>
+        </div>
+
+        <div v-if="form.roundType === 'custom'" class="form-group">
+          <label class="form-label required">轮次名称</label>
+          <input
+            v-model="form.roundName"
+            type="text"
+            class="form-input"
+            placeholder="请输入轮次名称"
+            :required="form.roundType === 'custom'"
+          />
+        </div>
+
+        <div class="form-group">
           <label class="form-label required">面试时间</label>
           <DateTimePicker v-model="form.interviewDate" />
         </div>
@@ -57,37 +77,6 @@
         </div>
       </div>
 
-      <div class="form-section">
-        <h2>预设面试轮次（可选）</h2>
-
-        <div class="rounds-config">
-          <div v-for="(round, index) in form.rounds" :key="index" class="round-item">
-            <select v-model="round.roundType" class="form-select">
-              <option value="technical_1">技术一面</option>
-              <option value="technical_2">技术二面</option>
-              <option value="hr">HR 面</option>
-              <option value="director">总监面</option>
-              <option value="cto">CTO/VP 面</option>
-              <option value="final">终面</option>
-              <option value="custom">自定义</option>
-            </select>
-            <input
-              v-if="round.roundType === 'custom'"
-              v-model="round.roundName"
-              type="text"
-              class="form-input"
-              placeholder="轮次名称"
-            />
-            <DateTimePicker v-model="round.scheduledDate" />
-            <button type="button" class="btn-icon delete" @click="removeRound(index)">×</button>
-          </div>
-
-          <button type="button" class="btn btn-secondary add-round-btn" @click="addRound">
-            + 添加轮次
-          </button>
-        </div>
-      </div>
-
       <div class="form-actions">
         <button type="button" class="btn btn-secondary" @click="goBack">取消</button>
         <button type="submit" class="btn btn-primary" :disabled="submitting">
@@ -102,7 +91,8 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { createInterview } from '@/api/interview-center'
-import type { CreateInterviewRequest } from '@/types/interview-center'
+import type { CreateInterviewRequest, RoundType } from '@/types/interview-center'
+import { ROUND_TYPE_LABELS } from '@/types/interview-center'
 import DateTimePicker from '@/components/common/DateTimePicker.vue'
 
 const router = useRouter()
@@ -112,21 +102,11 @@ const form = reactive<CreateInterviewRequest>({
   companyName: '',
   position: '',
   interviewDate: '',
+  roundType: 'technical_1' as RoundType,
+  roundName: '',
   jdContent: '',
-  notes: '',
-  rounds: []
+  notes: ''
 })
-
-function addRound() {
-  form.rounds?.push({
-    roundType: 'technical_1',
-    scheduledDate: ''
-  })
-}
-
-function removeRound(index: number) {
-  form.rounds?.splice(index, 1)
-}
 
 function goBack() {
   router.push('/interview-center')
@@ -134,6 +114,12 @@ function goBack() {
 
 async function handleSubmit() {
   if (submitting.value) return
+
+  // 自定义轮次必须填写名称
+  if (form.roundType === 'custom' && !form.roundName?.trim()) {
+    alert('请输入轮次名称')
+    return
+  }
 
   submitting.value = true
   try {
@@ -220,7 +206,9 @@ async function handleSubmit() {
   }
 }
 
-.form-input, .form-select, .form-textarea {
+.form-input,
+.form-select,
+.form-textarea {
   width: 100%;
   padding: $spacing-md;
   background: $color-bg-tertiary;
@@ -240,47 +228,56 @@ async function handleSubmit() {
   }
 }
 
+.form-select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2371717a' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
 .form-textarea {
   resize: vertical;
-  min-height: 100px;
-}
-
-.rounds-config {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-md;
-}
-
-.round-item {
-  display: flex;
-  gap: $spacing-md;
-  align-items: center;
-
-  .form-select, .form-input {
-    flex: 1;
-  }
-
-  .btn-icon.delete {
-    background: none;
-    border: none;
-    color: $color-text-tertiary;
-    font-size: 1.25rem;
-    cursor: pointer;
-    padding: $spacing-sm;
-
-    &:hover {
-      color: $color-error;
-    }
-  }
-}
-
-.add-round-btn {
-  align-self: flex-start;
+  min-height: 80px;
 }
 
 .form-actions {
   display: flex;
   justify-content: flex-end;
   gap: $spacing-md;
+}
+
+.btn {
+  padding: $spacing-md $spacing-xl;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: $radius-md;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.btn-primary {
+  background: $gradient-gold;
+  color: $color-bg-deep;
+
+  &:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba($color-accent, 0.3);
+  }
+}
+
+.btn-secondary {
+  background: $color-bg-tertiary;
+  color: $color-text-secondary;
+
+  &:hover {
+    color: $color-text-primary;
+  }
 }
 </style>

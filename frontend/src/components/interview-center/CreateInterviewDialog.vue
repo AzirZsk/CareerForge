@@ -100,6 +100,26 @@
 
           <!-- 通用字段 -->
           <div class="form-group">
+            <label class="form-label required">轮次类型</label>
+            <select v-model="form.roundType" class="form-select" required>
+              <option v-for="(label, type) in ROUND_TYPE_LABELS" :key="type" :value="type">
+                {{ label }}
+              </option>
+            </select>
+          </div>
+
+          <div v-if="form.roundType === 'custom'" class="form-group">
+            <label class="form-label required">轮次名称</label>
+            <input
+              v-model="form.roundName"
+              type="text"
+              class="form-input"
+              placeholder="请输入轮次名称"
+              :required="form.roundType === 'custom'"
+            />
+          </div>
+
+          <div class="form-group">
             <label class="form-label required">面试时间</label>
             <DateTimePicker v-model="form.interviewDate" />
           </div>
@@ -135,7 +155,8 @@
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { createInterview } from '@/api/interview-center'
 import { getJobPositionList } from '@/api/job-position'
-import type { CreateInterviewRequest } from '@/types/interview-center'
+import type { CreateInterviewRequest, RoundType } from '@/types/interview-center'
+import { ROUND_TYPE_LABELS } from '@/types/interview-center'
 import type { JobPositionListItem } from '@/types/job-position'
 import DateTimePicker from '@/components/common/DateTimePicker.vue'
 
@@ -159,6 +180,8 @@ const form = reactive<CreateInterviewRequest>({
   companyName: '',
   position: '',
   interviewDate: '',
+  roundType: 'technical_1' as RoundType,
+  roundName: '',
   jdContent: '',
   notes: ''
 })
@@ -170,6 +193,10 @@ const selectedPosition = computed(() => {
 
 const isFormValid = computed(() => {
   if (!form.interviewDate) return false
+  // 自定义轮次必须填写名称
+  if (form.roundType === 'custom' && !form.roundName?.trim()) {
+    return false
+  }
   if (mode.value === 'select') {
     return !!selectedPositionId.value
   } else {

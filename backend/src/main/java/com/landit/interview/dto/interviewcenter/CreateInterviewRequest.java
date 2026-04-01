@@ -30,6 +30,11 @@ public class CreateInterviewRequest {
     @NotNull(message = "面试时间不能为空")
     private LocalDateTime interviewDate;
 
+    @NotBlank(message = "轮次类型不能为空")
+    private String roundType;
+
+    private String roundName;
+
     private String jdContent;
 
     @Valid
