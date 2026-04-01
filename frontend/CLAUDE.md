@@ -8,9 +8,11 @@
 
 | 日期 | 版本 | 变更内容 |
 |------|------|----------|
-| 2026-03-30 | 2.1.0 | 新增 ImagePreviewModal/AIIcon 组件（common 3->5）、stageHelpers 工具函数、ResumeSuggestionsGroup 组件；聊天组件更新（hideFloat、resume_selected 事件、内容分片机制）；更新文件统计 |
-| 2026-03-30 | 2.0.0 | 新增 AI Chat 前端：10 个聊天组件 + useAIChat composable + aiChat API + ai-chat 类型 |
-| 2026-03-18 | 1.4.0 | AI 上下文全面扫描更新：更新文件统计（56 个 Vue 组件、 10 个 Composables、 3 个 Types） |
+| 2026-04-02 | 2.3.0 | **新增 useStreamAssist composable**：SSE 流式求助功能；更新 Composables 数量（17->18）；更新文件统计 |
+| 2026-04-02 | 2.2.0 | **新增 AI 语音面试前端**：6 个语音组件 + 2 个录音回放组件 + 3 个 Composables（useInterviewVoice/useStreamingAudio/useAudioRecorder）+ API（interview-voice.ts）+ Types（interview-voice.ts）+ Utils（recording-helpers.ts）；新增面试中心组件（7 个）+ Composables（2 个）+ API/Types； 更新文件统计 |
+| 2026-03-30 | 2.1.0 | 新增 ImagePreviewModal/AIIcon 组件（common 3->5）、stageHelpers 工具函数、ResumeSuggestionsGroup 组件;聊天组件更新（hideFloat、resume_selected 事件、内容分片机制）;更新文件统计 |
+| 2026-03-30 | 2.0.0 | 新增 AI Chat 前端:10 个聊天组件 + useAIChat composable + aiChat API + ai-chat 类型 |
+| 2026-03-18 | 1.4.0 | AI 上下文全面扫描更新:更新文件统计（56 个 Vue 组件、 10 个 Composables、 3 个 Types） |
 | 2026-03-18 | 1.3.0 | 新增 viewer/tailor 组件目录、补充 composables（Tailor/Diff/Confirm/Toast/FormValidation） |
 | 2026-03-08 | 1.2.0 | 更新组件清单、补充 Composables 文档、完善简历区块组件 |
 | 2026-03-03 | 1.1.0 | 添加简历优化相关类型、更新组件清单、完善 API 模块文档 |
@@ -26,7 +28,7 @@
 - 简历优化进度展示（SSE 实时）
 - 简历定制工作流展示
 - AI 对话式简历优化（悬浮球全屏聊天）
-- 模拟面试进行
+- **AI 语音模拟面试**（实时语音对话 + 求助系统 + 录音回放）
 - 面试复盘查看
 - 个人中心设置
 - 用户引导流程
@@ -59,7 +61,8 @@ VITE_API_TARGET=http://localhost:8080
 ---
 
 ## 对外接口
-前端通过 HTTP 请求调用后端 API，基础路径：`http://localhost:8080/landit/`
+前端通过 HTTP 请求调用后端 API,基础路径： `http://localhost:8080/landit/`
+同时通过 WebSocket 连接语音面试服务: `ws://localhost:8080/landit/ws/interview/voice/{sessionId}`
 
 ### API 模块
 | 模块 | 文件 | 描述 |
@@ -67,6 +70,9 @@ VITE_API_TARGET=http://localhost:8080
 | user | `api/user.ts` | 用户状态、初始化、信息管理 |
 | resume | `api/resume.ts` | 简历 CRUD、模块操作 |
 | aiChat | `api/aiChat.ts` | AI 聊天流式对话、历史管理、修改应用 |
+| interview-center | `api/interview-center.ts` | 面试中心管理、准备工作流、复盘分析 |
+| **interview-voice** | `api/interview-voice.ts` | **语音面试录音回放、求助次数、SSE 求助** |
+| job-position | `api/job-position.ts` | 职位信息管理 |
 
 ### 页面路由
 | 路径 | 组件 | 标题 | 描述 | 权限 |
@@ -77,6 +83,10 @@ VITE_API_TARGET=http://localhost:8080
 | `/resume/:id` | ResumeDetail.vue | 简历详情 | 简历编辑与优化 | 登录 |
 | `/interview` | Interview.vue | 面试演练 | 面试历史列表 | 登录 |
 | `/interview/:id` | InterviewSession.vue | 面试进行中 | 实时面试界面 | 登录 |
+| `/recording/:id` | InterviewRecording.vue | 录音回放 | 面试录音播放 | 登录 |
+| `/interview-center` | interview-center/Layout.vue | 面试中心 | 真实面试管理 | 登录 |
+| `/interview-center/create` | interview-center/CreateInterview.vue | 创建面试 | 新建面试记录 | 登录 |
+| `/interview-center/:id` | interview-center/InterviewDetail.vue | 面试详情 | 面试详情与准备 | 登录 |
 | `/review` | Review.vue | 面试复盘 | 复盘列表 | 登录 |
 | `/review/:id` | ReviewDetail.vue | 复盘详情 | 复盘分析查看 | 登录 |
 | `/profile` | Profile.vue | 个人中心 | 用户信息设置 | 登录 |
@@ -153,227 +163,55 @@ export default defineConfig(({ mode }) => {
 | `types/ai-chat.ts` | AI 聊天类型定义（ChatMessage、SectionChange、AIChatState 等） |
 | `types/resume-optimize.ts` | 简历优化工作流类型定义 |
 | `types/resume-tailor.ts` | 简历定制工作流类型定义 |
+| `types/interview-center.ts` | 面试中心类型定义 |
+| `types/interview-voice.ts` | 语音面试类型定义 |
+| `types/job-position.ts` | 职位信息类型定义 |
 | `types/marked.d.ts` | marked 库类型声明 |
 
-#### 用户相关 (types/index.ts)
+#### 语音面试相关 (types/interview-voice.ts)
 ```typescript
-interface User {
-  id: string
-  name: string
-  gender: Gender | null
-  avatar: string | null
-  createdAt: string
+// 语音模式
+type VoiceMode = 'half_voice' | 'full_voice'
+
+// 会话状态
+type SessionState = 'interviewing' | 'frozen' | 'completed'
+
+// 求助类型
+type AssistType = 'give_hints' | 'explain_concept' | 'polish_answer' | 'free_question'
+
+// 对话角色
+type ConversationRole = 'interviewer' | 'candidate' | 'assistant'
+
+// 语音设置
+interface VoiceSettings {
+  mode: VoiceMode
+  sampleRate: 16000 | 24000
+  interviewerVoice: string
+  assistantVoice: string
+  speechRate: number
+  vadEnabled: boolean
+  vadSilenceMs: number
 }
 
-interface UserStatusResponse {
-  exists: boolean
-  user?: {
-    id: string
-    name: string
-    gender: string
-    avatar: string | null
-  }
+// WebSocket 消息
+interface WSMessage {
+  type: 'transcript' | 'audio' | 'state' | 'error'
+  data: TranscriptData | AudioData | StateData | ErrorData
 }
 
-interface UserInitResponse {
-  name: string
-  gender: Gender | null
-}
-```
-
-#### AI 聊天相关 (types/ai-chat.ts)
-```typescript
-// 聊天模式
-type ChatMode = 'general' | 'resume'
-
-// 操作状态类型
-type ActionStatusType = 'pending' | 'applied' | 'rejected' | 'failed'
-
-// 内容分片（文字和操作卡片穿插顺序）
-type ContentSegment =
-  | { type: 'text'; content: string }
-  | { type: 'action'; actionIndex: number }
-
-// SSE 事件类型
-type ChatEventType = 'chunk' | 'suggestion' | 'complete' | 'error' | 'resume_selected'
-
-// 聊天消息
-interface ChatMessage {
-  id: string
-  role: 'user' | 'assistant' | 'system'
-  content: string
-  images?: File[]
-  imageUrls?: string[]
-  timestamp: number
-  isStreaming?: boolean
-  actions?: SectionChange[]
-  actionStatus?: ActionStatusType
-  segments?: ContentSegment[]
+// SSE 事件
+interface AssistSSEEvent {
+  type: 'text' | 'audio' | 'done' | 'error'
+  data: TextEventData | AudioEventData | DoneEventData | ErrorEventData
 }
 
-// 区块变更
-interface SectionChange {
-  sectionId?: string
-  sectionType?: string
-  sectionTitle?: string
-  changeType: 'update' | 'add' | 'delete'
-  beforeContent?: string
-  afterContent: string
-  description: string
-  status?: ActionStatusType
-}
-
-// AI 聊天状态
-interface AIChatState {
-  isWindowOpen: boolean
-  hideFloat: boolean       // 外部弹窗打开时隐藏悬浮球
-  chatMode: ChatMode
-  sessionId: string | null
-  currentResumeId: string | null
-  detectedResume: { id: string; name: string } | null
-  messages: ChatMessage[]
-  isStreaming: boolean
-  showApplyDialog: boolean
-  pendingChanges: SectionChange[]
-  currentInput: string
-  selectedImages: File[]
-  error: string | null
-}
-```
-
-#### 简历相关 (types/index.ts)
-```typescript
-type ResumeStatus = 'OPTIMIZED' | 'DRAFT'
-type SectionType = 'BASIC_INFO' | 'EDUCATION' | 'WORK' | 'PROJECT' | 'SKILLS' | 'CERTIFICATE' | 'OPEN_SOURCE' | 'CUSTOM'
-
-interface PrimaryResumeVO {
-  id: string
-  name: string
-  targetPosition: string
-  status: ResumeStatus
-  score: number
-  completeness: number
-  analyzed: boolean
-  createdAt: string
-  updatedAt: string
-}
-
-interface ResumeDetail {
-  id: string
-  name: string
-  targetPosition: string
-  sections: ResumeSection[]
-  overallScore: number
-  contentScore: number
-  structureScore: number
-  matchingScore: number
-  competitivenessScore: number
-  analyzed: boolean
-}
-
-interface ResumeSection {
-  id: string
-  type: string
-  title: string
-  content: ResumeSectionContent | null
-  items: ResumeSectionItem[] | null
-  score: number
-  suggestions: ResumeSuggestionItem[] | null
-}
-```
-
-#### 简历优化相关 (types/resume-optimize.ts)
-```typescript
-// SSE 事件类型
-type OptimizeEventType = 'start' | 'progress' | 'complete' | 'error'
-
-// 优化阶段
-type OptimizeStage =
-  | 'start'
-  | 'diagnose_quick'
-  | 'diagnose_precise'
-  | 'generate_suggestions'
-  | 'optimize_section'
-  | 'human_review'
-  | 'end'
-
-// 优化状态
-interface OptimizeState {
-  isConnecting: boolean
-  isOptimizing: boolean
-  isCompleted: boolean
-  hasError: boolean
-  threadId: string | null
-  resumeId: string | null
-  targetPosition: string
-  mode: OptimizeMode
-  currentStage: OptimizeStage
-  progress: number
-  message: string
-  errorMessage: string | null
-  stageHistory: StageHistoryItem[]
-}
-```
-
-#### 简历定制相关 (types/resume-tailor.ts)
-```typescript
-// 定制阶段
-type TailorStage =
-  | 'start'
-  | 'analyze_jd'
-  | 'match_resume'
-  | 'generate_tailored'
-  | 'end'
-
-// 定制状态
-interface TailorState {
-  isConnecting: boolean
-  isTailoring: boolean
-  isCompleted: boolean
-  hasError: boolean
-  threadId: string | null
-  resumeId: string | null
-  targetPosition: string
-  jobDescription: string
-  currentStage: TailorStage
-  progress: number
-  message: string
-  errorMessage: string | null
-  jobRequirements: JobRequirements | null
-  matchAnalysis: MatchAnalysis | null
-  tailoredResume: TailorResumeResponse | null
-  stageHistory: TailorStageHistoryItem[]
-}
-```
-
-#### 面试相关 (types/index.ts)
-```typescript
-type InterviewType = 'technical' | 'behavioral'
-type InterviewStatus = 'completed' | 'in_progress'
-
-interface Interview {
-  id: string
-  type: InterviewType
-  position: string
-  company: string
-  date: string
-  duration: number
-  score: number
-  status: InterviewStatus
-  questions: number
-  correctAnswers: number
-}
-
-interface InterviewDetail {
-  id: string
-  type: InterviewType
-  position: string
-  company: string
-  date: string
-  duration: number
-  score: number
-  conversation: Conversation[]
-  analysis: InterviewAnalysis
+// 录音回放信息
+interface RecordingInfo {
+  sessionId: string
+  totalDurationMs: number
+  mergedAudioUrl: string
+  segments: RecordingSegment[]
+  transcript: TranscriptEntry[]
 }
 ```
 
@@ -446,7 +284,7 @@ toggleSidebar(): void
 前端使用 **Composables（组合式函数）** 封装复用逻辑：
 
 ### useAIChat (composables/useAIChat.ts)
-AI 聊天的核心组合式函数，使用**单例模式**管理全局状态：
+AI 聊天的核心组合式函数,使用**单例模式**管理全局状态:
 ```typescript
 const {
   // 状态
@@ -474,8 +312,142 @@ const {
 - 双模式支持（general 通用聊天 / resume 简历对话）
 - `hideFloat` 控制：外部弹窗打开时隐藏悬浮球
 
+### useInterviewVoice (composables/useInterviewVoice.ts)
+AI 语音面试的核心组合式函数:
+```typescript
+const {
+  // 状态
+  settings,           // 语音设置
+  sessionState,       // 会话状态（interviewing/frozen/completed）
+  currentQuestion,    // 当前问题序号
+  totalQuestions,     // 问题总数
+  assistCount,        // 已求助次数
+  assistLimit,        // 求助上限
+  elapsedTime,        // 已用时间
+  messages,           // 对话消息列表
+  partialTranscript,  // 实时转录（非最终结果）
+  error,              // 错误信息
+  isRecording,        // 是否正在录音
+  audioLevel,         // 音频电平
+  isPlaying,          // 是否正在播放
+
+  // 计算属性
+  isInterviewing,     // 是否面试进行中
+  isFrozen,           // 是否冻结状态
+  isCompleted,       // 是否已完成
+  assistRemaining,    // 剩余求助次数
+  progress,           // 进度百分比
+
+  // 方法
+  init,               // 初始化（WebSocket + 录音器）
+  startRecording,     // 开始录音
+  stopRecording,      // 停止录音
+  freeze,             // 冻结面试（进入求助模式）
+  resumeInterview,    // 恢复面试
+  endInterview,       // 结束面试
+  dispose             // 清理资源
+} = useInterviewVoice(sessionId)
+```
+**特性**：
+- WebSocket 自动连接与重连（最多 5 次）
+- 心跳检测（30 秒间隔）
+- VAD 静音检测
+- 实时转录显示
+- 音频播放器集成
+- 录音器集成
+- 会话状态管理
+
+### useStreamingAudio (composables/useStreamingAudio.ts)
+流式音频播放器的组合式函数:
+```typescript
+const {
+  // 状态
+  isPlaying,
+  playbackState,       // idle/playing/paused/loading
+  currentTime,
+  duration,
+  volume,
+  muted,
+
+  // 方法
+  initAudioContext,    // 初始化音频上下文
+  playAudioChunk,      // 播放音频块（Base64 -> PCM）
+  pause,
+  resume,
+  setVolume,
+  toggleMute,
+  dispose
+} = useStreamingAudio()
+```
+**功能**：
+- 流式音频播放（PCM 格式）
+- 音频队列管理
+- 音量控制
+- 静音切换
+
+### useStreamAssist (composables/useStreamAssist.ts)
+SSE 流式求助的组合式函数（新增）:
+```typescript
+const {
+  // 状态
+  isRequesting,        // 是否正在请求
+  textContent,         // 文本内容
+  deltaText,           // 增量文本（用于实时显示）
+  assistRemaining,     // 剩余求助次数
+  totalDurationMs,     // 总时长（毫秒）
+  error,               // 错误信息
+  hasRemaining,        // 是否有剩余次数
+
+  // 音频播放器状态
+  isPlaying,
+  playbackState,
+
+  // 方法
+  requestAssist,       // 请求流式求助
+  stopAssist,          // 停止流式请求
+  giveHints,           // 给出提示
+  explainConcept,      // 解释概念
+  polishAnswer,        // 帮我润色
+  freeQuestion,        // 自由提问
+
+  // 音频控制
+  pause,
+  resume,
+  setVolume,
+  toggleMute
+} = useStreamAssist(sessionId)
+```
+**功能**：
+- SSE 流式求助（text/audio/done/error 事件）
+- 实时文本显示（增量/全量）
+- 流式音频播放集成
+- 剩余求助次数追踪
+- 快捷求助方法封装
+
+### useAudioRecorder (composables/useAudioRecorder.ts)
+音频录制器的组合式函数:
+```typescript
+const {
+  // 状态
+  isRecording,
+  recordingTime,
+  audioLevel,          // 音频电平（用于可视化）
+
+  // 方法
+  init,                // 初始化录音器
+  startRecording,      // 开始录音
+  stopRecording,       // 停止录音
+  dispose              // 清理资源
+} = useAudioRecorder()
+```
+**功能**：
+- VAD 静音检测
+- 音频电平监控
+- PCM 数据回调
+- 录音时间追踪
+
 ### useResumeOptimize (composables/useResumeOptimize.ts)
-简历优化工作流的组合式函数，封装 SSE 连接和状态管理：
+简历优化工作流的组合式函数,封装 SSE 连接和状态管理:
 ```typescript
 const {
   // 状态
@@ -498,7 +470,7 @@ const {
 - 断点续传
 
 ### useResumeTailor (composables/useResumeTailor.ts)
-简历定制工作流的组合式函数，封装 SSE 连接和状态管理：
+简历定制工作流的组合式函数,封装 SSE 连接和状态管理:
 ```typescript
 const {
   state,
@@ -516,8 +488,36 @@ const {
 - JD 分析、匹配、生成定制简历阶段
 - 错误处理
 
+### useInterviewPreparation (composables/useInterviewPreparation.ts)
+面试准备工作流的组合式函数:
+```typescript
+const {
+  state,              // 状态（isRunning、isCompleted、currentStage 等）
+  startPreparation,   // 开始准备工作流
+  resetState          // 重置状态
+} = useInterviewPreparation()
+```
+**功能**：
+- SSE 连接管理
+- 准备事项生成进度追踪
+- AI 生成的准备事项列表
+
+### useReviewAnalysis (composables/useReviewAnalysis.ts)
+复盘分析工作流的组合式函数:
+```typescript
+const {
+  state,              // 状态（isRunning、isCompleted、currentStage 等）
+  startAnalysis,      // 开始复盘分析
+  resetState          // 重置状态
+} = useReviewAnalysis()
+```
+**功能**：
+- fetch + ReadableStream 流式读取
+- 复盘分析进度追踪
+- AI 生成的改进建议
+
 ### useSectionEdit (composables/useSectionEdit.ts)
-简历区块编辑的组合式函数，封装区块的增删改逻辑：
+简历区块编辑的组合式函数,封装区块的增删改逻辑:
 ```typescript
 const {
   editingSection,
@@ -533,7 +533,7 @@ const {
 - 保存/取消操作
 
 ### useSectionHelper (composables/useSectionHelper.ts)
-简历区块辅助工具函数：
+简历区块辅助工具函数:
 ```typescript
 const {
   getSectionTypeLabel,
@@ -549,47 +549,47 @@ const {
 - 数据校验
 
 ### useSectionDiff (composables/useSectionDiff.ts)
-简历区块差异对比的组合式函数：
+简历区块差异对比的组合式函数:
 **功能**：
 - 区块内容差异计算
 - 高亮变更部分
 - 对比视图渲染
 
 ### useStageEdit (composables/useStageEdit.ts)
-阶段编辑的组合式函数：
+阶段编辑的组合式函数:
 **功能**：
 - 阶段数据编辑状态管理
 - 阶段数据更新
 
 ### useStageTimer (composables/useStageTimer.ts)
-阶段计时器的组合式函数：
+阶段计时器的组合式函数:
 **功能**：
 - 阶段计时
 - 自动更新计时状态
 
 ### useConfirm (composables/useConfirm.ts)
-确认弹窗的组合式函数：
+确认弹窗的组合式函数:
 **功能**：
 - 确认/取消弹窗
 - 异步确认结果
 - 自定义弹窗内容
 
 ### useToast (composables/useToast.ts)
-Toast 提示的组合式函数：
+Toast 提示的组合式函数:
 **功能**：
 - 成功/错误/警告提示
 - 自动消失
 - 可配置显示时长
 
 ### useFormValidation (composables/useFormValidation.ts)
-表单验证的组合式函数：
+表单验证的组合式函数:
 **功能**：
 - 表单字段验证
 - 错误信息收集
 - 实时验证反馈
 
 ### useMarkdown (composables/useMarkdown.ts)
-Markdown 渲染的组合式函数：
+Markdown 渲染的组合式函数:
 **功能**：
 - Markdown 文本渲染
 - 代码高亮
@@ -653,17 +653,24 @@ $radius-full: 9999px;
 ---
 
 ## 组件结构
-### 页面组件 (views/) - 9 个
+### 页面组件 (views/) - 12+ 个
 | 组件 | 功能 |
 |------|------|
-| Onboarding.vue | 用户引导页，上传简历初始化 |
-| Home.vue | 首页仪表盘，展示统计数据和快捷入口 |
-| Resume.vue | 简历列表，支持筛选和排序 |
-| ResumeDetail.vue | 简历详情编辑，支持模块化编辑和优化 |
+| Onboarding.vue | 用户引导页,上传简历初始化 |
+| Home.vue | 首页仪表盘,展示统计数据和快捷入口 |
+| Resume.vue | 简历列表,支持筛选和排序 |
+| ResumeDetail.vue | 简历详情编辑,支持模块化编辑和优化 |
 | Interview.vue | 面试历史列表 |
-| InterviewSession.vue | 实时面试界面，答题交互 |
+| InterviewSession.vue | 实时面试界面,答题交互 |
+| **InterviewRecording.vue** | **面试录音回放界面** |
+| interview-center/Layout.vue | 面试中心布局 |
+| interview-center/MockEntry.vue | 模拟面试入口 |
+| interview-center/CreateInterview.vue | 创建面试 |
+| interview-center/InterviewList.vue | 面试列表 |
+| interview-center/InterviewDetail.vue | 面试详情 |
+| interview-center/PositionDetail.vue | 职位详情 |
 | Review.vue | 复盘列表 |
-| ReviewDetail.vue | 复盘详情，维度分析可视化 |
+| ReviewDetail.vue | 复盘详情,维度分析可视化 |
 | Profile.vue | 个人信息设置 |
 
 ### 公共组件 (components/common/) - 5 个
@@ -679,15 +686,40 @@ $radius-full: 9999px;
 | 组件 | 功能 |
 |------|------|
 | AIChatFloat.vue | 悬浮球入口（支持 hideFloat 控制隐藏） |
-| AIChatWindow.vue | 聊天窗口主容器（全屏模式，含图片预览） |
+| AIChatWindow.vue | 聊天窗口主容器（全屏模式,含图片预览） |
 | ChatHeader.vue | 聊天头部（模式切换、简历标识） |
 | ChatMessageList.vue | 消息列表（虚拟滚动） |
 | ChatMessageItem.vue | 单条消息（文字+操作卡片穿插渲染） |
-| ChatInputArea.vue | 输入区域（文本+图片，最多10张） |
+| ChatInputArea.vue | 输入区域（文本+图片,最多10张） |
 | QuickCommands.vue | 快捷指令面板（通用4个+简历8个） |
 | ApplyChangesDialog.vue | 批量修改确认弹窗 |
 | suggestion-cards/SectionChangeCard.vue | 单条区块变更卡片 |
 | suggestion-cards/FieldDiffViewer.vue | 字段级 Diff 对比视图 |
+
+### 语音面试组件 (components/interview/voice/) - 4 个
+| 组件 | 功能 |
+|------|------|
+| VoiceControls.vue | 语音控制面板（录音按钮、状态指示） |
+| TranscriptDisplay.vue | 转录文字显示（实时/最终结果） |
+| AssistantPanel.vue | 助手面板（求助入口） |
+| QuickAssistButtons.vue | 快捷求助按钮组（提示/概念/润色/自由提问） |
+
+### 录音回放组件 (components/interview/recording/) - 2 个
+| 组件 | 功能 |
+|------|------|
+| RecordingPlayer.vue | 录音播放器（合并音频播放、进度控制） |
+| TranscriptViewer.vue | 文字记录查看器（片段列表、点击跳转） |
+
+### 面试中心组件 (components/interview-center/) - 7 个
+| 组件 | 功能 |
+|------|------|
+| JobPositionCard.vue | 职位卡片展示 |
+| CreateInterviewDialog.vue | 创建面试弹窗 |
+| EditInterviewDialog.vue | 编辑面试弹窗 |
+| EditPositionDialog.vue | 编辑职位弹窗 |
+| ReviewNoteDialog.vue | 复盘笔记弹窗 |
+| AddPreparationDialog.vue | 添加准备事项弹窗 |
+| PreparationProgressModal.vue | AI 生成准备事项进度弹窗 |
 
 ### 简历组件 (components/resume/) - 12 个
 | 组件 | 功能 |
@@ -696,7 +728,7 @@ $radius-full: 9999px;
 | AddSectionModal.vue | 添加简历模块弹窗 |
 | ResumeContentViewer.vue | 简历内容查看器 |
 | ResumeComparison.vue | 简历优化前后对比 |
-| OptimizeProgressModal.vue | 优化进度弹窗（SSE 实时展示，主容器组件） |
+| OptimizeProgressModal.vue | 优化进度弹窗（SSE 实时展示,主容器组件） |
 | TailorResumeModal.vue | 定制简历弹窗 |
 | ResumeHeader.vue | 简历头部信息 |
 | MetricsSection.vue | 指标展示区域 |
@@ -770,11 +802,17 @@ $radius-full: 9999px;
 - 阶段状态计算
 - 格式化工具
 
+### recording-helpers (utils/recording-helpers.ts)
+录音回放的辅助工具函数：
+- 时间格式化
+- 片段跳转计算
+- 音频 URL 构建
+
 ---
 
 ## Mock 数据
 ### 数据文件 (mock/data.ts)
-项目使用 Mock 数据进行前端开发，包含：
+项目使用 Mock 数据进行前端开发,包含：
 - `currentUser` - 当前用户
 - `resumes` - 简历列表
 - `resumeDetail` - 简历详情
@@ -791,7 +829,7 @@ $radius-full: 9999px;
 ## 常见问题 (FAQ)
 
 ### Q: 如何使用 SCSS 变量？
-A: 变量已通过 Vite 全局注入，可直接在组件中使用：
+A: 变量已通过 Vite 全局注入,可直接在组件中使用：
 ```scss
 .my-component {
   color: $color-accent;
@@ -834,9 +872,80 @@ A:
 import { useAIChat } from '@/composables/useAIChat'
 
 const { state, sendMessage, applySingleChange, startNewSession } = useAIChat()
-// state 是单例 reactive 对象，包含 messages、isStreaming、chatMode、hideFloat 等
+// state 是单例 reactive 对象,包含 messages、isStreaming、chatMode、hideFloat 等
 // 支持通用聊天和简历对话双模式
 // AI 自动通过 select_resume 工具选择简历
+```
+
+### Q: 如何使用 AI 语音面试功能？
+A:
+```typescript
+import { useInterviewVoice } from '@/composables/useInterviewVoice'
+
+const {
+  // 状态
+  sessionState, currentQuestion, totalQuestions, messages,
+  assistRemaining, elapsedTime, isRecording, isPlaying,
+  // 方法
+  init, startRecording, stopRecording, freeze, resumeInterview, endInterview
+} = useInterviewVoice(sessionId)
+
+// 初始化
+init()
+
+// 开始录音
+startRecording()
+
+// 进入求助模式
+freeze()
+
+// 结束面试
+endInterview()
+```
+
+### Q: 如何使用 SSE 流式求助？
+A:
+```typescript
+import { useStreamAssist } from '@/composables/useStreamAssist'
+
+const {
+  // 状态
+  isRequesting, textContent, assistRemaining, hasRemaining,
+  // 方法
+  giveHints, explainConcept, polishAnswer, freeQuestion
+} = useStreamAssist(sessionId)
+
+// 给出提示
+giveHints()
+
+// 解释概念
+explainConcept()
+
+// 帮我润色
+polishAnswer(candidateDraft)
+
+// 自由提问
+freeQuestion(question)
+```
+
+### Q: 如何使用面试准备工作流？
+A:
+```typescript
+import { useInterviewPreparation } from '@/composables/useInterviewPreparation'
+
+const { state, startPreparation } = useInterviewPreparation()
+startPreparation(interviewId)
+// state 包含 isRunning、isCompleted、currentStage、preparationItems 等
+```
+
+### Q: 如何使用复盘分析工作流？
+A:
+```typescript
+import { useReviewAnalysis } from '@/composables/useReviewAnalysis'
+
+const { state, startAnalysis } = useReviewAnalysis()
+startAnalysis(interviewId, sessionTranscript)
+// state 包含 isRunning、isCompleted、currentStage、adviceList 等
 ```
 
 ---
@@ -861,20 +970,33 @@ frontend/
 │   │   └── index.ts             # Pinia Store
 │   ├── types/
 │   │   ├── index.ts             # 通用类型定义
-│   │   ├── ai-chat.ts           # AI 聊天类型（ChatMessage、SectionChange、AIChatState 等）
+│   │   ├── ai-chat.ts           # AI 聊天类型
 │   │   ├── resume-optimize.ts   # 简历优化类型
 │   │   ├── resume-tailor.ts     # 简历定制类型
+│   │   ├── interview-center.ts  # 面试中心类型
+│   │   ├── interview-voice.ts   # 语音面试类型
+│   │   ├── job-position.ts      # 职位信息类型
 │   │   └── marked.d.ts          # marked 类型声明
 │   ├── api/
 │   │   ├── user.ts              # 用户 API
 │   │   ├── resume.ts            # 简历 API
-│   │   └── aiChat.ts            # AI 聊天 API（流式/历史/修改应用）
+│   │   ├── aiChat.ts            # AI 聊天 API
+│   │   ├── interview-center.ts  # 面试中心 API
+│   │   ├── interview-voice.ts   # 语音面试 API
+│   │   └── job-position.ts      # 职位信息 API
 │   ├── utils/
-│   │   └── stageHelpers.ts      # 阶段辅助工具函数
-│   ├── composables/             # 12 个 Composables
-│   │   ├── useAIChat.ts         # AI 聊天（单例，SSE，双模式）
+│   │   ├── stageHelpers.ts      # 阶段辅助工具函数
+│   │   └── recording-helpers.ts # 录音回放辅助工具函数
+│   ├── composables/             # 18 个 Composables
+│   │   ├── useAIChat.ts         # AI 聊天
+│   │   ├── useInterviewVoice.ts # AI 语音面试
+│   │   ├── useStreamingAudio.ts # 流式音频播放
+│   │   ├── useStreamAssist.ts   # SSE 流式求助
+│   │   ├── useAudioRecorder.ts  # 音频录制器
 │   │   ├── useResumeOptimize.ts # 简历优化
 │   │   ├── useResumeTailor.ts   # 简历定制
+│   │   ├── useInterviewPreparation.ts # 面试准备
+│   │   ├── useReviewAnalysis.ts # 复盘分析
 │   │   ├── useSectionEdit.ts    # 区块编辑
 │   │   ├── useSectionHelper.ts  # 区块辅助工具
 │   │   ├── useSectionDiff.ts    # 区块差异对比
@@ -884,16 +1006,24 @@ frontend/
 │   │   ├── useConfirm.ts        # 确认弹窗
 │   │   ├── useToast.ts          # Toast 提示
 │   │   └── useFormValidation.ts # 表单验证
-│   ├── views/                   # 页面组件（9 个）
+│   ├── views/                   # 页面组件（12+ 个）
 │   │   ├── Onboarding.vue
 │   │   ├── Home.vue
 │   │   ├── Resume.vue
 │   │   ├── ResumeDetail.vue
 │   │   ├── Interview.vue
 │   │   ├── InterviewSession.vue
+│   │   ├── InterviewRecording.vue
 │   │   ├── Review.vue
 │   │   ├── ReviewDetail.vue
-│   │   └── Profile.vue
+│   │   ├── Profile.vue
+│   │   └── interview-center/
+│   │       ├── Layout.vue
+│   │       ├── MockEntry.vue
+│   │       ├── CreateInterview.vue
+│   │       ├── InterviewList.vue
+│   │       ├── InterviewDetail.vue
+│   │       └── PositionDetail.vue
 │   ├── components/
 │   │   ├── common/              # 公共组件（5 个）
 │   │   │   ├── AppNavbar.vue
@@ -913,6 +1043,23 @@ frontend/
 │   │   │   └── suggestion-cards/
 │   │   │       ├── SectionChangeCard.vue
 │   │   │       └── FieldDiffViewer.vue
+│   │   ├── interview/           # 面试组件（6 个）
+│   │   │   ├── voice/            # 语音面试组件（4 个）
+│   │   │   │   ├── VoiceControls.vue
+│   │   │   │   ├── TranscriptDisplay.vue
+│   │   │   │   ├── AssistantPanel.vue
+│   │   │   │   └── QuickAssistButtons.vue
+│   │   │   └── recording/        # 录音回放组件（2 个）
+│   │   │       ├── RecordingPlayer.vue
+│   │   │       └── TranscriptViewer.vue
+│   │   ├── interview-center/    # 面试中心组件（7 个）
+│   │   │   ├── JobPositionCard.vue
+│   │   │   ├── CreateInterviewDialog.vue
+│   │   │   ├── EditInterviewDialog.vue
+│   │   │   ├── EditPositionDialog.vue
+│   │   │   ├── ReviewNoteDialog.vue
+│   │   │   ├── AddPreparationDialog.vue
+│   │   │   └── PreparationProgressModal.vue
 │   │   └── resume/
 │   │       ├── EditSectionModal.vue
 │   │       ├── AddSectionModal.vue

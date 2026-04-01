@@ -8,6 +8,7 @@
 
 | 日期 | 版本 | 变更内容 |
 |------|------|----------|
+| 2026-04-02 | 2.2.0 | **新增 AI 语音面试模块**（37 个 Java 文件）：WebSocket + 阿里云 ASR/TTS + 求助系统 + 录音回放；新增 company/jobposition 模块（11+11 个文件）；新增面试中心相关表和语音面试相关表；新增 7 个 Controllers |
 | 2026-03-30 | 2.1.0 | Graph 子包重组（optimize/tailor 分包）、新增 BaseGraphConstants 公共常量基类、新增 ResumeChangeApplier 工具类、测试文件增至 2 个 |
 | 2026-03-30 | 2.0.0 | 新增 AI Chat 模块（30 个 Java 文件）：ReactAgent + 技能系统 + 8 个工具 + MemorySaver + SSE 流式输出 |
 | 2026-03-18 | 1.5.0 | AI 上下文全面扫描更新：更新文件统计（110 个 Java 文件、8 个控制器、11 个服务、8 个 Handler） |
@@ -27,9 +28,12 @@
 - 简历优化/定制工作流（StateGraph 状态机）
 - AI 对话式简历优化（ReactAgent + 技能系统）
 - 面试会话与答题流程
+- **AI 语音模拟面试**（WebSocket 实时对话 + 求助系统 + 录音回放）
 - 面试复盘与分析
 - 数据统计
 - 职位推荐
+- **公司信息与调研**
+- **职位信息与 JD 分析**
 
 ---
 
@@ -56,11 +60,16 @@ export OPENAI_BASE_URL=https://api.openai.com
 
 # 可选：AI 模型选择（默认 gpt-4o）
 export AI_MODEL=gpt-4o
+
+# 必需：阿里云语音服务（用于语音面试）
+export ALIYUN_ACCESS_KEY_ID=your_access_key_id
+export ALIYUN_ACCESS_KEY_SECRET=your_access_key_secret
 ```
 
 ### 访问地址
 - API 基础路径：`http://localhost:8080/landit/`
 - Swagger UI：`http://localhost:8080/landit/swagger-ui.html`
+- WebSocket 端点：`ws://localhost:8080/landit/ws/interview/voice/{sessionId}`
 
 ---
 
@@ -74,11 +83,19 @@ export AI_MODEL=gpt-4o
 | resume | `/resumes` | ResumeController | 简历CRUD与优化 |
 | resume-workflow | `/resumes` | ResumeOptimizeGraphController | 简历优化工作流 |
 | resume-tailor | `/resumes` | TailorResumeController | 简历定制工作流 |
+| resume-suggestion | `/resumes` | ResumeSuggestionController | 简历建议管理 |
 | **chat** | `/chat` | **AIChatController** | **AI 对话式简历优化** |
 | interview | `/interviews` | InterviewController | 面试会话管理 |
+| **interview-center** | `/interview-center` | **InterviewCenterController** | **面试中心（真实面试管理）** |
+| **interview-preparation** | `/interviews` | **InterviewPreparationController** | **面试准备事项** |
+| **interview-review-note** | `/interviews` | **InterviewReviewNoteController** | **面试复盘笔记** |
+| **interview-voice** | `/interviews` | **InterviewVoiceController (WebSocket)** | **AI 语音面试（WebSocket 端点）** |
+| **assistant** | `/interviews` | **AssistantController** | **语音面试求助系统** |
+| **recording** | `/recordings` | **RecordingController** | **录音回放管理** |
 | review | `/reviews` | ReviewController | 面试复盘 |
 | statistics | `/statistics` | StatisticsController | 数据统计 |
 | job | `/jobs` | JobController | 职位推荐 |
+| **job-position** | `/job-positions` | **JobPositionController** | **职位信息与 JD 分析** |
 
 ### 统一响应格式
 ```java
@@ -99,6 +116,7 @@ ApiResponse<T> {
 |------|------|------|
 | spring-boot-starter-web | 3.5.11 | Web 框架 |
 | spring-boot-starter-validation | 3.5.11 | 参数校验 |
+| spring-boot-starter-websocket | 3.5.11 | WebSocket 支持 |
 | mybatis-plus-spring-boot3-starter | 3.5.9 | ORM 框架 |
 | mybatis-plus-jsqlparser | 3.5.9 | 分页插件 |
 | sqlite-jdbc | 3.47.2.0 | SQLite 驱动 |
@@ -107,6 +125,7 @@ ApiResponse<T> {
 | springdoc-openapi-starter-webmvc-ui | 2.8.4 | API 文档 |
 | spring-ai-alibaba-agent-framework | 1.1.2.0 | 工作流引擎 + ReactAgent |
 | spring-ai-starter-model-openai | 1.1.2 | AI 大模型（OpenAI 协议） |
+| aliyun-sdk-nls | 2.2.1 | 阿里云智能语音交互 |
 | pdfbox | 3.0.4 | PDF 处理 |
 | poi-ooxml | 5.3.0 | Word 处理 |
 | mapstruct | 1.6.3 | 对象映射 |
@@ -131,6 +150,13 @@ spring:
           model: ${AI_MODEL:gpt-4o}
           temperature: 0.7
 
+# 阿里云语音服务配置
+aliyun:
+  voice:
+    access-key-id: ${ALIYUN_ACCESS_KEY_ID:}
+    access-key-secret: ${ALIYUN_ACCESS_KEY_SECRET:}
+    app-key: ${ALIYUN_VOICE_APP_KEY:}
+
 mybatis-plus:
   global-config:
     db-config:
@@ -141,6 +167,75 @@ mybatis-plus:
 ---
 
 ## 核心架构
+
+### AI 语音面试（Voice Interview）
+
+AI 语音面试模块基于 **WebSocket + 阿里云语音服务** 构建实时语音对话系统：
+
+```
++----------------------------------------------------------------------------------+
+|                         AI 语音面试系统                                            |
++----------------------------------------------------------------------------------+
+|                                                                                  |
+|   候选人音频 --> WebSocket --> ASR(阿里云) --> 文本 --> 面试官 Agent --> 回复       |
+|        |                                                          |              |
+|        +-- VAD 静音检测                                            +-- TTS 合成   |
+|        |                                                          |              |
+|        +-- PCM 16kHz                                              +-- 音频推送   |
+|                                                                                  |
+|   求助系统（SSE 流式）：                                                            |
+|   快捷求助 --> StreamAssistService --> Assistant Agent --> SSE 流式返回             |
+|   (提示/概念/润色/自由提问)                                                          |
+|                                                                                  |
+|   录音回放：                                                                        |
+|   片段存储 --> RecordingService --> 合并音频 --> TranscriptViewer                    |
+|                                                                                  |
++----------------------------------------------------------------------------------+
+```
+
+**语音模式支持：**
+- **半语音模式**（half_voice）：候选人语音输入，AI 文字回复
+- **全语音模式**（full_voice）：候选人语音输入，AI 语音回复（TTS）
+
+**WebSocket 消息类型：**
+- `transcript` - 转录结果（实时/最终）
+- `audio` - 音频数据（Base64 编码）
+- `state` - 会话状态更新
+- `error` - 错误信息
+
+**求助类型（AssistType）：**
+- `GIVE_HINTS` - 提示思路
+- `EXPLAIN_CONCEPT` - 解释概念
+- `POLISH_ANSWER` - 润色答案
+- `FREE_QUESTION` - 自由提问
+
+**关键组件：**
+
+| 组件 | 位置 | 职责 |
+|------|------|------|
+| `InterviewVoiceController` | `interview/voice/controller/` | WebSocket 端点，处理实时语音对话 |
+| `InterviewVoiceGateway` | `interview/voice/gateway/` | 语音面试网关接口（会话管理、角色路由） |
+| `InterviewVoiceGatewayImpl` | `interview/voice/gateway/impl/` | 网关实现（状态机、音频流处理） |
+| `InterviewerAgentHandler` | `interview/voice/handler/` | 面试官 Agent 处理器（处理候选人回答） |
+| `AssistantAgentHandler` | `interview/voice/handler/` | 助手 Agent 处理器（快捷求助） |
+| `AliyunASRService` | `interview/voice/service/impl/` | 阿里云 ASR 语音识别服务 |
+| `AliyunTTSService` | `interview/voice/service/impl/` | 阿里云 TTS 语音合成服务 |
+| `StreamAssistService` | `interview/voice/service/` | 流式求助服务（SSE 流式返回） |
+| `RecordingService` | `interview/voice/service/` | 录音存储与合并服务 |
+| `VoiceSessionManager` | `interview/voice/service/` | WebSocket 会话管理器 |
+| `VoiceRequest` | `interview/voice/dto/` | WebSocket 请求（audio/control） |
+| `VoiceResponse` | `interview/voice/dto/` | WebSocket 响应（transcript/audio/state/error） |
+| `AssistSSEEvent` | `interview/voice/dto/` | SSE 求助事件（text/audio/done/error） |
+
+**WebSocket 端点：**
+- **路径**：`/ws/interview/voice/{sessionId}`
+- **协议**：WebSocket（文本消息 JSON，二进制消息 PCM 音频）
+- **心跳**：客户端发送 `{ "type": "ping" }`，服务端响应 `{ "type": "pong" }`
+
+**前端数据流：**
+- Composable：`useInterviewVoice.ts` -- WebSocket 连接、状态管理、音频录制/播放
+- API：`api/interview-voice.ts` -- 录音回放、求助次数查询
+- 类型：`types/interview-voice.ts` -- VoiceSettings、WSMessage、RecordingInfo 等
 
 ### AI 聊天 Agent（ReactAgent）
 
@@ -236,6 +331,42 @@ START --> AnalyzeJD --> MatchResume --> GenerateTailored --> END
 | `TailorResumeGraphService.java` | `graph/tailor/` | 执行、恢复、状态管理工作流 |
 | `TailorResumeGraphConstants.java` | `graph/tailor/` | 统一管理状态键、节点名称等常量 |
 
+### 面试准备工作流 Graph
+
+面试准备工作流基于 Spring AI Alibaba Agent Framework 构建状态机工作流：
+
+```
+START --> CheckCompany --> [条件路由] --> CompanyResearch --> CheckJobPosition --> [条件路由] --> JDAnalysis --> GeneratePreparation --> END
+           (检查公司)       (需调研?)       (公司调研)        (检查职位)           (需分析?)      (JD分析)     (生成准备事项)
+```
+
+**工作流节点：**
+
+| 节点 | 类名 | 位置 | 职责 |
+|------|------|------|------|
+| check_company | CheckCompanyNode | `interview/graph/preparation/` | 检查公司是否存在 |
+| company_research | CompanyResearchNode | `interview/graph/preparation/` | 公司调研（AI 生成） |
+| check_job_position | CheckJobPositionNode | `interview/graph/preparation/` | 检查职位是否存在 |
+| jd_analysis | JDAnalysisNode | `interview/graph/preparation/` | JD 分析（提取关键信息） |
+| generate_preparation | GeneratePreparationNode | `interview/graph/preparation/` | 生成准备事项 |
+
+### 复盘分析工作流 Graph
+
+复盘分析工作流基于 Spring AI Alibaba Agent Framework 构建状态机工作流：
+
+```
+START --> CollectData --> AnalyzeInterview --> GenerateAdvice --> END
+           (收集数据)      (AI分析表现)         (生成改进建议)
+```
+
+**工作流节点：**
+
+| 节点 | 类名 | 位置 | 职责 |
+|------|------|------|------|
+| collect_data | CollectInterviewDataNode | `interview/graph/review/` | 收集面试相关数据 |
+| analyze_interview | AnalyzeInterviewNode | `interview/graph/review/` | AI 分析面试表现 |
+| generate_advice | GenerateAdviceNode | `interview/graph/review/` | 生成改进建议 |
+
 ### 区块类型系统
 
 简历模块采用区块类型系统实现动态简历结构解析：
@@ -305,6 +436,13 @@ AI 功能通过 `AIPromptProperties` 配置类管理提示词：
 | t_improvement_plan | ImprovementPlan | 改进计划 |
 | t_job | Job | 职位推荐 |
 | t_chat_message | ChatMessage | AI 聊天消息（含 actions、action_status、segments 字段） |
+| **t_company** | **Company** | **公司信息与调研** |
+| **t_job_position** | **JobPosition** | **职位信息与 JD 分析** |
+| **t_interview_preparation** | **InterviewPreparation** | **面试准备事项** |
+| **t_interview_review_note** | **InterviewReviewNote** | **面试复盘笔记** |
+| **t_assistant_conversation** | **AssistantConversation** | **语音面试求助记录** |
+| **t_interview_recording** | **InterviewRecording** | **面试录音片段** |
+| **t_recording_index** | **RecordingIndex** | **录音索引与合并信息** |
 
 ### 基础实体 (BaseEntity)
 ```java
@@ -407,13 +545,50 @@ public abstract class BaseEntity {
 
 ### interview - 面试模块
 - **路径**：`src/main/java/com/landit/interview/`
-- **文件统计**：20 个 Java 文件
+- **文件统计**：20 个 Java 文件（不含 voice 子模块）
 - **实体**：Interview, InterviewQuestion, InterviewSession, Conversation
 - **核心功能**：
   - 面试会话管理
   - 答题与评分
   - 提示系统
   - 题库管理
+
+### interview/voice - AI 语音面试模块（新增）
+- **路径**：`src/main/java/com/landit/interview/voice/`
+- **文件统计**：37 个 Java 文件
+- **config/** - AliyunVoiceAutoConfiguration（阿里云语音服务自动配置）
+- **controller/** - InterviewVoiceController（WebSocket 端点）, AssistantController（求助系统）, RecordingController（录音回放）
+- **gateway/** - InterviewVoiceGateway（网关接口）, impl/InterviewVoiceGatewayImpl（网关实现）
+- **handler/** - InterviewerAgentHandler（面试官 Agent）, AssistantAgentHandler（助手 Agent）, impl/（实现类）
+- **service/** - ASRService, TTSService, StreamAssistService, RecordingService, VoiceSessionManager, VoiceServiceFactory, impl/AliyunASRService, impl/AliyunTTSService, impl/StreamAssistServiceImpl, impl/RecordingMergeServiceImpl
+- **entity/** - InterviewRecording（录音片段）, AssistantConversation（求助对话）, RecordingIndex（录音索引）
+- **dto/** - VoiceRequest, VoiceResponse, ASRConfig, ASRResult, TTSConfig, TTSChunk, AssistSSEEvent, RecordingInfo, RecordingSegment
+- **mapper/** - InterviewRecordingMapper, AssistantConversationMapper, RecordingIndexMapper
+- **util/** - WavHeaderUtils（WAV 文件头工具）
+
+### interview/graph - 面试工作流
+- **路径**：`src/main/java/com/landit/interview/graph/`
+- **preparation 子包**：CheckCompanyNode, CompanyResearchNode, CheckJobPositionNode, JDAnalysisNode, GeneratePreparationNode, InterviewPreparationGraphConfig, InterviewPreparationGraphConstants, InterviewPreparationGraphService
+- **review 子包**：CollectInterviewDataNode, AnalyzeInterviewNode, GenerateAdviceNode, ReviewAnalysisGraphConfig, ReviewAnalysisGraphConstants, ReviewAnalysisGraphService
+
+### company - 公司模块（新增）
+- **路径**：`src/main/java/com/landit/company/`
+- **文件统计**：6 个 Java 文件
+- **实体**：Company（name, research, researchUpdatedAt）
+- **DTO**：CompanyVO, CompanyResearchResult
+- **服务**：CompanyService
+- **Handler**：CompanyHandler
+- **Mapper**：CompanyMapper
+
+### jobposition - 职位模块（新增）
+- **路径**：`src/main/java/com/landit/jobposition/`
+- **文件统计**：11 个 Java 文件
+- **实体**：JobPosition（companyId, title, jdContent, jdAnalysis）
+- **DTO**：JobPositionVO, JobPositionListItemVO, JobPositionDetailVO, CreateJobPositionRequest, UpdateJobPositionRequest, JDAnalysisResult
+- **服务**：JobPositionService
+- **Handler**：JobPositionHandler
+- **Controller**：JobPositionController
+- **Mapper**：JobPositionMapper
 
 ### review - 复盘模块
 - **路径**：`src/main/java/com/landit/review/`
@@ -456,6 +631,9 @@ A: `backend/data/landit.db`（相对于 backend 目录）
 ### Q: 如何配置 AI API Key？
 A: 设置环境变量 `OPENAI_API_KEY`，或在 `application.yml` 中配置 `spring.ai.openai.api-key`
 
+### Q: 如何配置阿里云语音服务？
+A: 设置环境变量 `ALIYUN_ACCESS_KEY_ID` 和 `ALIYUN_ACCESS_KEY_SECRET`，或在 `application.yml` 中配置 `aliyun.voice.*`
+
 ### Q: 如何添加新的简历区块类型？
 A:
 1. 在 `SectionType` 枚举中添加新类型
@@ -476,6 +654,13 @@ A:
 1. 在 `chat/tools/` 下创建工具类，使用 `ToolUtils.createCallback()` 包装
 2. 在 `ChatAgentConfig.createResumeTools()` 中注册到工具列表
 3. 如果需要生成前端事件，在 `AIChatService.buildSuggestionEvents()` 中添加路由逻辑
+
+### Q: 如何添加新的语音面试功能？
+A:
+1. 在 `interview/voice/service/` 下创建新的 Service 类
+2. 如果需要新的 WebSocket 消息类型，在 `VoiceRequest` 和 `VoiceResponse` 中添加
+3. 在 `InterviewVoiceGatewayImpl` 中添加对应的消息处理逻辑
+4. 前端在 `useInterviewVoice.ts` 中添加对应的状态和方法
 
 ### Q: 如何添加新的业务模块？
 A:
@@ -536,6 +721,27 @@ backend/
 │   │   │   ├── service/                 # 服务层
 │   │   │   └── tools/                   # 工具（9 个）
 │   │   ├── interview/                   # 面试模块（20 个文件）
+│   │   │   ├── controller/              # 控制器
+│   │   │   ├── dto/                     # DTO
+│   │   │   ├── entity/                  # 实体
+│   │   │   ├── graph/                   # 工作流
+│   │   │   │   ├── preparation/         # 准备工作流子包
+│   │   │   │   └── review/              # 复盘工作流子包
+│   │   │   ├── handler/                 # Handler
+│   │   │   ├── mapper/                  # Mapper
+│   │   │   ├── service/                 # 服务层
+│   │   │   └── voice/                   # 语音面试子模块（37 个文件）
+│   │   │       ├── config/              # 阿里云语音配置
+│   │   │       ├── controller/          # WebSocket 控制器
+│   │   │       ├── dto/                 # DTO
+│   │   │       ├── entity/              # 实体
+│   │   │       ├── gateway/             # 网关
+│   │   │       ├── handler/             # Agent Handler
+│   │   │       ├── mapper/              # Mapper
+│   │   │       ├── service/             # 服务层
+│   │   │       └── util/                # 工具类
+│   │   ├── company/                     # 公司模块（6 个文件）
+│   │   ├── jobposition/                 # 职位模块（11 个文件）
 │   │   ├── review/                      # 复盘模块（13 个文件）
 │   │   ├── statistics/                  # 统计模块（4 个文件）
 │   │   └── job/                         # 职位模块（4 个文件）
@@ -566,3 +772,4 @@ backend/
 2. 集成测试：Controller 层 API 测试
 3. 工作流测试：Graph 节点测试
 4. Schema 测试：JSON Schema 构建测试
+5. 语音面试测试：WebSocket 连接测试、语音服务测试
