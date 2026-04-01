@@ -1,13 +1,20 @@
 <template>
   <div class="interview-detail-page" v-if="!loading && interview">
     <header class="page-header">
-      <button class="back-btn" @click="goBack">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 12H5"></path>
-          <polyline points="12 19 5 12 12 5"></polyline>
-        </svg>
-        返回
-      </button>
+      <div class="header-left">
+        <button class="back-btn" @click="goBack">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5"></path>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+        </button>
+        <div class="header-title">
+          <span class="company-name">{{ interview.companyName }}</span>
+          <span class="separator">/</span>
+          <span class="position-name">{{ interview.position }}</span>
+          <span v-if="interview.roundType" class="round-badge">{{ getRoundTypeLabel(interview.roundType) }}</span>
+        </div>
+      </div>
       <div class="header-actions">
         <button class="btn btn-secondary" @click="showEditDialog = true">编辑</button>
         <button class="btn btn-danger" @click="handleDelete">删除</button>
@@ -35,36 +42,53 @@
         @close="showEditDialog = false"
         @saved="handleInterviewUpdated"
       />
-      <section class="basic-info">
-        <div class="info-header">
-          <span class="source-badge" :class="interview.source">
-            {{ interview.source === 'real' ? '真实面试' : '模拟面试' }}
+
+      <!-- AI 生成进度弹窗 -->
+      <PreparationProgressModal
+        v-model:visible="showPrepModal"
+        :state="preparationState"
+        @save="handleSavePreparationItems"
+        @cancel="handleCancelPreparation"
+        @retry="handleRetryPreparation"
+      />
+
+      <!-- 面试信息卡片 -->
+      <section class="interview-info-card">
+        <div class="info-row">
+          <span class="info-item">
+            <span class="info-icon">📅</span>
+            <span class="info-label">面试时间：</span>
+            <span class="info-value">{{ formatDateTime(interview.interviewDate) }}</span>
           </span>
-          <div class="status-select-wrapper">
-            <select
-              class="status-select"
-              :class="interview.status"
-              :value="interview.status"
-              @change="handleStatusChange(($event.target as HTMLSelectElement).value)"
-            >
-              <option v-for="(label, key) in statusOptions" :key="key" :value="key">
-                {{ label }}
-              </option>
-            </select>
-          </div>
         </div>
-        <h1 class="company-name">{{ interview.companyName }}</h1>
-        <p class="position">{{ interview.position }}</p>
-        <div class="meta-info">
-          <span>面试时间：{{ formatDateTime(interview.interviewDate) }}</span>
-          <span v-if="interview.roundType">
-            面试轮次：{{ getRoundTypeLabel(interview.roundType) }}
+        <div class="info-row">
+          <span class="info-item">
+            <span class="info-icon">💻</span>
+            <span class="info-label">面试类型：</span>
+            <span class="info-value" v-if="interview.interviewType">{{ getInterviewTypeLabel(interview.interviewType) }}</span>
           </span>
-          <span v-if="interview.interviewType" class="interview-type-badge" :class="interview.interviewType">
-            {{ getInterviewTypeLabel(interview.interviewType) }}
+          <span class="info-item" v-if="interview.interviewType === 'onsite' && interview.location">
+            <span class="info-icon">📍</span>
+            <span class="info-label">地点：</span>
+            <span class="info-value">{{ interview.location }}</span>
           </span>
-          <span class="result-wrapper">
-            最终结果：
+          <span class="info-item" v-if="interview.interviewType === 'online' && interview.onlineLink">
+            <span class="info-icon">🔗</span>
+            <span class="info-label">会议链接：</span>
+            <a :href="interview.onlineLink" target="_blank" class="link-value">{{ interview.onlineLink }}</a>
+            <button class="copy-btn" @click="copyToClipboard(interview.onlineLink)">复制</button>
+          </span>
+          <span class="info-item" v-if="interview.interviewType === 'online' && interview.meetingPassword">
+            <span class="info-icon">🔑</span>
+            <span class="info-label">会议密码：</span>
+            <span class="info-value">{{ interview.meetingPassword }}</span>
+            <button class="copy-btn" @click="copyToClipboard(interview.meetingPassword)">复制</button>
+          </span>
+        </div>
+        <div class="info-row">
+          <span class="info-item">
+            <span class="info-icon">🎯</span>
+            <span class="info-label">最终结果：</span>
             <select
               class="result-select"
               :value="interview.overallResult || ''"
@@ -76,23 +100,57 @@
               </option>
             </select>
           </span>
+          <span class="info-item">
+            <span class="info-icon">📊</span>
+            <span class="info-label">状态：</span>
+            <select
+              class="status-select"
+              :class="interview.status"
+              :value="interview.status"
+              @change="handleStatusChange(($event.target as HTMLSelectElement).value)"
+            >
+              <option v-for="(label, key) in statusOptions" :key="key" :value="key">
+                {{ label }}
+              </option>
+            </select>
+          </span>
         </div>
 
-        <!-- 面试地点/链接信息 -->
-        <div v-if="interview.interviewType === 'onsite' && interview.location" class="location-info">
-          <span class="info-icon">📍</span>
-          <span class="info-text">{{ interview.location }}</span>
+        <!-- 职位详情折叠区域 -->
+        <div
+          class="position-detail-toggle"
+          v-if="interview.jdContent || interview.companyResearch || interview.jdAnalysis"
+        >
+          <button class="toggle-btn" @click="showPositionDetail = !showPositionDetail">
+            <svg
+              :class="{ rotated: showPositionDetail }"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+            <span>{{ showPositionDetail ? '收起职位详情' : '展开职位详情' }}</span>
+          </button>
         </div>
-        <div v-if="interview.interviewType === 'online'" class="online-info">
-          <div v-if="interview.onlineLink" class="info-item">
-            <span class="info-icon">🔗</span>
-            <a :href="interview.onlineLink" target="_blank" class="link-text">{{ interview.onlineLink }}</a>
-            <button class="copy-btn" @click="copyToClipboard(interview.onlineLink)">复制</button>
+
+        <div class="position-detail-content" v-if="showPositionDetail">
+          <div v-if="interview.jdContent" class="detail-item">
+            <h4>职位描述 (JD)</h4>
+            <div class="detail-text">{{ interview.jdContent }}</div>
           </div>
-          <div v-if="interview.meetingPassword" class="info-item">
-            <span class="info-icon">🔑</span>
-            <span class="info-text">会议密码：{{ interview.meetingPassword }}</span>
-            <button class="copy-btn" @click="copyToClipboard(interview.meetingPassword)">复制</button>
+          <div v-if="interview.companyResearch" class="detail-item">
+            <h4>公司调研</h4>
+            <div class="detail-text">{{ interview.companyResearch }}</div>
+          </div>
+          <div v-if="interview.jdAnalysis" class="detail-item">
+            <h4>JD 分析</h4>
+            <div class="detail-text">{{ interview.jdAnalysis }}</div>
           </div>
         </div>
       </section>
@@ -109,33 +167,7 @@
               <span v-if="preparationState.isRunning">生成中...</span>
               <span v-else>AI 生成</span>
             </button>
-            <button class="btn btn-sm" @click="showAddPreparationDialog = true">+ 添加事项</button>
-          </div>
-        </div>
-
-        <!-- AI 生成进度 -->
-        <div v-if="preparationState.isRunning" class="progress-indicator">
-          <div class="progress-bar">
-            <div class="progress-fill" :style="{ width: preparationState.progress + '%' }"></div>
-          </div>
-          <p class="progress-message">{{ preparationState.message }}</p>
-        </div>
-
-        <!-- AI 生成结果预览 -->
-        <div v-if="preparationState.isCompleted && preparationState.preparationItems.length > 0" class="ai-result-preview">
-          <h4>AI 生成的准备事项</h4>
-          <div class="preview-list">
-            <div v-for="(item, index) in preparationState.preparationItems" :key="index" class="preview-item">
-              <input type="checkbox" v-model="selectedPrepItems[index]" />
-              <div class="preview-content">
-                <span class="preview-title">{{ item.title }}</span>
-                <span v-if="item.description" class="preview-desc">{{ item.description }}</span>
-              </div>
-            </div>
-          </div>
-          <div class="preview-actions">
-            <button class="btn btn-primary btn-sm" @click="saveSelectedPreparations">保存选中</button>
-            <button class="btn btn-secondary btn-sm" @click="preparationState.isCompleted = false">取消</button>
+            <button class="btn btn-sm btn-secondary" @click="showAddPreparationDialog = true">+ 添加事项</button>
           </div>
         </div>
 
@@ -269,6 +301,7 @@ import {
 import AddPreparationDialog from '@/components/interview-center/AddPreparationDialog.vue'
 import ReviewNoteDialog from '@/components/interview-center/ReviewNoteDialog.vue'
 import EditInterviewDialog from '@/components/interview-center/EditInterviewDialog.vue'
+import PreparationProgressModal from '@/components/interview-center/PreparationProgressModal.vue'
 // 工作流 composables
 import { useInterviewPreparation } from '@/composables/useInterviewPreparation'
 import { useReviewAnalysis } from '@/composables/useReviewAnalysis'
@@ -280,6 +313,7 @@ const interview = ref<InterviewDetail | null>(null)
 const showAddPreparationDialog = ref(false)
 const showReviewDialog = ref(false)
 const showEditDialog = ref(false)
+const showPrepModal = ref(false)
 
 // 工作流状态
 const { state: preparationState, startPreparation } = useInterviewPreparation()
@@ -288,8 +322,8 @@ const { state: reviewState, startAnalysis } = useReviewAnalysis()
 // 面试过程文本输入
 const sessionTranscript = ref('')
 
-// AI 生成的准备事项选择状态
-const selectedPrepItems = ref<Record<number, boolean>>({})
+// 职位详情折叠状态
+const showPositionDetail = ref(false)
 
 const statusOptions = INTERVIEW_STATUS_LABELS
 const resultOptions = INTERVIEW_RESULT_LABELS
@@ -389,35 +423,38 @@ async function loadDetail() {
 
 function handleAIGeneratePreparation() {
   if (!interview.value) return
-  selectedPrepItems.value = {}
+  showPrepModal.value = true
   startPreparation(interview.value.id)
 }
 
-async function saveSelectedPreparations() {
-  if (!interview.value) return
-  const itemsToSave = preparationState.preparationItems
-    .filter((_, index) => selectedPrepItems.value[index])
-
-  if (itemsToSave.length === 0) {
-    alert('请至少选择一项准备事项')
-    return
-  }
+// 弹窗保存事件
+async function handleSavePreparationItems(items: typeof preparationState.preparationItems) {
+  if (!interview.value || items.length === 0) return
 
   try {
-    for (const item of itemsToSave) {
+    for (const item of items) {
       await addPreparation(interview.value!.id, {
         title: item.title,
         content: item.description
       })
     }
-    preparationState.isCompleted = false
-    preparationState.preparationItems = []
-    selectedPrepItems.value = {}
+    showPrepModal.value = false
     loadDetail()
   } catch (error) {
     console.error('保存准备事项失败:', error)
     alert('保存失败，请稍后重试')
   }
+}
+
+// 弹窗取消事件
+function handleCancelPreparation() {
+  showPrepModal.value = false
+}
+
+// 弹窗重试事件
+function handleRetryPreparation() {
+  if (!interview.value) return
+  startPreparation(interview.value.id)
 }
 
 function handleAIAnalysis() {
@@ -457,16 +494,22 @@ onMounted(() => {
   margin-bottom: $spacing-xl;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+}
+
 .back-btn {
   display: flex;
   align-items: center;
-  gap: $spacing-xs;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
   background: transparent;
-  border: 1px solid transparent;
+  border: 1px solid $color-bg-elevated;
   color: $color-text-secondary;
   cursor: pointer;
-  font-size: 0.875rem;
-  padding: $spacing-sm $spacing-md;
   border-radius: $radius-md;
   transition: all 0.2s;
 
@@ -477,7 +520,7 @@ onMounted(() => {
   &:hover {
     color: $color-text-primary;
     background: $color-bg-secondary;
-    border-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.1);
 
     svg {
       transform: translateX(-2px);
@@ -485,51 +528,110 @@ onMounted(() => {
   }
 }
 
-.basic-info {
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  font-size: 1.125rem;
+
+  .company-name {
+    font-weight: 600;
+    color: $color-text-primary;
+  }
+
+  .separator {
+    color: $color-text-tertiary;
+  }
+
+  .position-name {
+    color: $color-text-secondary;
+  }
+
+  .round-badge {
+    font-size: 0.75rem;
+    padding: 4px 10px;
+    background: rgba($color-accent, 0.15);
+    color: $color-accent;
+    border-radius: $radius-full;
+  }
+}
+
+.header-actions {
+  display: flex;
+  gap: $spacing-sm;
+}
+
+// 面试信息卡片
+.interview-info-card {
   background: $color-bg-secondary;
   border-radius: $radius-lg;
-  padding: $spacing-xl;
+  padding: $spacing-lg;
   margin-bottom: $spacing-xl;
 }
 
-.info-header {
+.info-row {
   display: flex;
-  gap: $spacing-sm;
+  flex-wrap: wrap;
+  gap: $spacing-lg;
   margin-bottom: $spacing-md;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
 }
 
-.source-badge, .status-badge {
-  font-size: 0.75rem;
-  padding: 4px 12px;
-  border-radius: $radius-full;
-}
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  font-size: 0.875rem;
 
-.source-badge.real {
-  background: rgba($color-accent, 0.2);
-  color: $color-accent;
-}
+  .info-icon {
+    font-size: 1rem;
+  }
 
-.source-badge.mock {
-  background: rgba($color-info, 0.2);
-  color: $color-info;
-}
+  .info-label {
+    color: $color-text-tertiary;
+  }
 
-.status-badge {
-  background: $color-bg-tertiary;
-  color: $color-text-secondary;
-}
+  .info-value {
+    color: $color-text-primary;
+  }
 
-.status-select-wrapper {
-  position: relative;
+  .link-value {
+    color: $color-accent;
+    text-decoration: none;
+    word-break: break-all;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .copy-btn {
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    background: transparent;
+    border: 1px solid $color-bg-elevated;
+    border-radius: $radius-sm;
+    color: $color-text-tertiary;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      border-color: $color-accent;
+      color: $color-accent;
+    }
+  }
 }
 
 .status-select {
   appearance: none;
   background: transparent;
   border: none;
-  font-size: 0.75rem;
-  padding: 4px 24px 4px 12px;
-  border-radius: $radius-full;
+  font-size: 0.875rem;
+  padding: 4px 24px 4px 8px;
+  border-radius: $radius-sm;
   cursor: pointer;
   color: inherit;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%23a1a1aa' d='M5 7L1 3h8z'/%3E%3C/svg%3E");
@@ -546,22 +648,18 @@ onMounted(() => {
   }
 
   &.preparing {
-    background-color: rgba($color-warning, 0.15);
     color: $color-warning;
   }
 
   &.in_progress {
-    background-color: rgba($color-info, 0.15);
     color: $color-info;
   }
 
   &.completed {
-    background-color: rgba($color-success, 0.15);
     color: $color-success;
   }
 
   &.cancelled {
-    background-color: rgba($color-text-tertiary, 0.15);
     color: $color-text-tertiary;
   }
 
@@ -569,12 +667,6 @@ onMounted(() => {
     background: $color-bg-secondary;
     color: $color-text-primary;
   }
-}
-
-.result-wrapper {
-  display: inline-flex;
-  align-items: center;
-  gap: $spacing-xs;
 }
 
 .result-select {
@@ -606,93 +698,69 @@ onMounted(() => {
   }
 }
 
-.company-name {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: $color-text-primary;
-  margin-bottom: $spacing-sm;
+// 职位详情折叠
+.position-detail-toggle {
+  margin-top: $spacing-lg;
+  padding-top: $spacing-md;
+  border-top: 1px solid $color-bg-elevated;
 }
 
-.position {
-  color: $color-text-secondary;
-  margin-bottom: $spacing-md;
-}
-
-.interview-type-badge {
-  font-size: 0.75rem;
-  padding: 4px 12px;
-  border-radius: $radius-full;
-
-  &.onsite {
-    background: rgba($color-accent, 0.15);
-    color: $color-accent;
-  }
-
-  &.online {
-    background: rgba($color-info, 0.15);
-    color: $color-info;
-  }
-}
-
-.location-info,
-.online-info {
+.toggle-btn {
   display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
+  align-items: center;
+  gap: $spacing-xs;
+  background: transparent;
+  border: none;
+  color: $color-text-secondary;
+  cursor: pointer;
+  font-size: 0.875rem;
+  padding: $spacing-sm;
+  border-radius: $radius-md;
+  transition: all 0.2s;
+
+  &:hover {
+    color: $color-accent;
+    background: rgba($color-accent, 0.1);
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+    transition: transform 0.2s;
+
+    &.rotated {
+      transform: rotate(180deg);
+    }
+  }
+}
+
+.position-detail-content {
+  margin-top: $spacing-md;
   padding: $spacing-md;
   background: $color-bg-tertiary;
   border-radius: $radius-md;
-  margin-bottom: $spacing-lg;
 
-  .info-item {
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-  }
+  .detail-item {
+    margin-bottom: $spacing-lg;
 
-  .info-icon {
-    font-size: 1rem;
-  }
+    &:last-child {
+      margin-bottom: 0;
+    }
 
-  .info-text {
-    color: $color-text-primary;
-    font-size: 0.875rem;
-  }
+    h4 {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: $color-text-secondary;
+      margin-bottom: $spacing-sm;
+    }
 
-  .link-text {
-    color: $color-accent;
-    text-decoration: none;
-    font-size: 0.875rem;
-    word-break: break-all;
-
-    &:hover {
-      text-decoration: underline;
+    .detail-text {
+      color: $color-text-primary;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
     }
   }
-
-  .copy-btn {
-    padding: 2px 8px;
-    font-size: 0.75rem;
-    background: transparent;
-    border: 1px solid $color-bg-elevated;
-    border-radius: $radius-sm;
-    color: $color-text-tertiary;
-    cursor: pointer;
-    transition: all 0.2s;
-
-    &:hover {
-      border-color: $color-accent;
-      color: $color-accent;
-    }
-  }
-}
-
-.meta-info {
-  display: flex;
-  flex-wrap: wrap;
-  gap: $spacing-lg;
-  color: $color-text-tertiary;
-  font-size: 0.875rem;
 }
 
 .section-header {
