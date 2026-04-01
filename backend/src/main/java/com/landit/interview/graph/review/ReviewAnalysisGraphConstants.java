@@ -51,9 +51,9 @@ public final class ReviewAnalysisGraphConstants extends BaseGraphConstants {
     public static final String STATE_COLLECTED_DATA = "collected_data";
 
     /**
-     * 轮次记录
+     * 面试基本信息
      */
-    public static final String STATE_ROUNDS = "rounds";
+    public static final String STATE_INTERVIEW_DATA = "interview_data";
 
     /**
      * 用户笔记

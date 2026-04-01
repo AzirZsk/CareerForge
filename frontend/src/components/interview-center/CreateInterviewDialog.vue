@@ -161,7 +161,7 @@ import type { JobPositionListItem } from '@/types/job-position'
 import DateTimePicker from '@/components/common/DateTimePicker.vue'
 
 const props = defineProps<{
-  preselectedPosition?: { companyName: string; title: string } | null
+  preselectedPositionId?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -226,12 +226,11 @@ watch(mode, (newMode) => {
   }
 })
 
-// 如果有预选职位，切换到新建模式并填充
-watch(() => props.preselectedPosition, (pos) => {
-  if (pos) {
-    mode.value = 'new'
-    form.companyName = pos.companyName
-    form.position = pos.title
+// 如果有预选职位ID，保持在选择模式并自动选中
+watch(() => props.preselectedPositionId, (id) => {
+  if (id) {
+    mode.value = 'select'
+    selectedPositionId.value = id
   }
 }, { immediate: true })
 

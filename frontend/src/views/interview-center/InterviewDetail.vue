@@ -10,12 +10,6 @@
 
     <div class="detail-content">
       <!-- 弹窗组件 -->
-      <AddRoundDialog
-        v-if="showAddRoundDialog"
-        :interview-id="interview.id"
-        @close="showAddRoundDialog = false"
-        @added="handleRoundAdded"
-      />
       <AddPreparationDialog
         v-if="showAddPreparationDialog"
         :interview-id="interview.id"
@@ -48,64 +42,12 @@
         <p class="position">{{ interview.position }}</p>
         <div class="meta-info">
           <span>面试时间：{{ formatDateTime(interview.interviewDate) }}</span>
+          <span v-if="interview.roundType">
+            面试轮次：{{ getRoundTypeLabel(interview.roundType) }}
+          </span>
           <span v-if="interview.overallResult">
             最终结果：{{ getResultLabel(interview.overallResult) }}
           </span>
-        </div>
-      </section>
-
-      <section class="rounds-section">
-        <div class="section-header">
-          <h2>面试轮次</h2>
-          <button class="btn btn-sm" @click="showAddRoundDialog = true">+ 添加轮次</button>
-        </div>
-        <div class="rounds-timeline">
-          <div
-            v-for="round in interview.rounds"
-            :key="round.id"
-            class="round-item"
-            :class="round.status"
-          >
-            <div class="round-indicator"></div>
-            <div class="round-content">
-              <div class="round-header">
-                <h3>{{ getRoundTypeLabel(round.roundType) }}</h3>
-                <span class="round-status" :class="round.status">
-                  {{ getRoundStatusLabel(round.status) }}
-                </span>
-              </div>
-              <p v-if="round.scheduledDate" class="round-date">
-                预定时间：{{ formatDateTime(round.scheduledDate) }}
-              </p>
-              <p v-if="round.notes" class="round-notes">{{ round.notes }}</p>
-              <div class="round-actions">
-                <button
-                  v-if="round.status === 'pending'"
-                  class="btn btn-sm btn-primary"
-                  @click="updateRoundStatus(round.id, 'in_progress')"
-                >
-                  开始面试
-                </button>
-                <button
-                  v-if="round.status === 'in_progress'"
-                  class="btn btn-sm btn-success"
-                  @click="updateRoundStatus(round.id, 'passed')"
-                >
-                  通过
-                </button>
-                <button
-                  v-if="round.status === 'in_progress'"
-                  class="btn btn-sm btn-danger"
-                  @click="updateRoundStatus(round.id, 'failed')"
-                >
-                  未通过
-                </button>
-              </div>
-            </div>
-          </div>
-          <div v-if="interview.rounds?.length === 0" class="empty-rounds">
-            <p>暂无面试轮次</p>
-          </div>
         </div>
       </section>
 
@@ -176,7 +118,6 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   getInterviewDetail,
-  updateRoundStatus as updateRoundStatusApi,
   togglePreparationComplete,
   deletePreparation as deletePreparationApi,
   deleteInterview
@@ -185,11 +126,9 @@ import {
   INTERVIEW_STATUS_LABELS,
   INTERVIEW_RESULT_LABELS,
   ROUND_TYPE_LABELS,
-  ROUND_STATUS_LABELS,
   type InterviewDetail
 } from '@/types/interview-center'
 // 弹窗组件
-import AddRoundDialog from '@/components/interview-center/AddRoundDialog.vue'
 import AddPreparationDialog from '@/components/interview-center/AddPreparationDialog.vue'
 import ReviewNoteDialog from '@/components/interview-center/ReviewNoteDialog.vue'
 import EditInterviewDialog from '@/components/interview-center/EditInterviewDialog.vue'
@@ -198,7 +137,6 @@ const route = useRoute()
 const router = useRouter()
 const loading = ref(true)
 const interview = ref<InterviewDetail | null>(null)
-const showAddRoundDialog = ref(false)
 const showAddPreparationDialog = ref(false)
 const showReviewDialog = ref(false)
 const showEditDialog = ref(false)
@@ -219,22 +157,8 @@ function getRoundTypeLabel(type: string): string {
   return ROUND_TYPE_LABELS[type as keyof typeof ROUND_TYPE_LABELS] || type
 }
 
-function getRoundStatusLabel(status: string): string {
-  return ROUND_STATUS_LABELS[status as keyof typeof ROUND_STATUS_LABELS] || status
-}
-
 function formatDateTime(dateStr: string): string {
   return new Date(dateStr).toLocaleString('zh-CN')
-}
-
-async function updateRoundStatus(roundId: string, status: string) {
-  if (!interview.value) return
-  try {
-    await updateRoundStatusApi(interview.value.id, roundId, status)
-    loadDetail()
-  } catch (error) {
-    console.error('更新轮次状态失败:', error)
-  }
 }
 
 async function togglePreparation(preparationId: string) {
@@ -282,10 +206,6 @@ async function loadDetail() {
 }
 
 // 弹窗事件处理
-function handleRoundAdded() {
-  loadDetail()
-}
-
 function handlePreparationAdded() {
   loadDetail()
 }
@@ -377,6 +297,7 @@ onMounted(() => {
 
 .meta-info {
   display: flex;
+  flex-wrap: wrap;
   gap: $spacing-lg;
   color: $color-text-tertiary;
   font-size: 0.875rem;
@@ -395,80 +316,11 @@ onMounted(() => {
   }
 }
 
-.rounds-section, .preparations-section, .review-section {
+.preparations-section, .review-section {
   background: $color-bg-secondary;
   border-radius: $radius-lg;
   padding: $spacing-xl;
   margin-bottom: $spacing-xl;
-}
-
-.rounds-timeline {
-  position: relative;
-}
-
-.round-item {
-  display: flex;
-  gap: $spacing-lg;
-  padding-bottom: $spacing-lg;
-
-  &:not(:last-child) {
-    border-left: 2px solid $color-bg-tertiary;
-    margin-left: 7px;
-    padding-left: $spacing-lg;
-  }
-}
-
-.round-indicator {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: $color-bg-tertiary;
-  flex-shrink: 0;
-
-  .passed & { background: $color-success; }
-  .failed & { background: $color-error; }
-  .in_progress & { background: $color-accent; }
-}
-
-.round-content {
-  flex: 1;
-}
-
-.round-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: $spacing-sm;
-
-  h3 {
-    font-size: 1rem;
-    font-weight: 600;
-    color: $color-text-primary;
-  }
-}
-
-.round-status {
-  font-size: 0.75rem;
-  padding: 2px 8px;
-  border-radius: $radius-sm;
-  background: $color-bg-tertiary;
-  color: $color-text-secondary;
-
-  &.passed { color: $color-success; }
-  &.failed { color: $color-error; }
-  &.in_progress { color: $color-accent; }
-}
-
-.round-date, .round-notes {
-  font-size: 0.875rem;
-  color: $color-text-tertiary;
-  margin-bottom: $spacing-sm;
-}
-
-.round-actions {
-  display: flex;
-  gap: $spacing-sm;
-  margin-top: $spacing-sm;
 }
 
 .preparations-list {
@@ -535,7 +387,7 @@ onMounted(() => {
   }
 }
 
-.empty-rounds, .empty-preparations, .empty-review {
+.empty-preparations, .empty-review {
   text-align: center;
   padding: $spacing-xl;
   color: $color-text-tertiary;

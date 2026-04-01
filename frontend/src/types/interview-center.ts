@@ -12,11 +12,8 @@ export type InterviewStatus = 'preparing' | 'in_progress' | 'completed' | 'cance
 // 面试最终结果
 export type InterviewResult = 'passed' | 'failed' | 'pending'
 
-// 轮次类型
+// 轮次类型（面试属性）
 export type RoundType = 'technical_1' | 'technical_2' | 'hr' | 'director' | 'cto' | 'final' | 'custom'
-
-// 轮次状态
-export type RoundStatus = 'pending' | 'in_progress' | 'passed' | 'failed' | 'pending_result' | 'cancelled'
 
 // 准备项类型
 export type PreparationItemType = 'company_research' | 'jd_analysis' | 'todo' | 'manual'
@@ -59,26 +56,8 @@ export interface InterviewDetail {
   jobPositionId?: string
   companyResearch?: string
   jdAnalysis?: string
-  rounds: RoundVO[]
   preparations: PreparationVO[]
   reviewNote?: ReviewNoteVO
-  createdAt: string
-  updatedAt: string
-}
-
-// 轮次 VO
-export interface RoundVO {
-  id: string
-  interviewId: string
-  roundType: RoundType
-  roundName?: string
-  roundOrder: number
-  status: RoundStatus
-  scheduledDate?: string
-  actualDate?: string
-  notes?: string
-  selfRating?: number
-  resultNote?: string
   createdAt: string
   updatedAt: string
 }
@@ -136,25 +115,6 @@ export interface UpdateInterviewRequest {
   notes?: string
 }
 
-// 添加轮次请求
-export interface AddRoundRequest {
-  roundType: RoundType
-  roundName?: string
-  scheduledDate?: string
-  notes?: string
-}
-
-// 更新轮次请求
-export interface UpdateRoundRequest {
-  roundType?: RoundType
-  roundName?: string
-  scheduledDate?: string
-  actualDate?: string
-  notes?: string
-  selfRating?: number
-  resultNote?: string
-}
-
 // 添加准备事项请求
 export interface AddPreparationRequest {
   title: string
@@ -188,16 +148,6 @@ export const ROUND_TYPE_LABELS: Record<RoundType, string> = {
   cto: 'CTO/VP 面',
   final: '终面',
   custom: '自定义'
-}
-
-// 轮次状态标签
-export const ROUND_STATUS_LABELS: Record<RoundStatus, string> = {
-  pending: '待面试',
-  in_progress: '进行中',
-  passed: '已通过',
-  failed: '未通过',
-  pending_result: '待定',
-  cancelled: '已取消'
 }
 
 // 面试状态标签

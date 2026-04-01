@@ -6,13 +6,10 @@
 import type {
   InterviewListItem,
   InterviewDetail,
-  RoundVO,
   PreparationVO,
   ReviewNoteVO,
   CreateInterviewRequest,
   UpdateInterviewRequest,
-  AddRoundRequest,
-  UpdateRoundRequest,
   AddPreparationRequest,
   UpdatePreparationRequest,
   SaveReviewNoteRequest
@@ -101,85 +98,6 @@ export async function deleteInterview(id: string): Promise<void> {
   if (result.code !== 200) {
     throw new Error(result.message || '删除面试失败')
   }
-}
-
-// ==================== 轮次管理 API ====================
-
-/**
- * 新增面试轮次
- */
-export async function addRound(interviewId: string, data: AddRoundRequest): Promise<RoundVO> {
-  const response = await fetch(`${API_BASE}/interview-center/${interviewId}/rounds`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  })
-  const result: ApiResponse<RoundVO> = await response.json()
-  if (result.code !== 200) {
-    throw new Error(result.message || '添加轮次失败')
-  }
-  return result.data
-}
-
-/**
- * 更新轮次信息
- */
-export async function updateRound(interviewId: string, roundId: string, data: UpdateRoundRequest): Promise<RoundVO> {
-  const response = await fetch(`${API_BASE}/interview-center/${interviewId}/rounds/${roundId}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  })
-  const result: ApiResponse<RoundVO> = await response.json()
-  if (result.code !== 200) {
-    throw new Error(result.message || '更新轮次失败')
-  }
-  return result.data
-}
-
-/**
- * 更新轮次状态
- */
-export async function updateRoundStatus(interviewId: string, roundId: string, status: string): Promise<RoundVO> {
-  const response = await fetch(`${API_BASE}/interview-center/${interviewId}/rounds/${roundId}/status`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status })
-  })
-  const result: ApiResponse<RoundVO> = await response.json()
-  if (result.code !== 200) {
-    throw new Error(result.message || '更新轮次状态失败')
-  }
-  return result.data
-}
-
-/**
- * 删除轮次
- */
-export async function deleteRound(interviewId: string, roundId: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/interview-center/${interviewId}/rounds/${roundId}`, {
-    method: 'DELETE'
-  })
-  const result: ApiResponse<void> = await response.json()
-  if (result.code !== 200) {
-    throw new Error(result.message || '删除轮次失败')
-  }
-}
-
-/**
- * 重排轮次顺序
- */
-export async function reorderRounds(interviewId: string, roundIds: string[]): Promise<RoundVO[]> {
-  const response = await fetch(`${API_BASE}/interview-center/${interviewId}/rounds/reorder`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ roundIds })
-  })
-  const result: ApiResponse<RoundVO[]> = await response.json()
-  if (result.code !== 200) {
-    throw new Error(result.message || '重排轮次失败')
-  }
-  return result.data
 }
 
 // ==================== 准备管理 API ====================

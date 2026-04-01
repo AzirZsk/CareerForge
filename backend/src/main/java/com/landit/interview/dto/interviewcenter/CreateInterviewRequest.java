@@ -1,15 +1,12 @@
 package com.landit.interview.dto.interviewcenter;
 
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
- * 创建真实面试请求 DTO
+ * 创建面试请求
  *
  * @author Azir
  */
@@ -24,21 +21,22 @@ public class CreateInterviewRequest {
     @NotBlank(message = "公司名称不能为空")
     private String companyName;
 
-    @NotBlank(message = "目标岗位不能为空")
+    @NotBlank(message = "职位名称不能为空")
     private String position;
 
-    @NotNull(message = "面试时间不能为空")
     private LocalDateTime interviewDate;
 
-    @NotBlank(message = "轮次类型不能为空")
+    /**
+     * 轮次类型（面试属性）
+     */
     private String roundType;
 
+    /**
+     * 自定义轮次名称
+     */
     private String roundName;
 
     private String jdContent;
-
-    @Valid
-    private List<AddRoundRequest> rounds;
 
     private String notes;
 

@@ -47,7 +47,7 @@ public class ReviewAnalysisGraphConfig {
             strategies.put(STATE_INTERVIEW_ID, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
             // 中间结果
             strategies.put(STATE_COLLECTED_DATA, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
-            strategies.put(STATE_ROUNDS, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
+            strategies.put(STATE_INTERVIEW_DATA, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
             strategies.put(STATE_REVIEW_NOTES, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
             strategies.put(STATE_SESSION_TRANSCRIPT, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
             strategies.put(STATE_ANALYSIS_RESULT, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());

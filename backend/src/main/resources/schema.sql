@@ -405,29 +405,6 @@ CREATE INDEX IF NOT EXISTS idx_job_position_company_id ON t_job_position(company
 CREATE INDEX IF NOT EXISTS idx_job_position_title ON t_job_position(title);
 
 -- ----------------------------------------------------------------------------
--- t_interview_round 表（面试轮次表）
--- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS t_interview_round (
-    id VARCHAR(64) PRIMARY KEY,
-    interview_id VARCHAR(64) NOT NULL,
-    round_type VARCHAR(30) NOT NULL,
-    round_name VARCHAR(100),
-    round_order INTEGER NOT NULL DEFAULT 1,
-    status VARCHAR(20) NOT NULL DEFAULT 'pending',
-    scheduled_date DATETIME,
-    actual_date DATETIME,
-    notes TEXT,
-    self_rating INTEGER,
-    result_note TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    deleted INTEGER DEFAULT 0
-);
-
-CREATE INDEX IF NOT EXISTS idx_interview_round_interview_id ON t_interview_round(interview_id);
-CREATE INDEX IF NOT EXISTS idx_interview_round_status ON t_interview_round(status);
-
--- ----------------------------------------------------------------------------
 -- t_interview_preparation 表（面试准备事项表）
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS t_interview_preparation (

@@ -38,7 +38,7 @@
 
     <CreateInterviewDialog
       v-if="showCreateDialog"
-      :preselected-position="preselectedPosition"
+      :preselected-position-id="preselectedPositionId"
       @close="handleCloseCreateDialog"
       @created="handleInterviewCreated"
     />
@@ -56,7 +56,7 @@ import JobPositionCard from '@/components/interview-center/JobPositionCard.vue'
 const router = useRouter()
 const loading = ref(false)
 const showCreateDialog = ref(false)
-const preselectedPosition = ref<{ companyName: string; title: string } | null>(null)
+const preselectedPositionId = ref<string | null>(null)
 const jobPositions = ref<JobPositionListItem[]>([])
 
 function goToPositionDetail(id: string) {
@@ -64,21 +64,18 @@ function goToPositionDetail(id: string) {
 }
 
 function handleAddInterviewForPosition(position: JobPositionListItem) {
-  preselectedPosition.value = {
-    companyName: position.companyName,
-    title: position.title
-  }
+  preselectedPositionId.value = position.id
   showCreateDialog.value = true
 }
 
 function handleCloseCreateDialog() {
   showCreateDialog.value = false
-  preselectedPosition.value = null
+  preselectedPositionId.value = null
 }
 
 function handleInterviewCreated(id: string) {
   showCreateDialog.value = false
-  preselectedPosition.value = null
+  preselectedPositionId.value = null
   loadData()
   router.push(`/interview-center/${id}`)
 }

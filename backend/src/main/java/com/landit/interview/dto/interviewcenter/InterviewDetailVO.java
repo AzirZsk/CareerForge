@@ -41,8 +41,6 @@ public class InterviewDetailVO {
 
     private String jdAnalysis;
 
-    private List<RoundVO> rounds;
-
     private List<PreparationVO> preparations;
 
     private ReviewNoteVO reviewNote;

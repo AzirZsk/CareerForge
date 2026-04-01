@@ -11,11 +11,9 @@ import com.landit.interview.dto.interviewcenter.*;
 import com.landit.interview.entity.Interview;
 import com.landit.interview.entity.InterviewPreparation;
 import com.landit.interview.entity.InterviewReviewNote;
-import com.landit.interview.entity.InterviewRound;
 import com.landit.interview.service.InterviewCenterService;
 import com.landit.interview.service.InterviewPreparationService;
 import com.landit.interview.service.InterviewReviewNoteService;
-import com.landit.interview.service.InterviewRoundService;
 import com.landit.jobposition.entity.JobPosition;
 import com.landit.jobposition.service.JobPositionService;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +38,6 @@ import java.util.stream.Collectors;
 public class InterviewCenterHandler {
 
     private final InterviewCenterService interviewCenterService;
-    private final InterviewRoundService roundService;
     private final InterviewPreparationService preparationService;
     private final InterviewReviewNoteService reviewNoteService;
     private final JobPositionService jobPositionService;
@@ -105,10 +102,9 @@ public class InterviewCenterHandler {
         if (interview == null) {
             throw new BusinessException("面试不存在: " + id);
         }
-        List<InterviewRound> rounds = roundService.getByInterviewId(id);
         List<InterviewPreparation> preparations = preparationService.getByInterviewId(id);
         InterviewReviewNote reviewNote = reviewNoteService.getManualNoteByInterviewId(id);
-        return convertToDetailVO(interview, rounds, preparations, reviewNote);
+        return convertToDetailVO(interview, preparations, reviewNote);
     }
 
     /**
@@ -159,72 +155,11 @@ public class InterviewCenterHandler {
         }
         reviewNoteService.deleteByInterviewId(id);
         preparationService.deleteByInterviewId(id);
-        roundService.deleteByInterviewId(id);
         interviewCenterService.removeById(id);
         log.info("删除面试成功: id={}", id);
     }
 
-    /**
-     * 重新计算面试状态（轮次状态变更后调用）
-     */
-    @Transactional(rollbackFor = Exception.class)
-    public void recalculateInterviewStatus(String interviewId) {
-        List<InterviewRound> rounds = roundService.getByInterviewId(interviewId);
-        String newStatus = calculateOverallStatus(rounds);
-        String newResult = calculateOverallResult(rounds);
-        Interview interview = interviewCenterService.getById(interviewId);
-        if (interview != null) {
-            interview.setStatus(newStatus);
-            interview.setOverallResult(newResult);
-            interviewCenterService.updateById(interview);
-            log.info("重新计算面试状态: interviewId={}, status={}, result={}", interviewId, newStatus, newResult);
-        }
-    }
-
     // ===== 私有业务逻辑方法 =====
-
-    /**
-     * 计算整体面试状态
-     */
-    private String calculateOverallStatus(List<InterviewRound> rounds) {
-        if (rounds.isEmpty()) {
-            return "preparing";
-        }
-        boolean hasPending = rounds.stream()
-                .anyMatch(r -> "pending".equals(r.getStatus()) || "in_progress".equals(r.getStatus()));
-        if (hasPending) {
-            return "in_progress";
-        }
-        boolean allTerminal = rounds.stream()
-                .allMatch(r -> "passed".equals(r.getStatus()) || "failed".equals(r.getStatus())
-                        || "cancelled".equals(r.getStatus()));
-        if (allTerminal) {
-            return "completed";
-        }
-        return "in_progress";
-    }
-
-    /**
-     * 计算整体面试结果
-     */
-    private String calculateOverallResult(List<InterviewRound> rounds) {
-        if (rounds.isEmpty()) {
-            return null;
-        }
-        boolean hasFailed = rounds.stream().anyMatch(r -> "failed".equals(r.getStatus()));
-        if (hasFailed) {
-            return "failed";
-        }
-        boolean allPassed = rounds.stream().allMatch(r -> "passed".equals(r.getStatus()));
-        if (allPassed) {
-            return "passed";
-        }
-        boolean hasPendingResult = rounds.stream().anyMatch(r -> "pending_result".equals(r.getStatus()));
-        if (hasPendingResult) {
-            return "pending";
-        }
-        return null;
-    }
 
     /**
      * 查找或创建职位记录
@@ -266,7 +201,7 @@ public class InterviewCenterHandler {
         return vo;
     }
 
-    private InterviewDetailVO convertToDetailVO(Interview interview, List<InterviewRound> rounds,
+    private InterviewDetailVO convertToDetailVO(Interview interview,
                                                  List<InterviewPreparation> preparations,
                                                  InterviewReviewNote reviewNote) {
         InterviewDetailVO vo = new InterviewDetailVO();
@@ -275,17 +210,10 @@ public class InterviewCenterHandler {
         vo.setInterviewDate(interview.getDate());
         vo.setRoundType(interview.getRoundType());
         vo.setRoundName(interview.getRoundName());
-        vo.setRounds(rounds.stream().map(this::convertToRoundVO).collect(Collectors.toList()));
         vo.setPreparations(preparations.stream().map(this::convertToPreparationVO).collect(Collectors.toList()));
         if (reviewNote != null) {
             vo.setReviewNote(convertToReviewNoteVO(reviewNote));
         }
-        return vo;
-    }
-
-    private RoundVO convertToRoundVO(InterviewRound round) {
-        RoundVO vo = new RoundVO();
-        BeanUtils.copyProperties(round, vo);
         return vo;
     }
 
