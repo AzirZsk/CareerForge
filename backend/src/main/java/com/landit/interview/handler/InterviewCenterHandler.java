@@ -138,6 +138,12 @@ public class InterviewCenterHandler {
         if (request.getRoundName() != null) {
             interview.setRoundName(request.getRoundName());
         }
+        if (request.getStatus() != null && !request.getStatus().isBlank()) {
+            interview.setStatus(request.getStatus());
+        }
+        if (request.getOverallResult() != null) {
+            interview.setOverallResult(request.getOverallResult());
+        }
         interviewCenterService.updateById(interview);
         log.info("更新面试成功: id={}", id);
         return getInterviewDetail(id);

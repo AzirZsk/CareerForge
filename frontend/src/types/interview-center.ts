@@ -113,6 +113,8 @@ export interface UpdateInterviewRequest {
   roundName?: string
   jdContent?: string
   notes?: string
+  status?: InterviewStatus
+  overallResult?: InterviewResult
 }
 
 // 添加准备事项请求

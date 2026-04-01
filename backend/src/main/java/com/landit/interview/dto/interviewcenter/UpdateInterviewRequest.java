@@ -26,4 +26,8 @@ public class UpdateInterviewRequest {
 
     private String notes;
 
+    private String status;
+
+    private String overallResult;
+
 }

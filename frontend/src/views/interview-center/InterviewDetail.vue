@@ -34,9 +34,18 @@
           <span class="source-badge" :class="interview.source">
             {{ interview.source === 'real' ? '真实面试' : '模拟面试' }}
           </span>
-          <span class="status-badge" :class="interview.status">
-            {{ getStatusLabel(interview.status) }}
-          </span>
+          <div class="status-select-wrapper">
+            <select
+              class="status-select"
+              :class="interview.status"
+              :value="interview.status"
+              @change="handleStatusChange(($event.target as HTMLSelectElement).value)"
+            >
+              <option v-for="(label, key) in statusOptions" :key="key" :value="key">
+                {{ label }}
+              </option>
+            </select>
+          </div>
         </div>
         <h1 class="company-name">{{ interview.companyName }}</h1>
         <p class="position">{{ interview.position }}</p>
@@ -45,8 +54,18 @@
           <span v-if="interview.roundType">
             面试轮次：{{ getRoundTypeLabel(interview.roundType) }}
           </span>
-          <span v-if="interview.overallResult">
-            最终结果：{{ getResultLabel(interview.overallResult) }}
+          <span class="result-wrapper">
+            最终结果：
+            <select
+              class="result-select"
+              :value="interview.overallResult || ''"
+              @change="handleResultChange(($event.target as HTMLSelectElement).value)"
+            >
+              <option value="">未设置</option>
+              <option v-for="(label, key) in resultOptions" :key="key" :value="key">
+                {{ label }}
+              </option>
+            </select>
           </span>
         </div>
       </section>
@@ -120,13 +139,16 @@ import {
   getInterviewDetail,
   togglePreparationComplete,
   deletePreparation as deletePreparationApi,
-  deleteInterview
+  deleteInterview,
+  updateInterview
 } from '@/api/interview-center'
 import {
   INTERVIEW_STATUS_LABELS,
   INTERVIEW_RESULT_LABELS,
   ROUND_TYPE_LABELS,
-  type InterviewDetail
+  type InterviewDetail,
+  type InterviewStatus,
+  type InterviewResult
 } from '@/types/interview-center'
 // 弹窗组件
 import AddPreparationDialog from '@/components/interview-center/AddPreparationDialog.vue'
@@ -141,16 +163,11 @@ const showAddPreparationDialog = ref(false)
 const showReviewDialog = ref(false)
 const showEditDialog = ref(false)
 
+const statusOptions = INTERVIEW_STATUS_LABELS
+const resultOptions = INTERVIEW_RESULT_LABELS
+
 function goBack() {
   router.push('/interview-center')
-}
-
-function getStatusLabel(status: string): string {
-  return INTERVIEW_STATUS_LABELS[status as keyof typeof INTERVIEW_STATUS_LABELS] || status
-}
-
-function getResultLabel(result: string): string {
-  return INTERVIEW_RESULT_LABELS[result as keyof typeof INTERVIEW_RESULT_LABELS] || result
 }
 
 function getRoundTypeLabel(type: string): string {
@@ -189,6 +206,29 @@ async function handleDelete() {
     router.push('/interview-center')
   } catch (error) {
     console.error('删除面试失败:', error)
+  }
+}
+
+async function handleStatusChange(newStatus: string) {
+  if (!interview.value || interview.value.status === newStatus) return
+  try {
+    await updateInterview(interview.value.id, { status: newStatus as InterviewStatus })
+    interview.value.status = newStatus as InterviewStatus
+  } catch (error) {
+    console.error('更新面试状态失败:', error)
+    alert('更新状态失败，请稍后重试')
+  }
+}
+
+async function handleResultChange(newResult: string) {
+  if (!interview.value) return
+  try {
+    const result = newResult ? (newResult as InterviewResult) : undefined
+    await updateInterview(interview.value.id, { overallResult: result })
+    interview.value.overallResult = result
+  } catch (error) {
+    console.error('更新面试结果失败:', error)
+    alert('更新结果失败，请稍后重试')
   }
 }
 
@@ -281,6 +321,93 @@ onMounted(() => {
 .status-badge {
   background: $color-bg-tertiary;
   color: $color-text-secondary;
+}
+
+.status-select-wrapper {
+  position: relative;
+}
+
+.status-select {
+  appearance: none;
+  background: transparent;
+  border: none;
+  font-size: 0.75rem;
+  padding: 4px 24px 4px 12px;
+  border-radius: $radius-full;
+  cursor: pointer;
+  color: inherit;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%23a1a1aa' d='M5 7L1 3h8z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: rgba($color-text-tertiary, 0.1);
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  &.preparing {
+    background-color: rgba($color-warning, 0.15);
+    color: $color-warning;
+  }
+
+  &.in_progress {
+    background-color: rgba($color-info, 0.15);
+    color: $color-info;
+  }
+
+  &.completed {
+    background-color: rgba($color-success, 0.15);
+    color: $color-success;
+  }
+
+  &.cancelled {
+    background-color: rgba($color-text-tertiary, 0.15);
+    color: $color-text-tertiary;
+  }
+
+  option {
+    background: $color-bg-secondary;
+    color: $color-text-primary;
+  }
+}
+
+.result-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+}
+
+.result-select {
+  appearance: none;
+  background: transparent;
+  border: 1px solid $color-bg-tertiary;
+  font-size: 0.875rem;
+  padding: 4px 28px 4px 8px;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  color: $color-text-secondary;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%23a1a1aa' d='M5 7L1 3h8z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  transition: border-color 0.2s;
+
+  &:hover {
+    border-color: $color-accent;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: $color-accent;
+  }
+
+  option {
+    background: $color-bg-secondary;
+    color: $color-text-primary;
+  }
 }
 
 .company-name {

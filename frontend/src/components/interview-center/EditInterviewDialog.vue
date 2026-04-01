@@ -53,6 +53,25 @@
             rows="2"
           ></textarea>
         </div>
+
+        <div class="form-group">
+          <label class="form-label">面试状态</label>
+          <select v-model="form.status" class="form-select">
+            <option v-for="(label, key) in statusOptions" :key="key" :value="key">
+              {{ label }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">最终结果</label>
+          <select v-model="form.overallResult" class="form-select">
+            <option value="">未设置</option>
+            <option v-for="(label, key) in resultOptions" :key="key" :value="key">
+              {{ label }}
+            </option>
+          </select>
+        </div>
       </form>
 
       <footer class="dialog-footer">
@@ -74,6 +93,7 @@
 import { ref, reactive, watch, computed } from 'vue'
 import { updateInterview } from '@/api/interview-center'
 import type { UpdateInterviewRequest, InterviewDetail } from '@/types/interview-center'
+import { INTERVIEW_STATUS_LABELS, INTERVIEW_RESULT_LABELS } from '@/types/interview-center'
 import DateTimePicker from '@/components/common/DateTimePicker.vue'
 
 const props = defineProps<{
@@ -92,12 +112,17 @@ const form = reactive<UpdateInterviewRequest>({
   position: '',
   interviewDate: '',
   jdContent: '',
-  notes: ''
+  notes: '',
+  status: undefined,
+  overallResult: undefined
 })
 
 const isFormValid = computed(() => {
   return !!form.companyName?.trim() && !!form.position?.trim() && !!form.interviewDate
 })
+
+const statusOptions = INTERVIEW_STATUS_LABELS
+const resultOptions = INTERVIEW_RESULT_LABELS
 
 // 监听面试数据变化，填充表单
 watch(() => props.interview, (interview) => {
@@ -107,6 +132,8 @@ watch(() => props.interview, (interview) => {
     form.interviewDate = interview.interviewDate || ''
     form.jdContent = interview.jdContent || ''
     form.notes = interview.notes || ''
+    form.status = interview.status
+    form.overallResult = interview.overallResult
   }
 }, { immediate: true })
 
@@ -202,7 +229,7 @@ async function handleSubmit() {
   }
 }
 
-.form-input, .form-textarea {
+.form-input, .form-textarea, .form-select {
   width: 100%;
   padding: $spacing-md;
   background: $color-bg-tertiary;
@@ -220,6 +247,15 @@ async function handleSubmit() {
   &::placeholder {
     color: $color-text-tertiary;
   }
+}
+
+.form-select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a1a1aa' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
 }
 
 .form-textarea {
