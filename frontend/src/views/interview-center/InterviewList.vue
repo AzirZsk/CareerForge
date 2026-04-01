@@ -60,7 +60,7 @@ const preselectedPosition = ref<{ companyName: string; title: string } | null>(n
 const jobPositions = ref<JobPositionListItem[]>([])
 
 function goToPositionDetail(id: string) {
-  router.push(`/interview-center?position=${id}`)
+  router.push(`/interview-center/position/${id}`)
 }
 
 function handleAddInterviewForPosition(position: JobPositionListItem) {
