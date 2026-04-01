@@ -36,6 +36,14 @@ public class CreateInterviewRequest {
      */
     private String roundName;
 
+    private String interviewType;
+
+    private String location;
+
+    private String onlineLink;
+
+    private String meetingPassword;
+
     private String jdContent;
 
     private String notes;

@@ -32,6 +32,8 @@ public class InterviewListItemVO {
 
     private Integer completedRounds;
 
+    private String interviewType;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;

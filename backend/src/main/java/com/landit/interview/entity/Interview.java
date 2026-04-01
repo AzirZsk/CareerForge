@@ -67,4 +67,26 @@ public class Interview extends BaseEntity {
      */
     private String roundName;
 
+    // ===== 面试类型与地址信息 =====
+
+    /**
+     * 面试类型（onsite-现场 / online-线上）
+     */
+    private String interviewType;
+
+    /**
+     * 现场面试地址（仅当 interviewType='onsite' 时有值）
+     */
+    private String location;
+
+    /**
+     * 线上面试链接（仅当 interviewType='online' 时有值）
+     */
+    private String onlineLink;
+
+    /**
+     * 线上面试密码/会议号（如 Zoom/腾讯会议的会议密码）
+     */
+    private String meetingPassword;
+
 }

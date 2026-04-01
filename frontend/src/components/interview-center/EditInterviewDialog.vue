@@ -1,5 +1,6 @@
 <template>
-  <div class="dialog-overlay" @click.self="$emit('close')">
+  <Teleport to="body">
+    <div class="dialog-overlay" @click.self="$emit('close')">
     <div class="dialog-content">
       <header class="dialog-header">
         <h2>编辑面试信息</h2>
@@ -64,6 +65,59 @@
         </div>
 
         <div class="form-group">
+          <label class="form-label">面试类型</label>
+          <div class="interview-type-switch">
+            <button
+              type="button"
+              :class="['type-btn', { active: !form.interviewType || form.interviewType === 'onsite' }]"
+              @click="form.interviewType = 'onsite'"
+            >
+              现场面试
+            </button>
+            <button
+              type="button"
+              :class="['type-btn', { active: form.interviewType === 'online' }]"
+              @click="form.interviewType = 'online'"
+            >
+              线上面试
+            </button>
+          </div>
+        </div>
+
+        <!-- 现场面试地址 -->
+        <div v-if="form.interviewType === 'onsite' || !form.interviewType" class="form-group">
+          <label class="form-label">面试地址</label>
+          <input
+            v-model="form.location"
+            type="text"
+            class="form-input"
+            placeholder="请输入面试地址"
+          />
+        </div>
+
+        <!-- 线上面试信息 -->
+        <template v-if="form.interviewType === 'online'">
+          <div class="form-group">
+            <label class="form-label">面试链接</label>
+            <input
+              v-model="form.onlineLink"
+              type="text"
+              class="form-input"
+              placeholder="如 Zoom/腾讯会议链接"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">会议密码</label>
+            <input
+              v-model="form.meetingPassword"
+              type="text"
+              class="form-input"
+              placeholder="会议密码/会议号"
+            />
+          </div>
+        </template>
+
+        <div class="form-group">
           <label class="form-label">最终结果</label>
           <select v-model="form.overallResult" class="form-select">
             <option value="">未设置</option>
@@ -87,12 +141,13 @@
       </footer>
     </div>
   </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, watch, computed } from 'vue'
 import { updateInterview } from '@/api/interview-center'
-import type { UpdateInterviewRequest, InterviewDetail } from '@/types/interview-center'
+import type { UpdateInterviewRequest, InterviewDetail, InterviewType } from '@/types/interview-center'
 import { INTERVIEW_STATUS_LABELS, INTERVIEW_RESULT_LABELS } from '@/types/interview-center'
 import DateTimePicker from '@/components/common/DateTimePicker.vue'
 
@@ -111,6 +166,10 @@ const form = reactive<UpdateInterviewRequest>({
   companyName: '',
   position: '',
   interviewDate: '',
+  interviewType: 'onsite' as InterviewType,
+  location: '',
+  onlineLink: '',
+  meetingPassword: '',
   jdContent: '',
   notes: '',
   status: undefined,
@@ -130,6 +189,10 @@ watch(() => props.interview, (interview) => {
     form.companyName = interview.companyName || ''
     form.position = interview.position || ''
     form.interviewDate = interview.interviewDate || ''
+    form.interviewType = (interview.interviewType || 'onsite') as InterviewType
+    form.location = interview.location || ''
+    form.onlineLink = interview.onlineLink || ''
+    form.meetingPassword = interview.meetingPassword || ''
     form.jdContent = interview.jdContent || ''
     form.notes = interview.notes || ''
     form.status = interview.status
@@ -165,7 +228,7 @@ async function handleSubmit() {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: $z-modal-overlay;
 }
 
 .dialog-content {
@@ -261,6 +324,35 @@ async function handleSubmit() {
 .form-textarea {
   resize: vertical;
   min-height: 80px;
+}
+
+.interview-type-switch {
+  display: flex;
+  gap: $spacing-sm;
+  background: $color-bg-tertiary;
+  padding: 4px;
+  border-radius: $radius-md;
+}
+
+.type-btn {
+  flex: 1;
+  padding: $spacing-sm $spacing-md;
+  border: none;
+  background: transparent;
+  color: $color-text-secondary;
+  font-size: 0.875rem;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &.active {
+    background: $color-accent;
+    color: $color-bg-primary;
+  }
+
+  &:hover:not(.active) {
+    color: $color-text-primary;
+  }
 }
 
 .dialog-footer {

@@ -15,6 +15,9 @@ export type InterviewResult = 'passed' | 'failed' | 'pending'
 // 轮次类型（面试属性）
 export type RoundType = 'technical_1' | 'technical_2' | 'hr' | 'director' | 'cto' | 'final' | 'custom'
 
+// 面试类型
+export type InterviewType = 'onsite' | 'online'
+
 // 准备项类型
 export type PreparationItemType = 'company_research' | 'jd_analysis' | 'todo' | 'manual'
 
@@ -36,6 +39,7 @@ export interface InterviewListItem {
   status: InterviewStatus
   overallResult?: InterviewResult
   roundType?: RoundType
+  interviewType?: InterviewType
   createdAt: string
   updatedAt: string
 }
@@ -51,6 +55,10 @@ export interface InterviewDetail {
   overallResult?: InterviewResult
   roundType?: RoundType
   roundName?: string
+  interviewType?: InterviewType
+  location?: string
+  onlineLink?: string
+  meetingPassword?: string
   jdContent?: string
   notes?: string
   jobPositionId?: string
@@ -100,6 +108,10 @@ export interface CreateInterviewRequest {
   interviewDate: string
   roundType: RoundType
   roundName?: string
+  interviewType?: InterviewType
+  location?: string
+  onlineLink?: string
+  meetingPassword?: string
   jdContent?: string
   notes?: string
 }
@@ -111,6 +123,10 @@ export interface UpdateInterviewRequest {
   interviewDate?: string
   roundType?: RoundType
   roundName?: string
+  interviewType?: InterviewType
+  location?: string
+  onlineLink?: string
+  meetingPassword?: string
   jdContent?: string
   notes?: string
   status?: InterviewStatus
@@ -150,6 +166,12 @@ export const ROUND_TYPE_LABELS: Record<RoundType, string> = {
   cto: 'CTO/VP 面',
   final: '终面',
   custom: '自定义'
+}
+
+// 面试类型标签
+export const INTERVIEW_TYPE_LABELS: Record<InterviewType, string> = {
+  onsite: '现场面试',
+  online: '线上面试'
 }
 
 // 面试状态标签
@@ -239,4 +261,60 @@ export interface ImprovementAdvice {
   description: string
   priority: 'high' | 'medium' | 'low'
   actionItems: string[]
+}
+
+// ==================== 工作流进度事件（SSE） ====================
+
+// 工作流进度事件（后端返回的通用格式）
+export interface GraphProgressEvent {
+  event: 'start' | 'progress' | 'complete' | 'error'
+  nodeId?: string
+  threadId?: string
+  progress?: number
+  message?: string
+  data?: Record<string, unknown>
+  errorMessage?: string
+  timestamp: number
+}
+
+// 面试准备工作流状态
+export interface PreparationState {
+  isConnecting: boolean
+  isRunning: boolean
+  isCompleted: boolean
+  hasError: boolean
+  currentStage: string
+  progress: number
+  message: string
+  preparationItems: PreparationItem[]
+  errorMessage: string | null
+}
+
+// 复盘分析工作流状态
+export interface ReviewAnalysisState {
+  isConnecting: boolean
+  isRunning: boolean
+  isCompleted: boolean
+  hasError: boolean
+  currentStage: string
+  progress: number
+  message: string
+  adviceList: AdviceItem[]
+  errorMessage: string | null
+}
+
+// 准备事项（工作流生成）
+export interface PreparationItem {
+  title: string
+  description?: string
+  priority?: 'high' | 'medium' | 'low'
+  category?: string
+}
+
+// 改进建议（工作流生成）
+export interface AdviceItem {
+  title: string
+  description: string
+  category?: string
+  priority?: 'high' | 'medium' | 'low'
 }

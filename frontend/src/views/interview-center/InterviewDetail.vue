@@ -54,6 +54,9 @@
           <span v-if="interview.roundType">
             面试轮次：{{ getRoundTypeLabel(interview.roundType) }}
           </span>
+          <span v-if="interview.interviewType" class="interview-type-badge" :class="interview.interviewType">
+            {{ getInterviewTypeLabel(interview.interviewType) }}
+          </span>
           <span class="result-wrapper">
             最终结果：
             <select
@@ -68,13 +71,69 @@
             </select>
           </span>
         </div>
+
+        <!-- 面试地点/链接信息 -->
+        <div v-if="interview.interviewType === 'onsite' && interview.location" class="location-info">
+          <span class="info-icon">📍</span>
+          <span class="info-text">{{ interview.location }}</span>
+        </div>
+        <div v-if="interview.interviewType === 'online'" class="online-info">
+          <div v-if="interview.onlineLink" class="info-item">
+            <span class="info-icon">🔗</span>
+            <a :href="interview.onlineLink" target="_blank" class="link-text">{{ interview.onlineLink }}</a>
+            <button class="copy-btn" @click="copyToClipboard(interview.onlineLink)">复制</button>
+          </div>
+          <div v-if="interview.meetingPassword" class="info-item">
+            <span class="info-icon">🔑</span>
+            <span class="info-text">会议密码：{{ interview.meetingPassword }}</span>
+            <button class="copy-btn" @click="copyToClipboard(interview.meetingPassword)">复制</button>
+          </div>
+        </div>
       </section>
 
       <section class="preparations-section">
         <div class="section-header">
           <h2>准备清单</h2>
-          <button class="btn btn-sm" @click="showAddPreparationDialog = true">+ 添加事项</button>
+          <div class="header-actions">
+            <button
+              class="btn btn-sm btn-ai"
+              @click="handleAIGeneratePreparation"
+              :disabled="preparationState.isRunning"
+            >
+              <span v-if="preparationState.isRunning">生成中...</span>
+              <span v-else>AI 生成</span>
+            </button>
+            <button class="btn btn-sm" @click="showAddPreparationDialog = true">+ 添加事项</button>
+          </div>
         </div>
+
+        <!-- AI 生成进度 -->
+        <div v-if="preparationState.isRunning" class="progress-indicator">
+          <div class="progress-bar">
+            <div class="progress-fill" :style="{ width: preparationState.progress + '%' }"></div>
+          </div>
+          <p class="progress-message">{{ preparationState.message }}</p>
+        </div>
+
+        <!-- AI 生成结果预览 -->
+        <div v-if="preparationState.isCompleted && preparationState.preparationItems.length > 0" class="ai-result-preview">
+          <h4>AI 生成的准备事项</h4>
+          <div class="preview-list">
+            <div v-for="(item, index) in preparationState.preparationItems" :key="index" class="preview-item">
+              <input type="checkbox" v-model="selectedPrepItems[index]" />
+              <div class="preview-content">
+                <span class="preview-title">{{ item.title }}</span>
+                <span v-if="item.description" class="preview-desc">{{ item.description }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="preview-actions">
+            <button class="btn btn-primary btn-sm" @click="saveSelectedPreparations">保存选中</button>
+            <button class="btn btn-secondary btn-sm" @click="preparationState.isCompleted = false">取消</button>
+          </div>
+        </div>
+
+        <!-- 原有准备清单列表 -->
         <div class="preparations-list">
           <div
             v-for="prep in interview.preparations"
@@ -99,7 +158,54 @@
       <section class="review-section">
         <div class="section-header">
           <h2>复盘笔记</h2>
+          <div class="header-actions">
+            <button
+              class="btn btn-sm btn-ai"
+              @click="handleAIAnalysis"
+              :disabled="reviewState.isRunning"
+            >
+              <span v-if="reviewState.isRunning">分析中...</span>
+              <span v-else>AI 分析</span>
+            </button>
+            <button v-if="interview.reviewNote" class="btn btn-sm" @click="showReviewDialog = true">编辑</button>
+          </div>
         </div>
+
+        <!-- 面试过程输入区域 -->
+        <div class="transcript-input-area">
+          <h4>面试过程记录</h4>
+          <p class="hint">请输入面试过程中的问题、回答、面试官反馈等内容，AI 将基于此进行分析</p>
+          <textarea
+            v-model="sessionTranscript"
+            placeholder="例如：&#10;1. 面试官：请介绍一下你的项目经验？&#10;我：我负责过 xxx 项目...&#10;&#10;2. 面试官：你遇到过什么技术难题？&#10;我：..."
+            rows="6"
+            class="transcript-textarea"
+          ></textarea>
+        </div>
+
+        <!-- AI 分析进度 -->
+        <div v-if="reviewState.isRunning" class="progress-indicator">
+          <div class="progress-bar">
+            <div class="progress-fill" :style="{ width: reviewState.progress + '%' }"></div>
+          </div>
+          <p class="progress-message">{{ reviewState.message }}</p>
+        </div>
+
+        <!-- AI 分析结果 -->
+        <div v-if="reviewState.isCompleted && reviewState.adviceList.length > 0" class="ai-analysis-result">
+          <h4>AI 分析建议</h4>
+          <div class="advice-list">
+            <div v-for="(advice, index) in reviewState.adviceList" :key="index" class="advice-item">
+              <div class="advice-header">
+                <span class="advice-category" v-if="advice.category">{{ advice.category }}</span>
+                <span class="advice-title">{{ advice.title }}</span>
+              </div>
+              <p class="advice-description">{{ advice.description }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 手动复盘笔记 -->
         <div v-if="interview.reviewNote" class="review-note">
           <div class="note-section">
             <h4>整体感受</h4>
@@ -118,7 +224,7 @@
             <p>{{ interview.reviewNote.lessonsLearned || '暂无' }}</p>
           </div>
         </div>
-        <div v-else class="empty-review">
+        <div v-else-if="!reviewState.isCompleted" class="empty-review">
           <button class="btn btn-primary" @click="showReviewDialog = true">
             添加复盘笔记
           </button>
@@ -140,20 +246,26 @@ import {
   togglePreparationComplete,
   deletePreparation as deletePreparationApi,
   deleteInterview,
-  updateInterview
+  updateInterview,
+  addPreparation
 } from '@/api/interview-center'
 import {
   INTERVIEW_STATUS_LABELS,
   INTERVIEW_RESULT_LABELS,
   ROUND_TYPE_LABELS,
+  INTERVIEW_TYPE_LABELS,
   type InterviewDetail,
   type InterviewStatus,
-  type InterviewResult
+  type InterviewResult,
+  type InterviewType
 } from '@/types/interview-center'
 // 弹窗组件
 import AddPreparationDialog from '@/components/interview-center/AddPreparationDialog.vue'
 import ReviewNoteDialog from '@/components/interview-center/ReviewNoteDialog.vue'
 import EditInterviewDialog from '@/components/interview-center/EditInterviewDialog.vue'
+// 工作流 composables
+import { useInterviewPreparation } from '@/composables/useInterviewPreparation'
+import { useReviewAnalysis } from '@/composables/useReviewAnalysis'
 
 const route = useRoute()
 const router = useRouter()
@@ -163,19 +275,41 @@ const showAddPreparationDialog = ref(false)
 const showReviewDialog = ref(false)
 const showEditDialog = ref(false)
 
+// 工作流状态
+const { state: preparationState, startPreparation } = useInterviewPreparation()
+const { state: reviewState, startAnalysis } = useReviewAnalysis()
+
+// 面试过程文本输入
+const sessionTranscript = ref('')
+
+// AI 生成的准备事项选择状态
+const selectedPrepItems = ref<Record<number, boolean>>({})
+
 const statusOptions = INTERVIEW_STATUS_LABELS
 const resultOptions = INTERVIEW_RESULT_LABELS
 
 function goBack() {
-  router.push('/interview-center')
+  router.back()
 }
 
 function getRoundTypeLabel(type: string): string {
   return ROUND_TYPE_LABELS[type as keyof typeof ROUND_TYPE_LABELS] || type
 }
 
+function getInterviewTypeLabel(type: InterviewType): string {
+  return INTERVIEW_TYPE_LABELS[type] || type
+}
+
 function formatDateTime(dateStr: string): string {
   return new Date(dateStr).toLocaleString('zh-CN')
+}
+
+function copyToClipboard(text: string) {
+  navigator.clipboard.writeText(text).then(() => {
+    alert('已复制到剪贴板')
+  }).catch(() => {
+    alert('复制失败，请手动复制')
+  })
 }
 
 async function togglePreparation(preparationId: string) {
@@ -243,6 +377,46 @@ async function loadDetail() {
   } finally {
     loading.value = false
   }
+}
+
+// ===== AI 工作流处理 =====
+
+function handleAIGeneratePreparation() {
+  if (!interview.value) return
+  selectedPrepItems.value = {}
+  startPreparation(interview.value.id)
+}
+
+async function saveSelectedPreparations() {
+  if (!interview.value) return
+  const itemsToSave = preparationState.preparationItems
+    .filter((_, index) => selectedPrepItems.value[index])
+
+  if (itemsToSave.length === 0) {
+    alert('请至少选择一项准备事项')
+    return
+  }
+
+  try {
+    for (const item of itemsToSave) {
+      await addPreparation(interview.value!.id, {
+        title: item.title,
+        content: item.description
+      })
+    }
+    preparationState.isCompleted = false
+    preparationState.preparationItems = []
+    selectedPrepItems.value = {}
+    loadDetail()
+  } catch (error) {
+    console.error('保存准备事项失败:', error)
+    alert('保存失败，请稍后重试')
+  }
+}
+
+function handleAIAnalysis() {
+  if (!interview.value) return
+  startAnalysis(interview.value.id, sessionTranscript.value)
 }
 
 // 弹窗事件处理
@@ -422,6 +596,75 @@ onMounted(() => {
   margin-bottom: $spacing-md;
 }
 
+.interview-type-badge {
+  font-size: 0.75rem;
+  padding: 4px 12px;
+  border-radius: $radius-full;
+
+  &.onsite {
+    background: rgba($color-accent, 0.15);
+    color: $color-accent;
+  }
+
+  &.online {
+    background: rgba($color-info, 0.15);
+    color: $color-info;
+  }
+}
+
+.location-info,
+.online-info {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  padding: $spacing-md;
+  background: $color-bg-tertiary;
+  border-radius: $radius-md;
+  margin-bottom: $spacing-lg;
+
+  .info-item {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  .info-icon {
+    font-size: 1rem;
+  }
+
+  .info-text {
+    color: $color-text-primary;
+    font-size: 0.875rem;
+  }
+
+  .link-text {
+    color: $color-accent;
+    text-decoration: none;
+    font-size: 0.875rem;
+    word-break: break-all;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .copy-btn {
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    background: transparent;
+    border: 1px solid $color-bg-elevated;
+    border-radius: $radius-sm;
+    color: $color-text-tertiary;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      border-color: $color-accent;
+      color: $color-accent;
+    }
+  }
+}
+
 .meta-info {
   display: flex;
   flex-wrap: wrap;
@@ -440,6 +683,210 @@ onMounted(() => {
     font-size: 1.25rem;
     font-weight: 600;
     color: $color-text-primary;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: $spacing-sm;
+  }
+}
+
+.btn-ai {
+  background: linear-gradient(135deg, $color-accent 0%, $color-accent-dark 100%);
+  color: $color-bg-primary;
+  border: none;
+  font-weight: 500;
+
+  &:hover:not(:disabled) {
+    opacity: 0.9;
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.progress-indicator {
+  margin-bottom: $spacing-lg;
+  padding: $spacing-md;
+  background: $color-bg-tertiary;
+  border-radius: $radius-md;
+
+  .progress-bar {
+    height: 4px;
+    background: $color-bg-elevated;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: $spacing-sm;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, $color-accent, $color-accent-light);
+    transition: width 0.3s ease;
+  }
+
+  .progress-message {
+    font-size: 0.875rem;
+    color: $color-text-secondary;
+    margin: 0;
+  }
+}
+
+.ai-result-preview {
+  margin-bottom: $spacing-lg;
+  padding: $spacing-lg;
+  background: rgba($color-accent, 0.1);
+  border: 1px solid rgba($color-accent, 0.2);
+  border-radius: $radius-md;
+
+  h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: $color-accent;
+    margin-bottom: $spacing-md;
+  }
+
+  .preview-list {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-md;
+  }
+
+  .preview-item {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-sm;
+    padding: $spacing-sm;
+    background: $color-bg-secondary;
+    border-radius: $radius-sm;
+
+    input[type="checkbox"] {
+      margin-top: 4px;
+      accent-color: $color-accent;
+    }
+
+    .preview-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .preview-title {
+      color: $color-text-primary;
+      font-size: 0.875rem;
+    }
+
+    .preview-desc {
+      color: $color-text-tertiary;
+      font-size: 0.75rem;
+    }
+  }
+
+  .preview-actions {
+    display: flex;
+    gap: $spacing-sm;
+  }
+}
+
+.transcript-input-area {
+  margin-bottom: $spacing-lg;
+  padding: $spacing-md;
+  background: $color-bg-tertiary;
+  border-radius: $radius-md;
+
+  h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: $color-text-primary;
+    margin-bottom: $spacing-xs;
+  }
+
+  .hint {
+    font-size: 0.75rem;
+    color: $color-text-tertiary;
+    margin-bottom: $spacing-sm;
+  }
+
+  .transcript-textarea {
+    width: 100%;
+    padding: $spacing-sm;
+    background: $color-bg-secondary;
+    border: 1px solid $color-bg-elevated;
+    border-radius: $radius-sm;
+    color: $color-text-primary;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    resize: vertical;
+    min-height: 120px;
+
+    &:focus {
+      outline: none;
+      border-color: $color-accent;
+    }
+
+    &::placeholder {
+      color: $color-text-tertiary;
+    }
+  }
+}
+
+.ai-analysis-result {
+  margin-bottom: $spacing-lg;
+  padding: $spacing-lg;
+  background: rgba($color-info, 0.1);
+  border: 1px solid rgba($color-info, 0.2);
+  border-radius: $radius-md;
+
+  h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: $color-info;
+    margin-bottom: $spacing-md;
+  }
+
+  .advice-list {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+  }
+
+  .advice-item {
+    padding: $spacing-sm;
+    background: $color-bg-secondary;
+    border-radius: $radius-sm;
+
+    .advice-header {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      margin-bottom: $spacing-xs;
+    }
+
+    .advice-category {
+      font-size: 0.625rem;
+      padding: 2px 6px;
+      background: $color-bg-tertiary;
+      border-radius: $radius-sm;
+      color: $color-text-tertiary;
+    }
+
+    .advice-title {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: $color-text-primary;
+    }
+
+    .advice-description {
+      font-size: 0.8125rem;
+      color: $color-text-secondary;
+      line-height: 1.5;
+      margin: 0;
+    }
   }
 }
 

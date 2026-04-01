@@ -6,9 +6,11 @@ import com.landit.interview.dto.interviewcenter.*;
 import com.landit.interview.handler.InterviewCenterHandler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
  * 面试中心控制器
@@ -59,6 +61,26 @@ public class InterviewCenterController {
     public ApiResponse<Void> deleteInterview(@PathVariable String id) {
         handler.deleteInterview(id);
         return ApiResponse.success();
+    }
+
+    // ===== 工作流 SSE 端点 =====
+
+    @Operation(summary = "流式执行面试准备工作流")
+    @GetMapping("/{id}/preparation/stream")
+    public SseEmitter streamPreparation(
+            @PathVariable String id,
+            HttpServletResponse response) {
+        return handler.streamPreparation(id, response);
+    }
+
+    @Operation(summary = "流式执行复盘分析工作流")
+    @PostMapping("/{id}/review-analysis/stream")
+    public SseEmitter streamReviewAnalysis(
+            @PathVariable String id,
+            @RequestBody(required = false) ReviewAnalysisRequest request,
+            HttpServletResponse response) {
+        String transcript = (request != null) ? request.getSessionTranscript() : null;
+        return handler.streamReviewAnalysis(id, transcript, response);
     }
 
 }

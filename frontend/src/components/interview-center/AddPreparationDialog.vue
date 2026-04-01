@@ -1,5 +1,6 @@
 <template>
-  <div class="dialog-overlay" @click.self="$emit('close')">
+  <Teleport to="body">
+    <div class="dialog-overlay" @click.self="$emit('close')">
     <div class="dialog-content">
       <header class="dialog-header">
         <h2>添加准备事项</h2>
@@ -42,6 +43,7 @@
       </footer>
     </div>
   </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -100,7 +102,7 @@ async function handleSubmit() {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: $z-modal-overlay;
 }
 
 .dialog-content {

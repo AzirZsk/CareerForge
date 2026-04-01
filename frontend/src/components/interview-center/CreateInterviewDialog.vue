@@ -120,6 +120,59 @@
           </div>
 
           <div class="form-group">
+            <label class="form-label">面试类型</label>
+            <div class="interview-type-switch">
+              <button
+                type="button"
+                :class="['type-btn', { active: !form.interviewType || form.interviewType === 'onsite' }]"
+                @click="form.interviewType = 'onsite'"
+              >
+                现场面试
+              </button>
+              <button
+                type="button"
+                :class="['type-btn', { active: form.interviewType === 'online' }]"
+                @click="form.interviewType = 'online'"
+              >
+                线上面试
+              </button>
+            </div>
+          </div>
+
+          <!-- 现场面试地址 -->
+          <div v-if="form.interviewType === 'onsite' || !form.interviewType" class="form-group">
+            <label class="form-label">面试地址</label>
+            <input
+              v-model="form.location"
+              type="text"
+              class="form-input"
+              placeholder="请输入面试地址"
+            />
+          </div>
+
+          <!-- 线上面试信息 -->
+          <template v-if="form.interviewType === 'online'">
+            <div class="form-group">
+              <label class="form-label">面试链接</label>
+              <input
+                v-model="form.onlineLink"
+                type="text"
+                class="form-input"
+                placeholder="如 Zoom/腾讯会议链接"
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label">会议密码</label>
+              <input
+                v-model="form.meetingPassword"
+                type="text"
+                class="form-input"
+                placeholder="会议密码/会议号"
+              />
+            </div>
+          </template>
+
+          <div class="form-group">
             <label class="form-label required">面试时间</label>
             <DateTimePicker v-model="form.interviewDate" />
           </div>
@@ -155,7 +208,7 @@
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { createInterview } from '@/api/interview-center'
 import { getJobPositionList } from '@/api/job-position'
-import type { CreateInterviewRequest, RoundType } from '@/types/interview-center'
+import type { CreateInterviewRequest, RoundType, InterviewType } from '@/types/interview-center'
 import { ROUND_TYPE_LABELS } from '@/types/interview-center'
 import type { JobPositionListItem } from '@/types/job-position'
 import DateTimePicker from '@/components/common/DateTimePicker.vue'
@@ -182,6 +235,10 @@ const form = reactive<CreateInterviewRequest>({
   interviewDate: '',
   roundType: 'technical_1' as RoundType,
   roundName: '',
+  interviewType: 'onsite' as InterviewType,
+  location: '',
+  onlineLink: '',
+  meetingPassword: '',
   jdContent: '',
   notes: ''
 })
@@ -282,7 +339,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: $z-overlay;
+  z-index: $z-modal-overlay;
 }
 
 .dialog-content {
@@ -335,6 +392,35 @@ onMounted(() => {
 }
 
 .mode-btn {
+  flex: 1;
+  padding: $spacing-sm $spacing-md;
+  border: none;
+  background: transparent;
+  color: $color-text-secondary;
+  font-size: 0.875rem;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &.active {
+    background: $color-accent;
+    color: $color-bg-primary;
+  }
+
+  &:hover:not(.active) {
+    color: $color-text-primary;
+  }
+}
+
+.interview-type-switch {
+  display: flex;
+  gap: $spacing-sm;
+  background: $color-bg-tertiary;
+  padding: 4px;
+  border-radius: $radius-md;
+}
+
+.type-btn {
   flex: 1;
   padding: $spacing-sm $spacing-md;
   border: none;

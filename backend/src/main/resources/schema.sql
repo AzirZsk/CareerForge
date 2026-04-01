@@ -131,6 +131,11 @@ CREATE TABLE IF NOT EXISTS t_interview (
     job_position_id VARCHAR(64),            -- 关联职位ID
     round_type VARCHAR(30),                 -- 轮次类型（hr-人力 technical-技术 manager-经理等）
     round_name VARCHAR(100),                -- 轮次名称
+    -- 面试类型与地址信息
+    interview_type VARCHAR(20),              -- 面试类型（onsite-现场 / online-线上）
+    location VARCHAR(500),                   -- 现场面试地址
+    online_link VARCHAR(500),                -- 线上面试链接
+    meeting_password VARCHAR(100),           -- 线上面试密码/会议号
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 更新时间
     deleted INTEGER DEFAULT 0               -- 逻辑删除标记

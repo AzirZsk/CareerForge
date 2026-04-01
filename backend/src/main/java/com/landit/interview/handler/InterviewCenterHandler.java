@@ -1,5 +1,7 @@
 package com.landit.interview.handler;
 
+import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.landit.common.enums.InterviewSource;
@@ -11,20 +13,35 @@ import com.landit.interview.dto.interviewcenter.*;
 import com.landit.interview.entity.Interview;
 import com.landit.interview.entity.InterviewPreparation;
 import com.landit.interview.entity.InterviewReviewNote;
+import com.landit.interview.graph.preparation.InterviewPreparationGraphService;
+import com.landit.interview.graph.review.ReviewAnalysisGraphService;
 import com.landit.interview.service.InterviewCenterService;
 import com.landit.interview.service.InterviewPreparationService;
 import com.landit.interview.service.InterviewReviewNoteService;
 import com.landit.jobposition.entity.JobPosition;
 import com.landit.jobposition.service.JobPositionService;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import reactor.core.scheduler.Schedulers;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
+
+// 使用完整限定名避免常量冲突
+import com.landit.interview.graph.preparation.InterviewPreparationGraphConstants;
+import com.landit.interview.graph.review.ReviewAnalysisGraphConstants;
 
 /**
  * 面试中心业务编排处理器
@@ -37,11 +54,15 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class InterviewCenterHandler {
 
+    private static final long SSE_TIMEOUT = 300_000L; // 5分钟超时
+
     private final InterviewCenterService interviewCenterService;
     private final InterviewPreparationService preparationService;
     private final InterviewReviewNoteService reviewNoteService;
     private final JobPositionService jobPositionService;
     private final CompanyService companyService;
+    private final InterviewPreparationGraphService preparationGraphService;
+    private final ReviewAnalysisGraphService reviewGraphService;
 
     /**
      * 创建真实面试
@@ -163,6 +184,134 @@ public class InterviewCenterHandler {
         preparationService.deleteByInterviewId(id);
         interviewCenterService.removeById(id);
         log.info("删除面试成功: id={}", id);
+    }
+
+    // ===== 工作流 SSE 方法 =====
+
+    /**
+     * 流式执行面试准备工作流
+     *
+     * @param id       面试ID
+     * @param response HTTP响应
+     * @return SSE事件发射器
+     */
+    public SseEmitter streamPreparation(String id, HttpServletResponse response) {
+        log.info("开始SSE流式面试准备: interviewId={}", id);
+        InterviewDetailVO interview = getInterviewDetail(id);
+        configureSseResponse(response);
+        SseEmitter emitter = new SseEmitter(SSE_TIMEOUT);
+        String threadId = UUID.randomUUID().toString();
+        // 构建初始状态
+        Map<String, Object> initialState = new HashMap<>();
+        initialState.put(InterviewPreparationGraphConstants.STATE_INTERVIEW_ID, id);
+        initialState.put(InterviewPreparationGraphConstants.STATE_COMPANY_NAME, interview.getCompanyName());
+        initialState.put(InterviewPreparationGraphConstants.STATE_POSITION_TITLE, interview.getPosition());
+        initialState.put(InterviewPreparationGraphConstants.STATE_JD_CONTENT, interview.getJdContent());
+        initialState.put(InterviewPreparationGraphConstants.STATE_MESSAGES, new ArrayList<String>());
+        // 发送开始事件
+        sendSseEvent(emitter, GraphProgressEvent.startPreparation(id, threadId,
+                interview.getCompanyName(), interview.getPosition()));
+        // 订阅工作流
+        preparationGraphService.streamPreparation(initialState, threadId)
+                .filter(output -> !isInterruptionOutput(output))
+                .subscribe(
+                        output -> {
+                            Map<String, Object> data = output.state().data();
+                            @SuppressWarnings("unchecked")
+                            Map<String, Object> nodeOutput = (Map<String, Object>) data.get(InterviewPreparationGraphConstants.STATE_NODE_OUTPUT);
+                            GraphProgressEvent event = GraphProgressEvent.fromNodeOutput(output.node(), threadId, nodeOutput);
+                            sendSseEvent(emitter, event);
+                        },
+                        error -> {
+                            log.error("[SSE] 面试准备工作流异常", error);
+                            sendSseEvent(emitter, GraphProgressEvent.error(error.getMessage(), threadId));
+                            emitter.completeWithError(error);
+                        },
+                        () -> {
+                            log.info("[SSE] 面试准备工作流完成: threadId={}", threadId);
+                            sendSseEvent(emitter, GraphProgressEvent.completePreparation(threadId, null));
+                            emitter.complete();
+                        }
+                );
+        return emitter;
+    }
+
+    /**
+     * 流式执行复盘分析工作流
+     *
+     * @param id                面试ID
+     * @param sessionTranscript 面试过程文本（用户输入）
+     * @param response          HTTP响应
+     * @return SSE事件发射器
+     */
+    public SseEmitter streamReviewAnalysis(String id, String sessionTranscript, HttpServletResponse response) {
+        log.info("开始SSE流式复盘分析: interviewId={}", id);
+        InterviewDetailVO interview = getInterviewDetail(id);
+        configureSseResponse(response);
+        SseEmitter emitter = new SseEmitter(SSE_TIMEOUT);
+        String threadId = UUID.randomUUID().toString();
+        // 构建初始状态
+        Map<String, Object> initialState = new HashMap<>();
+        initialState.put(ReviewAnalysisGraphConstants.STATE_INTERVIEW_ID, id);
+        initialState.put(ReviewAnalysisGraphConstants.STATE_SESSION_TRANSCRIPT, sessionTranscript);
+        initialState.put(ReviewAnalysisGraphConstants.STATE_MESSAGES, new ArrayList<String>());
+        // 发送开始事件
+        sendSseEvent(emitter, GraphProgressEvent.startReviewAnalysis(id, threadId));
+        // 订阅工作流
+        reviewGraphService.streamAnalysis(initialState, threadId)
+                .filter(output -> !isInterruptionOutput(output))
+                .subscribe(
+                        output -> {
+                            Map<String, Object> data = output.state().data();
+                            @SuppressWarnings("unchecked")
+                            Map<String, Object> nodeOutput = (Map<String, Object>) data.get(ReviewAnalysisGraphConstants.STATE_NODE_OUTPUT);
+                            GraphProgressEvent event = GraphProgressEvent.fromNodeOutput(output.node(), threadId, nodeOutput);
+                            sendSseEvent(emitter, event);
+                        },
+                        error -> {
+                            log.error("[SSE] 复盘分析工作流异常", error);
+                            sendSseEvent(emitter, GraphProgressEvent.error(error.getMessage(), threadId));
+                            emitter.completeWithError(error);
+                        },
+                        () -> {
+                            log.info("[SSE] 复盘分析工作流完成: threadId={}", threadId);
+                            sendSseEvent(emitter, GraphProgressEvent.completeReviewAnalysis(threadId, null));
+                            emitter.complete();
+                        }
+                );
+        return emitter;
+    }
+
+    /**
+     * 配置SSE响应头
+     */
+    private void configureSseResponse(HttpServletResponse response) {
+        response.setHeader("X-Accel-Buffering", "no");
+        response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("Connection", "keep-alive");
+        response.setContentType(MediaType.TEXT_EVENT_STREAM_VALUE);
+    }
+
+    /**
+     * 发送SSE事件
+     */
+    private void sendSseEvent(SseEmitter emitter, GraphProgressEvent event) {
+        try {
+            emitter.send(SseEmitter.event()
+                    .name("message")
+                    .data(event));
+            log.debug("[SSE] 发送事件: event={}, nodeId={}", event.getEvent(), event.getNodeId());
+        } catch (IOException e) {
+            log.error("[SSE] 发送失败", e);
+            emitter.completeWithError(e);
+        }
+    }
+
+    /**
+     * 判断节点输出是否是中断事件
+     */
+    private boolean isInterruptionOutput(NodeOutput output) {
+        return output instanceof InterruptionMetadata;
     }
 
     // ===== 私有业务逻辑方法 =====

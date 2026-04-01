@@ -207,7 +207,7 @@ export async function saveReviewNote(interviewId: string, data: SaveReviewNoteRe
 
 /**
  * 流式执行面试准备工作流
- * SSE 流式返回工作流进度
+ * SSE 流式返回工作流进度（GET 请求，使用 EventSource）
  */
 export function streamPreparation(interviewId: string): EventSource {
   const url = `${API_BASE}/interview-center/${interviewId}/preparation/stream`
@@ -216,9 +216,68 @@ export function streamPreparation(interviewId: string): EventSource {
 
 /**
  * 流式执行复盘分析工作流
- * SSE 流式返回工作流进度
+ * SSE 流式返回工作流进度（POST 请求，需要传递面试过程文本）
+ *
+ * 注意：此 API 使用 POST 方法，需要通过 composables/useReviewAnalysis.ts 调用
+ * 因为 EventSource 只支持 GET 请求
+ *
+ * @param interviewId 面试ID
+ * @param sessionTranscript 面试过程文本
+ * @param onEvent 事件回调
+ * @param onError 错误回调
+ * @param onComplete 完成回调
  */
-export function streamReviewAnalysis(interviewId: string): EventSource {
-  const url = `${API_BASE}/interview-center/${interviewId}/review-analysis/stream`
-  return new EventSource(url)
+export async function streamReviewAnalysis(
+  interviewId: string,
+  sessionTranscript: string,
+  onEvent: (event: import('@/types/interview-center').GraphProgressEvent) => void,
+  onError: (error: Error) => void,
+  onComplete: () => void
+): Promise<void> {
+  try {
+    const response = await fetch(`${API_BASE}/interview-center/${interviewId}/review-analysis/stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionTranscript })
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    }
+
+    const reader = response.body?.getReader()
+    if (!reader) {
+      throw new Error('无法读取响应流')
+    }
+
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || ''
+
+      for (const line of lines) {
+        if (line.startsWith('data:')) {
+          const json = line.slice(5).trim()
+          if (json) {
+            try {
+              const event = JSON.parse(json) as import('@/types/interview-center').GraphProgressEvent
+              onEvent(event)
+            } catch {
+              console.warn('[API] 解析 SSE 事件失败:', json)
+            }
+          }
+        }
+      }
+    }
+
+    onComplete()
+  } catch (error) {
+    onError(error as Error)
+  }
 }
