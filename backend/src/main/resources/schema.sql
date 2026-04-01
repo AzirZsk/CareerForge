@@ -35,24 +35,18 @@ CREATE TABLE IF NOT EXISTS t_resume (
     score INTEGER DEFAULT 0,                -- 综合评分（0-100）
     completeness INTEGER DEFAULT 0,         -- 完整度（0-100）
     is_primary INTEGER DEFAULT 0,           -- 是否主简历（0-否 1-是）
+    -- 诊断评分（AI分析结果）
+    overall_score INTEGER DEFAULT 0,        -- 总体评分
+    content_score INTEGER DEFAULT 0,        -- 内容评分
+    structure_score INTEGER DEFAULT 0,      -- 结构评分
+    matching_score INTEGER DEFAULT 0,       -- 匹配度评分
+    competitiveness_score INTEGER DEFAULT 0, -- 竞争力评分
+    -- 职位描述（用于定制简历）
+    job_description TEXT,                   -- 目标职位的JD内容
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 更新时间
     deleted INTEGER DEFAULT 0               -- 逻辑删除标记
 );
-
--- ----------------------------------------------------------------------------
--- 简历诊断评分字段扩展
--- ----------------------------------------------------------------------------
-ALTER TABLE t_resume ADD COLUMN overall_score INTEGER DEFAULT 0;
-ALTER TABLE t_resume ADD COLUMN content_score INTEGER DEFAULT 0;
-ALTER TABLE t_resume ADD COLUMN structure_score INTEGER DEFAULT 0;
-ALTER TABLE t_resume ADD COLUMN matching_score INTEGER DEFAULT 0;
-ALTER TABLE t_resume ADD COLUMN competitiveness_score INTEGER DEFAULT 0;
-
--- ----------------------------------------------------------------------------
--- 简历职位描述字段（用于定制简历）
--- ----------------------------------------------------------------------------
-ALTER TABLE t_resume ADD COLUMN job_description TEXT;
 
 -- ----------------------------------------------------------------------------
 -- 简历历史版本表
@@ -127,6 +121,16 @@ CREATE TABLE IF NOT EXISTS t_interview (
     status VARCHAR(20) DEFAULT 'in_progress', -- 面试状态（in_progress-进行中 completed-已完成）
     questions INTEGER DEFAULT 0,            -- 问题总数
     correct_answers INTEGER DEFAULT 0,      -- 正确回答数
+    -- 生命周期管理扩展字段
+    source VARCHAR(20) DEFAULT 'mock',      -- 面试来源（mock-模拟 real-真实）
+    jd_content TEXT,                        -- 职位描述内容
+    overall_result VARCHAR(20),             -- 面试结果（pass-通过 fail-未通过 pending-待定）
+    notes TEXT,                             -- 面试备注
+    company_research TEXT,                  -- 公司调研信息
+    jd_analysis TEXT,                       -- JD分析结果
+    job_position_id VARCHAR(64),            -- 关联职位ID
+    round_type VARCHAR(30),                 -- 轮次类型（hr-人力 technical-技术 manager-经理等）
+    round_name VARCHAR(100),                -- 轮次名称
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 更新时间
     deleted INTEGER DEFAULT 0               -- 逻辑删除标记
@@ -160,6 +164,11 @@ CREATE TABLE IF NOT EXISTS t_interview_session (
     status VARCHAR(20) DEFAULT 'in_progress', -- 会话状态（in_progress-进行中 completed-已完成）
     current_question_index INTEGER DEFAULT 0, -- 当前问题序号
     total_questions INTEGER DEFAULT 10,     -- 问题总数
+    -- 语音模式相关字段
+    voice_mode VARCHAR(20) DEFAULT 'text',  -- 语音模式（text-纯文本 half_voice-半语音 full_voice-全语音）
+    assist_count INT DEFAULT 0,             -- 已使用求助次数
+    assist_limit INT DEFAULT 5,             -- 求助次数上限
+    freeze_at DATETIME,                     -- 冻结时间点（求助时的面试暂停时间）
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 更新时间
     deleted INTEGER DEFAULT 0               -- 逻辑删除标记
@@ -282,6 +291,9 @@ CREATE TABLE IF NOT EXISTS t_chat_message (
     session_id VARCHAR(64),                  -- 会话ID（通用聊天模式使用UUID，简历模式使用resumeId）
     role VARCHAR(20) NOT NULL,               -- 角色（user / assistant）
     content TEXT NOT NULL,                   -- 消息内容
+    actions TEXT,                            -- 操作卡片列表（JSON格式）
+    action_status VARCHAR(20) DEFAULT 'pending', -- 操作状态（pending-待处理 applied-已应用 discarded-已丢弃）
+    segments TEXT,                           -- 内容分片列表（JSON格式，记录文字和操作卡片的穿插顺序）
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     deleted INTEGER DEFAULT 0                -- 逻辑删除标记（0-未删除 1-已删除）
@@ -291,27 +303,9 @@ CREATE INDEX IF NOT EXISTS idx_chat_message_resume_id ON t_chat_message(resume_i
 CREATE INDEX IF NOT EXISTS idx_chat_message_session_id ON t_chat_message(session_id);
 CREATE INDEX IF NOT EXISTS idx_chat_message_created_at ON t_chat_message(created_at);
 
--- ----------------------------------------------------------------------------
--- AI聊天消息表扩展：操作卡片和状态字段
--- ----------------------------------------------------------------------------
-ALTER TABLE t_chat_message ADD COLUMN actions TEXT;
-ALTER TABLE t_chat_message ADD COLUMN action_status VARCHAR(20) DEFAULT 'pending';
-ALTER TABLE t_chat_message ADD COLUMN segments TEXT;
-
 -- ============================================================================
 -- 语音面试功能扩展（v1.4.0）
 -- ============================================================================
-
--- ----------------------------------------------------------------------------
--- 扩展面试会话表（语音模式相关字段）
--- 注意：SQLite 不支持 IF NOT EXISTS 用于 ALTER TABLE，需要忽略重复列错误
--- ----------------------------------------------------------------------------
-ALTER TABLE t_interview_session ADD COLUMN voice_mode VARCHAR(20) DEFAULT 'text';
--- voice_mode: text(纯文本), half_voice(半语音), full_voice(全语音)
-
-ALTER TABLE t_interview_session ADD COLUMN assist_count INT DEFAULT 0;
-ALTER TABLE t_interview_session ADD COLUMN assist_limit INT DEFAULT 5;
-ALTER TABLE t_interview_session ADD COLUMN freeze_at DATETIME;  -- 冻结时间点
 
 -- ----------------------------------------------------------------------------
 -- 助手对话记录表（语音面试求助记录）
@@ -409,20 +403,6 @@ CREATE TABLE IF NOT EXISTS t_job_position (
 
 CREATE INDEX IF NOT EXISTS idx_job_position_company_id ON t_job_position(company_id);
 CREATE INDEX IF NOT EXISTS idx_job_position_title ON t_job_position(title);
-
--- ----------------------------------------------------------------------------
--- t_interview 表扩展字段
--- 注意：SQLite 的 ALTER TABLE ADD COLUMN 如果列已存在会报错
--- ----------------------------------------------------------------------------
-ALTER TABLE t_interview ADD COLUMN source VARCHAR(20) DEFAULT 'mock';
-ALTER TABLE t_interview ADD COLUMN jd_content TEXT;
-ALTER TABLE t_interview ADD COLUMN overall_result VARCHAR(20);
-ALTER TABLE t_interview ADD COLUMN notes TEXT;
-ALTER TABLE t_interview ADD COLUMN company_research TEXT;
-ALTER TABLE t_interview ADD COLUMN jd_analysis TEXT;
-ALTER TABLE t_interview ADD COLUMN job_position_id VARCHAR(64);
-ALTER TABLE t_interview ADD COLUMN round_type VARCHAR(30);
-ALTER TABLE t_interview ADD COLUMN round_name VARCHAR(100);
 
 -- ----------------------------------------------------------------------------
 -- t_interview_round 表（面试轮次表）
