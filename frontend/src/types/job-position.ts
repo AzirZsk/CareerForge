@@ -20,6 +20,13 @@ export interface InterviewBrief {
   status: string
   date?: string
   overallResult?: string
+  // 新增字段
+  source?: string           // 面试来源（real/mock）
+  roundType?: string        // 轮次类型
+  roundName?: string        // 自定义轮次名称
+  interviewType?: string    // 面试类型（onsite/online）
+  location?: string         // 现场地址
+  onlineLink?: string       // 线上链接
 }
 
 // 职位详情
@@ -45,6 +52,7 @@ export interface CreateJobPositionRequest {
 
 // 更新职位请求
 export interface UpdateJobPositionRequest {
+  companyName?: string
   title?: string
   jdContent?: string
 }

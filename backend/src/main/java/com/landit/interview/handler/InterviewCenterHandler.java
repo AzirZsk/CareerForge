@@ -79,8 +79,7 @@ public class InterviewCenterHandler {
         Interview interview = new Interview();
         interview.setSource(InterviewSource.REAL.getCode());
         interview.setStatus("preparing");
-        interview.setCompany(request.getCompanyName());
-        interview.setPosition(request.getPosition());
+        // company 和 position 通过 jobPositionId 关联查询，不再冗余存储
         interview.setDate(request.getInterviewDate());
         interview.setJdContent(request.getJdContent());
         interview.setNotes(request.getNotes());
@@ -138,12 +137,7 @@ public class InterviewCenterHandler {
         if (interview == null) {
             throw new BusinessException("面试不存在: " + id);
         }
-        if (request.getCompanyName() != null) {
-            interview.setCompany(request.getCompanyName());
-        }
-        if (request.getPosition() != null && !request.getPosition().isBlank()) {
-            interview.setPosition(request.getPosition());
-        }
+        // company 和 position 通过 jobPositionId 关联查询，不再冗余存储
         if (request.getInterviewDate() != null) {
             interview.setDate(request.getInterviewDate());
         }
@@ -350,7 +344,17 @@ public class InterviewCenterHandler {
     private InterviewListItemVO convertToListItemVO(Interview interview) {
         InterviewListItemVO vo = new InterviewListItemVO();
         BeanUtils.copyProperties(interview, vo);
-        vo.setCompanyName(interview.getCompany());
+
+        // 通过 jobPositionId 关联查询公司名和职位名
+        if (interview.getJobPositionId() != null) {
+            JobPosition jobPosition = jobPositionService.getById(interview.getJobPositionId());
+            if (jobPosition != null) {
+                vo.setPosition(jobPosition.getTitle());
+                Company company = companyService.getById(jobPosition.getCompanyId());
+                vo.setCompanyName(company != null ? company.getName() : "");
+            }
+        }
+
         vo.setInterviewDate(interview.getDate());
         vo.setRoundType(interview.getRoundType());
         return vo;
@@ -361,7 +365,17 @@ public class InterviewCenterHandler {
                                                  InterviewReviewNote reviewNote) {
         InterviewDetailVO vo = new InterviewDetailVO();
         BeanUtils.copyProperties(interview, vo);
-        vo.setCompanyName(interview.getCompany());
+
+        // 通过 jobPositionId 关联查询公司名和职位名
+        if (interview.getJobPositionId() != null) {
+            JobPosition jobPosition = jobPositionService.getById(interview.getJobPositionId());
+            if (jobPosition != null) {
+                vo.setPosition(jobPosition.getTitle());
+                Company company = companyService.getById(jobPosition.getCompanyId());
+                vo.setCompanyName(company != null ? company.getName() : "");
+            }
+        }
+
         vo.setInterviewDate(interview.getDate());
         vo.setRoundType(interview.getRoundType());
         vo.setRoundName(interview.getRoundName());

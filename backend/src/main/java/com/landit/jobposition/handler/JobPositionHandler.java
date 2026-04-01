@@ -117,6 +117,22 @@ public class JobPositionHandler {
         if (jobPosition == null) {
             throw new BusinessException("职位不存在: " + id);
         }
+        // 处理公司名称更新
+        if (request.getCompanyName() != null && !request.getCompanyName().isBlank()) {
+            Company currentCompany = companyService.getById(jobPosition.getCompanyId());
+            String currentCompanyName = currentCompany != null ? currentCompany.getName() : "";
+            if (!request.getCompanyName().equals(currentCompanyName)) {
+                // 查找或创建新公司
+                Company company = companyService.findByName(request.getCompanyName())
+                        .orElseGet(() -> {
+                            Company newCompany = new Company();
+                            newCompany.setName(request.getCompanyName());
+                            companyService.save(newCompany);
+                            return newCompany;
+                        });
+                jobPosition.setCompanyId(String.valueOf(company.getId()));
+            }
+        }
         if (request.getTitle() != null && !request.getTitle().isBlank()) {
             jobPosition.setTitle(request.getTitle());
         }
@@ -279,6 +295,12 @@ public class JobPositionHandler {
                 .status(interview.getStatus())
                 .date(interview.getDate())
                 .overallResult(interview.getOverallResult())
+                .source(interview.getSource())
+                .roundType(interview.getRoundType())
+                .roundName(interview.getRoundName())
+                .interviewType(interview.getInterviewType())
+                .location(interview.getLocation())
+                .onlineLink(interview.getOnlineLink())
                 .build();
     }
 

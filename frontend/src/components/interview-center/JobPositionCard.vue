@@ -29,8 +29,11 @@
       <button class="action-btn secondary" @click.stop="$emit('view-detail', jobPosition)">
         查看详情
       </button>
-      <button class="action-btn danger" @click.stop="$emit('delete', jobPosition)">
-        删除
+      <button class="action-btn icon-btn danger" @click.stop="$emit('delete', jobPosition)" title="删除">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6" />
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+        </svg>
       </button>
     </div>
   </div>
@@ -167,12 +170,20 @@ function formatDate(dateStr: string): string {
   }
 
   &.danger {
+    flex: 0 0 auto;
+    min-width: 40px;
+    padding: $spacing-sm;
     background: transparent;
-    color: $color-error;
-    border: 1px solid $color-error;
+    color: $color-text-tertiary;
+    border: none;
 
     &:hover {
+      color: $color-error;
       background: rgba($color-error, 0.1);
+    }
+
+    svg {
+      flex-shrink: 0;
     }
   }
 

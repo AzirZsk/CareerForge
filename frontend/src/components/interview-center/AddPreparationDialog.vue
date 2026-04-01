@@ -47,7 +47,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { useScrollLock } from '@vueuse/core'
 import { addPreparation } from '@/api/interview-center'
 import type { AddPreparationRequest } from '@/types/interview-center'
 
@@ -62,6 +63,9 @@ const emit = defineEmits<{
 
 const submitting = ref(false)
 
+// 锁定背景滚动，防止滚动穿透
+const isScrollLocked = useScrollLock(document.body)
+
 const form = reactive<AddPreparationRequest>({
   title: '',
   content: ''
@@ -69,6 +73,16 @@ const form = reactive<AddPreparationRequest>({
 
 const isFormValid = computed(() => {
   return form.title.trim().length > 0
+})
+
+// 组件挂载时锁定滚动
+onMounted(() => {
+  isScrollLocked.value = true
+})
+
+// 组件卸载时解锁滚动
+onUnmounted(() => {
+  isScrollLocked.value = false
 })
 
 async function handleSubmit() {
@@ -111,7 +125,8 @@ async function handleSubmit() {
   width: 90%;
   max-width: 450px;
   max-height: 90vh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .dialog-header {
@@ -120,6 +135,7 @@ async function handleSubmit() {
   align-items: center;
   padding: $spacing-lg;
   border-bottom: 1px solid $color-bg-tertiary;
+  flex-shrink: 0;
 
   h2 {
     font-size: 1.25rem;
@@ -143,6 +159,8 @@ async function handleSubmit() {
 
 .dialog-form {
   padding: $spacing-lg;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .form-group {
@@ -197,5 +215,6 @@ async function handleSubmit() {
   gap: $spacing-md;
   padding: $spacing-lg;
   border-top: 1px solid $color-bg-tertiary;
+  flex-shrink: 0;
 }
 </style>

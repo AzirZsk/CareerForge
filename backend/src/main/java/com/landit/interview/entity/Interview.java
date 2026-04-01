@@ -22,10 +22,6 @@ public class Interview extends BaseEntity {
 
     private String type;
 
-    private String position;
-
-    private String company;
-
     private LocalDateTime date;
 
     private Integer duration;

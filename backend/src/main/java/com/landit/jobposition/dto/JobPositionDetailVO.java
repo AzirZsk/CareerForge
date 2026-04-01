@@ -81,6 +81,30 @@ public class JobPositionDetailVO {
         private String status;
         private LocalDateTime date;
         private String overallResult;
+        /**
+         * 面试来源（real-真实面试 / mock-模拟面试）
+         */
+        private String source;
+        /**
+         * 轮次类型（technical_1/technical_2/hr/director/cto/final/custom）
+         */
+        private String roundType;
+        /**
+         * 自定义轮次名称（仅当 roundType=custom 时有值）
+         */
+        private String roundName;
+        /**
+         * 面试类型（onsite-现场 / online-线上）
+         */
+        private String interviewType;
+        /**
+         * 现场面试地址（仅当 interviewType='onsite' 时有值）
+         */
+        private String location;
+        /**
+         * 线上面试链接（仅当 interviewType='online' 时有值）
+         */
+        private String onlineLink;
     }
 
 }

@@ -11,6 +11,11 @@ import lombok.Data;
 public class UpdateJobPositionRequest {
 
     /**
+     * 公司名称
+     */
+    private String companyName;
+
+    /**
      * 职位名称
      */
     private String title;

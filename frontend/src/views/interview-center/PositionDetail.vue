@@ -1,35 +1,49 @@
 <template>
   <div class="position-detail-page" v-if="!loading && position">
     <header class="page-header">
-      <button class="back-btn" @click="goBack">← 返回</button>
+      <button class="back-btn" @click="goBack">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5"></path>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          返回
+        </button>
       <div class="header-actions">
         <button class="btn btn-primary" @click="showCreateDialog = true">
           <span class="icon">+</span>
           新建面试
         </button>
-        <button class="btn btn-danger" @click="handleDeletePosition">
-          删除职位
+        <button class="btn btn-secondary" @click="showEditDialog = true" title="编辑职位">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+        </button>
+        <button class="btn btn-danger" @click="handleDeletePosition" title="删除职位">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
         </button>
       </div>
     </header>
 
     <section class="position-info">
-      <h1 class="company-name">{{ position.companyName }}</h1>
-      <p class="position-title">{{ position.title }}</p>
-      <div class="meta-info">
-        <span>创建时间：{{ formatDate(position.createdAt) }}</span>
-        <span v-if="position.interviews.length > 0">
-          共 {{ position.interviews.length }} 次面试
-        </span>
-      </div>
-    </section>
-
-    <section class="jd-section" v-if="position.jdContent">
-      <div class="section-header">
-        <h2>职位描述</h2>
-      </div>
-      <div class="jd-content">
-        <pre>{{ position.jdContent }}</pre>
+      <div class="info-header">
+        <div class="info-main">
+          <h1 class="company-name">{{ position.companyName }}</h1>
+          <p class="position-title">{{ position.title }}</p>
+          <div class="meta-info">
+            <span>创建时间：{{ formatDate(position.createdAt) }}</span>
+            <span v-if="position.interviews.length > 0">
+              共 {{ position.interviews.length }} 次面试
+            </span>
+          </div>
+        </div>
+        <div class="jd-content" v-if="position.jdContent">
+          <div class="jd-label">职位描述</div>
+          <pre>{{ position.jdContent }}</pre>
+        </div>
       </div>
     </section>
 
@@ -45,8 +59,32 @@
           @click="goToInterviewDetail(interview.id)"
         >
           <div class="interview-main">
-            <div class="interview-header">
+            <!-- 第一行：来源 + 轮次 + 日期 -->
+            <div class="interview-row primary">
+              <span v-if="interview.source" class="source-badge" :class="interview.source">
+                {{ getSourceLabel(interview.source) }}
+              </span>
+              <span v-if="getRoundDisplay(interview)" class="round-info">
+                {{ getRoundDisplay(interview) }}
+              </span>
               <span class="interview-date">{{ formatDate(interview.date) }}</span>
+            </div>
+            <!-- 第二行：面试类型 + 地点/链接 -->
+            <div class="interview-row secondary" v-if="interview.interviewType">
+              <span class="type-badge" :class="interview.interviewType">
+                {{ getInterviewTypeLabel(interview.interviewType) }}
+              </span>
+              <span class="location-info" v-if="interview.interviewType === 'onsite' && interview.location">
+                <span class="info-icon">📍</span>
+                {{ interview.location }}
+              </span>
+              <span class="link-info" v-if="interview.interviewType === 'online' && interview.onlineLink" @click.stop>
+                <span class="info-icon">🔗</span>
+                <a :href="interview.onlineLink" target="_blank" class="online-link">进入会议</a>
+              </span>
+            </div>
+            <!-- 第三行：状态 + 结果 -->
+            <div class="interview-row tertiary">
               <span class="status-badge" :class="interview.status">
                 {{ getStatusLabel(interview.status) }}
               </span>
@@ -56,10 +94,17 @@
             </div>
           </div>
           <div class="interview-actions">
-            <button class="delete-btn" @click.stop="handleDeleteInterview(interview)">
-              删除
+            <button class="delete-btn" @click.stop="handleDeleteInterview(interview)" title="删除">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
             </button>
-            <span class="interview-arrow">→</span>
+            <span class="interview-arrow">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </span>
           </div>
         </div>
       </div>
@@ -77,6 +122,23 @@
       @close="handleCloseCreateDialog"
       @created="handleInterviewCreated"
     />
+
+    <EditPositionDialog
+      v-if="showEditDialog && position"
+      :position="position"
+      @close="handleCloseEditDialog"
+      @updated="handlePositionUpdated"
+    />
+
+    <ConfirmModal
+      :visible="confirmVisible"
+      :title="confirmTitle"
+      :message="confirmMessage"
+      :confirm-text="confirmText"
+      :danger="confirmDanger"
+      @confirm="handleConfirm"
+      @cancel="handleCancel"
+    />
   </div>
 
   <div v-else class="loading-state">
@@ -90,12 +152,21 @@ import { useRoute, useRouter } from 'vue-router'
 import { getJobPositionDetail, deleteJobPosition } from '@/api/job-position'
 import { deleteInterview } from '@/api/interview-center'
 import type { JobPositionDetail } from '@/types/job-position'
-import { INTERVIEW_STATUS_LABELS, INTERVIEW_RESULT_LABELS } from '@/types/interview-center'
+import {
+  INTERVIEW_STATUS_LABELS,
+  INTERVIEW_RESULT_LABELS,
+  ROUND_TYPE_LABELS,
+  INTERVIEW_TYPE_LABELS,
+  INTERVIEW_SOURCE_LABELS
+} from '@/types/interview-center'
+import type { InterviewBrief } from '@/types/job-position'
 import CreateInterviewDialog from '@/components/interview-center/CreateInterviewDialog.vue'
+import EditPositionDialog from '@/components/interview-center/EditPositionDialog.vue'
 import { useConfirm } from '@/composables/useConfirm'
 import { useToast } from '@/composables/useToast'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
-const { confirm } = useConfirm()
+const { confirm, visible: confirmVisible, title: confirmTitle, message: confirmMessage, confirmText, danger: confirmDanger, handleConfirm, handleCancel } = useConfirm()
 const toast = useToast()
 
 const route = useRoute()
@@ -103,6 +174,7 @@ const router = useRouter()
 const loading = ref(true)
 const position = ref<JobPositionDetail | null>(null)
 const showCreateDialog = ref(false)
+const showEditDialog = ref(false)
 const preselectedPosition = ref<{ companyName: string; title: string } | null>(null)
 
 function goBack() {
@@ -119,7 +191,9 @@ function formatDate(dateStr?: string): string {
   return date.toLocaleDateString('zh-CN', {
     year: 'numeric',
     month: '2-digit',
-    day: '2-digit'
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
   })
 }
 
@@ -129,6 +203,29 @@ function getStatusLabel(status: string): string {
 
 function getResultLabel(result: string): string {
   return INTERVIEW_RESULT_LABELS[result as keyof typeof INTERVIEW_RESULT_LABELS] || result
+}
+
+// 获取面试来源标签
+function getSourceLabel(source?: string): string {
+  if (!source) return ''
+  return INTERVIEW_SOURCE_LABELS[source as keyof typeof INTERVIEW_SOURCE_LABELS] || source
+}
+
+// 获取轮次显示文本
+function getRoundDisplay(interview: InterviewBrief): string {
+  if (interview.roundType === 'custom' && interview.roundName) {
+    return interview.roundName
+  }
+  if (interview.roundType) {
+    return ROUND_TYPE_LABELS[interview.roundType as keyof typeof ROUND_TYPE_LABELS] || interview.roundType
+  }
+  return ''
+}
+
+// 获取面试类型标签
+function getInterviewTypeLabel(type?: string): string {
+  if (!type) return ''
+  return INTERVIEW_TYPE_LABELS[type as keyof typeof INTERVIEW_TYPE_LABELS] || type
 }
 
 function handleCloseCreateDialog() {
@@ -141,6 +238,20 @@ function handleInterviewCreated(id: string) {
   preselectedPosition.value = null
   loadDetail()
   router.push(`/interview-center/${id}`)
+}
+
+function handleCloseEditDialog() {
+  showEditDialog.value = false
+}
+
+function handlePositionUpdated(updatedPosition: JobPositionDetail) {
+  showEditDialog.value = false
+  position.value = updatedPosition
+  preselectedPosition.value = {
+    companyName: updatedPosition.companyName,
+    title: updatedPosition.title
+  }
+  toast.success('职位信息已更新')
 }
 
 async function handleDeletePosition() {
@@ -217,14 +328,30 @@ onMounted(() => {
 }
 
 .back-btn {
-  background: none;
-  border: none;
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  background: transparent;
+  border: 1px solid transparent;
   color: $color-text-secondary;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 0.875rem;
+  padding: $spacing-sm $spacing-md;
+  border-radius: $radius-md;
+  transition: all 0.2s;
+
+  svg {
+    transition: transform 0.2s;
+  }
 
   &:hover {
     color: $color-text-primary;
+    background: $color-bg-secondary;
+    border-color: rgba(255, 255, 255, 0.08);
+
+    svg {
+      transform: translateX(-2px);
+    }
   }
 }
 
@@ -238,6 +365,16 @@ onMounted(() => {
   border-radius: $radius-lg;
   padding: $spacing-xl;
   margin-bottom: $spacing-xl;
+}
+
+.info-header {
+  display: flex;
+  gap: $spacing-2xl;
+}
+
+.info-main {
+  flex: 0 0 auto;
+  min-width: 280px;
 }
 
 .company-name {
@@ -260,11 +397,36 @@ onMounted(() => {
   font-size: 0.875rem;
 }
 
-.jd-section {
+.jd-content {
+  flex: 1;
+  min-width: 0;
+  padding-left: $spacing-xl;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+
+  .jd-label {
+    font-size: 0.75rem;
+    color: $color-text-tertiary;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: $spacing-sm;
+  }
+
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    color: $color-text-secondary;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    margin: 0;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+}
+
+.interviews-section {
   background: $color-bg-secondary;
   border-radius: $radius-lg;
   padding: $spacing-xl;
-  margin-bottom: $spacing-xl;
 }
 
 .section-header {
@@ -278,23 +440,6 @@ onMounted(() => {
     font-weight: 600;
     color: $color-text-primary;
   }
-}
-
-.jd-content {
-  pre {
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    color: $color-text-secondary;
-    font-size: 0.875rem;
-    line-height: 1.6;
-    margin: 0;
-  }
-}
-
-.interviews-section {
-  background: $color-bg-secondary;
-  border-radius: $radius-lg;
-  padding: $spacing-xl;
 }
 
 .interviews-list {
@@ -320,6 +465,101 @@ onMounted(() => {
 
 .interview-main {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+// 面试行布局
+.interview-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+
+  &.primary {
+    margin-bottom: 2px;
+  }
+
+  &.secondary {
+    font-size: 0.8125rem;
+    color: $color-text-tertiary;
+  }
+
+  &.tertiary {
+    margin-top: 2px;
+  }
+}
+
+// 来源标签
+.source-badge {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: $radius-full;
+
+  &.real {
+    background: rgba($color-accent, 0.15);
+    color: $color-accent;
+  }
+
+  &.mock {
+    background: rgba($color-info, 0.15);
+    color: $color-info;
+  }
+}
+
+// 轮次信息
+.round-info {
+  color: $color-text-secondary;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+// 面试类型标签
+.type-badge {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: $radius-full;
+
+  &.onsite {
+    background: rgba($color-accent, 0.15);
+    color: $color-accent;
+  }
+
+  &.online {
+    background: rgba($color-info, 0.15);
+    color: $color-info;
+  }
+}
+
+// 地点信息
+.location-info {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  .info-icon {
+    font-size: 0.75rem;
+  }
+}
+
+// 链接信息
+.link-info {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  .info-icon {
+    font-size: 0.75rem;
+  }
+
+  .online-link {
+    color: $color-accent;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
 }
 
 .interview-header {
@@ -364,8 +604,21 @@ onMounted(() => {
 }
 
 .interview-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: $radius-full;
+  background: $color-bg-secondary;
   color: $color-text-tertiary;
-  font-size: 1.25rem;
+  transition: all 0.2s;
+}
+
+.interview-item:hover .interview-arrow {
+  background: rgba($color-accent, 0.15);
+  color: $color-accent;
+  transform: translateX(2px);
 }
 
 .interview-actions {
@@ -374,34 +627,41 @@ onMounted(() => {
   gap: $spacing-md;
 }
 
+.btn-danger {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: $color-text-tertiary;
+  padding: $spacing-xs $spacing-sm;
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  transition: all 0.2s;
+
+  &:hover {
+    color: $color-error;
+    background: rgba($color-error, 0.15);
+    border-color: $color-error;
+  }
+}
+
 .delete-btn {
   padding: $spacing-xs $spacing-sm;
   background: transparent;
-  border: 1px solid $color-error;
-  color: $color-error;
+  border: none;
+  color: $color-text-tertiary;
   border-radius: $radius-sm;
   cursor: pointer;
-  font-size: 0.75rem;
   transition: all 0.2s;
   opacity: 0;
+
+  &:hover {
+    color: $color-error;
+    background: rgba($color-error, 0.1);
+  }
 }
 
 .interview-item:hover .delete-btn {
   opacity: 1;
-}
-
-.delete-btn:hover {
-  background: rgba($color-error, 0.1);
-}
-
-.btn-danger {
-  background: transparent;
-  border: 1px solid $color-error;
-  color: $color-error;
-
-  &:hover {
-    background: rgba($color-error, 0.1);
-  }
 }
 
 .empty-state {

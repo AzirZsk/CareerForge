@@ -113,8 +113,7 @@ CREATE TABLE IF NOT EXISTS t_interview (
     id VARCHAR(64) PRIMARY KEY,              -- 主键ID（雪花ID字符串）
     user_id VARCHAR(64),                     -- 所属用户ID
     type VARCHAR(20),                       -- 面试类型（technical-技术 behavioral-行为）
-    position VARCHAR(100),                  -- 面试岗位
-    company VARCHAR(100),                   -- 面试公司
+    -- 公司和职位通过 job_position_id 关联查询，不再冗余存储
     date DATETIME,                          -- 面试时间
     duration INTEGER DEFAULT 0,             -- 面试时长（分钟）
     score INTEGER DEFAULT 0,                -- 面试得分（0-100）

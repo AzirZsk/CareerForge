@@ -205,7 +205,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useScrollLock } from '@vueuse/core'
 import { createInterview } from '@/api/interview-center'
 import { getJobPositionList } from '@/api/job-position'
 import type { CreateInterviewRequest, RoundType, InterviewType } from '@/types/interview-center'
@@ -227,6 +228,9 @@ const submitting = ref(false)
 const loadingPositions = ref(false)
 const jobPositions = ref<JobPositionListItem[]>([])
 const selectedPositionId = ref('')
+
+// 锁定背景滚动，防止滚动穿透
+const isScrollLocked = useScrollLock(document.body)
 
 const form = reactive<CreateInterviewRequest>({
   jobPositionId: '',
@@ -325,6 +329,13 @@ async function handleSubmit() {
 
 onMounted(() => {
   loadPositions()
+  // 弹窗打开时锁定滚动
+  isScrollLocked.value = true
+})
+
+onUnmounted(() => {
+  // 弹窗关闭时解锁滚动
+  isScrollLocked.value = false
 })
 </script>
 
@@ -348,7 +359,8 @@ onMounted(() => {
   width: 90%;
   max-width: 500px;
   max-height: 90vh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .dialog-header {
@@ -357,6 +369,7 @@ onMounted(() => {
   align-items: center;
   padding: $spacing-lg;
   border-bottom: 1px solid $color-bg-tertiary;
+  flex-shrink: 0;
 
   h2 {
     font-size: 1.25rem;
@@ -380,6 +393,8 @@ onMounted(() => {
 
 .dialog-form {
   padding: $spacing-lg;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .mode-switch {
@@ -534,5 +549,6 @@ onMounted(() => {
   gap: $spacing-md;
   padding: $spacing-lg;
   border-top: 1px solid $color-bg-tertiary;
+  flex-shrink: 0;
 }
 </style>

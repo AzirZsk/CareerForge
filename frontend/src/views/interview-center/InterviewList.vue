@@ -43,6 +43,16 @@
       @close="handleCloseCreateDialog"
       @created="handleInterviewCreated"
     />
+
+    <ConfirmModal
+      :visible="confirmVisible"
+      :title="confirmTitle"
+      :message="confirmMessage"
+      :confirm-text="confirmText"
+      :danger="confirmDanger"
+      @confirm="handleConfirm"
+      @cancel="handleCancel"
+    />
   </div>
 </template>
 
@@ -55,8 +65,9 @@ import CreateInterviewDialog from '@/components/interview-center/CreateInterview
 import JobPositionCard from '@/components/interview-center/JobPositionCard.vue'
 import { useConfirm } from '@/composables/useConfirm'
 import { useToast } from '@/composables/useToast'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
-const { confirm } = useConfirm()
+const { confirm, visible: confirmVisible, title: confirmTitle, message: confirmMessage, confirmText, danger: confirmDanger, handleConfirm, handleCancel } = useConfirm()
 const toast = useToast()
 
 const router = useRouter()

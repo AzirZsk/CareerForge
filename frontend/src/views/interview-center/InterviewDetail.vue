@@ -1,7 +1,13 @@
 <template>
   <div class="interview-detail-page" v-if="!loading && interview">
     <header class="page-header">
-      <button class="back-btn" @click="goBack">← 返回</button>
+      <button class="back-btn" @click="goBack">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 12H5"></path>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        返回
+      </button>
       <div class="header-actions">
         <button class="btn btn-secondary" @click="showEditDialog = true">编辑</button>
         <button class="btn btn-danger" @click="handleDelete">删除</button>
@@ -452,14 +458,30 @@ onMounted(() => {
 }
 
 .back-btn {
-  background: none;
-  border: none;
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  background: transparent;
+  border: 1px solid transparent;
   color: $color-text-secondary;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 0.875rem;
+  padding: $spacing-sm $spacing-md;
+  border-radius: $radius-md;
+  transition: all 0.2s;
+
+  svg {
+    transition: transform 0.2s;
+  }
 
   &:hover {
     color: $color-text-primary;
+    background: $color-bg-secondary;
+    border-color: rgba(255, 255, 255, 0.08);
+
+    svg {
+      transform: translateX(-2px);
+    }
   }
 }
 
