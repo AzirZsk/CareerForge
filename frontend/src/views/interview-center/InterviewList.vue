@@ -20,6 +20,7 @@
           @click="goToPositionDetail(position.id)"
           @add-interview="handleAddInterviewForPosition"
           @view-detail="goToPositionDetail(position.id)"
+          @delete="handleDeletePosition"
         />
       </div>
 
@@ -48,10 +49,15 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getJobPositionList } from '@/api/job-position'
+import { getJobPositionList, deleteJobPosition } from '@/api/job-position'
 import type { JobPositionListItem } from '@/types/job-position'
 import CreateInterviewDialog from '@/components/interview-center/CreateInterviewDialog.vue'
 import JobPositionCard from '@/components/interview-center/JobPositionCard.vue'
+import { useConfirm } from '@/composables/useConfirm'
+import { useToast } from '@/composables/useToast'
+
+const { confirm } = useConfirm()
+const toast = useToast()
 
 const router = useRouter()
 const loading = ref(false)
@@ -78,6 +84,24 @@ function handleInterviewCreated(id: string) {
   preselectedPositionId.value = null
   loadData()
   router.push(`/interview-center/${id}`)
+}
+
+async function handleDeletePosition(position: JobPositionListItem) {
+  const confirmed = await confirm({
+    title: '删除确认',
+    message: `确定要删除职位「${position.companyName} - ${position.title}」吗？删除后无法恢复，该职位下的面试记录也会被删除`,
+    danger: true
+  })
+  if (!confirmed) return
+
+  try {
+    await deleteJobPosition(position.id)
+    toast.success('职位已删除')
+    loadData()
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '删除失败'
+    toast.error(message)
+  }
 }
 
 async function loadData() {

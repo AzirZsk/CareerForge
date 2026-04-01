@@ -7,6 +7,9 @@
           <span class="icon">+</span>
           新建面试
         </button>
+        <button class="btn btn-danger" @click="handleDeletePosition">
+          删除职位
+        </button>
       </div>
     </header>
 
@@ -52,7 +55,12 @@
               </span>
             </div>
           </div>
-          <div class="interview-arrow">→</div>
+          <div class="interview-actions">
+            <button class="delete-btn" @click.stop="handleDeleteInterview(interview)">
+              删除
+            </button>
+            <span class="interview-arrow">→</span>
+          </div>
         </div>
       </div>
       <div v-else class="empty-state">
@@ -79,10 +87,16 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getJobPositionDetail } from '@/api/job-position'
+import { getJobPositionDetail, deleteJobPosition } from '@/api/job-position'
+import { deleteInterview } from '@/api/interview-center'
 import type { JobPositionDetail } from '@/types/job-position'
 import { INTERVIEW_STATUS_LABELS, INTERVIEW_RESULT_LABELS } from '@/types/interview-center'
 import CreateInterviewDialog from '@/components/interview-center/CreateInterviewDialog.vue'
+import { useConfirm } from '@/composables/useConfirm'
+import { useToast } from '@/composables/useToast'
+
+const { confirm } = useConfirm()
+const toast = useToast()
 
 const route = useRoute()
 const router = useRouter()
@@ -127,6 +141,43 @@ function handleInterviewCreated(id: string) {
   preselectedPosition.value = null
   loadDetail()
   router.push(`/interview-center/${id}`)
+}
+
+async function handleDeletePosition() {
+  if (!position.value) return
+  const confirmed = await confirm({
+    title: '删除确认',
+    message: `确定要删除职位「${position.value.companyName} - ${position.value.title}」吗？删除后无法恢复，该职位下的所有面试记录也会被删除`,
+    danger: true
+  })
+  if (!confirmed) return
+
+  try {
+    await deleteJobPosition(position.value.id)
+    toast.success('职位已删除')
+    router.push('/interview-center')
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '删除失败'
+    toast.error(message)
+  }
+}
+
+async function handleDeleteInterview(interview: { id: string; date?: string }) {
+  const confirmed = await confirm({
+    title: '删除确认',
+    message: `确定要删除这条面试记录吗？面试日期：${formatDate(interview.date)}，删除后无法恢复`,
+    danger: true
+  })
+  if (!confirmed) return
+
+  try {
+    await deleteInterview(interview.id)
+    toast.success('面试记录已删除')
+    loadDetail()
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '删除失败'
+    toast.error(message)
+  }
 }
 
 async function loadDetail() {
@@ -315,6 +366,42 @@ onMounted(() => {
 .interview-arrow {
   color: $color-text-tertiary;
   font-size: 1.25rem;
+}
+
+.interview-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+}
+
+.delete-btn {
+  padding: $spacing-xs $spacing-sm;
+  background: transparent;
+  border: 1px solid $color-error;
+  color: $color-error;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: all 0.2s;
+  opacity: 0;
+}
+
+.interview-item:hover .delete-btn {
+  opacity: 1;
+}
+
+.delete-btn:hover {
+  background: rgba($color-error, 0.1);
+}
+
+.btn-danger {
+  background: transparent;
+  border: 1px solid $color-error;
+  color: $color-error;
+
+  &:hover {
+    background: rgba($color-error, 0.1);
+  }
 }
 
 .empty-state {

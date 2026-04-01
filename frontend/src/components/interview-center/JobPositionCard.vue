@@ -29,6 +29,9 @@
       <button class="action-btn secondary" @click.stop="$emit('view-detail', jobPosition)">
         查看详情
       </button>
+      <button class="action-btn danger" @click.stop="$emit('delete', jobPosition)">
+        删除
+      </button>
     </div>
   </div>
 </template>
@@ -44,6 +47,7 @@ defineEmits<{
   click: []
   'add-interview': [jobPosition: JobPositionListItem]
   'view-detail': [jobPosition: JobPositionListItem]
+  'delete': [jobPosition: JobPositionListItem]
 }>()
 
 function formatDate(dateStr: string): string {
@@ -159,6 +163,16 @@ function formatDate(dateStr: string): string {
 
     &:hover {
       background: lighten($color-bg-tertiary, 5%);
+    }
+  }
+
+  &.danger {
+    background: transparent;
+    color: $color-error;
+    border: 1px solid $color-error;
+
+    &:hover {
+      background: rgba($color-error, 0.1);
     }
   }
 
