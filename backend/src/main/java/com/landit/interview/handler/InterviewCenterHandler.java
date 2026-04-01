@@ -89,8 +89,8 @@ public class InterviewCenterHandler {
         interview.setRoundType(request.getRoundType());
         interview.setRoundName(request.getRoundName());
         interviewCenterService.save(interview);
-        log.info("创建真实面试成功: id={}, company={}, jobPositionId={}, roundType={}",
-                interview.getId(), interview.getCompany(), interview.getJobPositionId(), request.getRoundType());
+        log.info("创建真实面试成功: id={}, jobPositionId={}, roundType={}",
+                interview.getId(), interview.getJobPositionId(), request.getRoundType());
         return getInterviewDetail(interview.getId());
     }
 

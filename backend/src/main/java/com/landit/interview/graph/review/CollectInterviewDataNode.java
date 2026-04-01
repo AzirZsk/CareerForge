@@ -3,10 +3,14 @@ package com.landit.interview.graph.review;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.landit.common.util.JsonParseHelper;
+import com.landit.company.entity.Company;
+import com.landit.company.service.CompanyService;
 import com.landit.interview.entity.Interview;
 import com.landit.interview.entity.InterviewReviewNote;
 import com.landit.interview.service.InterviewCenterService;
 import com.landit.interview.service.InterviewReviewNoteService;
+import com.landit.jobposition.entity.JobPosition;
+import com.landit.jobposition.service.JobPositionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -31,6 +35,8 @@ public class CollectInterviewDataNode implements NodeAction {
 
     private final InterviewCenterService interviewService;
     private final InterviewReviewNoteService reviewNoteService;
+    private final JobPositionService jobPositionService;
+    private final CompanyService companyService;
 
     @Override
     public Map<String, Object> apply(OverAllState state) {
@@ -47,10 +53,18 @@ public class CollectInterviewDataNode implements NodeAction {
             interviewData = new HashMap<>();
             interviewData.put("roundType", interview.getRoundType());
             interviewData.put("roundName", interview.getRoundName());
-            interviewData.put("company", interview.getCompany());
-            interviewData.put("position", interview.getPosition());
             interviewData.put("date", interview.getDate());
             interviewData.put("notes", interview.getNotes());
+
+            // 通过 jobPositionId 关联查询公司名和职位名
+            if (interview.getJobPositionId() != null) {
+                JobPosition jobPosition = jobPositionService.getById(interview.getJobPositionId());
+                if (jobPosition != null) {
+                    interviewData.put("position", jobPosition.getTitle());
+                    Company company = companyService.getById(jobPosition.getCompanyId());
+                    interviewData.put("company", company != null ? company.getName() : "");
+                }
+            }
         }
         // 收集用户笔记
         InterviewReviewNote reviewNote = reviewNoteService.getManualNoteByInterviewId(interviewId);
