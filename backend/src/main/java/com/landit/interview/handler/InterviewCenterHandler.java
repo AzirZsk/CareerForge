@@ -88,6 +88,10 @@ public class InterviewCenterHandler {
         interview.setJobPositionId(jobPositionId);
         interview.setRoundType(request.getRoundType());
         interview.setRoundName(request.getRoundName());
+        interview.setInterviewType(request.getInterviewType());
+        interview.setLocation(request.getLocation());
+        interview.setOnlineLink(request.getOnlineLink());
+        interview.setMeetingPassword(request.getMeetingPassword());
         interviewCenterService.save(interview);
         log.info("创建真实面试成功: id={}, jobPositionId={}, roundType={}",
                 interview.getId(), interview.getJobPositionId(), request.getRoundType());
@@ -158,6 +162,18 @@ public class InterviewCenterHandler {
         }
         if (request.getOverallResult() != null) {
             interview.setOverallResult(request.getOverallResult());
+        }
+        if (request.getInterviewType() != null) {
+            interview.setInterviewType(request.getInterviewType());
+        }
+        if (request.getLocation() != null) {
+            interview.setLocation(request.getLocation());
+        }
+        if (request.getOnlineLink() != null) {
+            interview.setOnlineLink(request.getOnlineLink());
+        }
+        if (request.getMeetingPassword() != null) {
+            interview.setMeetingPassword(request.getMeetingPassword());
         }
         interviewCenterService.updateById(interview);
         log.info("更新面试成功: id={}", id);

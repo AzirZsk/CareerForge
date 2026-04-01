@@ -54,6 +54,7 @@
 
       <!-- 面试信息卡片 -->
       <section class="interview-info-card">
+        <!-- 面试时间单独一行 -->
         <div class="info-row">
           <span class="info-item">
             <span class="info-icon">📅</span>
@@ -61,45 +62,39 @@
             <span class="info-value">{{ formatDateTime(interview.interviewDate) }}</span>
           </span>
         </div>
+        <!-- 面试类型和相关信息 -->
         <div class="info-row">
           <span class="info-item">
             <span class="info-icon">💻</span>
             <span class="info-label">面试类型：</span>
             <span class="info-value" v-if="interview.interviewType">{{ getInterviewTypeLabel(interview.interviewType) }}</span>
+            <span class="info-value" v-else>未设置</span>
           </span>
-          <span class="info-item" v-if="interview.interviewType === 'onsite' && interview.location">
-            <span class="info-icon">📍</span>
-            <span class="info-label">地点：</span>
-            <span class="info-value">{{ interview.location }}</span>
-          </span>
-          <span class="info-item" v-if="interview.interviewType === 'online' && interview.onlineLink">
-            <span class="info-icon">🔗</span>
-            <span class="info-label">会议链接：</span>
-            <a :href="interview.onlineLink" target="_blank" class="link-value">{{ interview.onlineLink }}</a>
-            <button class="copy-btn" @click="copyToClipboard(interview.onlineLink)">复制</button>
-          </span>
-          <span class="info-item" v-if="interview.interviewType === 'online' && interview.meetingPassword">
-            <span class="info-icon">🔑</span>
-            <span class="info-label">会议密码：</span>
-            <span class="info-value">{{ interview.meetingPassword }}</span>
-            <button class="copy-btn" @click="copyToClipboard(interview.meetingPassword)">复制</button>
-          </span>
+          <template v-if="interview.interviewType === 'onsite' && interview.location">
+            <span class="info-item">
+              <span class="info-icon">📍</span>
+              <span class="info-label">地点：</span>
+              <span class="info-value">{{ interview.location }}</span>
+            </span>
+          </template>
+          <template v-if="interview.interviewType === 'online' && interview.onlineLink">
+            <span class="info-item">
+              <span class="info-icon">🔗</span>
+              <span class="info-label">会议链接：</span>
+              <a :href="interview.onlineLink" target="_blank" class="link-value">{{ interview.onlineLink }}</a>
+              <button class="copy-btn" @click="copyToClipboard(interview.onlineLink)">复制</button>
+            </span>
+          </template>
+          <template v-if="interview.interviewType === 'online' && interview.meetingPassword">
+            <span class="info-item">
+              <span class="info-icon">🔑</span>
+              <span class="info-label">会议密码：</span>
+              <span class="info-value">{{ interview.meetingPassword }}</span>
+              <button class="copy-btn" @click="copyToClipboard(interview.meetingPassword)">复制</button>
+            </span>
+          </template>
         </div>
         <div class="info-row">
-          <span class="info-item">
-            <span class="info-icon">🎯</span>
-            <span class="info-label">最终结果：</span>
-            <select
-              class="result-select"
-              :value="interview.overallResult || ''"
-              @change="handleResultChange(($event.target as HTMLSelectElement).value)"
-            >
-              <option value="">未设置</option>
-              <option v-for="(label, key) in resultOptions" :key="key" :value="key">
-                {{ label }}
-              </option>
-            </select>
-          </span>
           <span class="info-item">
             <span class="info-icon">📊</span>
             <span class="info-label">状态：</span>
@@ -110,6 +105,20 @@
               @change="handleStatusChange(($event.target as HTMLSelectElement).value)"
             >
               <option v-for="(label, key) in statusOptions" :key="key" :value="key">
+                {{ label }}
+              </option>
+            </select>
+          </span>
+          <span class="info-item">
+            <span class="info-icon">🎯</span>
+            <span class="info-label">最终结果：</span>
+            <select
+              class="result-select"
+              :value="interview.overallResult || ''"
+              @change="handleResultChange(($event.target as HTMLSelectElement).value)"
+            >
+              <option value="">未设置</option>
+              <option v-for="(label, key) in resultOptions" :key="key" :value="key">
                 {{ label }}
               </option>
             </select>
