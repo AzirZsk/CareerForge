@@ -30,4 +30,14 @@ public class InterviewPreparation extends BaseEntity {
 
     private Integer sortOrder;
 
+    /**
+     * 优先级：required/recommended/optional
+     */
+    private String priority;
+
+    /**
+     * 关联资源（JSON字符串）
+     */
+    private String resources;
+
 }

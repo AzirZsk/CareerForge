@@ -13,7 +13,10 @@ import lombok.Getter;
 public enum PreparationItemType implements BaseEnum {
 
     COMPANY_RESEARCH("company_research", "公司调研"),
-    JD_ANALYSIS("jd_analysis", "JD分析"),
+    JD_KEYWORDS("jd_keywords", "JD关键词"),
+    TECH_PREP("tech_prep", "技术准备"),
+    BEHAVIORAL("behavioral", "行为面试"),
+    CASE_STUDY("case_study", "案例准备"),
     TODO("todo", "准备事项"),
     MANUAL("manual", "手动记录");
 

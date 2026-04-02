@@ -105,6 +105,11 @@ public final class InterviewPreparationGraphConstants extends BaseGraphConstants
      */
     public static final String STATE_PREPARATION_ITEMS = "preparation_items";
 
+    /**
+     * 节点输出（用于SSE）
+     */
+    public static final String STATE_NODE_OUTPUT = "node_output";
+
     // ==================== 路由决策 ====================
 
     /**

@@ -19,10 +19,23 @@ export type RoundType = 'technical_1' | 'technical_2' | 'hr' | 'director' | 'cto
 export type InterviewType = 'onsite' | 'online'
 
 // 准备项类型
-export type PreparationItemType = 'company_research' | 'jd_analysis' | 'todo' | 'manual'
+export type PreparationItemType =
+  | 'company_research'
+  | 'jd_keywords'
+  | 'tech_prep'
+  | 'behavioral'
+  | 'case_study'
+  | 'todo'
+  | 'manual'
 
 // 准备项来源
 export type PreparationSource = 'ai_generated' | 'manual'
+
+// 准备项优先级
+export type PreparationPriority = 'required' | 'recommended' | 'optional'
+
+// 资源类型
+export type ResourceType = 'link' | 'note' | 'code' | 'video'
 
 // 复盘笔记类型
 export type ReviewNoteType = 'manual' | 'ai_analysis'
@@ -79,9 +92,19 @@ export interface PreparationVO {
   content?: string
   completed: boolean
   source: PreparationSource
+  priority: PreparationPriority
+  resources?: PreparationResource[]
   sortOrder: number
   createdAt: string
   updatedAt: string
+}
+
+// 准备项资源
+export interface PreparationResource {
+  type: ResourceType
+  title: string
+  url?: string
+  content?: string
 }
 
 // 复盘笔记 VO
@@ -137,6 +160,8 @@ export interface UpdateInterviewRequest {
 export interface AddPreparationRequest {
   title: string
   content?: string
+  priority?: PreparationPriority
+  resources?: PreparationResource[]
 }
 
 // 更新准备事项请求
@@ -144,6 +169,8 @@ export interface UpdatePreparationRequest {
   title?: string
   content?: string
   completed?: boolean
+  priority?: PreparationPriority
+  resources?: PreparationResource[]
   sortOrder?: number
 }
 
@@ -193,6 +220,45 @@ export const INTERVIEW_RESULT_LABELS: Record<InterviewResult, string> = {
 export const INTERVIEW_SOURCE_LABELS: Record<InterviewSource, string> = {
   real: '真实面试',
   mock: '模拟面试'
+}
+
+// 优先级标签（含颜色）
+export const PRIORITY_CONFIG: Record<
+  PreparationPriority,
+  { label: string; color: string; icon: string }
+> = {
+  required: { label: '必做', color: '#f87171', icon: '🔴' },
+  recommended: { label: '推荐', color: '#fbbf24', icon: '🟡' },
+  optional: { label: '可选', color: '#34d399', icon: '🟢' }
+}
+
+// 准备项类型分组标签
+export const ITEM_TYPE_CONFIG: Record<string, { label: string; icon: string }> = {
+  company_research: { label: '公司调研', icon: '🏢' },
+  jd_keywords: { label: 'JD 关键词', icon: '📋' },
+  tech_prep: { label: '技术准备', icon: '💻' },
+  behavioral: { label: '行为面试', icon: '🗣️' },
+  case_study: { label: '案例准备', icon: '📦' },
+  todo: { label: '准备事项', icon: '📝' },
+  manual: { label: '其他准备', icon: '📌' }
+}
+
+// 准备项类型排序顺序
+export const ITEM_TYPE_ORDER: PreparationItemType[] = [
+  'company_research',
+  'jd_keywords',
+  'tech_prep',
+  'behavioral',
+  'case_study',
+  'todo',
+  'manual'
+]
+
+// 优先级排序权重
+export const PRIORITY_ORDER: Record<PreparationPriority, number> = {
+  required: 0,
+  recommended: 1,
+  optional: 2
 }
 
 // ==================== 工作流相关类型 ====================

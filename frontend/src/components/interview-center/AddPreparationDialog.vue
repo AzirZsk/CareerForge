@@ -1,48 +1,65 @@
 <template>
   <Teleport to="body">
     <div class="dialog-overlay" @click.self="$emit('close')">
-    <div class="dialog-content">
-      <header class="dialog-header">
-        <h2>添加准备事项</h2>
-        <button class="close-btn" @click="$emit('close')">×</button>
-      </header>
+      <div class="dialog-content">
+        <header class="dialog-header">
+          <h2>添加准备事项</h2>
+          <button class="close-btn" @click="$emit('close')">×</button>
+        </header>
 
-      <form class="dialog-form" @submit.prevent="handleSubmit">
-        <div class="form-group">
-          <label class="form-label required">事项标题</label>
-          <input
-            v-model="form.title"
-            type="text"
-            class="form-input"
-            placeholder="例如：复习Spring Boot原理"
-            required
-          />
-        </div>
+        <form class="dialog-form" @submit.prevent="handleSubmit">
+          <div class="form-group">
+            <label class="form-label required">事项标题</label>
+            <input
+              v-model="form.title"
+              type="text"
+              class="form-input"
+              placeholder="例如：复习Spring Boot原理"
+              required
+            />
+          </div>
 
-        <div class="form-group">
-          <label class="form-label">详细内容</label>
-          <textarea
-            v-model="form.content"
-            class="form-textarea"
-            placeholder="具体要做什么..."
-            rows="4"
-          ></textarea>
-        </div>
-      </form>
+          <div class="form-group">
+            <label class="form-label">详细内容</label>
+            <textarea
+              v-model="form.content"
+              class="form-textarea"
+              placeholder="具体要做什么..."
+              rows="4"
+            ></textarea>
+          </div>
 
-      <footer class="dialog-footer">
-        <button type="button" class="btn btn-secondary" @click="$emit('close')">取消</button>
-        <button
-          type="button"
-          class="btn btn-primary"
-          :disabled="submitting || !isFormValid"
-          @click="handleSubmit"
-        >
-          {{ submitting ? '添加中...' : '添加' }}
-        </button>
-      </footer>
+          <div class="form-group">
+            <label class="form-label">优先级</label>
+            <div class="priority-selector">
+              <button
+                v-for="(config, key) in PRIORITY_CONFIG"
+                :key="key"
+                type="button"
+                class="priority-option"
+                :class="{ active: form.priority === key }"
+                @click="form.priority = key as PreparationPriority"
+              >
+                <span class="priority-icon">{{ config.icon }}</span>
+                <span class="priority-label">{{ config.label }}</span>
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <footer class="dialog-footer">
+          <button type="button" class="btn btn-secondary" @click="$emit('close')">取消</button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            :disabled="submitting || !isFormValid"
+            @click="handleSubmit"
+          >
+            {{ submitting ? '添加中...' : '添加' }}
+          </button>
+        </footer>
+      </div>
     </div>
-  </div>
   </Teleport>
 </template>
 
@@ -50,7 +67,11 @@
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useScrollLock } from '@vueuse/core'
 import { addPreparation } from '@/api/interview-center'
-import type { AddPreparationRequest } from '@/types/interview-center'
+import type {
+  AddPreparationRequest,
+  PreparationPriority
+} from '@/types/interview-center'
+import { PRIORITY_CONFIG } from '@/types/interview-center'
 
 const props = defineProps<{
   interviewId: string
@@ -68,7 +89,8 @@ const isScrollLocked = useScrollLock(document.body)
 
 const form = reactive<AddPreparationRequest>({
   title: '',
-  content: ''
+  content: '',
+  priority: 'recommended' as PreparationPriority
 })
 
 const isFormValid = computed(() => {
@@ -94,6 +116,7 @@ async function handleSubmit() {
     // 重置表单
     form.title = ''
     form.content = ''
+    form.priority = 'recommended'
     emit('added')
     emit('close')
   } catch (error) {
@@ -184,7 +207,8 @@ async function handleSubmit() {
   }
 }
 
-.form-input, .form-textarea {
+.form-input,
+.form-textarea {
   width: 100%;
   padding: $spacing-md;
   background: $color-bg-tertiary;
@@ -207,6 +231,43 @@ async function handleSubmit() {
 .form-textarea {
   resize: vertical;
   min-height: 100px;
+}
+
+.priority-selector {
+  display: flex;
+  gap: $spacing-sm;
+}
+
+.priority-option {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-md;
+  background: $color-bg-tertiary;
+  border: 2px solid transparent;
+  border-radius: $radius-md;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: $color-bg-elevated;
+  }
+
+  &.active {
+    border-color: $color-accent;
+    background: rgba($color-accent, 0.1);
+  }
+}
+
+.priority-icon {
+  font-size: 1.25rem;
+}
+
+.priority-label {
+  font-size: 0.8125rem;
+  color: $color-text-secondary;
 }
 
 .dialog-footer {

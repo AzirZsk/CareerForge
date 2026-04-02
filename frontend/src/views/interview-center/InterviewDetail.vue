@@ -180,24 +180,24 @@
           </div>
         </div>
 
-        <!-- 原有准备清单列表 -->
-        <div class="preparations-list">
-          <div
-            v-for="prep in interview.preparations"
-            :key="prep.id"
-            class="preparation-item"
-            :class="{ completed: prep.completed }"
-          >
-            <input
-              type="checkbox"
-              :checked="prep.completed"
-              @change="togglePreparation(prep.id)"
-            />
-            <span class="prep-title">{{ prep.title }}</span>
-            <button class="delete-btn" @click="handleDeletePreparation(prep.id)">×</button>
-          </div>
-          <div v-if="interview.preparations?.length === 0" class="empty-preparations">
-            <p>暂无准备事项</p>
+        <!-- 进度条 -->
+        <PreparationProgress
+          v-if="interview.preparations && interview.preparations.length > 0"
+          :preparations="interview.preparations"
+        />
+
+        <!-- 分组展示准备事项 -->
+        <div class="preparations-groups">
+          <PreparationGroup
+            v-for="groupType in sortedGroupTypes"
+            :key="groupType"
+            :group-type="groupType"
+            :preparations="groupedPreparations[groupType]"
+            @toggle="togglePreparation"
+            @delete="handleDeletePreparation"
+          />
+          <div v-if="!interview.preparations || interview.preparations.length === 0" class="empty-preparations">
+            <p>暂无准备事项，点击"AI 生成"或"+ 添加事项"开始准备</p>
           </div>
         </div>
       </section>
@@ -286,7 +286,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   getInterviewDetail,
@@ -301,16 +301,22 @@ import {
   INTERVIEW_RESULT_LABELS,
   ROUND_TYPE_LABELS,
   INTERVIEW_TYPE_LABELS,
+  ITEM_TYPE_ORDER,
+  PRIORITY_ORDER,
   type InterviewDetail,
   type InterviewStatus,
   type InterviewResult,
-  type InterviewType
+  type InterviewType,
+  type PreparationVO
 } from '@/types/interview-center'
 // 弹窗组件
 import AddPreparationDialog from '@/components/interview-center/AddPreparationDialog.vue'
 import ReviewNoteDialog from '@/components/interview-center/ReviewNoteDialog.vue'
 import EditInterviewDialog from '@/components/interview-center/EditInterviewDialog.vue'
 import PreparationProgressModal from '@/components/interview-center/PreparationProgressModal.vue'
+// 新增组件
+import PreparationProgress from '@/components/interview-center/PreparationProgress.vue'
+import PreparationGroup from '@/components/interview-center/PreparationGroup.vue'
 // 工作流 composables
 import { useInterviewPreparation } from '@/composables/useInterviewPreparation'
 import { useReviewAnalysis } from '@/composables/useReviewAnalysis'
@@ -333,6 +339,47 @@ const sessionTranscript = ref('')
 
 // 职位详情折叠状态
 const showPositionDetail = ref(false)
+
+// 优先级排序权重
+const PRIORITY_ORDER: Record<string, number> = { required: 0, recommended: 1, optional: 2 }
+
+// 类型排序顺序
+const TYPE_ORDER = ['company_research', 'jd_keywords', 'tech_prep', 'behavioral', 'case_study', 'todo', 'manual']
+
+// 按类型分组的准备事项
+const groupedPreparations = computed(() => {
+  if (!interview.value?.preparations) return {}
+  const groups: Record<string, PreparationVO[]> = {}
+  for (const prep of interview.value.preparations) {
+    const type = prep.itemType || 'manual'
+    if (!groups[type]) {
+      groups[type] = []
+    }
+    groups[type].push(prep)
+  }
+  // 每组内按优先级排序
+  for (const type in groups) {
+    groups[type].sort((a, b) => {
+      const orderA = PRIORITY_ORDER[a.priority || 'recommended'] ?? 1
+      const orderB = PRIORITY_ORDER[b.priority || 'recommended'] ?? 1
+      return orderA - orderB
+    })
+  }
+  return groups
+})
+
+// 分组排序（按类型顺序）
+const sortedGroupTypes = computed(() => {
+  const types = Object.keys(groupedPreparations.value)
+  return types.sort((a, b) => {
+    const orderA = TYPE_ORDER.indexOf(a)
+    const orderB = TYPE_ORDER.indexOf(b)
+    if (orderA === -1 && orderB === -1) return 0
+    if (orderA === -1) return 1
+    if (orderB === -1) return -1
+    return orderA - orderB
+  })
+})
 
 const statusOptions = INTERVIEW_STATUS_LABELS
 const resultOptions = INTERVIEW_RESULT_LABELS

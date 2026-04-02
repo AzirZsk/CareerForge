@@ -419,6 +419,8 @@ CREATE TABLE IF NOT EXISTS t_interview_preparation (
     content TEXT,
     completed INTEGER DEFAULT 0,
     source VARCHAR(20) DEFAULT 'manual',
+    priority VARCHAR(20) DEFAULT 'recommended',
+    resources TEXT,
     sort_order INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -427,6 +429,7 @@ CREATE TABLE IF NOT EXISTS t_interview_preparation (
 
 CREATE INDEX IF NOT EXISTS idx_interview_preparation_interview_id ON t_interview_preparation(interview_id);
 CREATE INDEX IF NOT EXISTS idx_interview_preparation_item_type ON t_interview_preparation(item_type);
+CREATE INDEX IF NOT EXISTS idx_interview_preparation_priority ON t_interview_preparation(priority);
 
 -- ----------------------------------------------------------------------------
 -- t_interview_review_note 表（面试复盘笔记表）
