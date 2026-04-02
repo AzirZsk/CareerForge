@@ -223,9 +223,10 @@ public class InterviewCenterHandler {
         // 发送开始事件
         sendSseEvent(emitter, GraphProgressEvent.startPreparation(id, threadId,
                 interview.getCompanyName(), interview.getPosition()));
-        // 订阅工作流
+        // 订阅工作流（在独立线程池执行，避免阻塞调用线程）
         preparationGraphService.streamPreparation(initialState, threadId)
                 .filter(output -> !isInterruptionOutput(output))
+                .subscribeOn(Schedulers.boundedElastic())
                 .subscribe(
                         output -> {
                             Map<String, Object> data = output.state().data();
@@ -276,9 +277,10 @@ public class InterviewCenterHandler {
         initialState.put(ReviewAnalysisGraphConstants.STATE_MESSAGES, new ArrayList<String>());
         // 发送开始事件
         sendSseEvent(emitter, GraphProgressEvent.startReviewAnalysis(id, threadId));
-        // 订阅工作流
+        // 订阅工作流（在独立线程池执行，避免阻塞调用线程）
         reviewGraphService.streamAnalysis(initialState, threadId)
                 .filter(output -> !isInterruptionOutput(output))
+                .subscribeOn(Schedulers.boundedElastic())
                 .subscribe(
                         output -> {
                             Map<String, Object> data = output.state().data();
