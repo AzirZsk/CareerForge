@@ -19,6 +19,11 @@ public class CreateInterviewRequest {
     private String jobPositionId;
 
     /**
+     * 关联简历ID（用于面试准备参考，指定简历可获得更精准的面试准备建议）
+     */
+    private String resumeId;
+
+    /**
      * 公司名称（当 jobPositionId 为空时必填）
      */
     private String companyName;

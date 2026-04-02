@@ -75,6 +75,8 @@ export interface InterviewDetail {
   jdContent?: string
   notes?: string
   jobPositionId?: string
+  resumeId?: string
+  resumeName?: string
   companyResearch?: string
   jdAnalysis?: string
   preparations: PreparationVO[]
@@ -126,6 +128,7 @@ export interface ReviewNoteVO {
 // 创建面试请求
 export interface CreateInterviewRequest {
   jobPositionId?: string
+  resumeId?: string
   companyName: string
   position: string
   interviewDate: string
@@ -154,6 +157,7 @@ export interface UpdateInterviewRequest {
   notes?: string
   status?: InterviewStatus
   overallResult?: InterviewResult
+  resumeId?: string
 }
 
 // 添加准备事项请求

@@ -38,4 +38,9 @@ public class UpdateInterviewRequest {
 
     private String overallResult;
 
+    /**
+     * 关联简历ID（用于面试准备参考）
+     */
+    private String resumeId;
+
 }

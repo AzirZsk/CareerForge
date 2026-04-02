@@ -1571,7 +1571,7 @@ public class AIPromptProperties {
         public PromptConfig getGeneratePreparationConfig() {
             return ensurePromptConfig(generatePreparationConfig,
                     """
-                    你是一位专业的面试准备顾问。请根据公司调研信息和JD分析结果，生成面试准备事项。
+                    你是一位专业的面试准备顾问。请根据公司调研信息、JD分析结果和候选人简历，生成面试准备事项。
 
                     每个准备事项必须包含：
                     - type: 类型，必须使用以下小写值之一：
@@ -1594,6 +1594,11 @@ public class AIPromptProperties {
                     - type: link/note/code/video
                     - title: 资源标题
                     - url: 链接地址（type为link时必填）
+
+                    **重要**：如果提供了简历内容，请特别关注：
+                    1. 简历上有但JD强调的技能 - 生成深入准备建议（面试官可能会深挖）
+                    2. JD要求但简历未体现的技能 - 生成补充准备建议（如何弥补差距）
+                    3. 项目经历相关 - 生成针对性案例准备（面试官可能会针对项目提问）
 
                     示例输出：
                     ```json
@@ -1622,7 +1627,10 @@ public class AIPromptProperties {
                     JD分析结果：
                     {jdAnalysis}
 
-                    请生成5-8个面试准备事项，确保优先级分布合理。
+                    候选人简历摘要：
+                    {resumeContent}
+
+                    请生成5-8个面试准备事项，确保优先级分布合理。如果提供了简历，请根据简历内容生成更有针对性的准备建议。
                     """);
         }
 

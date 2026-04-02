@@ -126,6 +126,9 @@ function formatNextInterview(dateStr: string): string {
 
 <style scoped lang="scss">
 .job-position-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 180px;
   background: $color-bg-secondary;
   border-radius: $radius-lg;
   padding: $spacing-lg;
@@ -258,6 +261,7 @@ function formatNextInterview(dateStr: string): string {
   display: flex;
   gap: $spacing-sm;
   padding-top: $spacing-md;
+  margin-top: auto;
   border-top: 1px solid $color-bg-tertiary;
 }
 

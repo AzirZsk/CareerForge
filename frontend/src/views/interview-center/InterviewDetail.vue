@@ -141,6 +141,20 @@
           </span>
         </div>
 
+        <!-- 关联简历 -->
+        <div class="info-row" v-if="interview.resumeId">
+          <span class="info-item">
+            <span class="info-icon">📄</span>
+            <span class="info-label">关联简历：</span>
+            <router-link
+              :to="`/resume/${interview.resumeId}`"
+              class="resume-link"
+            >
+              {{ interview.resumeName || '查看简历' }}
+            </router-link>
+          </span>
+        </div>
+
         <!-- 职位详情折叠区域 -->
         <div
           class="position-detail-toggle"
@@ -692,6 +706,15 @@ onMounted(() => {
     color: $color-accent;
     text-decoration: none;
     word-break: break-all;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .resume-link {
+    color: $color-accent;
+    text-decoration: none;
 
     &:hover {
       text-decoration: underline;

@@ -52,13 +52,15 @@ public class GeneratePreparationNode implements NodeAction {
         String positionTitle = (String) state.value(STATE_POSITION_TITLE).orElse("");
         String companyResearch = (String) state.value(STATE_COMPANY_RESEARCH_RESULT).orElse("{}");
         String jdAnalysis = (String) state.value(STATE_JD_ANALYSIS_RESULT).orElse("{}");
+        String resumeContent = (String) state.value(STATE_RESUME_CONTENT).orElse("");
         // 获取AI提示词配置并构建用户提示词
         AIPromptProperties.PromptConfig config = aiPromptProperties.getPreparationGraph().getGeneratePreparationConfig();
         String userPrompt = config.getUserPromptTemplate()
                 .replace("{companyName}", companyName)
                 .replace("{positionTitle}", positionTitle)
                 .replace("{companyResearch}", companyResearch)
-                .replace("{jdAnalysis}", jdAnalysis);
+                .replace("{jdAnalysis}", jdAnalysis)
+                .replace("{resumeContent}", resumeContent.isEmpty() ? "（未提供简历）" : resumeContent);
         // 调用AI生成准备事项
         List<Map<String, Object>> preparationItems = ChatClientHelper.callAndParse(
                 chatClient, config.getSystemPrompt(), userPrompt, List.class

@@ -68,6 +68,11 @@ public final class InterviewPreparationGraphConstants extends BaseGraphConstants
      */
     public static final String STATE_JD_CONTENT = "jd_content";
 
+    /**
+     * 简历内容（用于生成针对性的准备建议）
+     */
+    public static final String STATE_RESUME_CONTENT = "resume_content";
+
     // ==================== 状态键 - 中间结果 ====================
 
     /**

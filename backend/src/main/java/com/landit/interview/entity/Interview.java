@@ -54,6 +54,11 @@ public class Interview extends BaseEntity {
     private String jobPositionId;
 
     /**
+     * 关联简历ID（用于面试准备参考）
+     */
+    private String resumeId;
+
+    /**
      * 轮次类型（technical_1/technical_2/hr/director/cto/final/custom）
      */
     private String roundType;

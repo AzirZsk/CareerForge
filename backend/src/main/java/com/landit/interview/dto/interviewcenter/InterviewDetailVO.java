@@ -45,6 +45,16 @@ public class InterviewDetailVO {
 
     private String jobPositionId;
 
+    /**
+     * 关联简历ID
+     */
+    private String resumeId;
+
+    /**
+     * 关联简历名称（用于前端显示）
+     */
+    private String resumeName;
+
     private String companyResearch;
 
     private String jdAnalysis;

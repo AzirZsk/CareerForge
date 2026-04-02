@@ -100,6 +100,23 @@
 
           <!-- 通用字段 -->
           <div class="form-group">
+            <label class="form-label">关联简历</label>
+            <select v-model="form.resumeId" class="form-select">
+              <option value="">不关联简历</option>
+              <option
+                v-for="resume in resumeList"
+                :key="resume.id"
+                :value="resume.id"
+              >
+                {{ resume.name }}{{ resume.isPrimary ? '（主简历）' : '' }}
+              </option>
+            </select>
+            <p class="form-hint">
+              AI 将基于你的简历，预测面试官可能深挖的项目问题，帮你提前准备
+            </p>
+          </div>
+
+          <div class="form-group">
             <label class="form-label required">轮次类型</label>
             <select v-model="form.roundType" class="form-select" required>
               <option v-for="(label, type) in ROUND_TYPE_LABELS" :key="type" :value="type">
@@ -210,6 +227,7 @@ import { useScrollLock } from '@vueuse/core'
 import { createInterview } from '@/api/interview-center'
 import { useToast } from '@/composables/useToast'
 import { getJobPositionList } from '@/api/job-position'
+import { useAppStore } from '@/stores'
 import type { CreateInterviewRequest, RoundType, InterviewType } from '@/types/interview-center'
 import { ROUND_TYPE_LABELS } from '@/types/interview-center'
 import type { JobPositionListItem } from '@/types/job-position'
@@ -230,12 +248,14 @@ const loadingPositions = ref(false)
 const jobPositions = ref<JobPositionListItem[]>([])
 const selectedPositionId = ref('')
 const toast = useToast()
+const store = useAppStore()
 
 // 锁定背景滚动，防止滚动穿透
 const isScrollLocked = useScrollLock(document.body)
 
 const form = reactive<CreateInterviewRequest>({
   jobPositionId: '',
+  resumeId: '',
   companyName: '',
   position: '',
   interviewDate: '',
@@ -248,6 +268,9 @@ const form = reactive<CreateInterviewRequest>({
   jdContent: '',
   notes: ''
 })
+
+// 简历列表（从 store 获取）
+const resumeList = computed(() => store.resumeList)
 
 const selectedPosition = computed(() => {
   if (!selectedPositionId.value) return null
@@ -331,6 +354,10 @@ async function handleSubmit() {
 
 onMounted(() => {
   loadPositions()
+  // 加载简历列表
+  if (store.resumeList.length === 0) {
+    store.fetchResumes()
+  }
   // 弹窗打开时锁定滚动
   isScrollLocked.value = true
 })
@@ -511,6 +538,13 @@ onUnmounted(() => {
 .form-textarea {
   resize: vertical;
   min-height: 80px;
+}
+
+.form-hint {
+  margin-top: $spacing-xs;
+  font-size: 0.75rem;
+  color: $color-text-tertiary;
+  line-height: 1.4;
 }
 
 .selected-info {

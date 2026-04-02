@@ -20,6 +20,9 @@ import com.landit.interview.service.InterviewPreparationService;
 import com.landit.interview.service.InterviewReviewNoteService;
 import com.landit.jobposition.entity.JobPosition;
 import com.landit.jobposition.service.JobPositionService;
+import com.landit.resume.dto.ResumeDetailVO;
+import com.landit.resume.entity.Resume;
+import com.landit.resume.service.ResumeService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -63,6 +66,7 @@ public class InterviewCenterHandler {
     private final CompanyService companyService;
     private final InterviewPreparationGraphService preparationGraphService;
     private final ReviewAnalysisGraphService reviewGraphService;
+    private final ResumeService resumeService;
 
     /**
      * 创建真实面试
@@ -95,6 +99,7 @@ public class InterviewCenterHandler {
         interview.setCompanyResearch("{}");
         interview.setJdAnalysis("{}");
         interview.setJobPositionId(jobPositionId);
+        interview.setResumeId(request.getResumeId());
         interview.setRoundType(request.getRoundType());
         interview.setRoundName(request.getRoundName());
         interview.setInterviewType(request.getInterviewType());
@@ -184,6 +189,9 @@ public class InterviewCenterHandler {
         if (request.getMeetingPassword() != null) {
             interview.setMeetingPassword(request.getMeetingPassword());
         }
+        if (request.getResumeId() != null) {
+            interview.setResumeId(request.getResumeId());
+        }
         interviewCenterService.updateById(interview);
         log.info("更新面试成功: id={}", id);
         return getInterviewDetail(id);
@@ -228,6 +236,11 @@ public class InterviewCenterHandler {
         initialState.put(InterviewPreparationGraphConstants.STATE_COMPANY_NAME, interview.getCompanyName());
         initialState.put(InterviewPreparationGraphConstants.STATE_POSITION_TITLE, interview.getPosition());
         initialState.put(InterviewPreparationGraphConstants.STATE_JD_CONTENT, interview.getJdContent());
+        // 注入简历内容（如果有关联简历）
+        if (interview.getResumeId() != null && !interview.getResumeId().isBlank()) {
+            String resumeContent = buildResumeContext(interview.getResumeId());
+            initialState.put(InterviewPreparationGraphConstants.STATE_RESUME_CONTENT, resumeContent);
+        }
         initialState.put(InterviewPreparationGraphConstants.STATE_MESSAGES, new ArrayList<String>());
         // 发送开始事件
         sendSseEvent(emitter, GraphProgressEvent.startPreparation(id, threadId,
@@ -375,6 +388,62 @@ public class InterviewCenterHandler {
         return String.valueOf(newPosition.getId());
     }
 
+    /**
+     * 构建简历上下文（用于 AI 工作流参考）
+     * 提取简历关键信息生成简洁摘要，避免注入过多冗余内容
+     *
+     * @param resumeId 简历ID
+     * @return 简历上下文字符串
+     */
+    private String buildResumeContext(String resumeId) {
+        try {
+            ResumeDetailVO resume = resumeService.getResumeDetail(resumeId);
+            if (resume == null) {
+                return "";
+            }
+            StringBuilder sb = new StringBuilder();
+            // 基本信息
+            if (resume.getTargetPosition() != null && !resume.getTargetPosition().isBlank()) {
+                sb.append("【目标岗位】").append(resume.getTargetPosition()).append("\n");
+            }
+            // 提取各区块摘要
+            if (resume.getSections() != null) {
+                for (ResumeDetailVO.ResumeSectionVO section : resume.getSections()) {
+                    String type = section.getType();
+                    // 只提取关键区块：技能、工作经历、项目经历
+                    if ("skills".equals(type) || "work".equals(type) || "project".equals(type)) {
+                        sb.append("【").append(section.getTitle()).append("】\n");
+                        String content = extractBriefContent(section.getContent(), type);
+                        sb.append(content).append("\n");
+                    }
+                }
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            log.warn("构建简历上下文失败: resumeId={}, error={}", resumeId, e.getMessage());
+            return "";
+        }
+    }
+
+    /**
+     * 提取区块内容的简要信息
+     */
+    private String extractBriefContent(String contentJson, String type) {
+        if (contentJson == null || contentJson.isBlank()) {
+            return "";
+        }
+        try {
+            // 简单处理：限制内容长度，避免注入过多内容
+            int maxLen = 500;
+            if (contentJson.length() > maxLen) {
+                return contentJson.substring(0, maxLen) + "...";
+            }
+            return contentJson;
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
     // ===== 转换方法 =====
 
     private InterviewListItemVO convertToListItemVO(Interview interview) {
@@ -415,6 +484,13 @@ public class InterviewCenterHandler {
         vo.setInterviewDate(interview.getDate());
         vo.setRoundType(interview.getRoundType());
         vo.setRoundName(interview.getRoundName());
+        // 设置关联简历名称
+        if (interview.getResumeId() != null && !interview.getResumeId().isBlank()) {
+            Resume resume = resumeService.getById(interview.getResumeId());
+            if (resume != null) {
+                vo.setResumeName(resume.getName());
+            }
+        }
         vo.setPreparations(preparations.stream().map(this::convertToPreparationVO).collect(Collectors.toList()));
         if (reviewNote != null) {
             vo.setReviewNote(convertToReviewNoteVO(reviewNote));

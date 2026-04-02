@@ -56,6 +56,23 @@
         </div>
 
         <div class="form-group">
+          <label class="form-label">关联简历</label>
+          <select v-model="form.resumeId" class="form-select">
+            <option value="">不关联简历</option>
+            <option
+              v-for="resume in resumeList"
+              :key="resume.id"
+              :value="resume.id"
+            >
+              {{ resume.name }}{{ resume.isPrimary ? '（主简历）' : '' }}
+            </option>
+          </select>
+          <p class="form-hint">
+            AI 将基于你的简历，预测面试官可能深挖的项目问题，帮你提前准备
+          </p>
+        </div>
+
+        <div class="form-group">
           <label class="form-label">面试状态</label>
           <select v-model="form.status" class="form-select">
             <option v-for="(label, key) in statusOptions" :key="key" :value="key">
@@ -148,12 +165,14 @@
 import { ref, reactive, watch, computed, onMounted, onUnmounted } from 'vue'
 import { useScrollLock } from '@vueuse/core'
 import { updateInterview } from '@/api/interview-center'
+import { useAppStore } from '@/stores'
 import type { UpdateInterviewRequest, InterviewDetail, InterviewType } from '@/types/interview-center'
 import { INTERVIEW_STATUS_LABELS, INTERVIEW_RESULT_LABELS } from '@/types/interview-center'
 import DateTimePicker from '@/components/common/DateTimePicker.vue'
 import { useToast } from '@/composables/useToast'
 
 const toast = useToast()
+const store = useAppStore()
 
 const props = defineProps<{
   interview: InterviewDetail
@@ -180,8 +199,12 @@ const form = reactive<UpdateInterviewRequest>({
   jdContent: '',
   notes: '',
   status: undefined,
-  overallResult: undefined
+  overallResult: undefined,
+  resumeId: ''
 })
+
+// 简历列表（从 store 获取）
+const resumeList = computed(() => store.resumeList)
 
 const isFormValid = computed(() => {
   return !!form.companyName?.trim() && !!form.position?.trim() && !!form.interviewDate
@@ -204,11 +227,16 @@ watch(() => props.interview, (interview) => {
     form.notes = interview.notes || ''
     form.status = interview.status
     form.overallResult = interview.overallResult
+    form.resumeId = interview.resumeId || ''
   }
 }, { immediate: true })
 
 // 组件挂载时锁定滚动
 onMounted(() => {
+  // 加载简历列表
+  if (store.resumeList.length === 0) {
+    store.fetchResumes()
+  }
   isScrollLocked.value = true
 })
 
@@ -345,6 +373,13 @@ async function handleSubmit() {
 .form-textarea {
   resize: vertical;
   min-height: 80px;
+}
+
+.form-hint {
+  margin-top: $spacing-xs;
+  font-size: 0.75rem;
+  color: $color-text-tertiary;
+  line-height: 1.4;
 }
 
 .interview-type-switch {

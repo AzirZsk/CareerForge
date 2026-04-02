@@ -128,6 +128,7 @@ CREATE TABLE IF NOT EXISTS t_interview (
     company_research TEXT,                  -- 公司调研信息
     jd_analysis TEXT,                       -- JD分析结果
     job_position_id VARCHAR(64),            -- 关联职位ID
+    resume_id VARCHAR(64),                  -- 关联简历ID（用于面试准备参考）
     round_type VARCHAR(30),                 -- 轮次类型（hr-人力 technical-技术 manager-经理等）
     round_name VARCHAR(100),                -- 轮次名称
     -- 面试类型与地址信息
@@ -281,6 +282,7 @@ CREATE INDEX IF NOT EXISTS idx_resume_source_id ON t_resume(source_resume_id);
 CREATE INDEX IF NOT EXISTS idx_resume_version_resume_id ON t_resume_version(resume_id);
 CREATE INDEX IF NOT EXISTS idx_resume_section_version_id ON t_resume_section(resume_version_id);
 CREATE INDEX IF NOT EXISTS idx_interview_user_id ON t_interview(user_id);
+CREATE INDEX IF NOT EXISTS idx_interview_resume_id ON t_interview(resume_id);
 CREATE INDEX IF NOT EXISTS idx_review_interview_id ON t_interview_review(interview_id);
 CREATE INDEX IF NOT EXISTS idx_session_user_id ON t_interview_session(user_id);
 CREATE INDEX IF NOT EXISTS idx_conversation_session_id ON t_conversation(session_id);
