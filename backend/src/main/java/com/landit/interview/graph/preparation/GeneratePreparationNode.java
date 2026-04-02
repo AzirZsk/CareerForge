@@ -43,7 +43,7 @@ public class GeneratePreparationNode implements NodeAction {
     public Map<String, Object> apply(OverAllState state) {
         log.info("=== 开始生成准备事项 ===");
         PreparationContext context = extractContext(state);
-        List<InterviewPreparation> savedPreparations = generateAndSavePreparations(context);
+        List<InterviewPreparation> savedPreparations = generatePreparations(context);
         log.info("准备事项生成完成: 数量={}", savedPreparations.size());
         return buildResult(savedPreparations);
     }
@@ -58,24 +58,29 @@ public class GeneratePreparationNode implements NodeAction {
         );
     }
 
-    private List<InterviewPreparation> generateAndSavePreparations(PreparationContext context) {
+    private List<InterviewPreparation> generatePreparations(PreparationContext context) {
         if (context.interviewId() == null) {
             return new ArrayList<>();
         }
         AIPromptProperties.PromptConfig config = aiPromptProperties.getPreparationGraph().getGeneratePreparationConfig();
-        String systemPrompt = config.getSystemPrompt();
-        String userPrompt = config.getUserPromptTemplate()
-                .replace("{companyName}", context.companyName())
-                .replace("{positionTitle}", context.positionTitle())
-                .replace("{companyResearch}", context.companyResearch())
-                .replace("{jdAnalysis}", context.jdAnalysis());
-        List<Map<String, Object>> preparationItems = ChatClientHelper.callAndParse(
-                chatClient, systemPrompt, userPrompt, List.class
-        );
+        String userPrompt = buildUserPrompt(config.getUserPromptTemplate(), context);
+        List<Map<String, Object>> preparationItems = callAIForPreparations(config.getSystemPrompt(), userPrompt);
         if (preparationItems == null || preparationItems.isEmpty()) {
             return new ArrayList<>();
         }
         return savePreparationItems(context.interviewId(), preparationItems);
+    }
+
+    private String buildUserPrompt(String template, PreparationContext context) {
+        return template
+                .replace("{companyName}", context.companyName())
+                .replace("{positionTitle}", context.positionTitle())
+                .replace("{companyResearch}", context.companyResearch())
+                .replace("{jdAnalysis}", context.jdAnalysis());
+    }
+
+    private List<Map<String, Object>> callAIForPreparations(String systemPrompt, String userPrompt) {
+        return ChatClientHelper.callAndParse(chatClient, systemPrompt, userPrompt, List.class);
     }
 
     private List<InterviewPreparation> savePreparationItems(
