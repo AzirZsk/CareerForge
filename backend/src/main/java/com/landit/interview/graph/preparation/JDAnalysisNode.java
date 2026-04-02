@@ -64,7 +64,7 @@ public class JDAnalysisNode implements NodeAction {
         nodeOutput.put(OUTPUT_NODE, NODE_JD_ANALYSIS);
         nodeOutput.put(OUTPUT_PROGRESS, 60);
         nodeOutput.put(OUTPUT_MESSAGE, "JD分析完成");
-        nodeOutput.put(OUTPUT_DATA, analysisResult);
+        nodeOutput.put(OUTPUT_DATA, Map.of("jdAnalysis", analysisResult));
         Map<String, Object> result = new HashMap<>();
         result.put(STATE_JOB_POSITION_ID, jobPositionId);
         result.put(STATE_JD_ANALYSIS_RESULT, analysisJson);

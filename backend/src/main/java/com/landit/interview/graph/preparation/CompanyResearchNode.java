@@ -58,7 +58,7 @@ public class CompanyResearchNode implements NodeAction {
         nodeOutput.put(OUTPUT_NODE, NODE_COMPANY_RESEARCH);
         nodeOutput.put(OUTPUT_PROGRESS, 30);
         nodeOutput.put(OUTPUT_MESSAGE, "公司调研完成");
-        nodeOutput.put(OUTPUT_DATA, researchResult);
+        nodeOutput.put(OUTPUT_DATA, Map.of("companyResearch", researchResult));
         Map<String, Object> result = new HashMap<>();
         result.put(STATE_COMPANY_ID, companyId);
         result.put(STATE_COMPANY_RESEARCH_RESULT, researchJson);
