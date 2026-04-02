@@ -118,7 +118,7 @@
 
     <CreateInterviewDialog
       v-if="showCreateDialog"
-      :preselected-position="preselectedPosition"
+      :preselected-position-id="position?.id ?? null"
       @close="handleCloseCreateDialog"
       @created="handleInterviewCreated"
     />
@@ -175,7 +175,6 @@ const loading = ref(true)
 const position = ref<JobPositionDetail | null>(null)
 const showCreateDialog = ref(false)
 const showEditDialog = ref(false)
-const preselectedPosition = ref<{ companyName: string; title: string } | null>(null)
 
 function goBack() {
   router.push('/interview-center')
@@ -230,12 +229,10 @@ function getInterviewTypeLabel(type?: string): string {
 
 function handleCloseCreateDialog() {
   showCreateDialog.value = false
-  preselectedPosition.value = null
 }
 
 function handleInterviewCreated(id: string) {
   showCreateDialog.value = false
-  preselectedPosition.value = null
   loadDetail()
   router.push(`/interview-center/${id}`)
 }
@@ -247,10 +244,6 @@ function handleCloseEditDialog() {
 function handlePositionUpdated(updatedPosition: JobPositionDetail) {
   showEditDialog.value = false
   position.value = updatedPosition
-  preselectedPosition.value = {
-    companyName: updatedPosition.companyName,
-    title: updatedPosition.title
-  }
   toast.success('职位信息已更新')
 }
 
@@ -297,10 +290,6 @@ async function loadDetail() {
   loading.value = true
   try {
     position.value = await getJobPositionDetail(id)
-    preselectedPosition.value = {
-      companyName: position.value.companyName,
-      title: position.value.title
-    }
   } catch (error) {
     console.error('加载职位详情失败:', error)
   } finally {

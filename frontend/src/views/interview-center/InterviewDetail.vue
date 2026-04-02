@@ -12,12 +12,17 @@
           <span class="company-name">{{ interview.companyName }}</span>
           <span class="separator">/</span>
           <span class="position-name">{{ interview.position }}</span>
-          <span v-if="interview.roundType" class="round-badge">{{ getRoundTypeLabel(interview.roundType) }}</span>
+          <span v-if="interview.roundType" class="round-badge">{{ getRoundLabel(interview) }}</span>
         </div>
       </div>
       <div class="header-actions">
         <button class="btn btn-secondary" @click="showEditDialog = true">编辑</button>
-        <button class="btn btn-danger" @click="handleDelete">删除</button>
+        <button class="btn btn-danger" @click="handleDelete" title="删除面试">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </button>
       </div>
     </header>
 
@@ -50,6 +55,17 @@
         @save="handleSavePreparationItems"
         @cancel="handleCancelPreparation"
         @retry="handleRetryPreparation"
+      />
+
+      <!-- 删除确认弹窗 -->
+      <ConfirmModal
+        :visible="confirmVisible"
+        :title="confirmTitle"
+        :message="confirmMessage"
+        :confirm-text="confirmText"
+        :danger="confirmDanger"
+        @confirm="handleConfirm"
+        @cancel="handleCancel"
       />
 
       <!-- 面试信息卡片 -->
@@ -315,14 +331,17 @@ import PreparationProgressModal from '@/components/interview-center/PreparationP
 // 新增组件
 import PreparationProgress from '@/components/interview-center/PreparationProgress.vue'
 import PreparationGroup from '@/components/interview-center/PreparationGroup.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 // 工作流 composables
 import { useInterviewPreparation } from '@/composables/useInterviewPreparation'
 import { useReviewAnalysis } from '@/composables/useReviewAnalysis'
 import { useToast } from '@/composables/useToast'
+import { useConfirm } from '@/composables/useConfirm'
 
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
+const { confirm, visible: confirmVisible, title: confirmTitle, message: confirmMessage, confirmText, danger: confirmDanger, handleConfirm, handleCancel } = useConfirm()
 const loading = ref(true)
 const interview = ref<InterviewDetail | null>(null)
 const showAddPreparationDialog = ref(false)
@@ -392,6 +411,16 @@ function getRoundTypeLabel(type: string): string {
   return ROUND_TYPE_LABELS[type as keyof typeof ROUND_TYPE_LABELS] || type
 }
 
+// 获取轮次标签（支持自定义轮次名称）
+function getRoundLabel(interviewData: InterviewDetail): string {
+  // 如果是自定义轮次且有自定义名称，显示自定义名称
+  if (interviewData.roundType === 'custom' && interviewData.roundName) {
+    return interviewData.roundName
+  }
+  // 否则使用默认标签
+  return getRoundTypeLabel(interviewData.roundType!)
+}
+
 function getInterviewTypeLabel(type: InterviewType): string {
   return INTERVIEW_TYPE_LABELS[type] || type
 }
@@ -430,7 +459,12 @@ async function handleDeletePreparation(preparationId: string) {
 
 async function handleDelete() {
   if (!interview.value) return
-  if (!confirm('确定要删除这个面试吗？此操作不可撤销。')) return
+  const confirmed = await confirm({
+    title: '删除确认',
+    message: `确定要删除面试「${interview.value.companyName} - ${interview.value.position}」吗？此操作不可撤销。`,
+    danger: true
+  })
+  if (!confirmed) return
   try {
     await deleteInterview(interview.value.id)
     router.push('/interview-center')
@@ -834,6 +868,23 @@ onMounted(() => {
   .header-actions {
     display: flex;
     gap: $spacing-sm;
+  }
+}
+
+.btn-danger {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: $color-text-tertiary;
+  padding: $spacing-xs $spacing-sm;
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  transition: all 0.2s;
+
+  &:hover {
+    color: $color-error;
+    background: rgba($color-error, 0.15);
+    border-color: $color-error;
   }
 }
 
