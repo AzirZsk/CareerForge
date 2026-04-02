@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * 职位列表项 VO（含面试统计）
+ * 职位列表项 VO（含面试统计和状态推导）
  *
  * @author Azir
  */
@@ -32,6 +32,22 @@ public class JobPositionListItemVO {
      * 职位名称
      */
     private String title;
+
+    /**
+     * 职位状态（从关联面试推导）
+     * draft-草稿/applied-已投递/interviewing-面试中/offered-已获Offer/rejected-未通过/withdrawn-已撤回
+     */
+    private String status;
+
+    /**
+     * 下次面试时间（最近的未完成面试）
+     */
+    private LocalDateTime nextInterviewDate;
+
+    /**
+     * 下次面试轮次描述（如"技术二面"）
+     */
+    private String nextInterviewRound;
 
     /**
      * 关联面试数量

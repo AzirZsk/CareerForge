@@ -1,12 +1,26 @@
 <template>
-  <div class="job-position-card" @click="$emit('click')">
+  <div class="job-position-card" :class="statusClass" @click="$emit('click')">
     <div class="card-header">
       <div class="company-info">
         <h3 class="company-name">{{ jobPosition.companyName }}</h3>
         <span class="position-title">{{ jobPosition.title }}</span>
       </div>
-      <div class="interview-badge" v-if="jobPosition.interviewCount > 0">
-        {{ jobPosition.interviewCount }} 次面试
+      <div class="header-badges">
+        <PositionStatusBadge v-if="jobPosition.status" :status="jobPosition.status" />
+        <span class="interview-badge" v-if="jobPosition.interviewCount > 0">
+          {{ jobPosition.interviewCount }} 次面试
+        </span>
+      </div>
+    </div>
+
+    <!-- 下次面试高亮区域 -->
+    <div class="next-interview-highlight" v-if="jobPosition.nextInterviewDate">
+      <div class="next-interview-icon">📅</div>
+      <div class="next-interview-info">
+        <span class="next-interview-time">{{ formatNextInterview(jobPosition.nextInterviewDate) }}</span>
+        <span class="next-interview-round" v-if="jobPosition.nextInterviewRound">
+          {{ jobPosition.nextInterviewRound }}
+        </span>
       </div>
     </div>
 
@@ -17,7 +31,7 @@
       </div>
       <div class="meta-item">
         <span class="meta-label">创建时间</span>
-        <span class="meta-value">{{ formatDate(jobPosition.createdAt) }}</span>
+        <span class="meta-value">{{ formatRelativeTime(jobPosition.createdAt) }}</span>
       </div>
     </div>
 
@@ -40,9 +54,11 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { JobPositionListItem } from '@/types/job-position'
+import PositionStatusBadge from './PositionStatusBadge.vue'
 
-defineProps<{
+const props = defineProps<{
   jobPosition: JobPositionListItem
 }>()
 
@@ -53,6 +69,12 @@ defineEmits<{
   'delete': [jobPosition: JobPositionListItem]
 }>()
 
+// 状态类名
+const statusClass = computed(() => {
+  return `status-${props.jobPosition.status || 'draft'}`
+})
+
+// 格式化日期（绝对时间）
 function formatDate(dateStr: string): string {
   if (!dateStr) return ''
   const date = new Date(dateStr)
@@ -61,6 +83,54 @@ function formatDate(dateStr: string): string {
     month: '2-digit',
     day: '2-digit'
   })
+}
+
+// 格式化相对时间
+function formatRelativeTime(dateStr: string): string {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diff = now.getTime() - date.getTime()
+  const minutes = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days = Math.floor(diff / 86400000)
+  const weeks = Math.floor(diff / 604800000)
+  const months = Math.floor(diff / 2592000000)
+  if (minutes < 1) return '刚刚'
+  if (minutes < 60) return `${minutes} 分钟前`
+  if (hours < 24) return `${hours} 小时前`
+  if (days < 7) return `${days} 天前`
+  if (weeks < 4) return `${weeks} 周前`
+  if (months < 12) return `${months} 个月前`
+  return formatDate(dateStr)
+}
+
+// 格式化下次面试时间
+function formatNextInterview(dateStr: string): string {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const diffDays = Math.floor((targetDate.getTime() - today.getTime()) / 86400000)
+  const timeStr = date.toLocaleTimeString('zh-CN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  })
+  let dayStr: string
+  if (diffDays === 0) {
+    dayStr = '今天'
+  } else if (diffDays === 1) {
+    dayStr = '明天'
+  } else if (diffDays === 2) {
+    dayStr = '后天'
+  } else if (diffDays > 2 && diffDays <= 7) {
+    dayStr = `${diffDays} 天后`
+  } else {
+    dayStr = formatDate(dateStr)
+  }
+  return `${dayStr} ${timeStr}`
 }
 </script>
 
@@ -77,6 +147,20 @@ function formatDate(dateStr: string): string {
     border-color: $color-accent;
     transform: translateY(-2px);
   }
+
+  // 根据状态添加左边框高亮
+  &.status-interviewing {
+    border-left: 3px solid #fbbf24;
+  }
+
+  &.status-offered {
+    border-left: 3px solid #34d399;
+  }
+
+  &.status-rejected {
+    border-left: 3px solid #f87171;
+    opacity: 0.8;
+  }
 }
 
 .card-header {
@@ -84,10 +168,12 @@ function formatDate(dateStr: string): string {
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: $spacing-md;
+  gap: $spacing-sm;
 }
 
 .company-info {
   flex: 1;
+  min-width: 0;
 }
 
 .company-name {
@@ -95,11 +181,21 @@ function formatDate(dateStr: string): string {
   font-weight: 600;
   color: $color-text-primary;
   margin-bottom: $spacing-xs;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .position-title {
   font-size: 0.875rem;
   color: $color-text-secondary;
+}
+
+.header-badges {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-shrink: 0;
 }
 
 .interview-badge {
@@ -109,6 +205,41 @@ function formatDate(dateStr: string): string {
   border-radius: $radius-sm;
   font-size: 0.75rem;
   font-weight: 500;
+}
+
+// 下次面试高亮区域
+.next-interview-highlight {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  background: rgba($color-warning, 0.1);
+  border: 1px solid rgba($color-warning, 0.2);
+  border-radius: $radius-md;
+  margin-bottom: $spacing-md;
+}
+
+.next-interview-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.next-interview-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.next-interview-time {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: $color-warning;
+}
+
+.next-interview-round {
+  font-size: 0.75rem;
+  color: $color-text-secondary;
 }
 
 .card-meta {

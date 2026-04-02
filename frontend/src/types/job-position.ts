@@ -3,11 +3,17 @@
 // @author Azir
 // =====================================================
 
+// 职位状态（从关联面试推导）
+export type PositionStatus = 'draft' | 'applied' | 'interviewing' | 'offered' | 'rejected' | 'withdrawn'
+
 // 职位列表项
 export interface JobPositionListItem {
   id: string
   companyName: string
   title: string
+  status: PositionStatus
+  nextInterviewDate?: string
+  nextInterviewRound?: string
   interviewCount: number
   latestInterviewDate?: string
   createdAt: string

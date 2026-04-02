@@ -3,6 +3,8 @@ package com.landit.jobposition.handler;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.landit.common.enums.PositionStatus;
+import com.landit.common.enums.RoundType;
 import com.landit.common.exception.BusinessException;
 import com.landit.common.response.PageResponse;
 import com.landit.company.entity.Company;
@@ -244,6 +246,7 @@ public class JobPositionHandler {
 
     /**
      * 转换为列表项 VO
+     * 包含状态推导和下次面试信息
      */
     private JobPositionListItemVO convertToListItemVO(JobPosition jobPosition) {
         Company company = companyService.getById(jobPosition.getCompanyId());
@@ -254,15 +257,103 @@ public class JobPositionHandler {
         List<Interview> interviews = interviewService.list(wrapper);
         int interviewCount = interviews.size();
         LocalDateTime latestInterviewDate = interviews.isEmpty() ? null : interviews.get(0).getDate();
+        // 推导职位状态
+        String status = derivePositionStatus(interviews);
+        // 获取下次面试信息
+        Interview nextInterview = findNextInterview(interviews);
+        LocalDateTime nextInterviewDate = nextInterview != null ? nextInterview.getDate() : null;
+        String nextInterviewRound = nextInterview != null ? buildRoundDescription(nextInterview) : null;
         return JobPositionListItemVO.builder()
                 .id(String.valueOf(jobPosition.getId()))
                 .companyName(company != null ? company.getName() : "未知公司")
                 .title(jobPosition.getTitle())
+                .status(status)
+                .nextInterviewDate(nextInterviewDate)
+                .nextInterviewRound(nextInterviewRound)
                 .interviewCount(interviewCount)
                 .latestInterviewDate(latestInterviewDate)
                 .createdAt(jobPosition.getCreatedAt())
                 .updatedAt(jobPosition.getUpdatedAt())
                 .build();
+    }
+
+    /**
+     * 推导职位状态
+     * 根据关联面试的状态和结果推导职位状态
+     */
+    private String derivePositionStatus(List<Interview> interviews) {
+        if (interviews.isEmpty()) {
+            return "draft";
+        }
+        // 检查是否有未完成的面试（in_progress 或未到面试时间）
+        boolean hasIncomplete = interviews.stream().anyMatch(i -> {
+            String status = i.getStatus();
+            // 进行中的面试
+            if ("in_progress".equals(status)) {
+                return true;
+            }
+            // 面试时间在未来且状态不是 completed
+            if (!"completed".equals(status) && i.getDate() != null && i.getDate().isAfter(LocalDateTime.now())) {
+                return true;
+            }
+            return false;
+        });
+        if (hasIncomplete) {
+            return "interviewing";
+        }
+        // 所有面试都已完成，检查最新结果
+        Interview latestInterview = interviews.get(0);
+        String result = latestInterview.getOverallResult();
+        if ("passed".equalsIgnoreCase(result)) {
+            return "offered";
+        } else if ("rejected".equalsIgnoreCase(result)) {
+            return "rejected";
+        }
+        // 有面试但结果不明确
+        return "applied";
+    }
+
+    /**
+     * 查找下次面试
+     * 返回最近的未完成面试（时间 >= 当前时间 且状态不是 completed）
+     */
+    private Interview findNextInterview(List<Interview> interviews) {
+        LocalDateTime now = LocalDateTime.now();
+        return interviews.stream()
+                .filter(i -> {
+                    // 状态不是 completed 且面试时间在未来
+                    if ("completed".equals(i.getStatus())) {
+                        return false;
+                    }
+                    return i.getDate() != null && !i.getDate().isBefore(now);
+                })
+                .min((a, b) -> a.getDate().compareTo(b.getDate()))
+                .orElse(null);
+    }
+
+    /**
+     * 构建轮次描述
+     * 如"技术二面"、"HR面"、"自定义轮次名称"
+     */
+    private String buildRoundDescription(Interview interview) {
+        String roundType = interview.getRoundType();
+        String roundName = interview.getRoundName();
+        // 如果是自定义轮次，使用自定义名称
+        if ("custom".equals(roundType) && roundName != null && !roundName.isBlank()) {
+            return roundName;
+        }
+        // 否则从枚举获取描述
+        if (roundType != null) {
+            try {
+                com.landit.common.enums.RoundType type = com.landit.common.enums.RoundType.fromCode(roundType);
+                if (type != null) {
+                    return type.getDescription();
+                }
+            } catch (Exception ignored) {
+                // 忽略解析错误
+            }
+        }
+        return "面试";
     }
 
     /**
