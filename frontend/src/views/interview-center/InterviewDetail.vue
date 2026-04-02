@@ -301,8 +301,6 @@ import {
   INTERVIEW_RESULT_LABELS,
   ROUND_TYPE_LABELS,
   INTERVIEW_TYPE_LABELS,
-  ITEM_TYPE_ORDER,
-  PRIORITY_ORDER,
   type InterviewDetail,
   type InterviewStatus,
   type InterviewResult,

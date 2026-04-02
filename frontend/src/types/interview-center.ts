@@ -343,6 +343,18 @@ export interface GraphProgressEvent {
   timestamp: number
 }
 
+// 阶段历史项（用于追踪每个阶段的执行状态和计时）
+export interface PreparationStageHistoryItem {
+  stage: PreparationStage
+  message: string
+  timestamp: number
+  startTime?: number
+  endTime?: number
+  completed: boolean
+  data: CompanyResearchResult | JDAnalysisResult | PreparationItem[] | null
+  expanded: boolean
+}
+
 // 面试准备工作流状态
 export interface PreparationState {
   isConnecting: boolean
@@ -354,6 +366,7 @@ export interface PreparationState {
   message: string
   preparationItems: PreparationItem[]
   errorMessage: string | null
+  stageHistory: PreparationStageHistoryItem[]
 }
 
 // 复盘分析工作流状态

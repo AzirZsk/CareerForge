@@ -1,5 +1,5 @@
 <!--=====================================================
-  LandIt 面试准备清单进度弹窗
+  LandIt 面试准备清单进度弹窗（全屏模式）
   @author Azir
 =====================================================-->
 
@@ -46,41 +46,106 @@
           </div>
 
           <!-- 进度条 -->
-          <div class="progress-section">
-            <div class="progress-bar">
-              <div class="progress-fill" :style="{ width: state.progress + '%' }"></div>
-            </div>
-            <div class="progress-info">
-              <span class="progress-percent">{{ state.progress }}%</span>
-              <span class="progress-message">{{ state.message }}</span>
-            </div>
-          </div>
+          <ProgressBar
+            :progress="state.progress"
+            :message="state.message"
+          />
 
           <!-- 阶段列表 -->
           <div class="stage-list">
             <div
-              v-for="stage in displayStages"
-              :key="stage.id"
+              v-for="item in sortedStageHistory"
+              :key="item.stage"
               class="stage-item"
-              :class="getStageClass(stage.id)"
+              :class="{
+                active: item.stage === state.currentStage && state.isRunning,
+                completed: item.completed
+              }"
             >
-              <div class="stage-indicator">
-                <div class="indicator-dot">
-                  <svg v-if="isStageCompleted(stage.id)" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                    <polyline points="20 6 9 17 4 12" />
+              <div
+                class="stage-main"
+                :class="{ clickable: item.completed && item.data }"
+                @click="item.completed && item.data && toggleExpand(item.stage)"
+              >
+                <div class="stage-left">
+                  <!-- 阶段指示器 -->
+                  <div class="stage-indicator">
+                    <svg
+                      v-if="item.completed"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    <div
+                      v-else-if="item.stage === state.currentStage && state.isRunning"
+                      class="spinner"
+                    />
+                    <div
+                      v-else
+                      class="dot"
+                    />
+                  </div>
+                  <!-- 阶段标签 -->
+                  <span class="stage-label">{{ getStageLabel(item.stage) }}</span>
+                  <!-- 耗时 -->
+                  <span
+                    v-if="item.startTime"
+                    class="stage-elapsed"
+                    :class="{ running: !item.endTime && item.stage === state.currentStage && state.isRunning }"
+                  >
+                    {{ formatElapsed(item) }}
+                  </span>
+                </div>
+                <!-- 展开指示器 -->
+                <div
+                  v-if="item.completed && item.data"
+                  class="expand-indicator"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    :class="{ rotated: item.expanded }"
+                  >
+                    <polyline points="6 9 12 15 18 9" />
                   </svg>
-                  <div v-else-if="isStageActive(stage.id)" class="active-pulse"></div>
                 </div>
-                <div v-if="stage.id !== 'generate_preparation'" class="indicator-line"></div>
               </div>
-              <div class="stage-content">
-                <div class="stage-header">
-                  <span class="stage-name">{{ stage.label }}</span>
-                  <span v-if="isStageActive(stage.id)" class="stage-status running">进行中</span>
-                  <span v-else-if="isStageCompleted(stage.id)" class="stage-status completed">已完成</span>
+
+              <!-- 展开的数据区域 -->
+              <Transition name="expand">
+                <div
+                  v-if="item.expanded && item.data"
+                  class="stage-data-wrapper"
+                >
+                  <div class="stage-data">
+                    <!-- 公司调研数据 -->
+                    <div v-if="item.stage === 'company_research'" class="data-section">
+                      <CompanyResearchContent :data="(item.data as CompanyResearchResult)" />
+                    </div>
+                    <!-- JD 分析数据 -->
+                    <div v-else-if="item.stage === 'jd_analysis'" class="data-section">
+                      <JDAnalysisContent :data="(item.data as JDAnalysisResult)" />
+                    </div>
+                    <!-- 准备事项数据 -->
+                    <div v-else-if="item.stage === 'generate_preparation'" class="data-section">
+                      <PreparationItemsContent :items="(item.data as PreparationItem[])" />
+                    </div>
+                    <!-- 默认显示 -->
+                    <div v-else class="data-content">
+                      <pre class="json-display">{{ JSON.stringify(item.data, null, 2) }}</pre>
+                    </div>
+                  </div>
                 </div>
-                <p v-if="isStageActive(stage.id) && state.message" class="stage-message">{{ state.message }}</p>
-              </div>
+              </Transition>
             </div>
           </div>
 
@@ -161,9 +226,21 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onUnmounted } from 'vue'
 import { useScrollLock } from '@vueuse/core'
-import type { PreparationState, PreparationItem } from '@/types/interview-center'
+import type {
+  PreparationState,
+  PreparationItem,
+  PreparationStage,
+  PreparationStageHistoryItem,
+  CompanyResearchResult,
+  JDAnalysisResult
+} from '@/types/interview-center'
+import { useInterviewPreparation } from '@/composables/useInterviewPreparation'
+import ProgressBar from '@/components/resume/optimize/ProgressBar.vue'
+import CompanyResearchContent from './preparation/CompanyResearchContent.vue'
+import JDAnalysisContent from './preparation/JDAnalysisContent.vue'
+import PreparationItemsContent from './preparation/PreparationItemsContent.vue'
 
 const props = defineProps<{
   visible: boolean
@@ -190,14 +267,78 @@ const priorityLabels: Record<string, string> = {
   low: '低'
 }
 
-// 阶段定义
-const displayStages = [
-  { id: 'company_research', label: '公司调研' },
-  { id: 'jd_analysis', label: 'JD 分析' },
-  { id: 'generate_preparation', label: '生成准备事项' }
-]
+// 获取 composable 方法
+const { toggleExpand, getStageLabel } = useInterviewPreparation()
 
-// 计算属性
+// ==================== 计时器 ====================
+const now = ref(Date.now())
+let timerHandle: ReturnType<typeof setInterval> | null = null
+
+// 启动计时器
+function startTimer() {
+  if (!timerHandle) {
+    timerHandle = setInterval(() => {
+      now.value = Date.now()
+    }, 1000)
+  }
+}
+
+// 停止计时器
+function stopTimer() {
+  if (timerHandle) {
+    clearInterval(timerHandle)
+    timerHandle = null
+  }
+}
+
+// 格式化耗时
+function formatElapsed(item: PreparationStageHistoryItem): string {
+  if (!item.startTime) return ''
+  const end = item.endTime ?? now.value
+  const elapsed = Math.max(0, Math.floor((end - item.startTime) / 1000))
+  const m = String(Math.floor(elapsed / 60)).padStart(2, '0')
+  const s = String(elapsed % 60).padStart(2, '0')
+  return `${m}:${s}`
+}
+
+// 监听运行状态，自动启动/停止计时器
+watch(
+  () => props.state.isRunning,
+  (running) => {
+    if (running) {
+      startTimer()
+    } else {
+      stopTimer()
+    }
+  },
+  { immediate: true }
+)
+
+// 组件卸载时清理
+onUnmounted(() => {
+  stopTimer()
+})
+
+// ==================== 计算属性 ====================
+
+// 排序后的阶段历史
+const sortedStageHistory = computed(() => {
+  const displayStages: PreparationStage[] = ['company_research', 'jd_analysis', 'generate_preparation']
+  return displayStages.map(stage => {
+    const historyItem = props.state.stageHistory.find(h => h.stage === stage)
+    return historyItem || {
+      stage,
+      message: '',
+      timestamp: 0,
+      startTime: undefined,
+      endTime: undefined,
+      completed: false,
+      data: null,
+      expanded: false
+    } as PreparationStageHistoryItem
+  })
+})
+
 const headerClass = computed(() => {
   if (props.state.hasError) return 'error'
   if (props.state.isCompleted) return 'success'
@@ -216,26 +357,8 @@ const selectedCount = computed(() => {
   return Object.values(selectedItems.value).filter(Boolean).length
 })
 
-// 阶段状态判断
-function getStageClass(stageId: string): string {
-  if (isStageCompleted(stageId)) return 'completed'
-  if (isStageActive(stageId)) return 'active'
-  return 'pending'
-}
+// ==================== 事件处理 ====================
 
-function isStageCompleted(stageId: string): boolean {
-  const currentIndex = displayStages.findIndex(s => s.id === props.state.currentStage)
-  const stageIndex = displayStages.findIndex(s => s.id === stageId)
-  // 如果已完成整个流程，所有阶段都完成
-  if (props.state.isCompleted) return true
-  return stageIndex < currentIndex
-}
-
-function isStageActive(stageId: string): boolean {
-  return props.state.currentStage === stageId && props.state.isRunning
-}
-
-// 事件处理
 function handleClose() {
   emit('update:visible', false)
 }
@@ -254,7 +377,8 @@ function handleRetry() {
   emit('retry')
 }
 
-// 监听器
+// ==================== 监听器 ====================
+
 watch(
   () => props.visible,
   (visible) => {
@@ -299,8 +423,9 @@ watch(
 
 .modal-container {
   width: 100%;
-  max-width: 600px;
-  max-height: 80vh;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
   background: $color-bg-primary;
   border-radius: $radius-xl;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -316,6 +441,7 @@ watch(
   justify-content: space-between;
   padding: $spacing-lg;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
 }
 
 .header-left {
@@ -384,44 +510,6 @@ watch(
   }
 }
 
-// 进度条
-.progress-section {
-  padding: $spacing-lg;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.progress-bar {
-  height: 6px;
-  background: $color-bg-tertiary;
-  border-radius: $radius-full;
-  overflow: hidden;
-  margin-bottom: $spacing-sm;
-}
-
-.progress-fill {
-  height: 100%;
-  background: $gradient-gold;
-  border-radius: $radius-full;
-  transition: width 0.3s ease;
-}
-
-.progress-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.progress-percent {
-  font-size: $text-sm;
-  font-weight: $weight-medium;
-  color: $color-accent;
-}
-
-.progress-message {
-  font-size: $text-sm;
-  color: $color-text-tertiary;
-}
-
 // 阶段列表
 .stage-list {
   padding: $spacing-lg;
@@ -430,122 +518,162 @@ watch(
 }
 
 .stage-item {
-  display: flex;
-  gap: $spacing-md;
-  padding: $spacing-sm 0;
-
-  &.completed {
-    .stage-indicator .indicator-dot {
-      background: $color-success;
-      border-color: $color-success;
-    }
-
-    .stage-indicator .indicator-line {
-      background: $color-success;
-    }
-
-    .stage-name {
-      color: $color-text-primary;
-    }
-  }
+  padding: $spacing-md;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: $radius-md;
+  margin-bottom: $spacing-sm;
+  border: 1px solid transparent;
+  transition: all $transition-fast;
 
   &.active {
-    .stage-indicator .indicator-dot {
-      background: $color-accent;
-      border-color: $color-accent;
-    }
-
-    .stage-name {
-      color: $color-accent;
-    }
+    border-color: rgba(212, 168, 83, 0.3);
+    background: rgba(212, 168, 83, 0.05);
   }
 
-  &.pending {
-    opacity: 0.5;
-
-    .stage-indicator .indicator-dot {
-      background: $color-bg-tertiary;
-    }
+  &.completed {
+    border-color: rgba(52, 211, 153, 0.2);
   }
 }
 
-.stage-indicator {
+.stage-main {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
   align-items: center;
-  flex-shrink: 0;
-}
 
-.indicator-dot {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: $color-bg-tertiary;
-  color: white;
+  &.clickable {
+    cursor: pointer;
 
-  svg {
-    width: 14px;
-    height: 14px;
+    &:hover {
+      .stage-label {
+        color: $color-text-primary;
+      }
+      .expand-indicator {
+        color: $color-accent;
+      }
+    }
   }
 }
 
-.active-pulse {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: white;
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
-.indicator-line {
-  width: 2px;
-  height: 24px;
-  background: $color-bg-tertiary;
-  margin-top: $spacing-xs;
-}
-
-.stage-content {
-  flex: 1;
-  padding-top: 2px;
-}
-
-.stage-header {
+.stage-left {
   display: flex;
   align-items: center;
   gap: $spacing-sm;
-  margin-bottom: $spacing-xs;
 }
 
-.stage-name {
+.stage-indicator {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $color-success;
+
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(212, 168, 83, 0.3);
+    border-top-color: $color-accent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+  }
+}
+
+.stage-label {
   font-size: $text-sm;
-  font-weight: $weight-medium;
   color: $color-text-secondary;
 }
 
-.stage-status {
+.stage-elapsed {
   font-size: $text-xs;
-  padding: 2px 8px;
-  border-radius: $radius-full;
+  color: $color-text-tertiary;
+  font-variant-numeric: tabular-nums;
+  min-width: 40px;
 
   &.running {
-    background: rgba($color-accent, 0.15);
     color: $color-accent;
-  }
-
-  &.completed {
-    background: rgba($color-success, 0.15);
-    color: $color-success;
   }
 }
 
-.stage-message {
+.expand-indicator {
+  display: flex;
+  align-items: center;
+  color: $color-text-tertiary;
+  transition: color $transition-fast;
+
+  svg {
+    transition: transform $transition-fast;
+
+    &.rotated {
+      transform: rotate(180deg);
+    }
+  }
+}
+
+// 展开数据区域
+.stage-data-wrapper {
+  display: grid;
+  grid-template-rows: 1fr;
+  overflow: hidden;
+  max-height: 400px;
+
+  &:not(:empty) {
+    margin-top: $spacing-sm;
+  }
+}
+
+.stage-data {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.data-section {
+  padding: $spacing-sm;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: $radius-sm;
+}
+
+.data-content {
+  font-size: $text-sm;
+}
+
+.json-display {
   font-size: $text-xs;
   color: $color-text-tertiary;
+  background: rgba(0, 0, 0, 0.2);
+  padding: $spacing-sm;
+  border-radius: $radius-sm;
+  overflow-x: auto;
+  max-height: 200px;
   margin: 0;
+}
+
+// 展开动画
+.expand-enter-active {
+  transition: grid-template-rows 0.25s ease-out, opacity 0.2s ease-out;
+}
+
+.expand-leave-active {
+  transition: grid-template-rows 0.2s ease-in, opacity 0.15s ease-in;
+}
+
+.expand-enter-from,
+.expand-leave-to {
+  grid-template-rows: 0fr;
+  opacity: 0;
+}
+
+.expand-enter-to,
+.expand-leave-from {
+  grid-template-rows: 1fr;
+  opacity: 1;
 }
 
 // 预览区域
@@ -554,6 +682,7 @@ watch(
   border-top: 1px solid rgba(255, 255, 255, 0.05);
   max-height: 300px;
   overflow-y: auto;
+  flex-shrink: 0;
 }
 
 .preview-header {
@@ -663,6 +792,7 @@ watch(
   background: rgba($color-error, 0.1);
   color: $color-error;
   font-size: $text-sm;
+  flex-shrink: 0;
 }
 
 // 底部
@@ -673,6 +803,7 @@ watch(
   gap: $spacing-md;
   padding: $spacing-lg;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
 }
 
 .btn {
@@ -736,15 +867,6 @@ watch(
 @keyframes spin {
   to {
     transform: rotate(360deg);
-  }
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
   }
 }
 </style>

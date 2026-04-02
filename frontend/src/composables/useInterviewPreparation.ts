@@ -7,11 +7,25 @@ import { reactive } from 'vue'
 import type {
   PreparationState,
   GraphProgressEvent,
-  PreparationItem
+  PreparationItem,
+  PreparationStage,
+  CompanyResearchResult,
+  JDAnalysisResult
 } from '@/types/interview-center'
 
 // 单例状态
 let stateInstance: PreparationState | null = null
+
+// 阶段显示配置
+const STAGE_CONFIG: Record<string, { label: string; order: number }> = {
+  'start': { label: '开始', order: 0 },
+  'check_company': { label: '检查公司信息', order: 1 },
+  'company_research': { label: '公司调研', order: 2 },
+  'check_job_position': { label: '检查职位信息', order: 3 },
+  'jd_analysis': { label: 'JD 分析', order: 4 },
+  'generate_preparation': { label: '生成准备事项', order: 5 },
+  'end': { label: '完成', order: 6 }
+}
 
 // 初始状态工厂
 function createInitialState(): PreparationState {
@@ -24,7 +38,8 @@ function createInitialState(): PreparationState {
     progress: 0,
     message: '',
     preparationItems: [],
-    errorMessage: null
+    errorMessage: null,
+    stageHistory: []
   }
 }
 
@@ -97,8 +112,63 @@ export function useInterviewPreparation() {
 
     if (event.event === 'progress') {
       if (event.nodeId) {
-        stateInstance!.currentStage = event.nodeId as PreparationState['currentStage']
+        const newStage = event.nodeId as PreparationStage
+        const prevStage = stateInstance!.currentStage
+
+        // 阶段切换时记录历史
+        if (newStage !== prevStage) {
+          // 标记上一阶段完成
+          const prevHistoryItem = stateInstance!.stageHistory.find(h => h.stage === prevStage)
+          if (prevHistoryItem && !prevHistoryItem.completed) {
+            prevHistoryItem.completed = true
+            prevHistoryItem.endTime = Date.now()
+          }
+
+          // 添加新阶段到历史
+          const existingIndex = stateInstance!.stageHistory.findIndex(h => h.stage === newStage)
+          if (existingIndex === -1) {
+            stateInstance!.stageHistory.push({
+              stage: newStage,
+              message: event.message || '',
+              timestamp: Date.now(),
+              startTime: Date.now(),
+              completed: false,
+              data: null,
+              expanded: false
+            })
+          } else {
+            // 更新现有阶段
+            stateInstance!.stageHistory[existingIndex].message = event.message || ''
+            if (!stateInstance!.stageHistory[existingIndex].startTime) {
+              stateInstance!.stageHistory[existingIndex].startTime = Date.now()
+            }
+          }
+        } else {
+          // 同阶段更新消息
+          const historyItem = stateInstance!.stageHistory.find(h => h.stage === newStage)
+          if (historyItem) {
+            historyItem.message = event.message || ''
+          }
+        }
+
+        stateInstance!.currentStage = newStage
       }
+
+      // 处理阶段数据
+      if (event.data && event.nodeId) {
+        const historyItem = stateInstance!.stageHistory.find(h => h.stage === event.nodeId)
+        if (historyItem) {
+          // 根据阶段类型解析数据
+          if (event.nodeId === 'company_research' && event.data.companyResearch) {
+            historyItem.data = event.data.companyResearch as CompanyResearchResult
+          } else if (event.nodeId === 'jd_analysis' && event.data.jdAnalysis) {
+            historyItem.data = event.data.jdAnalysis as JDAnalysisResult
+          } else if (event.nodeId === 'generate_preparation' && event.data.preparationItems) {
+            historyItem.data = event.data.preparationItems as PreparationItem[]
+          }
+        }
+      }
+
       stateInstance!.progress = event.progress || stateInstance!.progress
       stateInstance!.message = event.message || stateInstance!.message
       return
@@ -107,9 +177,18 @@ export function useInterviewPreparation() {
     if (event.event === 'complete') {
       stateInstance!.isRunning = false
       stateInstance!.isCompleted = true
-      stateInstance!.currentStage = 'complete'
+      stateInstance!.currentStage = 'end'
       stateInstance!.progress = 100
       stateInstance!.message = event.message || '准备事项生成完成'
+
+      // 标记所有阶段完成
+      stateInstance!.stageHistory.forEach(h => {
+        h.completed = true
+        if (!h.endTime) {
+          h.endTime = Date.now()
+        }
+      })
+
       if (event.data && typeof event.data === 'object') {
         const data = event.data as { preparationItems?: PreparationItem[] }
         if (data.preparationItems) {
@@ -126,6 +205,23 @@ export function useInterviewPreparation() {
       stateInstance!.isRunning = false
       closeConnection()
     }
+  }
+
+  /**
+   * 切换阶段展开状态
+   */
+  function toggleExpand(stage: PreparationStage): void {
+    const item = stateInstance!.stageHistory.find(h => h.stage === stage)
+    if (item) {
+      item.expanded = !item.expanded
+    }
+  }
+
+  /**
+   * 获取阶段标签
+   */
+  function getStageLabel(stage: string): string {
+    return STAGE_CONFIG[stage]?.label || stage
   }
 
   /**
@@ -151,6 +247,9 @@ export function useInterviewPreparation() {
     state: stateInstance,
     startPreparation,
     resetState,
-    closeConnection
+    closeConnection,
+    toggleExpand,
+    getStageLabel,
+    STAGE_CONFIG
   }
 }
