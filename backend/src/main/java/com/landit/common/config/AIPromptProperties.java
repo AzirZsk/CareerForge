@@ -1863,6 +1863,14 @@ public class AIPromptProperties {
 
                     ## 输出字段规范
 
+                    ### 根级字段
+
+                    | 字段 | 类型 | 必填 | 说明 |
+                    |------|------|------|------|
+                    | items | array | 是 | 准备事项列表（5-8项） |
+
+                    ### items 数组元素字段
+
                     每个准备事项必须包含以下字段：
 
                     | 字段 | 类型 | 必填 | 说明 |
@@ -1949,22 +1957,22 @@ public class AIPromptProperties {
 
                     ---
 
-                    ## 输出格式示例（严格JSON数组，单行压缩格式）
-                    [{"itemType":"company_research","title":"了解公司核心业务","content":"深入研究公司的主营业务、产品线和商业模式。重点关注与应聘职位相关的业务模块，了解公司在行业中的竞争地位。","priority":"required","resources":[{"type":"link","title":"公司官网","url":"https://example.com"}]},{"itemType":"tech_prep","title":"复习Spring Boot核心原理","content":"重点复习自动配置、启动流程、条件装配等核心机制。准备手写代码环节，熟悉常见设计模式在Spring中的应用。","priority":"required"},{"itemType":"case_study","title":"准备订单系统项目案例","content":"使用STAR法则准备：背景（日均订单量XX万）、任务（重构目标：提升性能和可维护性）、行动（技术方案：微服务拆分+缓存优化）、结果（性能提升XX%，可用性达99.9%）","priority":"recommended"},{"itemType":"behavioral","title":"准备团队协作案例","content":"准备1-2个跨部门协作或解决团队冲突的案例。重点突出沟通协调能力、问题解决思路和最终成果。","priority":"recommended"},{"itemType":"todo","title":"准备面试物料","content":"打印简历2份、准备作品集、规划面试路线、提前10分钟到达。","priority":"optional"}]
+                    ## 输出格式示例（严格JSON，单行压缩格式）
+                    {"items":[{"itemType":"company_research","title":"了解公司核心业务","content":"深入研究公司的主营业务、产品线和商业模式。重点关注与应聘职位相关的业务模块，了解公司在行业中的竞争地位。","priority":"required","resources":[{"type":"link","title":"公司官网","url":"https://example.com"}]},{"itemType":"tech_prep","title":"复习Spring Boot核心原理","content":"重点复习自动配置、启动流程、条件装配等核心机制。准备手写代码环节，熟悉常见设计模式在Spring中的应用。","priority":"required"},{"itemType":"case_study","title":"准备订单系统项目案例","content":"使用STAR法则准备：背景（日均订单量XX万）、任务（重构目标：提升性能和可维护性）、行动（技术方案：微服务拆分+缓存优化）、结果（性能提升XX%，可用性达99.9%）","priority":"recommended"},{"itemType":"behavioral","title":"准备团队协作案例","content":"准备1-2个跨部门协作或解决团队冲突的案例。重点突出沟通协调能力、问题解决思路和最终成果。","priority":"recommended"},{"itemType":"todo","title":"准备面试物料","content":"打印简历2份、准备作品集、规划面试路线、提前10分钟到达。","priority":"optional"}]}
 
                     ---
 
                     ## 质量检查清单
 
                     在输出前，请逐项确认：
-                    1. 总共5-8个准备事项
+                    1. items 数组包含 5-8 个准备事项
                     2. itemType 使用正确的枚举值（小写，下划线分隔，使用 itemType 而非 type）
                     3. priority 分布合理（required约50%，recommended约35%，optional约15%）
                     4. 每个事项的 title 不超过50字
                     5. 每个事项的 content 具体可执行（50-200字）
                     6. resources（如有）包含完整的 type、title、url 字段
                     7. 如果提供了简历，至少有1个 case_study 类型的事项
-                    8. 只返回JSON数组，不要返回其他内容
+                    8. 只返回JSON对象，不要返回其他内容
                     """,
                     // userPromptTemplate
                     """

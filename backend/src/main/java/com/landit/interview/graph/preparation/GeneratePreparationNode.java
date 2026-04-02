@@ -9,6 +9,8 @@ import com.landit.common.enums.PreparationItemType;
 import com.landit.common.enums.PreparationPriority;
 import com.landit.common.enums.PreparationSource;
 import com.landit.common.util.ChatClientHelper;
+import com.landit.interview.dto.GeneratePreparationResult;
+import com.landit.interview.dto.PreparationItemResult;
 import com.landit.interview.entity.InterviewPreparation;
 import com.landit.interview.service.InterviewPreparationService;
 import lombok.RequiredArgsConstructor;
@@ -61,19 +63,19 @@ public class GeneratePreparationNode implements NodeAction {
                 .replace("{companyResearch}", companyResearch)
                 .replace("{jdAnalysis}", jdAnalysis)
                 .replace("{resumeContent}", resumeContent.isEmpty() ? "（未提供简历）" : resumeContent);
-        // 调用AI生成准备事项
-        List<Map<String, Object>> preparationItems = ChatClientHelper.callAndParse(
-                chatClient, config.getSystemPrompt(), userPrompt, List.class
+        // 调用AI生成准备事项（使用包装类约束返回格式）
+        GeneratePreparationResult result = ChatClientHelper.callAndParse(
+                chatClient, config.getSystemPrompt(), userPrompt, GeneratePreparationResult.class
         );
         // 如果AI返回空结果，直接返回空结果
-        if (preparationItems == null || preparationItems.isEmpty()) {
+        if (result == null || result.getItems() == null || result.getItems().isEmpty()) {
             log.warn("AI未返回准备事项");
             return buildEmptyResult();
         }
         // 保存准备事项到数据库
         List<InterviewPreparation> savedPreparations = new ArrayList<>();
         int sortOrder = 0;
-        for (Map<String, Object> item : preparationItems) {
+        for (PreparationItemResult item : result.getItems()) {
             InterviewPreparation preparation = convertToEntity(interviewId, item, sortOrder++);
             preparationService.save(preparation);
             savedPreparations.add(preparation);
@@ -86,36 +88,34 @@ public class GeneratePreparationNode implements NodeAction {
         nodeOutput.put(OUTPUT_MESSAGE, "准备事项生成完成");
         nodeOutput.put(OUTPUT_DATA, savedPreparations);
         // 构建并返回节点结果
-        Map<String, Object> result = new HashMap<>();
-        result.put(STATE_PREPARATION_ITEMS, savedPreparations);
-        result.put(STATE_MESSAGES, List.of("完成准备事项生成"));
-        result.put(STATE_NODE_OUTPUT, nodeOutput);
-        return result;
+        Map<String, Object> nodeResult = new HashMap<>();
+        nodeResult.put(STATE_PREPARATION_ITEMS, savedPreparations);
+        nodeResult.put(STATE_MESSAGES, List.of("完成准备事项生成"));
+        nodeResult.put(STATE_NODE_OUTPUT, nodeOutput);
+        return nodeResult;
     }
 
     /**
-     * 将Map格式的准备事项转换为实体对象
+     * 将 PreparationItemResult 转换为实体对象
      *
      * @param interviewId 面试ID
-     * @param item        AI返回的准备事项Map
+     * @param item        AI返回的准备事项DTO
      * @param sortOrder   排序序号
      * @return 准备事项实体
      */
-    private InterviewPreparation convertToEntity(String interviewId, Map<String, Object> item, int sortOrder) {
+    private InterviewPreparation convertToEntity(String interviewId, PreparationItemResult item, int sortOrder) {
         InterviewPreparation preparation = new InterviewPreparation();
         preparation.setInterviewId(interviewId);
-        preparation.setTitle((String) item.get("title"));
-        preparation.setContent((String) item.get("content"));
+        preparation.setTitle(item.getTitle());
+        preparation.setContent(item.getContent());
         // 解析类型（无效则使用默认值TODO）
-        String itemTypeStr = (String) item.get("itemType");
-        PreparationItemType itemType = PreparationItemType.fromCode(itemTypeStr);
+        PreparationItemType itemType = PreparationItemType.fromCode(item.getItemType());
         preparation.setItemType(itemType != null ? itemType.getCode() : PreparationItemType.TODO.getCode());
         // 解析优先级（无效则使用默认值RECOMMENDED）
-        String priorityStr = (String) item.get("priority");
-        PreparationPriority priority = PreparationPriority.fromCode(priorityStr);
+        PreparationPriority priority = PreparationPriority.fromCode(item.getPriority());
         preparation.setPriority(priority != null ? priority.getCode() : PreparationPriority.RECOMMENDED.getCode());
         // 序列化资源
-        preparation.setResources(serializeResources(item.get("resources")));
+        preparation.setResources(serializeResources(item.getResources()));
         preparation.setSortOrder(sortOrder);
         preparation.setCompleted(false);
         preparation.setSource(PreparationSource.AI_GENERATED.getCode());
@@ -123,17 +123,17 @@ public class GeneratePreparationNode implements NodeAction {
     }
 
     /**
-     * 序列化资源对象为JSON字符串
+     * 序列化资源列表为JSON字符串
      *
-     * @param resourcesObj 资源对象
+     * @param resources 资源列表
      * @return JSON字符串，序列化失败返回null
      */
-    private String serializeResources(Object resourcesObj) {
-        if (resourcesObj == null) {
+    private String serializeResources(List<PreparationItemResult.PreparationResource> resources) {
+        if (resources == null || resources.isEmpty()) {
             return null;
         }
         try {
-            return objectMapper.writeValueAsString(resourcesObj);
+            return objectMapper.writeValueAsString(resources);
         } catch (JsonProcessingException e) {
             log.warn("序列化资源失败: {}", e.getMessage());
             return null;
@@ -151,11 +151,11 @@ public class GeneratePreparationNode implements NodeAction {
         nodeOutput.put(OUTPUT_PROGRESS, 100);
         nodeOutput.put(OUTPUT_MESSAGE, "准备事项生成完成");
         nodeOutput.put(OUTPUT_DATA, List.of());
-        Map<String, Object> result = new HashMap<>();
-        result.put(STATE_PREPARATION_ITEMS, List.of());
-        result.put(STATE_MESSAGES, List.of("完成准备事项生成"));
-        result.put(STATE_NODE_OUTPUT, nodeOutput);
-        return result;
+        Map<String, Object> emptyResult = new HashMap<>();
+        emptyResult.put(STATE_PREPARATION_ITEMS, List.of());
+        emptyResult.put(STATE_MESSAGES, List.of("完成准备事项生成"));
+        emptyResult.put(STATE_NODE_OUTPUT, nodeOutput);
+        return emptyResult;
     }
 
 }

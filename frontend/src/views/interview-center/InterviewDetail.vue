@@ -316,7 +316,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   getInterviewDetail,
@@ -351,6 +351,7 @@ import { useInterviewPreparation } from '@/composables/useInterviewPreparation'
 import { useReviewAnalysis } from '@/composables/useReviewAnalysis'
 import { useToast } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
+import { useAIChat } from '@/composables/useAIChat'
 
 const route = useRoute()
 const router = useRouter()
@@ -578,6 +579,14 @@ function handleReviewSaved() {
 function handleInterviewUpdated() {
   loadDetail()
 }
+
+// AI 聊天状态
+const { state: aiChatState } = useAIChat()
+
+// 弹窗打开时隐藏 AI 悬浮球
+watch(showPrepModal, (val) => {
+  aiChatState.hideFloat = val
+})
 
 onMounted(() => {
   loadDetail()

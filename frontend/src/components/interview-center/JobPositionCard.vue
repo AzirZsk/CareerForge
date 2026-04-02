@@ -125,6 +125,8 @@ function formatNextInterview(dateStr: string): string {
 </script>
 
 <style scoped lang="scss">
+@use "sass:color";
+
 .job-position-card {
   display: flex;
   flex-direction: column;
@@ -290,7 +292,7 @@ function formatNextInterview(dateStr: string): string {
     color: $color-text-secondary;
 
     &:hover {
-      background: lighten($color-bg-tertiary, 5%);
+      background: color.adjust($color-bg-tertiary, $lightness: 5%);
     }
   }
 
