@@ -24,14 +24,10 @@
       </div>
     </div>
 
-    <div class="card-meta">
-      <div class="meta-item" v-if="jobPosition.latestInterviewDate">
-        <span class="meta-label">最近面试</span>
-        <span class="meta-value">{{ formatDate(jobPosition.latestInterviewDate) }}</span>
-      </div>
+    <div class="card-meta" v-if="jobPosition.latestInterviewDate">
       <div class="meta-item">
-        <span class="meta-label">创建时间</span>
-        <span class="meta-value">{{ formatRelativeTime(jobPosition.createdAt) }}</span>
+        <span class="meta-label">最近面试</span>
+        <span class="meta-value">{{ formatDateTime(jobPosition.latestInterviewDate) }}</span>
       </div>
     </div>
 
@@ -74,6 +70,20 @@ const statusClass = computed(() => {
   return `status-${props.jobPosition.status || 'draft'}`
 })
 
+// 格式化日期+时间
+function formatDateTime(dateStr: string): string {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  })
+}
+
 // 格式化日期（绝对时间）
 function formatDate(dateStr: string): string {
   if (!dateStr) return ''
@@ -83,26 +93,6 @@ function formatDate(dateStr: string): string {
     month: '2-digit',
     day: '2-digit'
   })
-}
-
-// 格式化相对时间
-function formatRelativeTime(dateStr: string): string {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  const now = new Date()
-  const diff = now.getTime() - date.getTime()
-  const minutes = Math.floor(diff / 60000)
-  const hours = Math.floor(diff / 3600000)
-  const days = Math.floor(diff / 86400000)
-  const weeks = Math.floor(diff / 604800000)
-  const months = Math.floor(diff / 2592000000)
-  if (minutes < 1) return '刚刚'
-  if (minutes < 60) return `${minutes} 分钟前`
-  if (hours < 24) return `${hours} 小时前`
-  if (days < 7) return `${days} 天前`
-  if (weeks < 4) return `${weeks} 周前`
-  if (months < 12) return `${months} 个月前`
-  return formatDate(dateStr)
 }
 
 // 格式化下次面试时间
