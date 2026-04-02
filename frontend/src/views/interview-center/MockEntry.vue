@@ -80,8 +80,10 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
+const toast = useToast()
 const starting = ref(false)
 
 const form = reactive({
@@ -126,11 +128,11 @@ async function startMockInterview() {
       // 跳转到面试页面
       router.push(`/interview-center/mock/${result.data.sessionId}`)
     } else {
-      alert('启动面试失败，请稍后重试')
+      toast.error('启动面试失败，请稍后重试')
     }
   } catch (error) {
     console.error('启动模拟面试失败:', error)
-    alert('启动失败，请稍后重试')
+    toast.error('启动失败，请稍后重试')
   } finally {
     starting.value = false
   }

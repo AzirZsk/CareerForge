@@ -62,6 +62,9 @@ import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useScrollLock } from '@vueuse/core'
 import { updateJobPosition } from '@/api/job-position'
 import type { JobPositionDetail, UpdateJobPositionRequest } from '@/types/job-position'
+import { useToast } from '@/composables/useToast'
+
+const toast = useToast()
 
 const props = defineProps<{
   position: JobPositionDetail
@@ -119,7 +122,7 @@ async function handleSubmit() {
     emit('updated', result)
   } catch (error) {
     console.error('更新职位失败:', error)
-    alert('更新失败，请稍后重试')
+    toast.error('更新失败，请稍后重试')
   } finally {
     submitting.value = false
   }

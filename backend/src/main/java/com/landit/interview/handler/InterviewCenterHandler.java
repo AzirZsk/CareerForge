@@ -69,10 +69,19 @@ public class InterviewCenterHandler {
      */
     @Transactional(rollbackFor = Exception.class)
     public InterviewDetailVO createInterview(CreateInterviewRequest request) {
-        log.info("创建真实面试: company={}, position={}", request.getCompanyName(), request.getPosition());
-        // 处理职位关联/创建
+        log.info("创建真实面试: jobPositionId={}, company={}, position={}",
+                request.getJobPositionId(), request.getCompanyName(), request.getPosition());
+        // 业务校验：如果没有关联职位，则必须提供公司名和职位名
         String jobPositionId = request.getJobPositionId();
-        if (jobPositionId == null || jobPositionId.isBlank()) {
+        boolean hasJobPositionId = jobPositionId != null && !jobPositionId.isBlank();
+        if (!hasJobPositionId) {
+            // 新建职位模式：必须提供公司名和职位名
+            if (request.getCompanyName() == null || request.getCompanyName().isBlank()) {
+                throw new BusinessException("公司名称不能为空");
+            }
+            if (request.getPosition() == null || request.getPosition().isBlank()) {
+                throw new BusinessException("职位名称不能为空");
+            }
             // 新建职位模式：查找或创建 JobPosition
             jobPositionId = findOrCreateJobPosition(request.getCompanyName(), request.getPosition(), request.getJdContent());
         }

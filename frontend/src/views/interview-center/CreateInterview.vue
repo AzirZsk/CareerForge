@@ -94,8 +94,10 @@ import { createInterview } from '@/api/interview-center'
 import type { CreateInterviewRequest, RoundType } from '@/types/interview-center'
 import { ROUND_TYPE_LABELS } from '@/types/interview-center'
 import DateTimePicker from '@/components/common/DateTimePicker.vue'
+import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
+const toast = useToast()
 const submitting = ref(false)
 
 const form = reactive<CreateInterviewRequest>({
@@ -117,7 +119,7 @@ async function handleSubmit() {
 
   // 自定义轮次必须填写名称
   if (form.roundType === 'custom' && !form.roundName?.trim()) {
-    alert('请输入轮次名称')
+    toast.warning('请输入轮次名称')
     return
   }
 
@@ -127,7 +129,7 @@ async function handleSubmit() {
     router.push(`/interview-center/${result.id}`)
   } catch (error) {
     console.error('创建面试失败:', error)
-    alert('创建失败，请稍后重试')
+    toast.error('创建失败，请稍后重试')
   } finally {
     submitting.value = false
   }

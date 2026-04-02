@@ -318,9 +318,11 @@ import PreparationGroup from '@/components/interview-center/PreparationGroup.vue
 // 工作流 composables
 import { useInterviewPreparation } from '@/composables/useInterviewPreparation'
 import { useReviewAnalysis } from '@/composables/useReviewAnalysis'
+import { useToast } from '@/composables/useToast'
 
 const route = useRoute()
 const router = useRouter()
+const toast = useToast()
 const loading = ref(true)
 const interview = ref<InterviewDetail | null>(null)
 const showAddPreparationDialog = ref(false)
@@ -400,9 +402,9 @@ function formatDateTime(dateStr: string): string {
 
 function copyToClipboard(text: string) {
   navigator.clipboard.writeText(text).then(() => {
-    alert('已复制到剪贴板')
+    toast.success('已复制到剪贴板')
   }).catch(() => {
-    alert('复制失败，请手动复制')
+    toast.error('复制失败，请手动复制')
   })
 }
 
@@ -444,7 +446,7 @@ async function handleStatusChange(newStatus: string) {
     interview.value.status = newStatus as InterviewStatus
   } catch (error) {
     console.error('更新面试状态失败:', error)
-    alert('更新状态失败，请稍后重试')
+    toast.error('更新状态失败，请稍后重试')
   }
 }
 
@@ -456,7 +458,7 @@ async function handleResultChange(newResult: string) {
     interview.value.overallResult = result
   } catch (error) {
     console.error('更新面试结果失败:', error)
-    alert('更新结果失败，请稍后重试')
+    toast.error('更新结果失败，请稍后重试')
   }
 }
 
@@ -496,7 +498,7 @@ async function handleSavePreparationItems(items: typeof preparationState.prepara
     loadDetail()
   } catch (error) {
     console.error('保存准备事项失败:', error)
-    alert('保存失败，请稍后重试')
+    toast.error('保存失败，请稍后重试')
   }
 }
 

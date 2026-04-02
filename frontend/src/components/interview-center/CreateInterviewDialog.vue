@@ -208,6 +208,7 @@
 import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useScrollLock } from '@vueuse/core'
 import { createInterview } from '@/api/interview-center'
+import { useToast } from '@/composables/useToast'
 import { getJobPositionList } from '@/api/job-position'
 import type { CreateInterviewRequest, RoundType, InterviewType } from '@/types/interview-center'
 import { ROUND_TYPE_LABELS } from '@/types/interview-center'
@@ -228,6 +229,7 @@ const submitting = ref(false)
 const loadingPositions = ref(false)
 const jobPositions = ref<JobPositionListItem[]>([])
 const selectedPositionId = ref('')
+const toast = useToast()
 
 // 锁定背景滚动，防止滚动穿透
 const isScrollLocked = useScrollLock(document.body)
@@ -321,7 +323,7 @@ async function handleSubmit() {
     emit('created', result.id)
   } catch (error) {
     console.error('创建面试失败:', error)
-    alert('创建失败，请稍后重试')
+    toast.error('创建失败，请稍后重试')
   } finally {
     submitting.value = false
   }

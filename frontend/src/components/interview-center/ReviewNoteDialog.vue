@@ -70,6 +70,9 @@ import { ref, reactive, watch, computed, onMounted, onUnmounted } from 'vue'
 import { useScrollLock } from '@vueuse/core'
 import { saveReviewNote } from '@/api/interview-center'
 import type { SaveReviewNoteRequest, ReviewNoteVO } from '@/types/interview-center'
+import { useToast } from '@/composables/useToast'
+
+const toast = useToast()
 
 const props = defineProps<{
   interviewId: string
@@ -131,7 +134,7 @@ async function handleSubmit() {
     emit('close')
   } catch (error) {
     console.error('保存复盘笔记失败:', error)
-    alert('保存失败，请稍后重试')
+    toast.error('保存失败，请稍后重试')
   } finally {
     submitting.value = false
   }

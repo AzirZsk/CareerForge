@@ -72,6 +72,9 @@ import type {
   PreparationPriority
 } from '@/types/interview-center'
 import { PRIORITY_CONFIG } from '@/types/interview-center'
+import { useToast } from '@/composables/useToast'
+
+const toast = useToast()
 
 const props = defineProps<{
   interviewId: string
@@ -121,7 +124,7 @@ async function handleSubmit() {
     emit('close')
   } catch (error) {
     console.error('添加准备事项失败:', error)
-    alert('添加失败，请稍后重试')
+    toast.error('添加失败，请稍后重试')
   } finally {
     submitting.value = false
   }

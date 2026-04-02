@@ -151,6 +151,9 @@ import { updateInterview } from '@/api/interview-center'
 import type { UpdateInterviewRequest, InterviewDetail, InterviewType } from '@/types/interview-center'
 import { INTERVIEW_STATUS_LABELS, INTERVIEW_RESULT_LABELS } from '@/types/interview-center'
 import DateTimePicker from '@/components/common/DateTimePicker.vue'
+import { useToast } from '@/composables/useToast'
+
+const toast = useToast()
 
 const props = defineProps<{
   interview: InterviewDetail
@@ -224,7 +227,7 @@ async function handleSubmit() {
     emit('close')
   } catch (error) {
     console.error('更新面试信息失败:', error)
-    alert('保存失败，请稍后重试')
+    toast.error('保存失败，请稍后重试')
   } finally {
     submitting.value = false
   }

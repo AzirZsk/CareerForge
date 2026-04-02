@@ -18,10 +18,14 @@ public class CreateInterviewRequest {
      */
     private String jobPositionId;
 
-    @NotBlank(message = "公司名称不能为空")
+    /**
+     * 公司名称（当 jobPositionId 为空时必填）
+     */
     private String companyName;
 
-    @NotBlank(message = "职位名称不能为空")
+    /**
+     * 职位名称（当 jobPositionId 为空时必填）
+     */
     private String position;
 
     private LocalDateTime interviewDate;
