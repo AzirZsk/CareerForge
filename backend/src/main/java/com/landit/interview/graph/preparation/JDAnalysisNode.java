@@ -2,6 +2,7 @@ package com.landit.interview.graph.preparation;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.landit.common.config.AIPromptProperties;
 import com.landit.common.util.ChatClientHelper;
 import com.landit.common.util.JsonParseHelper;
 import com.landit.jobposition.dto.JDAnalysisResult;
@@ -31,6 +32,7 @@ import static com.landit.interview.graph.preparation.InterviewPreparationGraphCo
 public class JDAnalysisNode implements NodeAction {
 
     private final ChatClient chatClient;
+    private final AIPromptProperties aiPromptProperties;
     private final JobPositionHandler jobPositionHandler;
 
     @Override
@@ -40,20 +42,11 @@ public class JDAnalysisNode implements NodeAction {
         String positionTitle = (String) state.value(STATE_POSITION_TITLE).orElse(null);
         String jdContent = (String) state.value(STATE_JD_CONTENT).orElse(null);
         String jobPositionId = (String) state.value(STATE_JOB_POSITION_ID).orElse(null);
-        String systemPrompt = """
-                你是一位专业的职位分析专家。请根据职位描述，提供以下分析：
-                1. 职位概述（职责范围、核心目标）
-                2. 必备技能（必须掌握的技术和技能）
-                3. 加分技能（优先考虑的技能）
-                4. 关键关键词（简历和面试中应出现的关键词）
-                5. 职责重点（主要工作内容）
-                6. 任职要求（学历、经验、软技能等）
-                7. 面试重点（可能的面试问题方向）
-                8. 准备建议（针对性的准备建议）
-
-                请以JSON格式返回结果。
-                """;
-        String userPrompt = "职位名称：" + positionTitle + "\n\n职位描述：\n" + (jdContent != null ? jdContent : "无");
+        AIPromptProperties.PromptConfig config = aiPromptProperties.getPreparationGraph().getJdAnalysisConfig();
+        String systemPrompt = config.getSystemPrompt();
+        String userPrompt = config.getUserPromptTemplate()
+                .replace("{positionTitle}", positionTitle)
+                .replace("{jdContent}", jdContent != null ? jdContent : "无");
         JDAnalysisResult analysisResult = ChatClientHelper.callAndParse(
                 chatClient, systemPrompt, userPrompt, JDAnalysisResult.class
         );

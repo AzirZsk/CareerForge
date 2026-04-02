@@ -36,6 +36,16 @@ public class AIPromptProperties {
     private ChatPrompt chat = new ChatPrompt();
 
     /**
+     * 面试准备工作流 Graph 节点提示词
+     */
+    private PreparationGraphPrompt preparationGraph = new PreparationGraphPrompt();
+
+    /**
+     * 复盘分析工作流 Graph 节点提示词
+     */
+    private ReviewGraphPrompt reviewGraph = new ReviewGraphPrompt();
+
+    /**
      * 提示词配置（拆分版本）
      * 用于前缀缓存优化，将提示词拆分为固定部分和动态部分
      *
@@ -1500,6 +1510,184 @@ public class AIPromptProperties {
                     """,
                     // userPromptTemplate（通用模式不需要模板）
                     "");
+        }
+
+        private PromptConfig ensurePromptConfig(PromptConfig config, String systemPrompt, String userPromptTemplate) {
+            if (config.getSystemPrompt() == null || config.getSystemPrompt().isBlank()) {
+                config.setSystemPrompt(systemPrompt);
+                config.setUserPromptTemplate(userPromptTemplate);
+            }
+            return config;
+        }
+    }
+
+    /**
+     * 面试准备工作流 Graph 节点提示词
+     *
+     * @author Azir
+     */
+    @Data
+    public static class PreparationGraphPrompt {
+
+        private PromptConfig companyResearchConfig = new PromptConfig();
+        private PromptConfig jdAnalysisConfig = new PromptConfig();
+        private PromptConfig generatePreparationConfig = new PromptConfig();
+
+        public PromptConfig getCompanyResearchConfig() {
+            return ensurePromptConfig(companyResearchConfig,
+                    """
+                    你是一位专业的公司调研分析师。请根据公司名称，提供以下信息：
+                    1. 公司概述（发展历程、主营业务、行业地位）
+                    2. 核心业务（主要产品或服务）
+                    3. 企业文化（价值观、工作氛围）
+                    4. 技术栈（可能使用的技术，根据公司业务推断）
+                    5. 面试特点（该公司的面试风格、流程特点）
+                    6. 最新动态（近期新闻、发展方向）
+                    7. 准备建议（针对该公司的面试准备建议）
+
+                    请以JSON格式返回结果。
+                    """,
+                    "请调研以下公司：{companyName}");
+        }
+
+        public PromptConfig getJdAnalysisConfig() {
+            return ensurePromptConfig(jdAnalysisConfig,
+                    """
+                    你是一位专业的职位分析专家。请根据职位描述，提供以下分析：
+                    1. 职位概述（职责范围、核心目标）
+                    2. 必备技能（必须掌握的技术和技能）
+                    3. 加分技能（优先考虑的技能）
+                    4. 关键关键词（简历和面试中应出现的关键词）
+                    5. 职责重点（主要工作内容）
+                    6. 任职要求（学历、经验、软技能等）
+                    7. 面试重点（可能的面试问题方向）
+                    8. 准备建议（针对性的准备建议）
+
+                    请以JSON格式返回结果。
+                    """,
+                    "职位名称：{positionTitle}\n\n职位描述：\n{jdContent}");
+        }
+
+        public PromptConfig getGeneratePreparationConfig() {
+            return ensurePromptConfig(generatePreparationConfig,
+                    """
+                    你是一位专业的面试准备顾问。请根据公司调研信息和JD分析结果，生成面试准备事项。
+
+                    每个准备事项必须包含：
+                    - type: 类型，必须使用以下小写值之一：
+                      - company_research: 公司相关研究（了解公司业务、文化、最新动态）
+                      - jd_keywords: JD关键词准备（简历和面试中需要体现的关键词）
+                      - tech_prep: 技术准备（需要复习的技术知识点）
+                      - behavioral: 行为面试准备（STAR法则准备的行为问题）
+                      - case_study: 案例准备（可以分享的项目案例）
+                    - title: 标题（简洁明了，不超过50字）
+                    - content: 具体内容（详细说明需要准备什么）
+                    - priority: 优先级（required必做/recommended推荐/optional可选）
+                    - resources: 关联资源数组（可选）
+
+                    优先级分布要求（共5-8个事项）：
+                    - required（必做）：约50%，核心准备项
+                    - recommended（推荐）：约35%，加分项
+                    - optional（可选）：约15%，锦上添花
+
+                    资源格式（可选）：
+                    - type: link/note/code/video
+                    - title: 资源标题
+                    - url: 链接地址（type为link时必填）
+
+                    示例输出：
+                    ```json
+                    [
+                      {
+                        "type": "company_research",
+                        "title": "了解公司核心业务模式",
+                        "content": "研究公司的主要产品和服务...",
+                        "priority": "required",
+                        "resources": [
+                          {"type": "link", "title": "公司官网", "url": "https://example.com"}
+                        ]
+                      }
+                    ]
+                    ```
+
+                    请严格按JSON数组格式返回，不要添加任何其他文字。
+                    """,
+                    """
+                    公司名称：{companyName}
+                    职位名称：{positionTitle}
+
+                    公司调研结果：
+                    {companyResearch}
+
+                    JD分析结果：
+                    {jdAnalysis}
+
+                    请生成5-8个面试准备事项，确保优先级分布合理。
+                    """);
+        }
+
+        private PromptConfig ensurePromptConfig(PromptConfig config, String systemPrompt, String userPromptTemplate) {
+            if (config.getSystemPrompt() == null || config.getSystemPrompt().isBlank()) {
+                config.setSystemPrompt(systemPrompt);
+                config.setUserPromptTemplate(userPromptTemplate);
+            }
+            return config;
+        }
+    }
+
+    /**
+     * 复盘分析工作流 Graph 节点提示词
+     *
+     * @author Azir
+     */
+    @Data
+    public static class ReviewGraphPrompt {
+
+        private PromptConfig analyzeInterviewConfig = new PromptConfig();
+        private PromptConfig generateAdviceConfig = new PromptConfig();
+
+        public PromptConfig getAnalyzeInterviewConfig() {
+            return ensurePromptConfig(analyzeInterviewConfig,
+                    """
+                    你是一位专业的面试复盘分析师。请根据收集的面试数据，分析面试表现：
+
+                    分析维度：
+                    1. 整体表现评估（优秀/良好/一般/待改进）
+                    2. 优势亮点（表现好的方面）
+                    3. 不足之处（需要改进的方面）
+                    4. 轮次分析（各轮次的表现评价）
+                    5. 综合建议
+
+                    请以JSON格式返回结果，包含以下字段：
+                    - overallPerformance: 整体表现评级
+                    - strengths: 优势亮点列表
+                    - weaknesses: 不足之处列表
+                    - roundAnalysis: 各轮次分析
+                    - summary: 综合总结
+                    """,
+                    "请分析以下面试数据：\n{collectedData}");
+        }
+
+        public PromptConfig getGenerateAdviceConfig() {
+            return ensurePromptConfig(generateAdviceConfig,
+                    """
+                    你是一位专业的职业发展顾问。请根据面试分析结果，生成具体的改进建议：
+
+                    建议类型：
+                    1. 技能提升（需要学习或加强的技能）
+                    2. 面试技巧（面试表现方面的建议）
+                    3. 项目经验（项目介绍方面的优化建议）
+                    4. 行为面试（STAR法则的应用建议）
+                    5. 后续行动（具体的行动计划）
+
+                    请以JSON数组格式返回建议列表，每条建议包含：
+                    - category: 建议类别
+                    - title: 建议标题
+                    - description: 详细描述
+                    - priority: 优先级（高/中/低）
+                    - actionItems: 具体行动项列表
+                    """,
+                    "请根据以下分析结果生成改进建议：\n{analysisResult}");
         }
 
         private PromptConfig ensurePromptConfig(PromptConfig config, String systemPrompt, String userPromptTemplate) {

@@ -4,6 +4,7 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.landit.common.config.AIPromptProperties;
 import com.landit.common.enums.PreparationItemType;
 import com.landit.common.enums.PreparationPriority;
 import com.landit.common.enums.PreparationSource;
@@ -34,64 +35,9 @@ import static com.landit.interview.graph.preparation.InterviewPreparationGraphCo
 public class GeneratePreparationNode implements NodeAction {
 
     private final ChatClient chatClient;
+    private final AIPromptProperties aiPromptProperties;
     private final InterviewPreparationService preparationService;
     private final ObjectMapper objectMapper;
-
-    private static final String SYSTEM_PROMPT = """
-            你是一位专业的面试准备顾问。请根据公司调研信息和JD分析结果，生成面试准备事项。
-
-            每个准备事项必须包含：
-            - type: 类型，必须使用以下小写值之一：
-              - company_research: 公司相关研究（了解公司业务、文化、最新动态）
-              - jd_keywords: JD关键词准备（简历和面试中需要体现的关键词）
-              - tech_prep: 技术准备（需要复习的技术知识点）
-              - behavioral: 行为面试准备（STAR法则准备的行为问题）
-              - case_study: 案例准备（可以分享的项目案例）
-            - title: 标题（简洁明了，不超过50字）
-            - content: 具体内容（详细说明需要准备什么）
-            - priority: 优先级（required必做/recommended推荐/optional可选）
-            - resources: 关联资源数组（可选）
-
-            优先级分布要求（共5-8个事项）：
-            - required（必做）：约50%，核心准备项
-            - recommended（推荐）：约35%，加分项
-            - optional（可选）：约15%，锦上添花
-
-            资源格式（可选）：
-            - type: link/note/code/video
-            - title: 资源标题
-            - url: 链接地址（type为link时必填）
-
-            示例输出：
-            ```json
-            [
-              {
-                "type": "company_research",
-                "title": "了解公司核心业务模式",
-                "content": "研究公司的主要产品和服务...",
-                "priority": "required",
-                "resources": [
-                  {"type": "link", "title": "公司官网", "url": "https://example.com"}
-                ]
-              }
-            ]
-            ```
-
-            请严格按JSON数组格式返回，不要添加任何其他文字。
-            """;
-
-    private static final String USER_PROMPT_TEMPLATE = """
-            公司名称：%s
-            职位名称：%s
-
-            公司调研结果：
-            %s
-
-            JD分析结果：
-            %s
-
-            请生成5-8个面试准备事项，确保优先级分布合理。
-            """;
 
     @Override
     public Map<String, Object> apply(OverAllState state) {
@@ -116,24 +62,20 @@ public class GeneratePreparationNode implements NodeAction {
         if (context.interviewId() == null) {
             return new ArrayList<>();
         }
-        String userPrompt = buildUserPrompt(context);
+        AIPromptProperties.PromptConfig config = aiPromptProperties.getPreparationGraph().getGeneratePreparationConfig();
+        String systemPrompt = config.getSystemPrompt();
+        String userPrompt = config.getUserPromptTemplate()
+                .replace("{companyName}", context.companyName())
+                .replace("{positionTitle}", context.positionTitle())
+                .replace("{companyResearch}", context.companyResearch())
+                .replace("{jdAnalysis}", context.jdAnalysis());
         List<Map<String, Object>> preparationItems = ChatClientHelper.callAndParse(
-                chatClient, SYSTEM_PROMPT, userPrompt, List.class
+                chatClient, systemPrompt, userPrompt, List.class
         );
         if (preparationItems == null || preparationItems.isEmpty()) {
             return new ArrayList<>();
         }
         return savePreparationItems(context.interviewId(), preparationItems);
-    }
-
-    private String buildUserPrompt(PreparationContext context) {
-        return String.format(
-                USER_PROMPT_TEMPLATE,
-                context.companyName(),
-                context.positionTitle(),
-                context.companyResearch(),
-                context.jdAnalysis()
-        );
     }
 
     private List<InterviewPreparation> savePreparationItems(

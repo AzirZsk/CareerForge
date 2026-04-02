@@ -40,19 +40,9 @@ public class CompanyResearchNode implements NodeAction {
         log.info("=== 开始公司调研 ===");
         String companyName = (String) state.value(STATE_COMPANY_NAME).orElse(null);
         String companyId = (String) state.value(STATE_COMPANY_ID).orElse(null);
-        String systemPrompt = """
-                你是一位专业的公司调研分析师。请根据公司名称，提供以下信息：
-                1. 公司概述（发展历程、主营业务、行业地位）
-                2. 核心业务（主要产品或服务）
-                3. 企业文化（价值观、工作氛围）
-                4. 技术栈（可能使用的技术，根据公司业务推断）
-                5. 面试特点（该公司的面试风格、流程特点）
-                6. 最新动态（近期新闻、发展方向）
-                7. 准备建议（针对该公司的面试准备建议）
-
-                请以JSON格式返回结果。
-                """;
-        String userPrompt = "请调研以下公司：" + companyName;
+        AIPromptProperties.PromptConfig config = aiPromptProperties.getPreparationGraph().getCompanyResearchConfig();
+        String systemPrompt = config.getSystemPrompt();
+        String userPrompt = config.getUserPromptTemplate().replace("{companyName}", companyName);
         CompanyResearchResult researchResult = ChatClientHelper.callAndParse(
                 chatClient, systemPrompt, userPrompt, CompanyResearchResult.class
         );
