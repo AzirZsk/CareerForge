@@ -1,6 +1,5 @@
 package com.landit.interview.dto.interviewcenter;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -14,7 +13,6 @@ import java.util.Map;
  * @author Azir
  */
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
 public class GraphProgressEvent {
 
@@ -52,6 +50,26 @@ public class GraphProgressEvent {
      * 时间戳
      */
     private long timestamp;
+
+    /**
+     * 是否使用缓存（节点跳过执行）
+     */
+    private Boolean cached = false;
+
+    /**
+     * 全参数构造函数
+     */
+    public GraphProgressEvent(String event, String nodeId, Integer progress, String message,
+                              String threadId, Object data, long timestamp) {
+        this.event = event;
+        this.nodeId = nodeId;
+        this.progress = progress;
+        this.message = message;
+        this.threadId = threadId;
+        this.data = data;
+        this.timestamp = timestamp;
+        this.cached = false;
+    }
 
     /**
      * 创建开始事件（面试准备工作流）
@@ -108,8 +126,13 @@ public class GraphProgressEvent {
         Integer progress = (Integer) nodeOutput.getOrDefault("progress", 0);
         String message = (String) nodeOutput.getOrDefault("message", "处理中...");
         Object data = nodeOutput.get("data");
+        Boolean cached = (Boolean) nodeOutput.get("cached");
 
-        return new GraphProgressEvent("progress", nodeId, progress, message, threadId, data, System.currentTimeMillis());
+        GraphProgressEvent event = new GraphProgressEvent("progress", nodeId, progress, message, threadId, data, System.currentTimeMillis());
+        if (cached != null && cached) {
+            event.setCached(true);
+        }
+        return event;
     }
 
     /**
@@ -146,7 +169,7 @@ public class GraphProgressEvent {
      * 创建错误事件
      *
      * @param errorMsg 错误消息
-     * @param threadId 线程ID
+     * @param threadId  线程ID
      * @return 错误事件
      */
     public static GraphProgressEvent error(String errorMsg, String threadId) {
