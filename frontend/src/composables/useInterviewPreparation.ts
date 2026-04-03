@@ -174,7 +174,7 @@ export function useInterviewPreparation() {
       return
     }
 
-    if (event.event === 'complete') {
+        if (event.event === 'complete') {
       stateInstance!.isRunning = false
       stateInstance!.isCompleted = true
       stateInstance!.currentStage = 'end'
@@ -189,12 +189,9 @@ export function useInterviewPreparation() {
         }
       })
 
-      if (event.data && typeof event.data === 'object') {
-        const data = event.data as { preparationItems?: PreparationItem[] }
-        if (data.preparationItems) {
-          stateInstance!.preparationItems = data.preparationItems
-        }
-      }
+      // 不再重复存储 preparationItems 到顶层状态
+      // 数据已在 progress 事件中存储到 stageHistory，通过展开节点查看
+
       closeConnection()
       return
     }

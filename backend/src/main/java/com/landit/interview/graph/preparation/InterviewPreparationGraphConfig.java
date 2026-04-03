@@ -9,6 +9,8 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.landit.common.config.AIPromptProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +23,7 @@ import java.util.Map;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
+import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.landit.interview.graph.preparation.InterviewPreparationGraphConstants.*;
 
 /**
@@ -51,24 +54,24 @@ public class InterviewPreparationGraphConfig {
         return () -> {
             Map<String, KeyStrategy> strategies = new HashMap<>();
             // 输入参数
-            strategies.put(STATE_INTERVIEW_ID, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
-            strategies.put(STATE_COMPANY_NAME, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
-            strategies.put(STATE_POSITION_TITLE, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
-            strategies.put(STATE_JD_CONTENT, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
+            strategies.put(STATE_INTERVIEW_ID, new ReplaceStrategy());
+            strategies.put(STATE_COMPANY_NAME, new ReplaceStrategy());
+            strategies.put(STATE_POSITION_TITLE, new ReplaceStrategy());
+            strategies.put(STATE_JD_CONTENT, new ReplaceStrategy());
             // 中间结果
-            strategies.put(STATE_COMPANY_ID, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
-            strategies.put(STATE_NEED_COMPANY_RESEARCH, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
-            strategies.put(STATE_JOB_POSITION_ID, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
-            strategies.put(STATE_NEED_JD_ANALYSIS, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
-            strategies.put(STATE_COMPANY_RESEARCH_RESULT, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
-            strategies.put(STATE_JD_ANALYSIS_RESULT, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
-            strategies.put(STATE_PREPARATION_ITEMS, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
+            strategies.put(STATE_COMPANY_ID, new ReplaceStrategy());
+            strategies.put(STATE_NEED_COMPANY_RESEARCH, new ReplaceStrategy());
+            strategies.put(STATE_JOB_POSITION_ID, new ReplaceStrategy());
+            strategies.put(STATE_NEED_JD_ANALYSIS, new ReplaceStrategy());
+            strategies.put(STATE_COMPANY_RESEARCH_RESULT, new ReplaceStrategy());
+            strategies.put(STATE_JD_ANALYSIS_RESULT, new ReplaceStrategy());
+            strategies.put(STATE_PREPARATION_ITEMS, new ReplaceStrategy());
             // 流程控制
-            strategies.put(STATE_CURRENT_STEP, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
+            strategies.put(STATE_CURRENT_STEP, new ReplaceStrategy());
             // 消息日志
-            strategies.put(STATE_MESSAGES, new com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy());
+            strategies.put(STATE_MESSAGES, new AppendStrategy());
             // 节点输出
-            strategies.put(STATE_NODE_OUTPUT, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
+            strategies.put(STATE_NODE_OUTPUT, new ReplaceStrategy());
             return strategies;
         };
     }
@@ -87,7 +90,7 @@ public class InterviewPreparationGraphConfig {
             GeneratePreparationNode generatePreparationNode
     ) throws GraphStateException {
 
-        // 构建工作流图（简化版：顺序执行）
+        // 构建工作流图（条件路由版：根据检查结果跳过已处理的节点）
         StateGraph workflow = new StateGraph(GRAPH_INTERVIEW_PREPARATION, interviewPreparationKeyStrategyFactory)
                 // 添加节点
                 .addNode(NODE_CHECK_COMPANY, AsyncNodeAction.node_async(checkCompanyNode))
@@ -95,12 +98,36 @@ public class InterviewPreparationGraphConfig {
                 .addNode(NODE_CHECK_JOB_POSITION, AsyncNodeAction.node_async(checkJobPositionNode))
                 .addNode(NODE_JD_ANALYSIS, AsyncNodeAction.node_async(jdAnalysisNode))
                 .addNode(NODE_GENERATE_PREPARATION, AsyncNodeAction.node_async(generatePreparationNode))
-                // 添加边：START -> 检查公司 -> 公司调研 -> 检查职位 -> JD分析 -> 生成准备 -> END
+                // 添加边
+                // START -> check_company
                 .addEdge(START, NODE_CHECK_COMPANY)
-                .addEdge(NODE_CHECK_COMPANY, NODE_COMPANY_RESEARCH)
+                // check_company 条件边：根据 need_company_research 决定是否执行 company_research
+                .addConditionalEdges(NODE_CHECK_COMPANY,
+                        edge_async(state -> {
+                            boolean needResearch = (Boolean) state.value(STATE_NEED_COMPANY_RESEARCH).orElse(true);
+                            log.info("条件路由 - check_company: needResearch={}", needResearch);
+                            return needResearch ? ROUTE_NEED_RESEARCH : ROUTE_SKIP_RESEARCH;
+                        }),
+                        Map.of(
+                                ROUTE_NEED_RESEARCH, NODE_COMPANY_RESEARCH,
+                                ROUTE_SKIP_RESEARCH, NODE_CHECK_JOB_POSITION
+                        ))
+                // company_research 固定边：执行完后进入 check_job_position
                 .addEdge(NODE_COMPANY_RESEARCH, NODE_CHECK_JOB_POSITION)
-                .addEdge(NODE_CHECK_JOB_POSITION, NODE_JD_ANALYSIS)
+                // check_job_position 条件边：根据 need_jd_analysis 决定是否执行 jd_analysis
+                .addConditionalEdges(NODE_CHECK_JOB_POSITION,
+                        edge_async(state -> {
+                            boolean needAnalysis = (Boolean) state.value(STATE_NEED_JD_ANALYSIS).orElse(true);
+                            log.info("条件路由 - check_job_position: needAnalysis={}", needAnalysis);
+                            return needAnalysis ? ROUTE_NEED_ANALYSIS : ROUTE_SKIP_ANALYSIS;
+                        }),
+                        Map.of(
+                                ROUTE_NEED_ANALYSIS, NODE_JD_ANALYSIS,
+                                ROUTE_SKIP_ANALYSIS, NODE_GENERATE_PREPARATION
+                        ))
+                // jd_analysis 固定边：执行完后进入 generate_preparation
                 .addEdge(NODE_JD_ANALYSIS, NODE_GENERATE_PREPARATION)
+                // generate_preparation 固定边：结束
                 .addEdge(NODE_GENERATE_PREPARATION, END);
 
         // 配置持久化

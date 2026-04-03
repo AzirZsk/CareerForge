@@ -149,34 +149,15 @@
             </div>
           </div>
 
-          <!-- 完成后预览 -->
-          <div v-if="state.isCompleted && state.preparationItems.length > 0" class="preview-section">
-            <div class="preview-header">
-              <h4>AI 生成的准备事项</h4>
-              <span class="preview-count">{{ state.preparationItems.length }} 项</span>
+          <!-- 完成后勾选保存区域（不再重复展示内容，用户可点击节点查看） -->
+          <div v-if="state.isCompleted && preparationItemsFromStage.length > 0" class="save-section">
+            <div class="save-header">
+              <h4>选择要保存的准备事项</h4>
+              <span class="save-count">已选 {{ selectedCount }} / {{ preparationItemsFromStage.length }} 项</span>
             </div>
-            <div class="preview-list">
-              <div
-                v-for="(item, index) in state.preparationItems"
-                :key="index"
-                class="preview-item"
-              >
-                <input
-                  type="checkbox"
-                  v-model="selectedItems[index]"
-                  class="item-checkbox"
-                />
-                <div class="item-content">
-                  <span class="item-title">{{ item.title }}</span>
-                  <span v-if="item.description" class="item-desc">{{ item.description }}</span>
-                  <div v-if="item.category || item.priority" class="item-meta">
-                    <span v-if="item.category" class="meta-tag category">{{ item.category }}</span>
-                    <span v-if="item.priority" class="meta-tag priority" :class="item.priority">
-                      {{ priorityLabels[item.priority] }}
-                    </span>
-                  </div>
-                </div>
-              </div>
+            <div class="save-actions">
+              <button class="action-btn" @click="selectAll">全选</button>
+              <button class="action-btn" @click="deselectAll">全不选</button>
             </div>
           </div>
 
@@ -202,7 +183,7 @@
                 重试
               </button>
             </template>
-            <template v-else-if="state.isCompleted && state.preparationItems.length > 0">
+            <template v-else-if="state.isCompleted && preparationItemsFromStage.length > 0">
               <button class="btn btn-secondary" @click="handleClose">取消</button>
               <button
                 class="btn btn-primary"
@@ -259,13 +240,6 @@ const isScrollLocked = useScrollLock(document.body)
 
 // 勾选状态
 const selectedItems = ref<Record<number, boolean>>({})
-
-// 优先级标签
-const priorityLabels: Record<string, string> = {
-  high: '高',
-  medium: '中',
-  low: '低'
-}
 
 // 获取 composable 方法
 const { toggleExpand, getStageLabel } = useInterviewPreparation()
@@ -353,9 +327,29 @@ const headerTitle = computed(() => {
   return 'AI 生成准备清单'
 })
 
+// 从阶段历史获取准备事项数据
+const preparationItemsFromStage = computed(() => {
+  const generateStage = props.state.stageHistory.find(h => h.stage === 'generate_preparation')
+  return generateStage?.data as PreparationItem[] || []
+})
+
 const selectedCount = computed(() => {
   return Object.values(selectedItems.value).filter(Boolean).length
 })
+
+// 全选
+function selectAll() {
+  preparationItemsFromStage.value.forEach((_, index) => {
+    selectedItems.value[index] = true
+  })
+}
+
+// 全不选
+function deselectAll() {
+  preparationItemsFromStage.value.forEach((_, index) => {
+    selectedItems.value[index] = false
+  })
+}
 
 // ==================== 事件处理 ====================
 
@@ -369,7 +363,7 @@ function handleCancel() {
 }
 
 function handleSave() {
-  const itemsToSave = props.state.preparationItems.filter((_, index) => selectedItems.value[index])
+  const itemsToSave = preparationItemsFromStage.value.filter((_, index) => selectedItems.value[index])
   emit('save', itemsToSave)
 }
 
@@ -386,8 +380,8 @@ watch(
     if (visible) {
       // 重置勾选状态
       selectedItems.value = {}
-      // 默认全选
-      props.state.preparationItems.forEach((_, index) => {
+      // 默认全选（从阶段历史获取）
+      preparationItemsFromStage.value.forEach((_, index) => {
         selectedItems.value[index] = true
       })
     }
@@ -397,7 +391,7 @@ watch(
 
 // 监听准备事项变化，自动全选新项
 watch(
-  () => props.state.preparationItems,
+  preparationItemsFromStage,
   (items) => {
     items.forEach((_, index) => {
       if (selectedItems.value[index] === undefined) {
@@ -676,8 +670,8 @@ watch(
   opacity: 1;
 }
 
-// 预览区域
-.preview-section {
+// 保存区域
+.save-section {
   padding: $spacing-lg;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
   max-height: 300px;
@@ -685,7 +679,7 @@ watch(
   flex-shrink: 0;
 }
 
-.preview-header {
+.save-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -698,9 +692,31 @@ watch(
     margin: 0;
   }
 
-  .preview-count {
+  .save-count {
     font-size: $text-xs;
     color: $color-text-tertiary;
+  }
+}
+
+.save-actions {
+  display: flex;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+
+  .action-btn {
+    font-size: $text-xs;
+    padding: 4px $spacing-sm;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: $radius-sm;
+    color: $color-text-secondary;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: $color-text-primary;
+    }
   }
 }
 
