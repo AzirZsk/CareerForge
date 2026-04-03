@@ -373,6 +373,8 @@ export interface PreparationState {
   preparationItems: PreparationItem[]
   errorMessage: string | null
   stageHistory: PreparationStageHistoryItem[]
+  /** 工作流开始时间（后端时间戳，用于计算各阶段耗时） */
+  workflowStartTime?: number
 }
 
 // 复盘分析工作流状态

@@ -6,15 +6,28 @@
 <template>
   <div class="preparation-items-content">
     <div class="items-header">
-      <span class="items-count">{{ items.length }} 项准备事项</span>
+      <span class="items-count">已选 {{ selectedCount }} / {{ items.length }} 项</span>
+      <div class="items-actions">
+        <button class="action-btn" @click="selectAll">全选</button>
+        <button class="action-btn" @click="deselectAll">全不选</button>
+      </div>
     </div>
     <div class="items-list">
       <div
         v-for="(item, index) in items"
         :key="item.id || index"
         class="preparation-item"
+        :class="{ selected: selectedItems[index] }"
+        @click="toggleItem(index)"
       >
         <div class="item-header">
+          <input
+            type="checkbox"
+            :checked="selectedItems[index]"
+            class="item-checkbox"
+            @click.stop
+            @change="toggleItem(index)"
+          />
           <span class="item-index">{{ index + 1 }}</span>
           <span class="item-title">{{ item.title }}</span>
           <span v-if="item.priority" class="item-priority" :class="getPriorityClass(item.priority)">
@@ -31,11 +44,22 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { PreparationItem } from '@/types/interview-center'
 
-defineProps<{
+const props = defineProps<{
   items: PreparationItem[]
+  selectedItems: Record<number, boolean>
 }>()
+
+const emit = defineEmits<{
+  'update:selectedItems': [value: Record<number, boolean>]
+}>()
+
+// 计算选中数量
+const selectedCount = computed(() => {
+  return Object.values(props.selectedItems).filter(Boolean).length
+})
 
 // 优先级标签映射（后端返回 required/recommended/optional）
 const priorityLabels: Record<string, string> = {
@@ -52,6 +76,31 @@ const itemTypeLabels: Record<string, string> = {
   case_study: '案例准备',
   behavioral: '行为面试',
   todo: '待办事项'
+}
+
+// 全选
+function selectAll() {
+  const newSelected: Record<number, boolean> = {}
+  props.items.forEach((_, index) => {
+    newSelected[index] = true
+  })
+  emit('update:selectedItems', newSelected)
+}
+
+// 全不选
+function deselectAll() {
+  const newSelected: Record<number, boolean> = {}
+  props.items.forEach((_, index) => {
+    newSelected[index] = false
+  })
+  emit('update:selectedItems', newSelected)
+}
+
+// 切换单项勾选
+function toggleItem(index: number) {
+  const newSelected = { ...props.selectedItems }
+  newSelected[index] = !newSelected[index]
+  emit('update:selectedItems', newSelected)
 }
 
 // 获取优先级样式类
@@ -83,6 +132,27 @@ function getPriorityClass(priority: string): string {
   color: $color-text-tertiary;
 }
 
+.items-actions {
+  display: flex;
+  gap: $spacing-xs;
+}
+
+.action-btn {
+  font-size: $text-xs;
+  padding: 4px $spacing-sm;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: $radius-sm;
+  color: $color-text-secondary;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: $color-text-primary;
+  }
+}
+
 .items-list {
   display: flex;
   flex-direction: column;
@@ -96,12 +166,31 @@ function getPriorityClass(priority: string): string {
   background: rgba(255, 255, 255, 0.02);
   border-radius: $radius-sm;
   border: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  &.selected {
+    border-color: rgba($color-accent, 0.3);
+    background: rgba($color-accent, 0.05);
+  }
 }
 
 .item-header {
   display: flex;
   align-items: center;
   gap: $spacing-sm;
+}
+
+.item-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: $color-accent;
+  flex-shrink: 0;
+  cursor: pointer;
 }
 
 .item-index {
@@ -148,11 +237,11 @@ function getPriorityClass(priority: string): string {
   font-size: $text-xs;
   color: $color-text-tertiary;
   line-height: 1.5;
-  margin: $spacing-xs 0 0 28px;
+  margin: $spacing-xs 0 0 36px;
 }
 
-.item-category {
-  margin: $spacing-xs 0 0 28px;
+.item-meta {
+  margin-left: 36px;
 }
 
 .category-tag {

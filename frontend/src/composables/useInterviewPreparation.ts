@@ -39,7 +39,8 @@ function createInitialState(): PreparationState {
     message: '',
     preparationItems: [],
     errorMessage: null,
-    stageHistory: []
+    stageHistory: [],
+    workflowStartTime: undefined
   }
 }
 
@@ -107,6 +108,8 @@ export function useInterviewPreparation() {
       stateInstance!.currentStage = 'start'
       stateInstance!.progress = 5
       stateInstance!.message = event.message || '开始生成准备事项...'
+      // 记录工作流开始时间（使用后端时间戳）
+      stateInstance!.workflowStartTime = event.timestamp
       return
     }
 
@@ -114,26 +117,31 @@ export function useInterviewPreparation() {
       if (event.nodeId) {
         const newStage = event.nodeId as PreparationStage
         const prevStage = stateInstance!.currentStage
+        const isCached = event.cached === true
 
         // 阶段切换时记录历史
         if (newStage !== prevStage) {
-          // 标记上一阶段完成
+          // 标记上一阶段完成，使用当前事件的后端时间戳作为 endTime
           const prevHistoryItem = stateInstance!.stageHistory.find(h => h.stage === prevStage)
           if (prevHistoryItem && !prevHistoryItem.completed) {
             prevHistoryItem.completed = true
-            prevHistoryItem.endTime = Date.now()
+            prevHistoryItem.endTime = event.timestamp  // 使用后端时间戳
           }
 
           // 添加新阶段到历史
           const existingIndex = stateInstance!.stageHistory.findIndex(h => h.stage === newStage)
           if (existingIndex === -1) {
+            // 计算阶段开始时间：上一阶段的 endTime 或工作流开始时间
+            const stageStartTime = prevHistoryItem?.endTime || stateInstance!.workflowStartTime || event.timestamp
+
             stateInstance!.stageHistory.push({
               stage: newStage,
               message: event.message || '',
-              timestamp: Date.now(),
-              startTime: Date.now(),
-              completed: false,
-              cached: event.cached || false,  // 记录是否使用缓存
+              timestamp: event.timestamp,  // 使用后端时间戳
+              startTime: stageStartTime,   // 使用计算出的开始时间
+              completed: isCached,          // cached 节点直接标记为完成
+              endTime: isCached ? event.timestamp : undefined,  // cached 节点设置结束时间
+              cached: isCached,             // 记录是否使用缓存
               data: null,
               expanded: false
             })
@@ -141,7 +149,14 @@ export function useInterviewPreparation() {
             // 更新现有阶段
             stateInstance!.stageHistory[existingIndex].message = event.message || ''
             if (!stateInstance!.stageHistory[existingIndex].startTime) {
-              stateInstance!.stageHistory[existingIndex].startTime = Date.now()
+              // 如果还没有 startTime，使用上一阶段的 endTime 或工作流开始时间
+              const stageStartTime = prevHistoryItem?.endTime || stateInstance!.workflowStartTime || event.timestamp
+              stateInstance!.stageHistory[existingIndex].startTime = stageStartTime
+            }
+            // cached 节点标记为完成
+            if (isCached) {
+              stateInstance!.stageHistory[existingIndex].completed = true
+              stateInstance!.stageHistory[existingIndex].endTime = event.timestamp
             }
           }
         } else {
@@ -152,7 +167,12 @@ export function useInterviewPreparation() {
           }
         }
 
-        stateInstance!.currentStage = newStage
+            // 只有非 cached 节点且是有效的显示阶段才更新 currentStage
+        // 排除 __START__、__END__ 等内部节点
+        const isValidDisplayStage = newStage in STAGE_CONFIG
+        if (!isCached && isValidDisplayStage) {
+          stateInstance!.currentStage = newStage
+        }
       }
 
       // 处理阶段数据
@@ -189,11 +209,11 @@ export function useInterviewPreparation() {
       stateInstance!.progress = 100
       stateInstance!.message = event.message || '准备事项生成完成'
 
-      // 标记所有阶段完成
+      // 标记所有阶段完成，使用后端时间戳
       stateInstance!.stageHistory.forEach(h => {
         h.completed = true
         if (!h.endTime) {
-          h.endTime = Date.now()
+          h.endTime = event.timestamp  // 使用后端时间戳
         }
       })
 

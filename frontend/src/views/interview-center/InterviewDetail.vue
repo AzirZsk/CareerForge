@@ -540,7 +540,7 @@ async function handleSavePreparationItems(items: typeof preparationState.prepara
     for (const item of items) {
       await addPreparation(interview.value!.id, {
         title: item.title,
-        content: item.description
+        content: item.content
       })
     }
     showPrepModal.value = false

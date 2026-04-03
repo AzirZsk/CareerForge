@@ -95,9 +95,9 @@
                   <span class="stage-label">{{ getStageLabel(item.stage) }}</span>
                   <!-- 跳过标签 -->
                   <span v-if="item.cached && item.completed" class="cached-tag">已跳过</span>
-                  <!-- 耗时 -->
+                  <!-- 耗时（跳过的节点不显示） -->
                   <span
-                    v-if="item.startTime"
+                    v-if="item.startTime && !item.cached"
                     class="stage-elapsed"
                     :class="{ running: !item.endTime && item.stage === state.currentStage && state.isRunning }"
                   >
@@ -140,7 +140,10 @@
                     </div>
                     <!-- 准备事项数据 -->
                     <div v-else-if="item.stage === 'generate_preparation'" class="data-section">
-                      <PreparationItemsContent :items="(item.data as PreparationItem[])" />
+                      <PreparationItemsContent
+                        :items="(item.data as PreparationItem[])"
+                        v-model:selected-items="selectedItems"
+                      />
                     </div>
                     <!-- 默认显示 -->
                     <div v-else class="data-content">
@@ -149,18 +152,6 @@
                   </div>
                 </div>
               </Transition>
-            </div>
-          </div>
-
-          <!-- 完成后勾选保存区域（不再重复展示内容，用户可点击节点查看） -->
-          <div v-if="state.isCompleted && preparationItemsFromStage.length > 0" class="save-section">
-            <div class="save-header">
-              <h4>选择要保存的准备事项</h4>
-              <span class="save-count">已选 {{ selectedCount }} / {{ preparationItemsFromStage.length }} 项</span>
-            </div>
-            <div class="save-actions">
-              <button class="action-btn" @click="selectAll">全选</button>
-              <button class="action-btn" @click="deselectAll">全不选</button>
             </div>
           </div>
 
@@ -339,20 +330,6 @@ const preparationItemsFromStage = computed(() => {
 const selectedCount = computed(() => {
   return Object.values(selectedItems.value).filter(Boolean).length
 })
-
-// 全选
-function selectAll() {
-  preparationItemsFromStage.value.forEach((_, index) => {
-    selectedItems.value[index] = true
-  })
-}
-
-// 全不选
-function deselectAll() {
-  preparationItemsFromStage.value.forEach((_, index) => {
-    selectedItems.value[index] = false
-  })
-}
 
 // ==================== 事件处理 ====================
 
@@ -685,56 +662,6 @@ watch(
 .expand-leave-from {
   grid-template-rows: 1fr;
   opacity: 1;
-}
-
-// 保存区域
-.save-section {
-  padding: $spacing-lg;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  max-height: 300px;
-  overflow-y: auto;
-  flex-shrink: 0;
-}
-
-.save-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: $spacing-md;
-
-  h4 {
-    font-size: $text-sm;
-    font-weight: $weight-semibold;
-    color: $color-text-primary;
-    margin: 0;
-  }
-
-  .save-count {
-    font-size: $text-xs;
-    color: $color-text-tertiary;
-  }
-}
-
-.save-actions {
-  display: flex;
-  gap: $spacing-sm;
-  margin-bottom: $spacing-md;
-
-  .action-btn {
-    font-size: $text-xs;
-    padding: 4px $spacing-sm;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: $radius-sm;
-    color: $color-text-secondary;
-    cursor: pointer;
-    transition: all $transition-fast;
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.1);
-      color: $color-text-primary;
-    }
-  }
 }
 
 .preview-list {
