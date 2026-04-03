@@ -342,6 +342,7 @@ export interface GraphProgressEvent {
   threadId?: string
   progress?: number
   message?: string
+  cached?: boolean  // 是否使用缓存（节点跳过执行）
   data?: Record<string, unknown>
   errorMessage?: string
   timestamp: number
@@ -355,6 +356,7 @@ export interface PreparationStageHistoryItem {
   startTime?: number
   endTime?: number
   completed: boolean
+  cached?: boolean  // 是否使用缓存（跳过实际执行）
   data: CompanyResearchResult | JDAnalysisResult | PreparationItem[] | null
   expanded: boolean
 }
@@ -386,12 +388,20 @@ export interface ReviewAnalysisState {
   errorMessage: string | null
 }
 
-// 准备事项（工作流生成）
+// 准备事项（工作流生成/后端返回的实体格式）
 export interface PreparationItem {
+  id: string
+  interviewId: string
+  itemType: string        // 类型：company_research/jd_keywords/tech_prep/case_study/behavioral/todo
   title: string
-  description?: string
-  priority?: 'high' | 'medium' | 'low'
-  category?: string
+  content: string         // 内容（后端用 content，不是 description）
+  completed: boolean
+  source: string          // 来源：ai_generated/manual
+  sortOrder: number
+  priority: string        // 优先级：required/recommended/optional
+  resources?: string      // 关联资源（JSON字符串）
+  createdAt?: string
+  updatedAt?: string
 }
 
 // 改进建议（工作流生成）

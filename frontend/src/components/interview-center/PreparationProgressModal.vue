@@ -59,7 +59,8 @@
               class="stage-item"
               :class="{
                 active: item.stage === state.currentStage && state.isRunning,
-                completed: item.completed
+                completed: item.completed,
+                cached: item.cached && item.completed
               }"
             >
               <div
@@ -92,6 +93,8 @@
                   </div>
                   <!-- 阶段标签 -->
                   <span class="stage-label">{{ getStageLabel(item.stage) }}</span>
+                  <!-- 跳过标签 -->
+                  <span v-if="item.cached && item.completed" class="cached-tag">已跳过</span>
                   <!-- 耗时 -->
                   <span
                     v-if="item.startTime"
@@ -526,6 +529,11 @@ watch(
 
   &.completed {
     border-color: rgba(52, 211, 153, 0.2);
+
+    // 使用缓存（跳过）的节点使用灰色边框
+    &.cached {
+      border-color: rgba(96, 165, 250, 0.2);
+    }
   }
 }
 
@@ -582,6 +590,15 @@ watch(
 .stage-label {
   font-size: $text-sm;
   color: $color-text-secondary;
+}
+
+.cached-tag {
+  font-size: 10px;
+  padding: 2px 6px;
+  background: rgba($color-info, 0.15);
+  color: $color-info;
+  border-radius: $radius-sm;
+  margin-left: $spacing-xs;
 }
 
 .stage-elapsed {

@@ -11,19 +11,19 @@
     <div class="items-list">
       <div
         v-for="(item, index) in items"
-        :key="index"
+        :key="item.id || index"
         class="preparation-item"
       >
         <div class="item-header">
           <span class="item-index">{{ index + 1 }}</span>
           <span class="item-title">{{ item.title }}</span>
-          <span v-if="item.priority" class="item-priority" :class="item.priority">
-            {{ priorityLabels[item.priority] }}
+          <span v-if="item.priority" class="item-priority" :class="getPriorityClass(item.priority)">
+            {{ priorityLabels[item.priority] || item.priority }}
           </span>
         </div>
-        <p v-if="item.description" class="item-description">{{ item.description }}</p>
-        <div v-if="item.category" class="item-category">
-          <span class="category-tag">{{ item.category }}</span>
+        <p v-if="item.content" class="item-description">{{ item.content }}</p>
+        <div class="item-meta">
+          <span v-if="item.itemType" class="category-tag">{{ itemTypeLabels[item.itemType] || item.itemType }}</span>
         </div>
       </div>
     </div>
@@ -37,10 +37,31 @@ defineProps<{
   items: PreparationItem[]
 }>()
 
+// 优先级标签映射（后端返回 required/recommended/optional）
 const priorityLabels: Record<string, string> = {
-  high: '高',
-  medium: '中',
-  low: '低'
+  required: '必做',
+  recommended: '推荐',
+  optional: '可选'
+}
+
+// 类型标签映射
+const itemTypeLabels: Record<string, string> = {
+  company_research: '公司调研',
+  jd_keywords: 'JD关键词',
+  tech_prep: '技术准备',
+  case_study: '案例准备',
+  behavioral: '行为面试',
+  todo: '待办事项'
+}
+
+// 获取优先级样式类
+function getPriorityClass(priority: string): string {
+  const classMap: Record<string, string> = {
+    required: 'high',
+    recommended: 'medium',
+    optional: 'low'
+  }
+  return classMap[priority] || 'low'
 }
 </script>
 

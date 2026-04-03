@@ -22,22 +22,12 @@ public final class InterviewPreparationGraphConstants extends BaseGraphConstants
     // ==================== 节点名称 ====================
 
     /**
-     * 检查公司节点
-     */
-    public static final String NODE_CHECK_COMPANY = "check_company";
-
-    /**
-     * 公司调研节点
+     * 公司调研节点（内置检查逻辑）
      */
     public static final String NODE_COMPANY_RESEARCH = "company_research";
 
     /**
-     * 检查职位节点
-     */
-    public static final String NODE_CHECK_JOB_POSITION = "check_job_position";
-
-    /**
-     * JD分析节点
+     * JD分析节点（内置检查逻辑）
      */
     public static final String NODE_JD_ANALYSIS = "jd_analysis";
 
@@ -81,19 +71,9 @@ public final class InterviewPreparationGraphConstants extends BaseGraphConstants
     public static final String STATE_COMPANY_ID = "company_id";
 
     /**
-     * 需要公司调研
-     */
-    public static final String STATE_NEED_COMPANY_RESEARCH = "need_company_research";
-
-    /**
      * 职位ID
      */
     public static final String STATE_JOB_POSITION_ID = "job_position_id";
-
-    /**
-     * 需要JD分析
-     */
-    public static final String STATE_NEED_JD_ANALYSIS = "need_jd_analysis";
 
     /**
      * 公司调研结果（JSON格式）
@@ -114,28 +94,6 @@ public final class InterviewPreparationGraphConstants extends BaseGraphConstants
      * 节点输出（用于SSE）
      */
     public static final String STATE_NODE_OUTPUT = "node_output";
-
-    // ==================== 路由决策 ====================
-
-    /**
-     * 需要执行公司调研
-     */
-    public static final String ROUTE_NEED_RESEARCH = "need_research";
-
-    /**
-     * 跳过公司调研
-     */
-    public static final String ROUTE_SKIP_RESEARCH = "skip_research";
-
-    /**
-     * 需要执行JD分析
-     */
-    public static final String ROUTE_NEED_ANALYSIS = "need_analysis";
-
-    /**
-     * 跳过JD分析
-     */
-    public static final String ROUTE_SKIP_ANALYSIS = "skip_analysis";
 
     // ==================== 默认值 ====================
 

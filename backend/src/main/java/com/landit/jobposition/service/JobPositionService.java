@@ -47,6 +47,36 @@ public class JobPositionService extends ServiceImpl<JobPositionMapper, JobPositi
     }
 
     /**
+     * 创建或更新职位JD分析
+     *
+     * @param companyId    公司ID
+     * @param title        职位名称
+     * @param jdContent    JD原文
+     * @param jdAnalysis   JD分析结果（JSON格式）
+     * @return 职位实体
+     */
+    public JobPosition createOrUpdateJobPosition(String companyId, String title, String jdContent, String jdAnalysis) {
+        Optional<JobPosition> existingPosition = findByCompanyIdAndTitle(companyId, title);
+        JobPosition jobPosition;
+        if (existingPosition.isPresent()) {
+            jobPosition = existingPosition.get();
+            jobPosition.setJdContent(jdContent);
+            jobPosition.setJdAnalysis(jdAnalysis);
+            jobPosition.setJdAnalysisUpdatedAt(java.time.LocalDateTime.now());
+            updateById(jobPosition);
+        } else {
+            jobPosition = new JobPosition();
+            jobPosition.setCompanyId(companyId);
+            jobPosition.setTitle(title);
+            jobPosition.setJdContent(jdContent);
+            jobPosition.setJdAnalysis(jdAnalysis);
+            jobPosition.setJdAnalysisUpdatedAt(java.time.LocalDateTime.now());
+            save(jobPosition);
+        }
+        return jobPosition;
+    }
+
+    /**
      * 转换为 VO
      *
      * @param jobPosition 职位实体

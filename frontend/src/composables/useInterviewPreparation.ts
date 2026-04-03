@@ -133,6 +133,7 @@ export function useInterviewPreparation() {
               timestamp: Date.now(),
               startTime: Date.now(),
               completed: false,
+              cached: event.cached || false,  // 记录是否使用缓存
               data: null,
               expanded: false
             })
@@ -163,8 +164,15 @@ export function useInterviewPreparation() {
             historyItem.data = event.data.companyResearch as CompanyResearchResult
           } else if (event.nodeId === 'jd_analysis' && event.data.jdAnalysis) {
             historyItem.data = event.data.jdAnalysis as JDAnalysisResult
-          } else if (event.nodeId === 'generate_preparation' && event.data.preparationItems) {
-            historyItem.data = event.data.preparationItems as PreparationItem[]
+          } else if (event.nodeId === 'generate_preparation') {
+            // 兼容两种数据格式：
+            // 1. { preparationItems: [...] } - 包装格式
+            // 2. [...] - 直接数组格式
+            if (event.data.preparationItems) {
+              historyItem.data = event.data.preparationItems as PreparationItem[]
+            } else if (Array.isArray(event.data)) {
+              historyItem.data = event.data as PreparationItem[]
+            }
           }
         }
       }
