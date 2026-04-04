@@ -23,6 +23,7 @@ import com.landit.jobposition.service.JobPositionService;
 import com.landit.resume.dto.ResumeDetailVO;
 import com.landit.resume.entity.Resume;
 import com.landit.resume.service.ResumeService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,7 @@ import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +69,7 @@ public class InterviewCenterHandler {
     private final InterviewPreparationGraphService preparationGraphService;
     private final ReviewAnalysisGraphService reviewGraphService;
     private final ResumeService resumeService;
+    private final ObjectMapper objectMapper;
 
     /**
      * 创建真实面试
@@ -240,6 +243,11 @@ public class InterviewCenterHandler {
         if (interview.getResumeId() != null && !interview.getResumeId().isBlank()) {
             String resumeContent = buildResumeContext(interview.getResumeId());
             initialState.put(InterviewPreparationGraphConstants.STATE_RESUME_CONTENT, resumeContent);
+        }
+        // 查询同一职位上一轮面试的复盘笔记
+        String previousReviewNotesJson = getPreviousReviewNotesJson(interview.getJobPositionId(), id);
+        if (previousReviewNotesJson != null) {
+            initialState.put(InterviewPreparationGraphConstants.STATE_PREVIOUS_REVIEW_NOTES, previousReviewNotesJson);
         }
         initialState.put(InterviewPreparationGraphConstants.STATE_MESSAGES, new ArrayList<String>());
         // 发送开始事件
@@ -508,6 +516,61 @@ public class InterviewCenterHandler {
         ReviewNoteVO vo = new ReviewNoteVO();
         BeanUtils.copyProperties(note, vo);
         return vo;
+    }
+
+    /**
+     * 获取同一职位上一轮面试的复盘笔记（JSON格式）
+     *
+     * @param jobPositionId       职位ID
+     * @param currentInterviewId  当前面试ID
+     * @return 复盘笔记JSON字符串（包含manual和ai_analysis两种），如果没有则返回null
+     */
+    private String getPreviousReviewNotesJson(String jobPositionId, String currentInterviewId) {
+        if (jobPositionId == null || jobPositionId.isBlank()) {
+            return null;
+        }
+        // 查询同一职位的所有面试，按时间倒序
+        List<Interview> interviews = interviewCenterService.list(
+                new LambdaQueryWrapper<Interview>()
+                        .eq(Interview::getJobPositionId, jobPositionId)
+                        .ne(Interview::getId, Long.parseLong(currentInterviewId))
+                        .isNotNull(Interview::getDate)
+                        .orderByDesc(Interview::getDate)
+        );
+        if (interviews.isEmpty()) {
+            return null;
+        }
+        // 取最近一场面试
+        Interview previousInterview = interviews.get(0);
+        // 获取该面试的所有复盘笔记（manual + ai_analysis）
+        InterviewReviewNote manualNote = reviewNoteService.getManualNoteByInterviewId(String.valueOf(previousInterview.getId()));
+        InterviewReviewNote aiAnalysis = reviewNoteService.getAiAnalysisByInterviewId(String.valueOf(previousInterview.getId()));
+        List<Map<String, Object>> notesList = new ArrayList<>();
+        if (manualNote != null) {
+            Map<String, Object> noteMap = new HashMap<>();
+            noteMap.put("type", "manual");
+            noteMap.put("weakPoints", manualNote.getWeakPoints());
+            noteMap.put("suggestions", manualNote.getSuggestions());
+            noteMap.put("lessonsLearned", manualNote.getLessonsLearned());
+            notesList.add(noteMap);
+        }
+        if (aiAnalysis != null) {
+            Map<String, Object> noteMap = new HashMap<>();
+            noteMap.put("type", "ai_analysis");
+            noteMap.put("weakPoints", aiAnalysis.getWeakPoints());
+            noteMap.put("suggestions", aiAnalysis.getSuggestions());
+            noteMap.put("lessonsLearned", aiAnalysis.getLessonsLearned());
+            notesList.add(noteMap);
+        }
+        if (notesList.isEmpty()) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(notesList);
+        } catch (Exception e) {
+            log.warn("序列化上一轮复盘笔记失败", e);
+            return null;
+        }
     }
 
 }

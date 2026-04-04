@@ -63,6 +63,11 @@ public final class InterviewPreparationGraphConstants extends BaseGraphConstants
      */
     public static final String STATE_RESUME_CONTENT = "resume_content";
 
+    /**
+     * 上一轮面试的复盘笔记（JSON字符串，包含manual和ai_analysis两种）
+     */
+    public static final String STATE_PREVIOUS_REVIEW_NOTES = "previous_review_notes";
+
     // ==================== 状态键 - 中间结果 ====================
 
     /**

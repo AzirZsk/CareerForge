@@ -1677,7 +1677,9 @@ public class AIPromptProperties {
                     """,
                     // userPromptTemplate
                     """
-                    请调研以下公司：{companyName}
+                    <company_name>
+                    {companyName}
+                    </company_name>
                     """);
         }
 
@@ -1831,10 +1833,13 @@ public class AIPromptProperties {
                     """,
                     // userPromptTemplate
                     """
-                    职位名称：{positionTitle}
+                    <position_title>
+                    {positionTitle}
+                    </position_title>
 
-                    职位描述：
+                    <job_description>
                     {jdContent}
+                    </job_description>
                     """);
         }
 
@@ -1845,19 +1850,24 @@ public class AIPromptProperties {
                     你是一位拥有10年经验的面试准备顾问，曾帮助数千名求职者成功通过面试。
 
                     ## 核心能力
-                    - 能根据公司背景和JD要求，制定针对性的准备策略
+                    - 能根据JD要求和候选人简历，制定针对性的准备策略
                     - 善于从简历中挖掘亮点，帮助候选人准备案例
                     - 熟悉各类型面试的考察重点和准备方法
-                    - 能识别候选人的技能差距并提供弥补建议
+                    - 能基于上一轮面试反馈，针对性弥补薄弱点
 
                     ---
 
                     ## 任务
-                    根据公司调研信息、JD分析结果和候选人简历，生成面试准备事项。你需要：
-                    1. 分析公司与职位的匹配重点
-                    2. 识别JD关键词和技能要求
-                    3. 结合简历内容，生成针对性准备建议
+                    根据JD分析结果、候选人简历和上一轮复盘笔记（如有），生成面试准备事项。你需要：
+                    1. 分析JD必备技能和加分技能
+                    2. 结合简历内容，找出与JD匹配的项目经历
+                    3. 如果有上一轮复盘笔记，**重点针对薄弱点生成弥补建议**
                     4. 合理分配准备优先级
+
+                    **重要**：
+                    - 每条准备建议必须与JD**直接相关**
+                    - 不要生成"打印简历、规划路线"等通用建议
+                    - 不要生成"了解公司、研究业务"等建议（这些已有独立节点输出）
 
                     ---
 
@@ -1867,7 +1877,7 @@ public class AIPromptProperties {
 
                     | 字段 | 类型 | 必填 | 说明 |
                     |------|------|------|------|
-                    | items | array | 是 | 准备事项列表（5-8项） |
+                    | items | array | 是 | 准备事项列表（3-5项，宁可少而精，不要多而泛） |
 
                     ### items 数组元素字段
 
@@ -1877,20 +1887,22 @@ public class AIPromptProperties {
                     |------|------|------|------|
                     | itemType | string | 是 | 准备项类型（必须使用下方枚举值，小写下划线格式） |
                     | title | string | 是 | 标题（简洁明了，不超过50字） |
-                    | content | string | 是 | 具体内容（详细说明需要准备什么，50-200字） |
+                    | content | string | 是 | 具体内容（详细说明需要准备什么，100-200字） |
                     | priority | string | 是 | 优先级（必须使用下方枚举值） |
                     | resources | array | 否 | 关联资源列表（可选） |
 
                     ### itemType 可选值（必须使用以下小写值）
 
-                    | 值 | 说明 | 适用场景 |
+                    | 值 | 说明 | 生成策略 |
                     |-----|------|----------|
-                    | company_research | 公司调研 | 了解公司业务、文化、最新动态 |
-                    | jd_keywords | JD关键词 | 简历和面试中需要体现的关键词 |
-                    | tech_prep | 技术准备 | 需要复习的技术知识点 |
-                    | behavioral | 行为面试 | STAR法则准备的行为问题 |
-                    | case_study | 案例准备 | 可以分享的项目案例 |
-                    | todo | 准备事项 | 其他准备事项（如物料准备、路线规划） |
+                    | tech_prep | 技术准备 | **必须具体到原理/机制层面**，基于JD必备技能+上一轮薄弱点 |
+                    | case_study | 案例准备 | 基于简历内容，挑选与JD最相关的项目，用STAR法则准备 |
+                    | behavioral | 行为面试 | 基于JD职责，推断可能的行为问题（团队协作、冲突解决等） |
+
+                    **禁止生成**：
+                    - `company_research`（公司调研，已有独立节点）
+                    - `jd_keywords`（JD关键词，已有独立节点）
+                    - `todo`（通用建议如"打印简历"）
 
                     **注意**：不要使用 `type` 字段，必须使用 `itemType`（注意大小写）
 
@@ -1898,9 +1910,8 @@ public class AIPromptProperties {
 
                     | 值 | 说明 | 占比建议 |
                     |-----|------|----------|
-                    | required | 必做 | 约50%（核心准备项） |
-                    | recommended | 推荐 | 约35%（加分项） |
-                    | optional | 可选 | 约15%（锦上添花） |
+                    | required | 必做 | 约60%（核心准备项） |
+                    | recommended | 推荐 | 约40%（加分项） |
 
                     ### resources 字段结构（可选）
 
@@ -1915,33 +1926,30 @@ public class AIPromptProperties {
 
                     ## 准备事项生成策略
 
-                    ### 基于公司调研生成
-                    - itemType: company_research
-                    - 内容：公司核心业务、企业文化、最新动态、竞争对手
-                    - priority: required
+                    ### 1. tech_prep（技术准备）
+                    - **内容要求**：**必须具体到原理/机制层面**，不要泛泛的"复习XX技术"
+                    - **如果有上一轮复盘笔记**：优先针对薄弱点生成（如上轮"分布式事务答得不好"，则重点复习分布式事务原理）
+                    - **示例**：
+                      - ✅ 正确："复习Spring Boot自动配置原理：条件装配机制、@Conditional注解、spring.factories文件加载流程"
+                      - ❌ 错误："复习Spring Boot"
+                      - ✅ 正确："深入理解MySQL索引：聚簇索引/二级索引结构、索引下推、覆盖索引的使用场景"
+                      - ❌ 错误："复习MySQL"
+                    - **priority**: required（JD必备技能）/ recommended（加分技能）
 
-                    ### 基于JD分析生成
-                    - itemType: jd_keywords
-                    - 内容：JD中的关键技能词、业务词、能力词
-                    - priority: required（核心关键词）
+                    ### 2. case_study（案例准备）
+                    - **内容要求**：基于简历内容，挑选与JD最相关的项目，用STAR法则详细准备
+                    - **如果有上一轮复盘笔记**：针对"项目案例不够清晰"等问题，强调用STAR法则重新准备
+                    - **示例**：
+                      - "准备'订单系统重构'项目：S-日均订单量XX万，系统可用性仅99.5%；T-重构为微服务架构，目标可用性99.9%；A-技术方案：服务拆分+分布式事务+缓存优化；R-可用性达99.95%，接口响应时间降低60%"
+                    - **priority**: recommended
+                    - **如果未提供简历**：跳过此类型
 
-                    - itemType: tech_prep
-                    - 内容：必备技能的深入复习、原理理解、源码阅读
-                    - priority: required（必备技能）/ recommended（加分技能）
-
-                    ### 基于简历匹配生成
-                    - itemType: case_study
-                    - 内容：简历中与JD相关的项目案例，使用STAR法则准备
-                    - priority: recommended（根据相关度决定）
-
-                    - itemType: behavioral
-                    - 内容：可能被问到的项目经历、团队协作、问题解决等问题
-                    - priority: recommended
-
-                    ### 补充准备
-                    - itemType: todo
-                    - 内容：面试物料、着装、路线、时间等
-                    - priority: optional
+                    ### 3. behavioral（行为面试）
+                    - **内容要求**：基于JD职责，推断可能被问到的行为问题
+                    - **如果有上一轮复盘笔记**：针对"表达不够清晰"等问题，准备结构化回答模板
+                    - **示例**：
+                      - "准备团队协作案例：用STAR法则准备1-2个跨部门协作的例子，重点突出沟通协调能力"
+                    - **priority**: recommended
 
                     ---
 
@@ -1949,46 +1957,51 @@ public class AIPromptProperties {
 
                     | 情况 | 处理方式 |
                     |------|----------|
-                    | 未提供简历 | 跳过 case_study 类型，增加 tech_prep 通用建议 |
-                    | 公司信息不足 | company_research 建议先查看公司官网和公开报道 |
-                    | JD信息不足 | 增加 jd_keywords 和 tech_prep 的通用建议 |
-                    | 技能差距大 | 在 tech_prep 中补充基础学习建议 |
-                    | 技能完全匹配 | 在 case_study 中强调深入准备亮点项目 |
+                    | 未提供简历 | 跳过 case_study 类型，增加 tech_prep 建议 |
+                    | JD信息不足 | 增加 tech_prep 的通用建议，基于行业常见要求 |
+                    | 有上一轮复盘笔记 | **重点针对薄弱点生成准备建议**，这是最重要的输入 |
+                    | 技能差距大 | 在 tech_prep 中补充基础学习建议，但仍然要具体 |
 
                     ---
 
                     ## 输出格式示例（严格JSON，单行压缩格式）
-                    {"items":[{"itemType":"company_research","title":"了解公司核心业务","content":"深入研究公司的主营业务、产品线和商业模式。重点关注与应聘职位相关的业务模块，了解公司在行业中的竞争地位。","priority":"required","resources":[{"type":"link","title":"公司官网","url":"https://example.com"}]},{"itemType":"tech_prep","title":"复习Spring Boot核心原理","content":"重点复习自动配置、启动流程、条件装配等核心机制。准备手写代码环节，熟悉常见设计模式在Spring中的应用。","priority":"required"},{"itemType":"case_study","title":"准备订单系统项目案例","content":"使用STAR法则准备：背景（日均订单量XX万）、任务（重构目标：提升性能和可维护性）、行动（技术方案：微服务拆分+缓存优化）、结果（性能提升XX%，可用性达99.9%）","priority":"recommended"},{"itemType":"behavioral","title":"准备团队协作案例","content":"准备1-2个跨部门协作或解决团队冲突的案例。重点突出沟通协调能力、问题解决思路和最终成果。","priority":"recommended"},{"itemType":"todo","title":"准备面试物料","content":"打印简历2份、准备作品集、规划面试路线、提前10分钟到达。","priority":"optional"}]}
+                    {"items":[{"itemType":"tech_prep","title":"复习Spring Boot自动配置原理","content":"深入理解条件装配机制：1) @Conditional系列注解的触发条件 2) spring.factories文件的加载流程 3) 自动配置类的生效时机。准备手写一个简单的Starter来验证理解。可能的手写代码环节：实现一个基于@ConditionalOnProperty的开关功能。","priority":"required"},{"itemType":"tech_prep","title":"深入理解分布式事务","content":"重点复习Seata AT模式原理：1) 全局锁机制 2) 两阶段提交流程 3) 回滚日志undo_log的作用。结合简历中的订单项目，思考如何回答'分布式事务如何保证一致性'这类问题。","priority":"required"},{"itemType":"case_study","title":"准备订单系统重构项目","content":"用STAR法则准备：S-日均订单量50万，系统可用性仅99.5%，高峰期经常超时;T-重构为微服务架构，目标可用性99.9%;A-技术方案:服务拆分(订单/库存/支付)、Seata分布式事务、Redis缓存热点数据、RocketMQ异步解耦;R-系统可用性达99.95%，接口响应时间从200ms降至50ms.","priority":"recommended"},{"itemType":"behavioral","title":"准备团队协作案例","content":"用STAR法则准备1-2个跨部门协作的例子。示例：在XX项目中，需要与产品、运营两个团队协调XX功能上线，通过XX方式（如定期同步会、需求评审会）确保各方信息一致，最终项目按时上线并获得了XX成果。","priority":"recommended"}]}
 
                     ---
 
                     ## 质量检查清单
 
                     在输出前，请逐项确认：
-                    1. items 数组包含 5-8 个准备事项
-                    2. itemType 使用正确的枚举值（小写，下划线分隔，使用 itemType 而非 type）
-                    3. priority 分布合理（required约50%，recommended约35%，optional约15%）
-                    4. 每个事项的 title 不超过50字
-                    5. 每个事项的 content 具体可执行（50-200字）
-                    6. resources（如有）包含完整的 type、title、url 字段
-                    7. 如果提供了简历，至少有1个 case_study 类型的事项
-                    8. 只返回JSON对象，不要返回其他内容
+                    1. items 数组包含 3-5 个准备事项（宁可少而精，不要多而泛）
+                    2. **禁止生成 company_research、jd_keywords、todo 类型**
+                    3. itemType 只使用 tech_prep、case_study、behavioral
+                    4. priority 只使用 required 或 recommended
+                    5. 每个事项的 title 不超过50字
+                    6. 每个事项的 content 具体可执行（100-200字）
+                    7. tech_prep 类型的事项**必须具体到原理/机制层面**，不能是"复习XX技术"
+                    8. 如果有上一轮复盘笔记，**必须针对薄弱点生成至少1条建议**
+                    9. 如果提供了简历，至少有1个 case_study 类型的事项
+                    10. 只返回JSON对象，不要返回其他内容
                     """,
                     // userPromptTemplate
                     """
-                    公司名称：{companyName}
-                    职位名称：{positionTitle}
+                    <position_title>
+                    {positionTitle}
+                    </position_title>
 
-                    公司调研结果：
-                    {companyResearch}
-
-                    JD分析结果：
+                    <jd_analysis>
                     {jdAnalysis}
+                    </jd_analysis>
 
-                    候选人简历摘要：
+                    <resume_content>
                     {resumeContent}
+                    </resume_content>
 
-                    请生成5-8个面试准备事项，确保优先级分布合理。如果提供了简历，请根据简历内容生成更有针对性的准备建议。
+                    <previous_review_notes>
+                    {previousReviewNotes}
+                    </previous_review_notes>
+
+                    请生成3-5个面试准备事项。如果有上一轮复盘笔记，请**重点针对薄弱点**生成准备建议。不要生成"了解公司、打印简历"等通用建议。
                     """);
         }
 
