@@ -181,6 +181,15 @@
           </span>
         </div>
 
+        <!-- 备注 -->
+        <div class="info-row" v-if="interview.notes">
+          <span class="info-item notes-item">
+            <span class="info-icon">📝</span>
+            <span class="info-label">备注：</span>
+            <span class="info-value notes-content">{{ interview.notes }}</span>
+          </span>
+        </div>
+
         <!-- 职位详情折叠区域 -->
         <div
           class="position-detail-toggle"
@@ -667,39 +676,31 @@ async function handleMockConfigSubmit(config: {
   if (!interview.value) return
 
   showMockConfigDialog.value = false
-
-  // 保存配置，等待权限检查
   pendingMockConfig.value = config
 
-  // 开始检查麦克风权限
-  await checkMicrophonePermissionAndProceed()
-}
-
-// 检查麦克风权限并继续创建会话
-async function checkMicrophonePermissionAndProceed() {
-  permissionDialogState.value = 'checking'
-  showPermissionDialog.value = true
-
+  // 先静默检查权限，不显示弹窗
   try {
     const checkResult = await checkPermission()
 
     if (checkResult.state === 'granted') {
-      // 已授权，直接创建会话
-      permissionDialogState.value = 'success'
-      setTimeout(() => {
-        showPermissionDialog.value = false
-        createSessionAndNavigate()
-      }, 500)
+      // 已授权，直接进入模拟面试，不显示任何弹窗
+      createSessionAndNavigate()
       return
     }
 
-    // 需要请求权限
-    permissionDialogState.value = 'requesting'
+    // 未授权或需要请求权限，显示弹窗
+    if (checkResult.state === 'denied') {
+      permissionDialogState.value = 'denied'
+    } else {
+      permissionDialogState.value = 'requesting'
+    }
+    showPermissionDialog.value = true
     await requestMicrophonePermission()
   } catch (e) {
     console.error('[InterviewDetail] 检查麦克风权限失败:', e)
     permissionDialogState.value = 'device_error'
     permissionErrorMessage.value = '检查权限时发生错误'
+    showPermissionDialog.value = true
   }
 }
 
@@ -933,6 +934,15 @@ onMounted(() => {
     &:hover {
       text-decoration: underline;
     }
+  }
+
+  .notes-item {
+    align-items: flex-start;
+  }
+
+  .notes-content {
+    white-space: pre-wrap;
+    word-break: break-word;
   }
 
   .copy-btn {

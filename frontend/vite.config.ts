@@ -30,7 +30,8 @@ export default defineConfig(({ mode }) => {
       proxy: {
         '/landit': {
           target: apiTarget,
-          changeOrigin: true
+          changeOrigin: true,
+          ws: true  // 启用 WebSocket 代理
         }
       }
     }

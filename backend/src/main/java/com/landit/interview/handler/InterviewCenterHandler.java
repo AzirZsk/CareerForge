@@ -235,8 +235,6 @@ public class InterviewCenterHandler {
         configureSseResponse(response);
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT);
         String threadId = UUID.randomUUID().toString();
-        // 用于缓存最终生成的准备事项
-        final List<Object> cachedPreparationItems = new ArrayList<>();
         // 构建初始状态
         Map<String, Object> initialState = new HashMap<>();
         initialState.put(InterviewPreparationGraphConstants.STATE_INTERVIEW_ID, id);
@@ -268,13 +266,6 @@ public class InterviewCenterHandler {
                             Map<String, Object> nodeOutput = (Map<String, Object>) data.get(InterviewPreparationGraphConstants.STATE_NODE_OUTPUT);
                             GraphProgressEvent event = GraphProgressEvent.fromNodeOutput(output.node(), threadId, nodeOutput);
                             sendSseEvent(emitter, event);
-                            // 缓存准备事项数据（从最后一个节点）
-                            @SuppressWarnings("unchecked")
-                            List<Object> items = (List<Object>) data.get(InterviewPreparationGraphConstants.STATE_PREPARATION_ITEMS);
-                            if (items != null && !items.isEmpty()) {
-                                cachedPreparationItems.clear();
-                                cachedPreparationItems.addAll(items);
-                            }
                         },
                         error -> {
                             log.error("[SSE] 面试准备工作流异常", error);
@@ -282,8 +273,8 @@ public class InterviewCenterHandler {
                             emitter.completeWithError(error);
                         },
                         () -> {
-                            log.info("[SSE] 面试准备工作流完成: threadId={}, items={}", threadId, cachedPreparationItems.size());
-                            sendSseEvent(emitter, GraphProgressEvent.completePreparation(threadId, cachedPreparationItems));
+                            log.info("[SSE] 面试准备工作流完成: threadId={}", threadId);
+                            sendSseEvent(emitter, GraphProgressEvent.completePreparation(threadId, Collections.emptyList()));
                             emitter.complete();
                         }
                 );

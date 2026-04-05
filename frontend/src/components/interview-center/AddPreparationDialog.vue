@@ -144,7 +144,7 @@ async function handleSubmit() {
 
   submitting.value = true
   try {
-    const content = convertToJSONArray(form.content)
+    const content = convertToJSONArray(form.content ?? '')
     await addPreparation(props.interviewId, {
       ...form,
       content

@@ -12,7 +12,7 @@
 export type VoiceMode = 'half_voice' | 'full_voice'
 
 /** 会话状态 */
-export type SessionState = 'interviewing' | 'frozen' | 'completed'
+export type SessionState = 'idle' | 'interviewing' | 'frozen' | 'completed'
 
 /** 求助类型 */
 export type AssistType = 'give_hints' | 'explain_concept' | 'polish_answer' | 'free_question'

@@ -80,23 +80,32 @@ export function useStreamingAudio() {
 
   /**
    * 初始化 AudioContext
+   * @returns Promise<boolean> 是否成功启动
    */
-  function initAudioContext(sampleRate: number = DEFAULT_SAMPLE_RATE): void {
+  async function initAudioContext(sampleRate: number = DEFAULT_SAMPLE_RATE): Promise<boolean> {
     if (!audioContext) {
       audioContext = new AudioContext({ sampleRate })
       gainNode = audioContext.createGain()
       gainNode.connect(audioContext.destination)
     }
-    resumeContext()
+    return await resumeContext()
   }
 
   /**
    * 恢复 AudioContext
+   * @returns Promise<boolean> 是否成功恢复
    */
-  function resumeContext(): void {
+  async function resumeContext(): Promise<boolean> {
     if (audioContext?.state === 'suspended') {
-      audioContext.resume()
+      try {
+        await audioContext.resume()
+        return true
+      } catch (e) {
+        console.warn('[useStreamingAudio] AudioContext resume failed:', e)
+        return false
+      }
     }
+    return audioContext?.state === 'running'
   }
 
   /**

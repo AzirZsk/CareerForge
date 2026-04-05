@@ -88,9 +88,19 @@ export function useAudioRecorder() {
 
       // 初始化音频上下文
       audioContext = new AudioContext({ sampleRate: 16000 })
+
+      // 确保 AudioContext 处于运行状态（浏览器安全策略要求）
+      if (audioContext.state === 'suspended') {
+        console.log('[useAudioRecorder] AudioContext suspended, attempting to resume...')
+        await audioContext.resume()
+        console.log('[useAudioRecorder] AudioContext resumed, state:', audioContext.state)
+      }
+
       const source = audioContext.createMediaStreamSource(mediaStream)
 
       // 创建音频处理器（4096 缓冲区）
+      // 注意：ScriptProcessorNode 已废弃，但 AudioWorkletNode 需要单独的 worker 文件
+      // 为了简化部署，暂时保留 ScriptProcessorNode
       processor = audioContext.createScriptProcessor(4096, 1, 1)
       source.connect(processor)
       processor.connect(audioContext.destination)
@@ -109,9 +119,20 @@ export function useAudioRecorder() {
   /**
    * 开始录制
    */
-  function startRecording(): void {
+  async function startRecording(): Promise<void> {
     if (recordingState.value === 'recording') {
       return
+    }
+
+    // 确保 AudioContext 处于运行状态（浏览器自动播放策略)
+    if (audioContext && audioContext.state === 'suspended') {
+      try {
+        await audioContext.resume()
+      } catch (e) {
+        console.error('[useAudioRecorder] AudioContext resume failed:', e)
+        error.value = '音频上下文启动失败，请重新点击开始按钮'
+        return
+      }
     }
 
     recordingState.value = 'recording'

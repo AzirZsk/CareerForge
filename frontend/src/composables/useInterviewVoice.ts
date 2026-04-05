@@ -43,7 +43,7 @@ export function useInterviewVoice(sessionId: string) {
   const settings = ref<VoiceSettings>({ ...DEFAULT_SETTINGS })
 
   /** 会话状态 */
-  const sessionState = ref<SessionState>('interviewing')
+  const sessionState = ref<SessionState>('idle')
 
   /** 当前问题序号 */
   const currentQuestion = ref(0)
@@ -123,8 +123,10 @@ export function useInterviewVoice(sessionId: string) {
    */
   async function init(): Promise<void> {
     try {
-      audioPlayer.initAudioContext(settings.value.sampleRate)
+      // 初始化音频播放器
+      await audioPlayer.initAudioContext(settings.value.sampleRate)
 
+      // 初始化录音器
       await recorder.init({
         vadEnabled: settings.value.vadEnabled,
         vadSilenceMs: settings.value.vadSilenceMs,
@@ -149,8 +151,11 @@ export function useInterviewVoice(sessionId: string) {
    * 建立 WebSocket 连接
    */
   function connectWebSocket(): void {
+    // 开发环境直接连接后端，绕过 Vite 代理（Vite WS 代理有问题）
+    const isDev = import.meta.env.DEV
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const wsUrl = `${protocol}//${location.host}/landit/ws/interview/voice/${sessionId}`
+    const host = isDev ? 'localhost:8080' : location.host
+    const wsUrl = `${protocol}//${host}/landit/ws/interview/voice/${sessionId}`
 
     ws = new WebSocket(wsUrl)
     ws.onopen = handleWsOpen
@@ -163,7 +168,6 @@ export function useInterviewVoice(sessionId: string) {
    * WebSocket 连接成功
    */
   function handleWsOpen(): void {
-    console.log('[useInterviewVoice] WebSocket 连接成功')
     reconnectAttempts.value = 0
     startHeartbeat()
     sendControlMessage('start')
@@ -229,13 +233,11 @@ export function useInterviewVoice(sessionId: string) {
    * WebSocket 关闭
    */
   function handleWsClose(event: CloseEvent): void {
-    console.log('[useInterviewVoice] WebSocket 关闭:', event.code, event.reason)
     stopHeartbeat()
 
     // 非正常关闭且未超过最大重连次数时尝试重连
     if (event.code !== 1000 && reconnectAttempts.value < MAX_RECONNECT_ATTEMPTS) {
       reconnectAttempts.value++
-      console.log(`[useInterviewVoice] 尝试重连 (${reconnectAttempts.value}/${MAX_RECONNECT_ATTEMPTS})`)
       setTimeout(() => {
         connectWebSocket()
       }, RECONNECT_DELAY)

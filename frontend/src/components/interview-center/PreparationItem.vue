@@ -84,9 +84,13 @@ function getResourceIcon(type: string): string {
   <div class="preparation-item" :class="{ completed: preparation.completed }">
     <div class="priority-border" :class="priorityClass" />
     <div class="item-main">
-      <button class="checkbox" :class="{ checked: preparation.completed }" @click="handleToggle">
-        <span v-if="preparation.completed" class="check-icon">✓</span>
-      </button>
+      <input
+        type="checkbox"
+        :checked="preparation.completed"
+        class="item-checkbox"
+        @click.stop
+        @change="handleToggle"
+      />
       <div class="item-content">
         <div class="item-title">{{ preparation.title }}</div>
         <ul v-if="contentItems" class="item-list">
@@ -183,34 +187,13 @@ export default {
   gap: $spacing-sm;
 }
 
-.checkbox {
+.item-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: $color-accent;
   flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  border: 2px solid $color-border;
-  border-radius: $radius-sm;
-  background: transparent;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
   margin-top: 2px;
-
-  &:hover {
-    border-color: $color-accent;
-  }
-
-  &.checked {
-    background: $color-accent;
-    border-color: $color-accent;
-  }
-
-  .check-icon {
-    color: $color-bg-primary;
-    font-size: 0.75rem;
-    font-weight: bold;
-  }
 }
 
 .priority-indicator {

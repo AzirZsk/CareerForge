@@ -32,6 +32,11 @@ public class VoiceWebSocketHandler implements WebSocketHandler {
         String sessionId = getSessionId(session);
         log.info("[VoiceWS] Connection established, sessionId={}, wsSessionId={}", sessionId, session.getId());
 
+        // 设置文本消息大小限制为 1MB（默认 64KB 太小，ASR 返回的文本可能很大）
+        session.setTextMessageSizeLimit(1024 * 1024);
+        // 设置二进制消息大小限制为 10MB
+        session.setBinaryMessageSizeLimit(10 * 1024 * 1024);
+
         // 注册会话
         sessionManager.registerSession(session.getId(), session);
         voiceGateway.registerSession(sessionId, session);
