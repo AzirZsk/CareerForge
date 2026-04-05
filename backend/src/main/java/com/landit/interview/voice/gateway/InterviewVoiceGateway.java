@@ -4,11 +4,12 @@ import com.landit.interview.voice.dto.VoiceRequest;
 import com.landit.interview.voice.dto.VoiceResponse;
 import com.landit.interview.voice.dto.VoiceSessionCreateRequest;
 import com.landit.interview.voice.dto.VoiceSessionCreateVO;
-import jakarta.websocket.Session;
+import org.springframework.web.socket.WebSocketSession;
 
 /**
  * 语音面试网关接口
  * 负责会话状态管理、角色路由、录音存储
+ * 使用 Spring 原生 WebSocket API
  *
  * @author Azir
  */
@@ -28,7 +29,7 @@ public interface InterviewVoiceGateway {
      * @param sessionId 面试会话 ID
      * @param wsSession WebSocket 会话
      */
-    void registerSession(String sessionId, Session wsSession);
+    void registerSession(String sessionId, WebSocketSession wsSession);
 
     /**
      * 注销 WebSocket 会话
@@ -36,25 +37,25 @@ public interface InterviewVoiceGateway {
      * @param sessionId 面试会话 ID
      * @param wsSession WebSocket 会话
      */
-    void unregisterSession(String sessionId, Session wsSession);
+    void unregisterSession(String sessionId, WebSocketSession wsSession);
 
     /**
-     * 处理请求消息
+     * 处理请求
      *
      * @param sessionId 面试会话 ID
      * @param wsSession WebSocket 会话
-     * @param request   语音请求
+     * @param request   请求
      */
-    void handleRequest(String sessionId, Session wsSession, VoiceRequest request);
+    void handleRequest(String sessionId, WebSocketSession wsSession, VoiceRequest request);
 
     /**
      * 处理音频数据
      *
      * @param sessionId 面试会话 ID
      * @param wsSession WebSocket 会话
-     * @param audioData 音频数据（PCM）
+     * @param audioData 音频数据
      */
-    void handleAudioData(String sessionId, Session wsSession, byte[] audioData);
+    void handleAudioData(String sessionId, WebSocketSession wsSession, byte[] audioData);
 
     /**
      * 处理会话错误
@@ -63,17 +64,17 @@ public interface InterviewVoiceGateway {
      * @param wsSession WebSocket 会话
      * @param error     错误
      */
-    void handleSessionError(String sessionId, Session wsSession, Throwable error);
+    void handleSessionError(String sessionId, WebSocketSession wsSession, Throwable error);
 
     /**
-     * 冻结面试（进入求助模式）
+     * 冻结面试
      *
      * @param sessionId 面试会话 ID
      */
     void freezeInterview(String sessionId);
 
     /**
-     * 恢复面试（退出求助模式）
+     * 恢复面试
      *
      * @param sessionId 面试会话 ID
      */
@@ -95,7 +96,7 @@ public interface InterviewVoiceGateway {
     VoiceResponse.StateData getSessionState(String sessionId);
 
     /**
-     * 发送响应给客户端
+     * 发送响应
      *
      * @param sessionId 面试会话 ID
      * @param response  响应
@@ -103,7 +104,7 @@ public interface InterviewVoiceGateway {
     void sendResponse(String sessionId, VoiceResponse response);
 
     /**
-     * 广播响应给所有连接
+     * 广播响应给所有会话
      *
      * @param response 响应
      */

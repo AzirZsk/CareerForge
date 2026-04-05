@@ -2,10 +2,11 @@ package com.landit.interview.voice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.landit.interview.voice.dto.VoiceResponse;
-import jakarta.websocket.Session;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.web.socket.TextMessage;
+import org.springframework.web.socket.WebSocketSession;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * WebSocket 会话管理器
  * 负责管理 WebSocket 会话的生命周期和消息发送
+ * 使用 Spring 原生 WebSocket API
  *
  * @author Azir
  */
@@ -21,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class VoiceSessionManager {
     private final ObjectMapper objectMapper;
-    private final ConcurrentHashMap<String, Session> sessions = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
 
     /**
      * 注册 WebSocket 会话
@@ -29,7 +31,7 @@ public class VoiceSessionManager {
      * @param wsSessionId WebSocket 会话 ID
      * @param session     WebSocket 会话
      */
-    public void registerSession(String wsSessionId, Session session) {
+    public void registerSession(String wsSessionId, WebSocketSession session) {
         sessions.put(wsSessionId, session);
         log.debug("[VoiceSessionManager] Session registered, wsSessionId={}", wsSessionId);
     }
@@ -50,7 +52,7 @@ public class VoiceSessionManager {
      * @param wsSessionId WebSocket 会话 ID
      * @return WebSocket 会话，如果不存在则返回 null
      */
-    public Session getSession(String wsSessionId) {
+    public WebSocketSession getSession(String wsSessionId) {
         return sessions.get(wsSessionId);
     }
 
@@ -60,14 +62,14 @@ public class VoiceSessionManager {
      * @param session  WebSocket 会话
      * @param response 响应数据
      */
-    public void sendResponse(Session session, VoiceResponse response) {
+    public void sendResponse(WebSocketSession session, VoiceResponse response) {
         if (session == null || !session.isOpen()) {
             log.warn("[VoiceSessionManager] Session is null or closed, cannot send response");
             return;
         }
         try {
             String json = objectMapper.writeValueAsString(response);
-            session.getBasicRemote().sendText(json);
+            session.sendMessage(new TextMessage(json));
         } catch (IOException e) {
             log.error("[VoiceSessionManager] Failed to send response", e);
         }
@@ -80,7 +82,7 @@ public class VoiceSessionManager {
      * @param response    响应数据
      */
     public void sendResponse(String wsSessionId, VoiceResponse response) {
-        Session session = sessions.get(wsSessionId);
+        WebSocketSession session = sessions.get(wsSessionId);
         sendResponse(session, response);
     }
 
@@ -91,7 +93,7 @@ public class VoiceSessionManager {
      * @param code     错误码
      * @param message  错误消息
      */
-    public void sendError(Session session, String code, String message) {
+    public void sendError(WebSocketSession session, String code, String message) {
         sendResponse(session, VoiceResponse.error(VoiceResponse.ErrorData.builder()
                 .code(code)
                 .message(message)
@@ -105,7 +107,7 @@ public class VoiceSessionManager {
      */
     public void broadcastAll(VoiceResponse response) {
         sessions.values().stream()
-                .filter(Session::isOpen)
+                .filter(WebSocketSession::isOpen)
                 .forEach(session -> sendResponse(session, response));
     }
 
@@ -116,7 +118,7 @@ public class VoiceSessionManager {
      * @return true 表示会话存在且打开
      */
     public boolean isSessionOpen(String wsSessionId) {
-        Session session = sessions.get(wsSessionId);
+        WebSocketSession session = sessions.get(wsSessionId);
         return session != null && session.isOpen();
     }
 }

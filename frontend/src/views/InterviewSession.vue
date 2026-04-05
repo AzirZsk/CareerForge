@@ -22,8 +22,8 @@
         style="--delay: 0"
       >
         <div class="header-left">
-          <span class="session-badge" :class="sessionBadgeClass">{{ sessionBadgeText }}</span>
           <h2 class="session-title">{{ interviewTitle }}</h2>
+          <span class="session-badge" :class="sessionBadgeClass">{{ sessionBadgeText }}</span>
         </div>
         <div class="header-right">
           <div class="timer">
@@ -503,6 +503,7 @@ function goToQuestion(index: number): void {
 }
 
 .session-badge {
+  margin-left: $spacing-md;
   padding: $spacing-xs $spacing-sm;
   font-size: $text-xs;
   font-weight: $weight-medium;
@@ -529,7 +530,11 @@ function goToQuestion(index: number): void {
   font-size: $text-lg;
   font-weight: $weight-medium;
   color: $color-text-primary;
-  margin-left: $spacing-md;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
 }
 
 .header-right {

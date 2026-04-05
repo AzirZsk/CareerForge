@@ -16,10 +16,10 @@ import com.landit.jobposition.entity.JobPosition;
 import com.landit.jobposition.mapper.JobPositionMapper;
 import com.landit.resume.entity.Resume;
 import com.landit.resume.mapper.ResumeMapper;
-import jakarta.websocket.Session;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.web.socket.WebSocketSession;
 
 import java.util.Base64;
 import java.util.Map;
@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 语音面试网关实现
  * 核心职责：会话状态管理、角色路由、录音存储
+ * 使用 Spring 原生 WebSocket API
  *
  * @author Azir
  */
@@ -49,8 +50,8 @@ public class InterviewVoiceGatewayImpl implements InterviewVoiceGateway {
     // 会话状态：sessionId -> SessionState
     private final Map<String, SessionState> sessionStates = new ConcurrentHashMap<>();
 
-    // WebSocket 会话：sessionId -> Session
-    private final Map<String, Session> wsSessions = new ConcurrentHashMap<>();
+    // WebSocket 会话：sessionId -> WebSocketSession
+    private final Map<String, WebSocketSession> wsSessions = new ConcurrentHashMap<>();
 
     @Override
     public VoiceSessionCreateVO createSession(VoiceSessionCreateRequest request) {
@@ -126,14 +127,14 @@ public class InterviewVoiceGatewayImpl implements InterviewVoiceGateway {
     }
 
     @Override
-    public void registerSession(String sessionId, Session wsSession) {
+    public void registerSession(String sessionId, WebSocketSession wsSession) {
         wsSessions.put(sessionId, wsSession);
         sessionStates.putIfAbsent(sessionId, new SessionState());
         log.info("[VoiceGateway] Session registered, sessionId={}", sessionId);
     }
 
     @Override
-    public void unregisterSession(String sessionId, Session wsSession) {
+    public void unregisterSession(String sessionId, WebSocketSession wsSession) {
         wsSessions.remove(sessionId);
         SessionState state = sessionStates.get(sessionId);
         if (state != null) {
@@ -143,7 +144,7 @@ public class InterviewVoiceGatewayImpl implements InterviewVoiceGateway {
     }
 
     @Override
-    public void handleRequest(String sessionId, Session wsSession, VoiceRequest request) {
+    public void handleRequest(String sessionId, WebSocketSession wsSession, VoiceRequest request) {
         SessionState state = sessionStates.get(sessionId);
         if (state == null) {
             log.warn("[VoiceGateway] Session not found, sessionId={}", sessionId);
@@ -166,7 +167,7 @@ public class InterviewVoiceGatewayImpl implements InterviewVoiceGateway {
     }
 
     @Override
-    public void handleAudioData(String sessionId, Session wsSession, byte[] audioData) {
+    public void handleAudioData(String sessionId, WebSocketSession wsSession, byte[] audioData) {
         SessionState state = sessionStates.get(sessionId);
         if (state == null || !state.isActive()) {
             return;
@@ -188,7 +189,7 @@ public class InterviewVoiceGatewayImpl implements InterviewVoiceGateway {
     }
 
     @Override
-    public void handleSessionError(String sessionId, Session wsSession, Throwable error) {
+    public void handleSessionError(String sessionId, WebSocketSession wsSession, Throwable error) {
         log.error("[VoiceGateway] Session error, sessionId={}", sessionId, error);
         SessionState state = sessionStates.get(sessionId);
         if (state != null) {
@@ -272,7 +273,7 @@ public class InterviewVoiceGatewayImpl implements InterviewVoiceGateway {
 
     @Override
     public void sendResponse(String sessionId, VoiceResponse response) {
-        Session wsSession = wsSessions.get(sessionId);
+        WebSocketSession wsSession = wsSessions.get(sessionId);
         if (wsSession != null && wsSession.isOpen()) {
             voiceSessionManager.sendResponse(wsSession, response);
         }
