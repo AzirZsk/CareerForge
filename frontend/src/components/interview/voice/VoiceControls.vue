@@ -78,8 +78,8 @@ const emit = defineEmits<{
 
 // 语音模式选项
 const voiceModes = [
-  { value: 'half_voice' as VoiceMode, label: '半语音' },
-  { value: 'full_voice' as VoiceMode, label: '全语音' }
+  { value: 'half_voice' as VoiceMode, label: '语音作答' },
+  { value: 'full_voice' as VoiceMode, label: '全程对话' }
 ]
 
 // 当前模式

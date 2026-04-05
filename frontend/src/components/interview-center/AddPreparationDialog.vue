@@ -24,7 +24,7 @@
             <textarea
               v-model="form.content"
               class="form-textarea"
-              placeholder="具体要做什么..."
+              placeholder="每行输入一个步骤，支持多行..."
               rows="4"
             ></textarea>
           </div>
@@ -120,12 +120,35 @@ onUnmounted(() => {
   isScrollLocked.value = false
 })
 
+// 将多行文本转换为 JSON 数组字符串
+function convertToJSONArray(text: string): string {
+  if (!text || !text.trim()) return ''
+
+  // 按换行分割，过滤空行
+  const lines = text
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
+
+  // 只有一行就直接返回原文
+  if (lines.length <= 1) {
+    return text.trim()
+  }
+
+  // 多行转成 JSON 数组字符串
+  return JSON.stringify(lines)
+}
+
 async function handleSubmit() {
   if (submitting.value || !isFormValid.value) return
 
   submitting.value = true
   try {
-    await addPreparation(props.interviewId, form)
+    const content = convertToJSONArray(form.content)
+    await addPreparation(props.interviewId, {
+      ...form,
+      content
+    })
     // 重置表单
     form.title = ''
     form.content = ''

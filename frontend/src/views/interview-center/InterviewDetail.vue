@@ -66,6 +66,13 @@
         @retry="handleRetryPreparation"
       />
 
+      <!-- 模拟面试配置弹窗 -->
+      <MockInterviewConfigDialog
+        v-if="showMockConfigDialog"
+        @close="showMockConfigDialog = false"
+        @submit="handleMockConfigSubmit"
+      />
+
       <!-- 删除确认弹窗 -->
       <ConfirmModal
         :visible="confirmVisible"
@@ -352,6 +359,7 @@ import AddPreparationDialog from '@/components/interview-center/AddPreparationDi
 import ReviewNoteDialog from '@/components/interview-center/ReviewNoteDialog.vue'
 import EditInterviewDialog from '@/components/interview-center/EditInterviewDialog.vue'
 import PreparationProgressModal from '@/components/interview-center/PreparationProgressModal.vue'
+import MockInterviewConfigDialog from '@/components/interview-center/MockInterviewConfigDialog.vue'
 // 新增组件
 import PreparationProgress from '@/components/interview-center/PreparationProgress.vue'
 import PreparationGroup from '@/components/interview-center/PreparationGroup.vue'
@@ -373,6 +381,7 @@ const showAddPreparationDialog = ref(false)
 const showReviewDialog = ref(false)
 const showEditDialog = ref(false)
 const showPrepModal = ref(false)
+const showMockConfigDialog = ref(false)
 
 // 工作流状态
 const { state: preparationState, startPreparation } = useInterviewPreparation()
@@ -479,7 +488,11 @@ async function togglePreparation(preparationId: string) {
   if (!interview.value) return
   try {
     await togglePreparationComplete(interview.value.id, preparationId)
-    loadDetail()
+    // 直接更新本地状态，避免重新加载整个页面导致滚动位置丢失
+    const prep = interview.value.preparations?.find((p) => p.id === preparationId)
+    if (prep) {
+      prep.completed = !prep.completed
+    }
   } catch (error) {
     console.error('切换准备事项状态失败:', error)
   }
@@ -487,9 +500,24 @@ async function togglePreparation(preparationId: string) {
 
 async function handleDeletePreparation(preparationId: string) {
   if (!interview.value) return
+  // 查找准备事项标题
+  const prep = interview.value.preparations?.find((p) => p.id === preparationId)
+  const prepTitle = prep?.title || '该准备事项'
+  // 二次确认
+  const confirmed = await confirm({
+    title: '删除准备事项',
+    message: `确定要删除准备事项「${prepTitle}」吗？此操作不可撤销。`,
+    danger: true
+  })
+  if (!confirmed) return
   try {
     await deletePreparationApi(interview.value.id, preparationId)
-    loadDetail()
+    // 直接从本地数组移除，避免重新加载整个页面导致刷新
+    if (interview.value.preparations) {
+      interview.value.preparations = interview.value.preparations.filter(
+        (p) => p.id !== preparationId
+      )
+    }
   } catch (error) {
     console.error('删除准备事项失败:', error)
   }
@@ -560,11 +588,15 @@ async function handleSavePreparationItems(items: typeof preparationState.prepara
   if (!interview.value || items.length === 0) return
 
   try {
-    // 改为批量保存，传递完整字段包括 itemType
+    // 批量保存，传递完整字段
+    // contentItems 数组转成 JSON 字符串存入 content
     await batchAddPreparations(interview.value!.id, items.map(item => ({
       title: item.title,
-      content: item.content || '',
-      itemType: item.itemType
+      content: item.contentItems && item.contentItems.length > 0
+        ? JSON.stringify(item.contentItems)
+        : (item.content || ''),
+      itemType: item.itemType,
+      priority: item.priority
     })))
     showPrepModal.value = false
     loadDetail()
@@ -590,22 +622,33 @@ function handleAIAnalysis() {
   startAnalysis(interview.value.id, sessionTranscript.value)
 }
 
-// 开始模拟面试
-async function startMockInterview() {
+// 开始模拟面试 - 打开配置弹窗
+function startMockInterview() {
   if (!interview.value || !canStartMockInterview.value) {
     toast.error(mockInterviewHint.value)
     return
   }
+  showMockConfigDialog.value = true
+}
 
+// 处理模拟面试配置提交
+async function handleMockConfigSubmit(config: {
+  totalQuestions: number
+  assistLimit: number
+  voiceMode: string
+  interviewerStyle: string
+}) {
+  if (!interview.value) return
+
+  showMockConfigDialog.value = false
   try {
-    // 调用后端创建语音面试会话
     const response = await createSession({
       interviewId: interview.value.id,
-      totalQuestions: 10,
-      assistLimit: 5,
-      voiceMode: 'half_voice'
+      totalQuestions: config.totalQuestions,
+      assistLimit: config.assistLimit,
+      voiceMode: config.voiceMode,
+      interviewerStyle: config.interviewerStyle
     })
-    // 跳转到模拟面试页面
     router.push(`/interview-center/${interview.value.id}/mock/${response.sessionId}`)
   } catch (error) {
     console.error('创建模拟面试失败:', error)
@@ -631,6 +674,10 @@ const { state: aiChatState } = useAIChat()
 
 // 弹窗打开时隐藏 AI 悬浮球
 watch(showPrepModal, (val) => {
+  aiChatState.hideFloat = val
+})
+
+watch(showMockConfigDialog, (val) => {
   aiChatState.hideFloat = val
 })
 

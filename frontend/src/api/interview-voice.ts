@@ -19,6 +19,7 @@ export interface CreateSessionRequest {
   totalQuestions?: number
   assistLimit?: number
   voiceMode?: string
+  interviewerStyle?: string
 }
 
 /** 创建语音面试会话响应 */

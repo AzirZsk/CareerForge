@@ -1,10 +1,19 @@
 <!--=====================================================
   LandIt 面试进行中页面
-  支持语音模式（半语音/全语音）
+  支持语音模式（语音作答/全程对话）
   @author Azir
 =====================================================-->
 
 <template>
+  <!-- 倒计时遮罩层 -->
+  <div v-if="showCountdown" class="countdown-overlay">
+    <div class="countdown-content">
+      <div class="countdown-title">面试即将开始</div>
+      <div class="countdown-number">{{ countdown }}</div>
+      <div class="countdown-hint">请准备好麦克风</div>
+    </div>
+  </div>
+
   <div class="interview-session-page">
     <div class="session-container">
       <!-- 顶部状态栏 -->
@@ -262,6 +271,10 @@ const isAssistLoading = ref(false)
 const showEndModal = ref(false)
 const messagesContainer = ref<HTMLElement | null>(null)
 
+// 倒计时相关
+const showCountdown = ref(true)
+const countdown = ref(5)
+
 // 面试标题
 const interviewTitle = computed(() => '技术面试 - 高级前端工程师')
 
@@ -282,9 +295,17 @@ const sessionBadgeText = computed(() => {
 // 生命周期
 // ============================================================================
 
-onMounted(async () => {
-  // 初始化语音面试
-  await voiceInterview.init()
+onMounted(() => {
+  // 开始倒计时
+  const timer = setInterval(() => {
+    countdown.value--
+    if (countdown.value <= 0) {
+      clearInterval(timer)
+      showCountdown.value = false
+      // 倒计时结束后初始化语音面试
+      voiceInterview.init()
+    }
+  }, 1000)
 })
 
 onUnmounted(() => {
@@ -393,6 +414,54 @@ function goToQuestion(index: number): void {
 </script>
 
 <style lang="scss" scoped>
+// 倒计时遮罩层
+.countdown-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.countdown-content {
+  text-align: center;
+}
+
+.countdown-title {
+  font-family: $font-display;
+  font-size: $text-2xl;
+  color: $color-text-secondary;
+  margin-bottom: $spacing-xl;
+}
+
+.countdown-number {
+  font-family: $font-display;
+  font-size: 120px;
+  font-weight: $weight-bold;
+  color: $color-accent;
+  line-height: 1;
+  animation: pulse-scale 1s ease-in-out infinite;
+}
+
+.countdown-hint {
+  font-size: $text-base;
+  color: $color-text-tertiary;
+  margin-top: $spacing-xl;
+}
+
+@keyframes pulse-scale {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
 .interview-session-page {
   height: 100vh;
   display: flex;

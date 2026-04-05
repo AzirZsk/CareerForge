@@ -35,6 +35,22 @@ const hasResources = computed(() => {
   return props.preparation.resources && props.preparation.resources.length > 0
 })
 
+// 解析 content 为数组
+const contentItems = computed(() => {
+  const content = props.preparation.content
+  if (!content) return null
+
+  try {
+    const parsed = JSON.parse(content)
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed
+    }
+    return null
+  } catch {
+    return null
+  }
+})
+
 function handleToggle() {
   emit('toggle', props.preparation.id)
 }
@@ -73,7 +89,10 @@ function getResourceIcon(type: string): string {
       </button>
       <div class="item-content">
         <div class="item-title">{{ preparation.title }}</div>
-        <div v-if="preparation.content" class="item-description">{{ preparation.content }}</div>
+        <ul v-if="contentItems" class="item-list">
+          <li v-for="(item, index) in contentItems" :key="index">{{ item }}</li>
+        </ul>
+        <div v-else-if="preparation.content" class="item-description">{{ preparation.content }}</div>
       </div>
       <div class="item-actions">
         <span class="priority-tag" :class="priorityClass">{{ priorityLabel }}</span>
@@ -85,7 +104,12 @@ function getResourceIcon(type: string): string {
         >
           📎 {{ preparation.resources?.length || 0 }}
         </button>
-        <button class="action-btn delete-btn" @click="handleDelete">🗑️</button>
+        <button class="action-btn delete-btn" title="删除" @click="handleDelete">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </button>
       </div>
     </div>
     <div v-if="showResources && hasResources" class="resources-panel">
@@ -214,6 +238,24 @@ export default {
   margin-top: $spacing-xs;
 }
 
+.item-list {
+  margin: $spacing-xs 0 0 0;
+  padding-left: $spacing-lg;
+  color: $color-text-tertiary;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  list-style-type: disc;
+
+  li {
+    margin-bottom: 4px;
+    padding-left: 4px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
 .item-actions {
   flex-shrink: 0;
   display: flex;
@@ -294,8 +336,18 @@ export default {
   color: $color-bg-primary;
 }
 
-.delete-btn:hover {
-  color: $color-error;
+.delete-btn {
+  opacity: 0.5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+
+  &:hover {
+    opacity: 1;
+    color: $color-error;
+    background: rgba($color-error, 0.1);
+  }
 }
 
 .resources-panel {

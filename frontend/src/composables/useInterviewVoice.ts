@@ -285,6 +285,11 @@ export function useInterviewVoice(sessionId: string) {
     totalQuestions.value = data.totalQuestions
     assistCount.value = assistLimit.value - data.assistRemaining
     elapsedTime.value = data.elapsedTime
+
+    // 状态变为 interviewing 时自动开始录音
+    if (data.state === 'interviewing' && !recorder.isRecording.value) {
+      recorder.startRecording()
+    }
   }
 
   /**
