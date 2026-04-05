@@ -2,23 +2,15 @@ package com.landit.interview.graph.preparation;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.landit.common.config.AIPromptProperties;
-import com.landit.common.enums.PreparationItemType;
-import com.landit.common.enums.PreparationPriority;
-import com.landit.common.enums.PreparationSource;
 import com.landit.common.util.ChatClientHelper;
 import com.landit.interview.dto.GeneratePreparationResult;
 import com.landit.interview.dto.PreparationItemResult;
-import com.landit.interview.entity.InterviewPreparation;
-import com.landit.interview.service.InterviewPreparationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +19,7 @@ import static com.landit.interview.graph.preparation.InterviewPreparationGraphCo
 
 /**
  * 生成准备事项节点
- * 根据公司调研和JD分析结果，生成面试准备事项
+ * 根据公司调研和JD分析结果，生成面试准备事项（仅返回数据，不保存到数据库）
  *
  * @author Azir
  */
@@ -38,8 +30,6 @@ public class GeneratePreparationNode implements NodeAction {
 
     private final ChatClient chatClient;
     private final AIPromptProperties aiPromptProperties;
-    private final InterviewPreparationService preparationService;
-    private final ObjectMapper objectMapper;
 
     @Override
     public Map<String, Object> apply(OverAllState state) {
@@ -73,91 +63,22 @@ public class GeneratePreparationNode implements NodeAction {
             log.warn("AI未返回准备事项");
             return buildEmptyResult();
         }
-        // 保存准备事项到数据库
-        List<InterviewPreparation> savedPreparations = new ArrayList<>();
-        int sortOrder = 0;
-        for (PreparationItemResult item : result.getItems()) {
-            InterviewPreparation preparation = convertToEntity(interviewId, item, sortOrder++);
-            preparationService.save(preparation);
-            savedPreparations.add(preparation);
-        }
-        log.info("准备事项生成完成: 共{}项", savedPreparations.size());
+        // 不再直接保存到数据库，只返回 DTO 供前端预览
+        // 前端用户确认后再调用 batchAddPreparations API 保存
+        List<PreparationItemResult> preparationItems = result.getItems();
+        log.info("准备事项生成完成: 共{}项（等待前端确认保存）", preparationItems.size());
         // 构建节点输出，用于SSE推送到前端
         Map<String, Object> nodeOutput = new HashMap<>();
         nodeOutput.put(OUTPUT_NODE, NODE_GENERATE_PREPARATION);
         nodeOutput.put(OUTPUT_PROGRESS, 100);
         nodeOutput.put(OUTPUT_MESSAGE, "准备事项生成完成");
-        nodeOutput.put(OUTPUT_DATA, savedPreparations);
+        nodeOutput.put(OUTPUT_DATA, preparationItems);
         // 构建并返回节点结果
         Map<String, Object> nodeResult = new HashMap<>();
-        nodeResult.put(STATE_PREPARATION_ITEMS, savedPreparations);
+        nodeResult.put(STATE_PREPARATION_ITEMS, preparationItems);
         nodeResult.put(STATE_MESSAGES, List.of("完成准备事项生成"));
         nodeResult.put(STATE_NODE_OUTPUT, nodeOutput);
         return nodeResult;
-    }
-
-    /**
-     * 将 PreparationItemResult 转换为实体对象
-     *
-     * @param interviewId 面试ID
-     * @param item        AI返回的准备事项DTO
-     * @param sortOrder   排序序号
-     * @return 准备事项实体
-     */
-    private InterviewPreparation convertToEntity(String interviewId, PreparationItemResult item, int sortOrder) {
-        InterviewPreparation preparation = new InterviewPreparation();
-        preparation.setInterviewId(interviewId);
-        preparation.setTitle(item.getTitle());
-        // contentItems 序列化为 JSON 存入 content
-        preparation.setContent(serializeContentItems(item.getContentItems()));
-        // 解析类型（无效则使用默认值TODO）
-        PreparationItemType itemType = PreparationItemType.fromCode(item.getItemType());
-        preparation.setItemType(itemType != null ? itemType.getCode() : PreparationItemType.TODO.getCode());
-        // 解析优先级（无效则使用默认值RECOMMENDED）
-        PreparationPriority priority = PreparationPriority.fromCode(item.getPriority());
-        preparation.setPriority(priority != null ? priority.getCode() : PreparationPriority.RECOMMENDED.getCode());
-        // 序列化资源
-        preparation.setResources(serializeResources(item.getResources()));
-        preparation.setSortOrder(sortOrder);
-        preparation.setCompleted(false);
-        preparation.setSource(PreparationSource.AI_GENERATED.getCode());
-        return preparation;
-    }
-
-    /**
-     * 序列化 contentItems 列表为 JSON 字符串
-     *
-     * @param contentItems 内容项列表
-     * @return JSON 字符串，序列化失败返回 null
-     */
-    private String serializeContentItems(List<String> contentItems) {
-        if (contentItems == null || contentItems.isEmpty()) {
-            return null;
-        }
-        try {
-            return objectMapper.writeValueAsString(contentItems);
-        } catch (JsonProcessingException e) {
-            log.warn("序列化 contentItems 失败: {}", e.getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * 序列化资源列表为JSON字符串
-     *
-     * @param resources 资源列表
-     * @return JSON字符串，序列化失败返回null
-     */
-    private String serializeResources(List<PreparationItemResult.PreparationResource> resources) {
-        if (resources == null || resources.isEmpty()) {
-            return null;
-        }
-        try {
-            return objectMapper.writeValueAsString(resources);
-        } catch (JsonProcessingException e) {
-            log.warn("序列化资源失败: {}", e.getMessage());
-            return null;
-        }
     }
 
     /**

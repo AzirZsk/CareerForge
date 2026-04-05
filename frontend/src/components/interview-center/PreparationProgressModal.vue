@@ -45,6 +45,13 @@
             </button>
           </div>
 
+          <!-- 面试信息 -->
+          <div v-if="interview" class="interview-info">
+            <span class="info-label">面试</span>
+            <span class="info-value">{{ interview.companyName }} · {{ interview.position }}</span>
+            <span v-if="interview.roundType" class="info-round">{{ getRoundLabel(interview.roundType) }}</span>
+          </div>
+
           <!-- 进度条 -->
           <ProgressBar
             :progress="state.progress"
@@ -209,8 +216,11 @@ import type {
   PreparationStage,
   PreparationStageHistoryItem,
   CompanyResearchResult,
-  JDAnalysisResult
+  JDAnalysisResult,
+  InterviewDetail,
+  RoundType
 } from '@/types/interview-center'
+import { ROUND_TYPE_LABELS } from '@/types/interview-center'
 import { useInterviewPreparation } from '@/composables/useInterviewPreparation'
 import { useStageTimer } from '@/composables/useStageTimer'
 import ProgressBar from '@/components/resume/optimize/ProgressBar.vue'
@@ -221,6 +231,7 @@ import PreparationItemsContent from './preparation/PreparationItemsContent.vue'
 const props = defineProps<{
   visible: boolean
   state: PreparationState
+  interview?: InterviewDetail
 }>()
 
 const emit = defineEmits<{
@@ -241,6 +252,11 @@ const { toggleExpand, getStageLabel } = useInterviewPreparation()
 
 // 使用通用阶段计时器 composable
 const { formatElapsed } = useStageTimer(() => props.state.isRunning)
+
+// 面试轮次标签
+function getRoundLabel(roundType: RoundType): string {
+  return ROUND_TYPE_LABELS[roundType] || roundType
+}
 
 // ==================== 计算属性 ====================
 
@@ -371,6 +387,35 @@ watch(
   padding: $spacing-lg;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   flex-shrink: 0;
+}
+
+// 面试信息
+.interview-info {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-lg;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.info-label {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+}
+
+.info-value {
+  font-size: $text-sm;
+  color: $color-accent;
+  font-weight: $weight-medium;
+}
+
+.info-round {
+  font-size: $text-xs;
+  padding: 2px 8px;
+  background: rgba($color-accent, 0.15);
+  color: $color-accent;
+  border-radius: $radius-sm;
 }
 
 .header-left {

@@ -22,7 +22,7 @@ import reactor.core.publisher.Flux;
  */
 @Slf4j
 @RestController
-@RequestMapping("/landit/interviews/sessions")
+@RequestMapping("/interviews/sessions")
 @RequiredArgsConstructor
 public class AssistantController {
 

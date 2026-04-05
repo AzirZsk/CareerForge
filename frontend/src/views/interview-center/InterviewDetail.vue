@@ -60,6 +60,7 @@
       <PreparationProgressModal
         v-model:visible="showPrepModal"
         :state="preparationState"
+        :interview="interview"
         @save="handleSavePreparationItems"
         @cancel="handleCancelPreparation"
         @retry="handleRetryPreparation"

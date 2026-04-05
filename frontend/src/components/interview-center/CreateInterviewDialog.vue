@@ -100,9 +100,8 @@
 
           <!-- 通用字段 -->
           <div class="form-group">
-            <label class="form-label">关联简历</label>
-            <select v-model="form.resumeId" class="form-select">
-              <option value="">不关联简历</option>
+            <label class="form-label required">关联简历</label>
+            <select v-model="form.resumeId" class="form-select" :disabled="resumeList.length === 0">
               <option
                 v-for="resume in resumeList"
                 :key="resume.id"
@@ -111,7 +110,8 @@
                 {{ resume.name }}{{ resume.isPrimary ? '（主简历）' : '' }}
               </option>
             </select>
-            <p class="form-hint">
+            <p v-if="noResumeHint" class="form-error">{{ noResumeHint }}</p>
+            <p v-else class="form-hint">
               AI 将基于你的简历，预测面试官可能深挖的项目问题，帮你提前准备
             </p>
           </div>
@@ -272,12 +272,24 @@ const form = reactive<CreateInterviewRequest>({
 // 简历列表（从 store 获取）
 const resumeList = computed(() => store.resumeList)
 
+// 无简历提示
+const noResumeHint = computed(() => {
+  if (resumeList.value.length === 0) {
+    return '请先创建简历'
+  }
+  return ''
+})
+
 const selectedPosition = computed(() => {
   if (!selectedPositionId.value) return null
   return jobPositions.value.find(p => p.id === selectedPositionId.value)
 })
 
 const isFormValid = computed(() => {
+  // 无简历时禁用
+  if (resumeList.value.length === 0) return false
+  // 必须选择简历
+  if (!form.resumeId) return false
   if (!form.interviewDate) return false
   // 自定义轮次必须填写名称
   if (form.roundType === 'custom' && !form.roundName?.trim()) {
@@ -354,13 +366,28 @@ async function handleSubmit() {
 
 onMounted(() => {
   loadPositions()
-  // 加载简历列表
+  // 加载简历列表并默认选择主简历
   if (store.resumeList.length === 0) {
-    store.fetchResumes()
+    store.fetchResumes().then(() => {
+      selectPrimaryResume()
+    })
+  } else {
+    selectPrimaryResume()
   }
   // 弹窗打开时锁定滚动
   isScrollLocked.value = true
 })
+
+// 选择主简历
+function selectPrimaryResume() {
+  const primaryResume = resumeList.value.find(r => r.isPrimary)
+  if (primaryResume) {
+    form.resumeId = primaryResume.id
+  } else if (resumeList.value.length > 0) {
+    // 如果没有主简历，选择第一个
+    form.resumeId = resumeList.value[0].id
+  }
+}
 
 onUnmounted(() => {
   // 弹窗关闭时解锁滚动
@@ -544,6 +571,13 @@ onUnmounted(() => {
   margin-top: $spacing-xs;
   font-size: 0.75rem;
   color: $color-text-tertiary;
+  line-height: 1.4;
+}
+
+.form-error {
+  margin-top: $spacing-xs;
+  font-size: 0.75rem;
+  color: $color-error;
   line-height: 1.4;
 }
 

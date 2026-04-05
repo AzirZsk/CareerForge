@@ -10,6 +10,22 @@
         <h2>基本信息</h2>
 
         <div class="form-group">
+          <label class="form-label required">关联简历</label>
+          <select v-model="form.resumeId" class="form-select" :disabled="resumeList.length === 0" required>
+            <option value="" disabled>请选择简历</option>
+            <option
+              v-for="resume in resumeList"
+              :key="resume.id"
+              :value="resume.id"
+            >
+              {{ resume.name }}{{ resume.isPrimary ? '（主简历）' : '' }}
+            </option>
+          </select>
+          <p v-if="noResumeHint" class="form-hint error">{{ noResumeHint }}</p>
+          <p v-else class="form-hint">AI 将基于你的简历，预测面试官可能深挖的项目问题，帮你提前准备</p>
+        </div>
+
+        <div class="form-group">
           <label class="form-label required">公司名称</label>
           <input
             v-model="form.companyName"
@@ -88,19 +104,33 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { createInterview } from '@/api/interview-center'
 import type { CreateInterviewRequest, RoundType } from '@/types/interview-center'
 import { ROUND_TYPE_LABELS } from '@/types/interview-center'
 import DateTimePicker from '@/components/common/DateTimePicker.vue'
 import { useToast } from '@/composables/useToast'
+import { useAppStore } from '@/stores'
 
 const router = useRouter()
 const toast = useToast()
+const store = useAppStore()
 const submitting = ref(false)
 
+// 简历列表（从 store 获取）
+const resumeList = computed(() => store.resumeList)
+
+// 无简历提示
+const noResumeHint = computed(() => {
+  if (resumeList.value.length === 0) {
+    return '请先创建简历'
+  }
+  return ''
+})
+
 const form = reactive<CreateInterviewRequest>({
+  resumeId: '',
   companyName: '',
   position: '',
   interviewDate: '',
@@ -110,12 +140,40 @@ const form = reactive<CreateInterviewRequest>({
   notes: ''
 })
 
+// 选择主简历
+function selectPrimaryResume() {
+  const primaryResume = resumeList.value.find(r => r.isPrimary)
+  if (primaryResume) {
+    form.resumeId = primaryResume.id
+  } else if (resumeList.value.length > 0) {
+    // 如果没有主简历，选择第一个
+    form.resumeId = resumeList.value[0].id
+  }
+}
+
+onMounted(() => {
+  // 加载简历列表并默认选择主简历
+  if (store.resumeList.length === 0) {
+    store.fetchResumes().then(() => {
+      selectPrimaryResume()
+    })
+  } else {
+    selectPrimaryResume()
+  }
+})
+
 function goBack() {
   router.push('/interview-center')
 }
 
 async function handleSubmit() {
   if (submitting.value) return
+
+  // 必须选择简历
+  if (!form.resumeId) {
+    toast.warning('请选择关联简历')
+    return
+  }
 
   // 自定义轮次必须填写名称
   if (form.roundType === 'custom' && !form.roundName?.trim()) {
@@ -242,6 +300,17 @@ async function handleSubmit() {
 .form-textarea {
   resize: vertical;
   min-height: 80px;
+}
+
+.form-hint {
+  margin-top: $spacing-xs;
+  font-size: 0.75rem;
+  color: $color-text-tertiary;
+  line-height: 1.4;
+
+  &.error {
+    color: $color-error;
+  }
 }
 
 .form-actions {

@@ -78,6 +78,10 @@ public class InterviewCenterHandler {
     public InterviewDetailVO createInterview(CreateInterviewRequest request) {
         log.info("创建真实面试: jobPositionId={}, company={}, position={}",
                 request.getJobPositionId(), request.getCompanyName(), request.getPosition());
+        // 业务校验：必须关联简历
+        if (request.getResumeId() == null || request.getResumeId().isBlank()) {
+            throw new BusinessException("创建面试必须关联简历");
+        }
         // 业务校验：如果没有关联职位，则必须提供公司名和职位名
         String jobPositionId = request.getJobPositionId();
         boolean hasJobPositionId = jobPositionId != null && !jobPositionId.isBlank();

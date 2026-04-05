@@ -94,51 +94,53 @@ function submitFreeQuestion() {
 
 <style scoped lang="scss">
 .quick-assist-buttons {
-  padding: 16px;
-  background: var(--bg-secondary);
-  border-radius: 12px;
+  padding: $spacing-md;
+  background: $gradient-card;
+  border-radius: $radius-lg;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .assist-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: $spacing-md;
 
   .title {
-    font-weight: 600;
-    color: var(--text-primary);
+    font-weight: $weight-semibold;
+    font-size: $text-sm;
+    color: $color-text-primary;
   }
 
   .remaining {
-    font-size: 12px;
-    color: var(--text-secondary);
-    background: var(--bg-tertiary);
-    padding: 4px 8px;
-    border-radius: 12px;
+    font-size: $text-xs;
+    color: $color-text-secondary;
+    background: $color-bg-tertiary;
+    padding: $spacing-xs $spacing-sm;
+    border-radius: $radius-sm;
   }
 }
 
 .button-group {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $spacing-sm;
 
   .assist-btn {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    padding: 12px 8px;
-    background: var(--bg-primary);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
+    gap: $spacing-xs;
+    padding: $spacing-md $spacing-sm;
+    background: $color-bg-primary;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all $transition-fast;
 
     &:hover:not(:disabled) {
-      border-color: var(--primary-color);
-      background: var(--bg-hover);
+      border-color: $color-accent;
+      background: rgba($color-accent, 0.1);
     }
 
     &:disabled {
@@ -147,59 +149,74 @@ function submitFreeQuestion() {
     }
 
     .btn-icon {
-      font-size: 20px;
+      font-size: 1.25rem;
     }
 
     .btn-text {
-      font-size: 12px;
-      color: var(--text-secondary);
+      font-size: $text-xs;
+      color: $color-text-secondary;
     }
   }
 }
 
 .free-input {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border-color);
+  margin-top: $spacing-md;
+  padding-top: $spacing-md;
+  border-top: 1px solid $color-border;
 
   textarea {
     width: 100%;
-    padding: 8px 12px;
-    background: var(--bg-primary);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
+    padding: $spacing-sm $spacing-md;
+    background: $color-bg-primary;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
     resize: none;
-    font-size: 14px;
+    font-size: $text-sm;
+    color: $color-text-primary;
+
+    &::placeholder {
+      color: $color-text-tertiary;
+    }
 
     &:focus {
       outline: none;
-      border-color: var(--primary-color);
+      border-color: $color-accent;
     }
   }
 
   .input-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 8px;
-    margin-top: 8px;
+    gap: $spacing-sm;
+    margin-top: $spacing-sm;
 
     button {
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 12px;
+      padding: $spacing-xs $spacing-md;
+      border-radius: $radius-sm;
+      font-size: $text-xs;
       cursor: pointer;
+      transition: all $transition-fast;
     }
 
     .cancel-btn {
       background: transparent;
-      border: 1px solid var(--border-color);
-      color: var(--text-secondary);
+      border: 1px solid $color-border;
+      color: $color-text-secondary;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
     }
 
     .submit-btn {
-      background: var(--primary-color);
+      background: $color-accent;
       border: none;
-      color: white;
+      color: $color-bg-deep;
+      font-weight: $weight-medium;
+
+      &:hover:not(:disabled) {
+        opacity: 0.9;
+      }
 
       &:disabled {
         opacity: 0.5;

@@ -176,8 +176,9 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--bg-primary);
-  border-radius: 12px;
+  background: $gradient-card;
+  border-radius: $radius-lg;
+  border: 1px solid rgba(255, 255, 255, 0.05);
   overflow: hidden;
 }
 
@@ -185,36 +186,40 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
+  padding: $spacing-md $spacing-lg;
+  background: $color-bg-tertiary;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 
   .header-left {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: $spacing-sm;
 
     .icon {
-      font-size: 20px;
+      font-size: 1.25rem;
     }
 
     .title {
-      font-weight: 600;
-      font-size: 16px;
+      font-weight: $weight-semibold;
+      font-size: $text-base;
+      color: $color-text-primary;
     }
   }
 
   .close-btn {
-    padding: 8px 16px;
-    background: var(--primary-color);
-    color: white;
+    padding: $spacing-sm $spacing-md;
+    background: $color-accent;
+    color: $color-bg-deep;
     border: none;
-    border-radius: 6px;
+    border-radius: $radius-md;
     cursor: pointer;
-    font-size: 14px;
+    font-size: $text-sm;
+    font-weight: $weight-medium;
+    transition: all $transition-fast;
 
     &:hover {
       opacity: 0.9;
+      transform: translateY(-1px);
     }
   }
 }
@@ -222,7 +227,7 @@ onUnmounted(() => {
 .panel-content {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: $spacing-lg;
 
   .loading-state {
     display: flex;
@@ -230,36 +235,42 @@ onUnmounted(() => {
     align-items: center;
     justify-content: center;
     height: 100%;
-    gap: 16px;
+    gap: $spacing-md;
 
     .spinner {
       width: 40px;
       height: 40px;
-      border: 3px solid var(--border-color);
-      border-top-color: var(--primary-color);
+      border: 3px solid $color-border;
+      border-top-color: $color-accent;
       border-radius: 50%;
       animation: spin 1s linear infinite;
+    }
+
+    p {
+      color: $color-text-secondary;
+      font-size: $text-sm;
     }
   }
 
   .response-content {
     .text-content {
-      line-height: 1.8;
-      color: var(--text-primary);
+      line-height: $leading-relaxed;
+      color: $color-text-primary;
+      font-size: $text-sm;
 
       p {
-        margin-bottom: 12px;
+        margin-bottom: $spacing-md;
       }
     }
 
     .audio-player {
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-top: 16px;
-      padding: 12px;
-      background: var(--bg-secondary);
-      border-radius: 8px;
+      gap: $spacing-md;
+      margin-top: $spacing-lg;
+      padding: $spacing-md;
+      background: $color-bg-tertiary;
+      border-radius: $radius-md;
 
       .play-btn {
         width: 40px;
@@ -267,35 +278,41 @@ onUnmounted(() => {
         display: flex;
         align-items: center;
         justify-content: center;
-        background: var(--primary-color);
-        color: white;
+        background: $color-accent;
+        color: $color-bg-deep;
         border: none;
         border-radius: 50%;
         cursor: pointer;
-        font-size: 16px;
+        font-size: $text-base;
+        transition: all $transition-fast;
 
         &.playing {
-          background: var(--danger-color);
+          background: $color-error;
+          color: white;
+        }
+
+        &:hover:not(.playing) {
+          opacity: 0.9;
         }
       }
 
       .progress-bar {
         flex: 1;
         height: 4px;
-        background: var(--border-color);
+        background: $color-border;
         border-radius: 2px;
         overflow: hidden;
 
         .progress {
           height: 100%;
-          background: var(--primary-color);
+          background: $color-accent;
           transition: width 0.1s;
         }
       }
 
       .duration {
-        font-size: 12px;
-        color: var(--text-secondary);
+        font-size: $text-xs;
+        color: $color-text-secondary;
         min-width: 80px;
         text-align: right;
       }
@@ -308,19 +325,23 @@ onUnmounted(() => {
     align-items: center;
     justify-content: center;
     height: 100%;
-    gap: 12px;
-    color: var(--text-secondary);
+    gap: $spacing-md;
+    color: $color-text-secondary;
 
     .empty-icon {
-      font-size: 48px;
+      font-size: 3rem;
       opacity: 0.5;
+    }
+
+    p {
+      font-size: $text-sm;
     }
   }
 }
 
 .panel-footer {
-  padding: 16px;
-  border-top: 1px solid var(--border-color);
+  padding: $spacing-md $spacing-lg;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 @keyframes spin {

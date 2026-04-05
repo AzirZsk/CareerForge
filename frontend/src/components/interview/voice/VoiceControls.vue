@@ -131,29 +131,38 @@ function toggleMute() {
 .voice-controls {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 16px;
-  background: var(--bg-secondary);
-  border-radius: 12px;
+  gap: $spacing-md;
+  padding: $spacing-md;
+  background: $color-bg-secondary;
+  border-radius: $radius-lg;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .mode-switch {
   display: flex;
-  gap: 8px;
+  gap: $spacing-sm;
 
   .mode-btn {
     flex: 1;
-    padding: 8px 16px;
-    border: 1px solid var(--border-color);
-    background: var(--bg-primary);
-    border-radius: 8px;
+    padding: $spacing-sm $spacing-md;
+    border: 1px solid $color-border;
+    background: $color-bg-primary;
+    border-radius: $radius-md;
+    color: $color-text-secondary;
     cursor: pointer;
-    transition: all 0.2s;
+    font-size: $text-sm;
+    transition: all $transition-fast;
+
+    &:hover:not(.active) {
+      border-color: rgba(255, 255, 255, 0.15);
+      background: $color-bg-tertiary;
+    }
 
     &.active {
-      background: var(--primary-color);
-      color: white;
-      border-color: var(--primary-color);
+      background: $color-accent;
+      color: $color-bg-deep;
+      border-color: $color-accent;
+      font-weight: $weight-medium;
     }
   }
 }
@@ -161,23 +170,28 @@ function toggleMute() {
 .recording-controls {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: $spacing-md;
 
   .record-btn {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 12px 24px;
-    background: var(--primary-color);
-    color: white;
+    gap: $spacing-sm;
+    padding: $spacing-md $spacing-xl;
+    background: $color-accent;
+    color: $color-bg-deep;
     border: none;
-    border-radius: 24px;
+    border-radius: $radius-full;
     cursor: pointer;
-    font-size: 16px;
-    transition: all 0.2s;
+    font-size: $text-base;
+    font-weight: $weight-medium;
+    transition: all $transition-fast;
+
+    .icon {
+      font-size: 1.25rem;
+    }
 
     &.recording {
-      background: var(--danger-color);
+      background: $color-error;
       animation: pulse 1.5s infinite;
     }
 
@@ -190,18 +204,23 @@ function toggleMute() {
   .status-indicator {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: $spacing-sm;
 
     .status-dot {
       width: 8px;
       height: 8px;
       border-radius: 50%;
 
-      &.status-idle { background: var(--gray-color); }
-      &.status-recording { background: var(--danger-color); animation: pulse 1s infinite; }
-      &.status-recognizing { background: var(--warning-color); }
-      &.status-synthesizing { background: var(--success-color); }
-      &.status-error { background: var(--danger-color); }
+      &.status-idle { background: $color-text-tertiary; }
+      &.status-recording { background: $color-error; animation: pulse 1s infinite; }
+      &.status-recognizing { background: $color-warning; }
+      &.status-synthesizing { background: $color-success; }
+      &.status-error { background: $color-error; }
+    }
+
+    .status-text {
+      font-size: $text-sm;
+      color: $color-text-secondary;
     }
   }
 }
@@ -209,12 +228,17 @@ function toggleMute() {
 .volume-control {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: $spacing-md;
+
+  label {
+    font-size: $text-sm;
+    color: $color-text-secondary;
+  }
 
   input[type="range"] {
     flex: 1;
     height: 4px;
-    background: var(--border-color);
+    background: $color-border;
     border-radius: 2px;
     appearance: none;
 
@@ -222,18 +246,18 @@ function toggleMute() {
       appearance: none;
       width: 16px;
       height: 16px;
-      background: var(--primary-color);
+      background: $color-accent;
       border-radius: 50%;
       cursor: pointer;
     }
   }
 
   button {
-    padding: 8px;
+    padding: $spacing-sm;
     background: transparent;
     border: none;
     cursor: pointer;
-    font-size: 20px;
+    font-size: 1.25rem;
 
     &.muted {
       opacity: 0.5;

@@ -59,11 +59,8 @@
           @click="goToInterviewDetail(interview.id)"
         >
           <div class="interview-main">
-            <!-- 第一行：来源 + 轮次 + 日期 -->
+            <!-- 第一行：轮次 + 日期 -->
             <div class="interview-row primary">
-              <span v-if="interview.source" class="source-badge" :class="interview.source">
-                {{ getSourceLabel(interview.source) }}
-              </span>
               <span v-if="getRoundDisplay(interview)" class="round-info">
                 {{ getRoundDisplay(interview) }}
               </span>
@@ -156,8 +153,7 @@ import {
   INTERVIEW_STATUS_LABELS,
   INTERVIEW_RESULT_LABELS,
   ROUND_TYPE_LABELS,
-  INTERVIEW_TYPE_LABELS,
-  INTERVIEW_SOURCE_LABELS
+  INTERVIEW_TYPE_LABELS
 } from '@/types/interview-center'
 import type { InterviewBrief } from '@/types/job-position'
 import CreateInterviewDialog from '@/components/interview-center/CreateInterviewDialog.vue'
@@ -202,12 +198,6 @@ function getStatusLabel(status: string): string {
 
 function getResultLabel(result: string): string {
   return INTERVIEW_RESULT_LABELS[result as keyof typeof INTERVIEW_RESULT_LABELS] || result
-}
-
-// 获取面试来源标签
-function getSourceLabel(source?: string): string {
-  if (!source) return ''
-  return INTERVIEW_SOURCE_LABELS[source as keyof typeof INTERVIEW_SOURCE_LABELS] || source
 }
 
 // 获取轮次显示文本
@@ -476,23 +466,6 @@ onMounted(() => {
 
   &.tertiary {
     margin-top: 2px;
-  }
-}
-
-// 来源标签
-.source-badge {
-  font-size: 0.7rem;
-  padding: 2px 8px;
-  border-radius: $radius-full;
-
-  &.real {
-    background: rgba($color-accent, 0.15);
-    color: $color-accent;
-  }
-
-  &.mock {
-    background: rgba($color-info, 0.15);
-    color: $color-info;
   }
 }
 

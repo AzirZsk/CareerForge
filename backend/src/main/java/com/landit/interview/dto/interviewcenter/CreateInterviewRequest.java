@@ -19,8 +19,9 @@ public class CreateInterviewRequest {
     private String jobPositionId;
 
     /**
-     * 关联简历ID（用于面试准备参考，指定简历可获得更精准的面试准备建议）
+     * 关联简历ID（必填，用于面试准备参考）
      */
+    @NotBlank(message = "简历ID不能为空")
     private String resumeId;
 
     /**
