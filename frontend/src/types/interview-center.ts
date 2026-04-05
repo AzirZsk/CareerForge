@@ -396,7 +396,8 @@ export interface PreparationItem {
   interviewId: string
   itemType: string        // 类型：company_research/jd_keywords/tech_prep/case_study/behavioral/todo
   title: string
-  content: string         // 内容（后端用 content，不是 description）
+  content?: string        // 兼容旧数据（纯文本或JSON数组字符串）
+  contentItems?: string[] // 新格式（优先使用）
   completed: boolean
   source: string          // 来源：ai_generated/manual
   sortOrder: number

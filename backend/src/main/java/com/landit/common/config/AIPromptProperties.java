@@ -1887,7 +1887,7 @@ public class AIPromptProperties {
                     |------|------|------|------|
                     | itemType | string | 是 | 准备项类型（必须使用下方枚举值，小写下划线格式） |
                     | title | string | 是 | 标题（简洁明了，不超过50字） |
-                    | content | string | 是 | 具体内容（详细说明需要准备什么，100-200字） |
+                    | contentItems | array | 是 | 准备步骤列表（3-5条具体可执行的步骤，每条20-50字） |
                     | priority | string | 是 | 优先级（必须使用下方枚举值） |
                     | resources | array | 否 | 关联资源列表（可选） |
 
@@ -1927,28 +1927,34 @@ public class AIPromptProperties {
                     ## 准备事项生成策略
 
                     ### 1. tech_prep（技术准备）
-                    - **内容要求**：**必须具体到原理/机制层面**，不要泛泛的"复习XX技术"
+                    - **contentItems 要求**：**必须具体到原理/机制层面**，不要泛泛的"复习XX技术"，每条是一个具体的学习/复习点
                     - **如果有上一轮复盘笔记**：优先针对薄弱点生成（如上轮"分布式事务答得不好"，则重点复习分布式事务原理）
                     - **示例**：
-                      - ✅ 正确："复习Spring Boot自动配置原理：条件装配机制、@Conditional注解、spring.factories文件加载流程"
-                      - ❌ 错误："复习Spring Boot"
-                      - ✅ 正确："深入理解MySQL索引：聚簇索引/二级索引结构、索引下推、覆盖索引的使用场景"
-                      - ❌ 错误："复习MySQL"
+                      - ✅ 正确 contentItems:
+                        - "深入理解条件装配机制：@Conditional系列注解的触发条件"
+                        - "掌握 spring.factories 文件的加载流程"
+                        - "理解自动配置类的生效时机"
+                        - "手写一个简单的 Starter 验证理解"
+                      - ❌ 错误："复习Spring Boot"（太笼统）
                     - **priority**: required（JD必备技能）/ recommended（加分技能）
 
                     ### 2. case_study（案例准备）
-                    - **内容要求**：基于简历内容，挑选与JD最相关的项目，用STAR法则详细准备
+                    - **contentItems 要求**：基于简历内容，用STAR法则准备项目案例，每条是一个具体的准备点
                     - **如果有上一轮复盘笔记**：针对"项目案例不够清晰"等问题，强调用STAR法则重新准备
                     - **示例**：
-                      - "准备'订单系统重构'项目：S-日均订单量XX万，系统可用性仅99.5%；T-重构为微服务架构，目标可用性99.9%；A-技术方案：服务拆分+分布式事务+缓存优化；R-可用性达99.95%，接口响应时间降低60%"
+                      - "回顾项目背景：日均订单量50万，系统可用性仅99.5%"
+                      - "准备技术方案：服务拆分+分布式事务+缓存优化"
+                      - "量化成果：可用性达99.95%，接口响应时间降低60%"
                     - **priority**: recommended
                     - **如果未提供简历**：跳过此类型
 
                     ### 3. behavioral（行为面试）
-                    - **内容要求**：基于JD职责，推断可能被问到的行为问题
+                    - **contentItems 要求**：基于JD职责，推断可能被问到的行为问题，每条是一个具体的准备方向
                     - **如果有上一轮复盘笔记**：针对"表达不够清晰"等问题，准备结构化回答模板
                     - **示例**：
-                      - "准备团队协作案例：用STAR法则准备1-2个跨部门协作的例子，重点突出沟通协调能力"
+                      - "准备团队协作案例：用STAR法则准备1-2个跨部门协作的例子"
+                      - "准备技术决策案例：梳理一个技术选型的决策过程"
+                      - "准备冲突解决案例：回顾一次与同事的技术分歧如何解决"
                     - **priority**: recommended
 
                     ---
@@ -1965,7 +1971,7 @@ public class AIPromptProperties {
                     ---
 
                     ## 输出格式示例（严格JSON，单行压缩格式）
-                    {"items":[{"itemType":"tech_prep","title":"复习Spring Boot自动配置原理","content":"深入理解条件装配机制：1) @Conditional系列注解的触发条件 2) spring.factories文件的加载流程 3) 自动配置类的生效时机。准备手写一个简单的Starter来验证理解。可能的手写代码环节：实现一个基于@ConditionalOnProperty的开关功能。","priority":"required"},{"itemType":"tech_prep","title":"深入理解分布式事务","content":"重点复习Seata AT模式原理：1) 全局锁机制 2) 两阶段提交流程 3) 回滚日志undo_log的作用。结合简历中的订单项目，思考如何回答'分布式事务如何保证一致性'这类问题。","priority":"required"},{"itemType":"case_study","title":"准备订单系统重构项目","content":"用STAR法则准备：S-日均订单量50万，系统可用性仅99.5%，高峰期经常超时;T-重构为微服务架构，目标可用性99.9%;A-技术方案:服务拆分(订单/库存/支付)、Seata分布式事务、Redis缓存热点数据、RocketMQ异步解耦;R-系统可用性达99.95%，接口响应时间从200ms降至50ms.","priority":"recommended"},{"itemType":"behavioral","title":"准备团队协作案例","content":"用STAR法则准备1-2个跨部门协作的例子。示例：在XX项目中，需要与产品、运营两个团队协调XX功能上线，通过XX方式（如定期同步会、需求评审会）确保各方信息一致，最终项目按时上线并获得了XX成果。","priority":"recommended"}]}
+                    {"items":[{"itemType":"tech_prep","title":"复习Spring Boot自动配置原理","contentItems":["深入理解条件装配机制：@Conditional系列注解的触发条件","掌握spring.factories文件的加载流程","理解自动配置类的生效时机","手写一个简单的Starter验证理解"],"priority":"required"},{"itemType":"tech_prep","title":"深入理解分布式事务","contentItems":["复习Seata AT模式原理：全局锁机制","理解两阶段提交流程和回滚日志undo_log的作用","结合订单项目思考分布式事务一致性问题的回答"],"priority":"required"},{"itemType":"case_study","title":"准备订单系统重构项目","contentItems":["回顾项目背景：日均订单量50万，系统可用性仅99.5%","准备技术方案：服务拆分(订单/库存/支付)+Seata分布式事务","量化成果：可用性达99.95%，接口响应时间从200ms降至50ms"],"priority":"recommended"},{"itemType":"behavioral","title":"准备团队协作案例","contentItems":["用STAR法则准备1-2个跨部门协作的例子","梳理在XX项目中与产品、运营团队的协调方式","总结项目按时上线并获得XX成果的经验"]}]}
 
                     ---
 
@@ -1977,7 +1983,7 @@ public class AIPromptProperties {
                     3. itemType 只使用 tech_prep、case_study、behavioral
                     4. priority 只使用 required 或 recommended
                     5. 每个事项的 title 不超过50字
-                    6. 每个事项的 content 具体可执行（100-200字）
+                    6. 每个事项的 contentItems 包含 3-5 条具体可执行的步骤（每条20-50字）
                     7. tech_prep 类型的事项**必须具体到原理/机制层面**，不能是"复习XX技术"
                     8. 如果有上一轮复盘笔记，**必须针对薄弱点生成至少1条建议**
                     9. 如果提供了简历，至少有1个 case_study 类型的事项

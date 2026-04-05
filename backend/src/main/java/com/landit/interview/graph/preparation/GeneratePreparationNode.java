@@ -108,7 +108,8 @@ public class GeneratePreparationNode implements NodeAction {
         InterviewPreparation preparation = new InterviewPreparation();
         preparation.setInterviewId(interviewId);
         preparation.setTitle(item.getTitle());
-        preparation.setContent(item.getContent());
+        // contentItems 序列化为 JSON 存入 content
+        preparation.setContent(serializeContentItems(item.getContentItems()));
         // 解析类型（无效则使用默认值TODO）
         PreparationItemType itemType = PreparationItemType.fromCode(item.getItemType());
         preparation.setItemType(itemType != null ? itemType.getCode() : PreparationItemType.TODO.getCode());
@@ -121,6 +122,24 @@ public class GeneratePreparationNode implements NodeAction {
         preparation.setCompleted(false);
         preparation.setSource(PreparationSource.AI_GENERATED.getCode());
         return preparation;
+    }
+
+    /**
+     * 序列化 contentItems 列表为 JSON 字符串
+     *
+     * @param contentItems 内容项列表
+     * @return JSON 字符串，序列化失败返回 null
+     */
+    private String serializeContentItems(List<String> contentItems) {
+        if (contentItems == null || contentItems.isEmpty()) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(contentItems);
+        } catch (JsonProcessingException e) {
+            log.warn("序列化 contentItems 失败: {}", e.getMessage());
+            return null;
+        }
     }
 
     /**

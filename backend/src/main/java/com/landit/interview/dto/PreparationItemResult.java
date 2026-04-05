@@ -33,10 +33,10 @@ public class PreparationItemResult {
     private String title;
 
     /**
-     * 具体内容
+     * 准备步骤列表（3-5条具体可执行的步骤）
      */
-    @SchemaField(value = "具体内容（详细说明需要准备什么，50-200字）", required = true)
-    private String content;
+    @SchemaField(value = "准备步骤列表（3-5条具体可执行的步骤，每条20-50字）", required = true)
+    private List<String> contentItems;
 
     /**
      * 优先级

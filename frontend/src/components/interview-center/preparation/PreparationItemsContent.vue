@@ -34,7 +34,12 @@
             {{ priorityLabels[item.priority] || item.priority }}
           </span>
         </div>
-        <p v-if="item.content" class="item-description">{{ item.content }}</p>
+        <!-- 列表渲染（优先） -->
+        <ul v-if="getParsedContentItems(item).length > 0" class="item-steps">
+          <li v-for="(step, idx) in getParsedContentItems(item)" :key="idx">{{ step }}</li>
+        </ul>
+        <!-- 纯文本降级（旧数据兼容） -->
+        <p v-else-if="item.content && !isJsonArray(item.content)" class="item-description">{{ item.content }}</p>
         <div class="item-meta">
           <span v-if="item.itemType" class="category-tag">{{ itemTypeLabels[item.itemType] || item.itemType }}</span>
         </div>
@@ -111,6 +116,37 @@ function getPriorityClass(priority: string): string {
     optional: 'low'
   }
   return classMap[priority] || 'low'
+}
+
+// 解析 content 或 contentItems 为数组
+function getParsedContentItems(item: PreparationItem): string[] {
+  // 优先使用 contentItems
+  if (item.contentItems && item.contentItems.length > 0) {
+    return item.contentItems
+  }
+  // 尝试解析 content 为 JSON 数组
+  if (item.content) {
+    try {
+      const parsed = JSON.parse(item.content)
+      if (Array.isArray(parsed)) {
+        return parsed.filter((s): s is string => typeof s === 'string')
+      }
+    } catch {
+      // 不是 JSON，返回空数组（降级为纯文本显示）
+      return []
+    }
+  }
+  return []
+}
+
+// 判断 content 是否为 JSON 数组
+function isJsonArray(content: string): boolean {
+  try {
+    const parsed = JSON.parse(content)
+    return Array.isArray(parsed)
+  } catch {
+    return false
+  }
 }
 </script>
 
@@ -238,6 +274,23 @@ function getPriorityClass(priority: string): string {
   color: $color-text-tertiary;
   line-height: 1.5;
   margin: $spacing-xs 0 0 36px;
+}
+
+.item-steps {
+  list-style: disc;
+  margin: $spacing-xs 0 0 48px;
+  padding-left: 0;
+
+  li {
+    font-size: $text-xs;
+    color: $color-text-secondary;
+    line-height: 1.6;
+    margin-bottom: 4px;
+
+    &::marker {
+      color: $color-accent;
+    }
+  }
 }
 
 .item-meta {
