@@ -129,6 +129,7 @@
             :is-processing="isProcessing"
             :status-text="statusText"
             :status-type="statusType"
+            :hide-mode-switch="isInterviewStarted"
             @toggle-recording="toggleRecording"
             @volume-change="handleVolumeChange"
             @mute-change="handleMuteChange"
@@ -208,8 +209,16 @@ import type { VoiceMode, AssistType } from '@/types/interview-voice'
 const router = useRouter()
 const route = useRoute()
 
-// 从路由获取会话ID
-const sessionId = computed(() => route.params.id as string || `session_${Date.now()}`)
+// DEBUG: 打印路由参数
+console.log('[InterviewSession] route.params:', route.params)
+console.log('[InterviewSession] route.params.sessionId:', route.params.sessionId)
+
+// 从路由获取会话ID（路由参数名是 sessionId，不是 id）
+const sessionId = computed(() => {
+  const id = route.params.sessionId as string || `session_${Date.now()}`
+  console.log('[InterviewSession] computed sessionId:', id)
+  return id
+})
 
 // ============================================================================
 // 语音面试相关
@@ -256,6 +265,11 @@ const statusType = computed(() => {
 // AI 响应状态（与音频播放状态同步）
 const isAIResponding = computed(() => voiceInterview.isPlaying.value)
 
+// 面试是否已开始（非 idle 状态时隐藏语音模式切换）
+const isInterviewStarted = computed(() => {
+  return voiceInterview.sessionState.value !== 'idle'
+})
+
 // ============================================================================
 // 助手相关
 // ============================================================================
@@ -273,7 +287,7 @@ const messagesContainer = ref<HTMLElement | null>(null)
 
 // 倒计时相关
 const showCountdown = ref(true)
-const countdown = ref(5)
+const countdown = ref(3)
 
 // 面试标题
 const interviewTitle = computed(() => '技术面试 - 高级前端工程师')
@@ -442,7 +456,6 @@ function goToQuestion(index: number): void {
   font-weight: $weight-bold;
   color: $color-accent;
   line-height: 1;
-  animation: pulse-scale 1s ease-in-out infinite;
 }
 
 .countdown-hint {

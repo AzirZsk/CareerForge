@@ -74,11 +74,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useAppStore } from '@/stores'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import type { NavItem } from '@/types'
 
 const store = useAppStore()
 const router = useRouter()
+const route = useRoute()
 
 const navItems: NavItem[] = [
   {
@@ -107,7 +108,17 @@ const userInitial = computed((): string => {
 })
 
 function isActive(key: string): boolean {
-  return store.activeNav === key
+  const currentPath = route.path
+  // 首页精确匹配
+  if (key === 'home') {
+    return currentPath === '/'
+  }
+  // 其他导航项：检查路径前缀
+  const navItem = navItems.find(item => item.key === key)
+  if (navItem?.path) {
+    return currentPath.startsWith(navItem.path)
+  }
+  return false
 }
 
 function goToProfile(): void {

@@ -1,7 +1,7 @@
 <template>
   <div class="voice-controls">
-    <!-- 语音模式切换 -->
-    <div class="mode-switch">
+    <!-- 语音模式切换（面试开始后隐藏） -->
+    <div v-if="!hideModeSwitch" class="mode-switch">
       <button
         v-for="mode in voiceModes"
         :key="mode.value"
@@ -58,6 +58,7 @@ interface Props {
   isProcessing?: boolean
   statusText?: string
   statusType?: 'idle' | 'recording' | 'recognizing' | 'synthesizing' | 'error'
+  hideModeSwitch?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -65,7 +66,8 @@ const props = withDefaults(defineProps<Props>(), {
   isRecording: false,
   isProcessing: false,
   statusText: '',
-  statusType: 'idle'
+  statusType: 'idle',
+  hideModeSwitch: false
 })
 
 // Emits - 使用传统函数签名语法

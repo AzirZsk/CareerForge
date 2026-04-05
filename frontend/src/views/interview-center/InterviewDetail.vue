@@ -73,6 +73,16 @@
         @submit="handleMockConfigSubmit"
       />
 
+      <!-- 麦克风权限弹窗 -->
+      <MicrophonePermissionDialog
+        v-if="showPermissionDialog"
+        :state="permissionDialogState"
+        :error-message="permissionErrorMessage"
+        @close="handlePermissionDialogClose"
+        @retry="handlePermissionRetry"
+        @retryAfterSettings="handlePermissionRetry"
+      />
+
       <!-- 删除确认弹窗 -->
       <ConfirmModal
         :visible="confirmVisible"
@@ -360,6 +370,7 @@ import ReviewNoteDialog from '@/components/interview-center/ReviewNoteDialog.vue
 import EditInterviewDialog from '@/components/interview-center/EditInterviewDialog.vue'
 import PreparationProgressModal from '@/components/interview-center/PreparationProgressModal.vue'
 import MockInterviewConfigDialog from '@/components/interview-center/MockInterviewConfigDialog.vue'
+import MicrophonePermissionDialog from '@/components/interview-center/MicrophonePermissionDialog.vue'
 // 新增组件
 import PreparationProgress from '@/components/interview-center/PreparationProgress.vue'
 import PreparationGroup from '@/components/interview-center/PreparationGroup.vue'
@@ -370,6 +381,7 @@ import { useReviewAnalysis } from '@/composables/useReviewAnalysis'
 import { useToast } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
 import { useAIChat } from '@/composables/useAIChat'
+import { useMicrophonePermission } from '@/composables/useMicrophonePermission'
 
 const route = useRoute()
 const router = useRouter()
@@ -383,9 +395,23 @@ const showEditDialog = ref(false)
 const showPrepModal = ref(false)
 const showMockConfigDialog = ref(false)
 
+// 麦克风权限相关状态
+const showPermissionDialog = ref(false)
+const permissionDialogState = ref<'checking' | 'requesting' | 'success' | 'denied' | 'permanently_denied' | 'device_error'>('checking')
+const permissionErrorMessage = ref<string>('')
+const pendingMockConfig = ref<{
+  totalQuestions: number
+  assistLimit: number
+  voiceMode: string
+  interviewerStyle: string
+} | null>(null)
+
 // 工作流状态
 const { state: preparationState, startPreparation } = useInterviewPreparation()
 const { state: reviewState, startAnalysis } = useReviewAnalysis()
+
+// 麦克风权限管理
+const { checkPermission, requestPermission, releaseStream } = useMicrophonePermission()
 
 // 面试过程文本输入
 const sessionTranscript = ref('')
@@ -641,6 +667,88 @@ async function handleMockConfigSubmit(config: {
   if (!interview.value) return
 
   showMockConfigDialog.value = false
+
+  // 保存配置，等待权限检查
+  pendingMockConfig.value = config
+
+  // 开始检查麦克风权限
+  await checkMicrophonePermissionAndProceed()
+}
+
+// 检查麦克风权限并继续创建会话
+async function checkMicrophonePermissionAndProceed() {
+  permissionDialogState.value = 'checking'
+  showPermissionDialog.value = true
+
+  try {
+    const checkResult = await checkPermission()
+
+    if (checkResult.state === 'granted') {
+      // 已授权，直接创建会话
+      permissionDialogState.value = 'success'
+      setTimeout(() => {
+        showPermissionDialog.value = false
+        createSessionAndNavigate()
+      }, 500)
+      return
+    }
+
+    // 需要请求权限
+    permissionDialogState.value = 'requesting'
+    await requestMicrophonePermission()
+  } catch (e) {
+    console.error('[InterviewDetail] 检查麦克风权限失败:', e)
+    permissionDialogState.value = 'device_error'
+    permissionErrorMessage.value = '检查权限时发生错误'
+  }
+}
+
+// 请求麦克风权限
+async function requestMicrophonePermission() {
+  try {
+    const result = await requestPermission()
+
+    if (result.state === 'granted') {
+      // 权限获取成功，释放临时的 stream
+      if (result.stream) {
+        releaseStream(result.stream)
+      }
+      permissionDialogState.value = 'success'
+      setTimeout(() => {
+        showPermissionDialog.value = false
+        createSessionAndNavigate()
+      }, 500)
+    } else if (result.isPermanentlyDenied) {
+      permissionDialogState.value = 'permanently_denied'
+    } else {
+      permissionDialogState.value = 'denied'
+    }
+  } catch (e) {
+    console.error('[InterviewDetail] 请求麦克风权限失败:', e)
+    permissionDialogState.value = 'device_error'
+    permissionErrorMessage.value = e instanceof Error ? e.message : '请求权限失败'
+  }
+}
+
+// 权限弹窗重试
+async function handlePermissionRetry() {
+  permissionDialogState.value = 'requesting'
+  await requestMicrophonePermission()
+}
+
+// 权限弹窗关闭
+function handlePermissionDialogClose() {
+  showPermissionDialog.value = false
+  pendingMockConfig.value = null
+}
+
+// 创建会话并导航
+async function createSessionAndNavigate() {
+  if (!interview.value || !pendingMockConfig.value) return
+
+  const config = pendingMockConfig.value
+  pendingMockConfig.value = null
+
   try {
     const response = await createSession({
       interviewId: interview.value.id,
@@ -678,6 +786,10 @@ watch(showPrepModal, (val) => {
 })
 
 watch(showMockConfigDialog, (val) => {
+  aiChatState.hideFloat = val
+})
+
+watch(showPermissionDialog, (val) => {
   aiChatState.hideFloat = val
 })
 
