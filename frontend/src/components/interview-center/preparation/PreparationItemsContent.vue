@@ -34,6 +34,7 @@
             {{ priorityLabels[item.priority] || item.priority }}
           </span>
         </div>
+        <div v-if="item.priority" class="priority-border" :class="getPriorityClass(item.priority)" />
         <!-- 列表渲染（优先） -->
         <ul v-if="getParsedContentItems(item).length > 0" class="item-steps">
           <li v-for="(step, idx) in getParsedContentItems(item)" :key="idx">{{ step }}</li>
@@ -198,7 +199,9 @@ function isJsonArray(content: string): boolean {
 }
 
 .preparation-item {
+  position: relative;
   padding: $spacing-sm;
+  padding-left: $spacing-md;
   background: rgba(255, 255, 255, 0.02);
   border-radius: $radius-sm;
   border: 1px solid rgba(255, 255, 255, 0.05);
@@ -212,6 +215,27 @@ function isJsonArray(content: string): boolean {
   &.selected {
     border-color: rgba($color-accent, 0.3);
     background: rgba($color-accent, 0.05);
+  }
+}
+
+.priority-border {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: $radius-sm 0 0 $radius-sm;
+
+  &.high {
+    background: rgba($color-error, 0.8);
+  }
+
+  &.medium {
+    background: rgba($color-warning, 0.8);
+  }
+
+  &.low {
+    background: rgba($color-success, 0.8);
   }
 }
 
@@ -249,23 +273,28 @@ function isJsonArray(content: string): boolean {
 }
 
 .item-priority {
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: $radius-sm;
+  font-size: 11px;
+  font-weight: $weight-medium;
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid transparent;
 
   &.high {
-    background: rgba($color-error, 0.15);
+    background: rgba($color-error, 0.12);
     color: $color-error;
+    border-color: rgba($color-error, 0.25);
   }
 
   &.medium {
-    background: rgba($color-warning, 0.15);
+    background: rgba($color-warning, 0.12);
     color: $color-warning;
+    border-color: rgba($color-warning, 0.25);
   }
 
   &.low {
-    background: rgba($color-info, 0.15);
-    color: $color-info;
+    background: rgba($color-success, 0.12);
+    color: $color-success;
+    border-color: rgba($color-success, 0.25);
   }
 }
 

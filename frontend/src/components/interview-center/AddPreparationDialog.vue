@@ -37,10 +37,10 @@
                 :key="key"
                 type="button"
                 class="priority-option"
-                :class="{ active: form.priority === key }"
+                :class="[getPriorityClass(key), { active: form.priority === key }]"
                 @click="form.priority = key as PreparationPriority"
               >
-                <span class="priority-icon">{{ config.icon }}</span>
+                <span class="priority-dot" />
                 <span class="priority-label">{{ config.label }}</span>
               </button>
             </div>
@@ -99,6 +99,16 @@ const form = reactive<AddPreparationRequest>({
 const isFormValid = computed(() => {
   return form.title.trim().length > 0
 })
+
+// 优先级样式类映射
+function getPriorityClass(priority: string): string {
+  const classMap: Record<string, string> = {
+    required: 'high',
+    recommended: 'medium',
+    optional: 'low'
+  }
+  return classMap[priority] || 'medium'
+}
 
 // 组件挂载时锁定滚动
 onMounted(() => {
@@ -262,10 +272,43 @@ async function handleSubmit() {
     border-color: $color-accent;
     background: rgba($color-accent, 0.1);
   }
+
+  &.high {
+    .priority-dot {
+      background: $color-error;
+    }
+    &.active {
+      border-color: $color-error;
+      background: rgba($color-error, 0.1);
+    }
+  }
+
+  &.medium {
+    .priority-dot {
+      background: $color-warning;
+    }
+    &.active {
+      border-color: $color-warning;
+      background: rgba($color-warning, 0.1);
+    }
+  }
+
+  &.low {
+    .priority-dot {
+      background: $color-success;
+    }
+    &.active {
+      border-color: $color-success;
+      background: rgba($color-success, 0.1);
+    }
+  }
 }
 
-.priority-icon {
-  font-size: 1.25rem;
+.priority-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .priority-label {

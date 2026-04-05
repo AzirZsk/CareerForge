@@ -1,10 +1,15 @@
 // =====================================================
-// LandIt 简历优化阶段计时器 Composable
+// LandIt 阶段计时器 Composable（通用）
 // @author Azir
 // =====================================================
 
 import { ref, watch, onUnmounted } from 'vue'
-import type { StageHistoryItem } from '@/types/resume-optimize'
+
+// 通用计时接口，只要求 startTime 和 endTime 字段
+interface TimedStageItem {
+  startTime?: number
+  endTime?: number
+}
 
 /**
  * 阶段计时器 Composable
@@ -52,10 +57,10 @@ export function useStageTimer(isOptimizing: () => boolean) {
 
   /**
    * 格式化耗时为 mm:ss
-   * @param item 阶段历史项
+   * @param item 包含 startTime/endTime 的阶段历史项
    * @returns 格式化的时间字符串
    */
-  function formatElapsed(item: StageHistoryItem): string {
+  function formatElapsed<T extends TimedStageItem>(item: T): string {
     if (!item.startTime) return ''
     const end = item.endTime ?? now.value
     const elapsed = Math.max(0, Math.floor((end - item.startTime) / 1000))

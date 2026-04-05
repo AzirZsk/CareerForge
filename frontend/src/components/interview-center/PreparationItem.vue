@@ -18,6 +18,19 @@ const priorityConfig = computed(() => {
   return PRIORITY_CONFIG[props.preparation.priority || 'recommended']
 })
 
+const priorityClass = computed(() => {
+  const classMap: Record<string, string> = {
+    required: 'high',
+    recommended: 'medium',
+    optional: 'low'
+  }
+  return classMap[props.preparation.priority || 'recommended'] || 'medium'
+})
+
+const priorityLabel = computed(() => {
+  return priorityConfig.value.label
+})
+
 const hasResources = computed(() => {
   return props.preparation.resources && props.preparation.resources.length > 0
 })
@@ -53,18 +66,17 @@ function getResourceIcon(type: string): string {
 
 <template>
   <div class="preparation-item" :class="{ completed: preparation.completed }">
+    <div class="priority-border" :class="priorityClass" />
     <div class="item-main">
       <button class="checkbox" :class="{ checked: preparation.completed }" @click="handleToggle">
         <span v-if="preparation.completed" class="check-icon">✓</span>
       </button>
-      <span class="priority-indicator" :style="{ color: priorityConfig.color }">
-        {{ priorityConfig.icon }}
-      </span>
       <div class="item-content">
         <div class="item-title">{{ preparation.title }}</div>
         <div v-if="preparation.content" class="item-description">{{ preparation.content }}</div>
       </div>
       <div class="item-actions">
+        <span class="priority-tag" :class="priorityClass">{{ priorityLabel }}</span>
         <button
           v-if="hasResources"
           class="action-btn resources-btn"
@@ -103,9 +115,11 @@ export default {
 
 <style scoped lang="scss">
 .preparation-item {
+  position: relative;
   background: $color-bg-tertiary;
   border-radius: $radius-md;
   padding: $spacing-md;
+  padding-left: calc($spacing-md + 3px);
   margin-bottom: $spacing-sm;
   transition: all 0.2s ease;
 
@@ -115,6 +129,27 @@ export default {
       text-decoration: line-through;
       color: $color-text-tertiary;
     }
+  }
+}
+
+.priority-border {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: $radius-md 0 0 $radius-md;
+
+  &.high {
+    background: rgba($color-error, 0.8);
+  }
+
+  &.medium {
+    background: rgba($color-warning, 0.8);
+  }
+
+  &.low {
+    background: rgba($color-success, 0.8);
   }
 }
 
@@ -182,7 +217,60 @@ export default {
 .item-actions {
   flex-shrink: 0;
   display: flex;
+  align-items: center;
   gap: $spacing-xs;
+}
+
+.priority-tag {
+  font-size: 11px;
+  font-weight: $weight-medium;
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+
+  &.high {
+    background: rgba($color-error, 0.12);
+    color: $color-error;
+    border-color: rgba($color-error, 0.25);
+  }
+
+  &.medium {
+    background: rgba($color-warning, 0.12);
+    color: $color-warning;
+    border-color: rgba($color-warning, 0.25);
+  }
+
+  &.low {
+    background: rgba($color-success, 0.12);
+    color: $color-success;
+    border-color: rgba($color-success, 0.25);
+  }
+}
+
+.priority-tag {
+  font-size: 11px;
+  font-weight: $weight-medium;
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+
+  &.high {
+    background: rgba($color-error, 0.12);
+    color: $color-error;
+    border-color: rgba($color-error, 0.25);
+  }
+
+  &.medium {
+    background: rgba($color-warning, 0.12);
+    color: $color-warning;
+    border-color: rgba($color-warning, 0.25);
+  }
+
+  &.low {
+    background: rgba($color-success, 0.12);
+    color: $color-success;
+    border-color: rgba($color-success, 0.25);
+  }
 }
 
 .action-btn {

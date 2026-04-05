@@ -40,6 +40,16 @@ const overallProgress = computed(() => {
 const progressStyle = computed(() => ({
   width: `${overallProgress.value}%`
 }))
+
+// 优先级样式类映射
+function getPriorityClass(priority: string): string {
+  const classMap: Record<string, string> = {
+    required: 'high',
+    recommended: 'medium',
+    optional: 'low'
+  }
+  return classMap[priority] || 'medium'
+}
 </script>
 
 <template>
@@ -56,9 +66,9 @@ const progressStyle = computed(() => ({
         <div
           v-if="priorityStats[priority].total > 0"
           class="priority-stat-item"
-          :style="{ color: config.color }"
+          :class="getPriorityClass(priority)"
         >
-          <span class="priority-icon">{{ config.icon }}</span>
+          <span class="priority-dot" />
           <span class="priority-label">{{ config.label }}</span>
           <span class="priority-count">
             {{ priorityStats[priority].completed }}/{{ priorityStats[priority].total }}
@@ -121,10 +131,43 @@ const progressStyle = computed(() => ({
   align-items: center;
   gap: $spacing-xs;
   font-size: 0.875rem;
+  padding: 4px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: $radius-full;
+
+  &.high {
+    .priority-dot {
+      background: $color-error;
+    }
+    .priority-count {
+      color: $color-error;
+    }
+  }
+
+  &.medium {
+    .priority-dot {
+      background: $color-warning;
+    }
+    .priority-count {
+      color: $color-warning;
+    }
+  }
+
+  &.low {
+    .priority-dot {
+      background: $color-success;
+    }
+    .priority-count {
+      color: $color-success;
+    }
+  }
 }
 
-.priority-icon {
-  font-size: 1rem;
+.priority-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .priority-label {
@@ -132,6 +175,8 @@ const progressStyle = computed(() => ({
 }
 
 .priority-count {
-  font-weight: 500;
+  font-weight: 600;
+  min-width: 32px;
+  text-align: right;
 }
 </style>

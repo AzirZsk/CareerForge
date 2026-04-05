@@ -201,7 +201,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, onUnmounted } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useScrollLock } from '@vueuse/core'
 import type {
   PreparationState,
@@ -212,6 +212,7 @@ import type {
   JDAnalysisResult
 } from '@/types/interview-center'
 import { useInterviewPreparation } from '@/composables/useInterviewPreparation'
+import { useStageTimer } from '@/composables/useStageTimer'
 import ProgressBar from '@/components/resume/optimize/ProgressBar.vue'
 import CompanyResearchContent from './preparation/CompanyResearchContent.vue'
 import JDAnalysisContent from './preparation/JDAnalysisContent.vue'
@@ -238,54 +239,8 @@ const selectedItems = ref<Record<number, boolean>>({})
 // 获取 composable 方法
 const { toggleExpand, getStageLabel } = useInterviewPreparation()
 
-// ==================== 计时器 ====================
-const now = ref(Date.now())
-let timerHandle: ReturnType<typeof setInterval> | null = null
-
-// 启动计时器
-function startTimer() {
-  if (!timerHandle) {
-    timerHandle = setInterval(() => {
-      now.value = Date.now()
-    }, 1000)
-  }
-}
-
-// 停止计时器
-function stopTimer() {
-  if (timerHandle) {
-    clearInterval(timerHandle)
-    timerHandle = null
-  }
-}
-
-// 格式化耗时
-function formatElapsed(item: PreparationStageHistoryItem): string {
-  if (!item.startTime) return ''
-  const end = item.endTime ?? now.value
-  const elapsed = Math.max(0, Math.floor((end - item.startTime) / 1000))
-  const m = String(Math.floor(elapsed / 60)).padStart(2, '0')
-  const s = String(elapsed % 60).padStart(2, '0')
-  return `${m}:${s}`
-}
-
-// 监听运行状态，自动启动/停止计时器
-watch(
-  () => props.state.isRunning,
-  (running) => {
-    if (running) {
-      startTimer()
-    } else {
-      stopTimer()
-    }
-  },
-  { immediate: true }
-)
-
-// 组件卸载时清理
-onUnmounted(() => {
-  stopTimer()
-})
+// 使用通用阶段计时器 composable
+const { formatElapsed } = useStageTimer(() => props.state.isRunning)
 
 // ==================== 计算属性 ====================
 
