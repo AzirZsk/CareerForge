@@ -46,6 +46,11 @@ public class AIPromptProperties {
     private ReviewGraphPrompt reviewGraph = new ReviewGraphPrompt();
 
     /**
+     * 语音面试提示词
+     */
+    private VoiceInterviewPrompt voice = new VoiceInterviewPrompt();
+
+    /**
      * 提示词配置（拆分版本）
      * 用于前缀缓存优化，将提示词拆分为固定部分和动态部分
      *
@@ -2082,6 +2087,72 @@ public class AIPromptProperties {
             }
             return config;
         }
+    }
+
+    /**
+     * 语音面试提示词配置
+     * 支持三种面试官风格：专业严肃型、亲和引导型、压力挑战型
+     *
+     * @author Azir
+     */
+    @Data
+    public static class VoiceInterviewPrompt {
+        /**
+         * 专业严肃型面试官配置
+         */
+        private InterviewerStyleConfig professional = new InterviewerStyleConfig();
+
+        /**
+         * 亲和引导型面试官配置
+         */
+        private InterviewerStyleConfig friendly = new InterviewerStyleConfig();
+
+        /**
+         * 压力挑战型面试官配置
+         */
+        private InterviewerStyleConfig challenging = new InterviewerStyleConfig();
+
+        /**
+         * 根据风格 code 获取配置
+         *
+         * @param styleCode 风格代码（professional/friendly/challenging）
+         * @return 对应风格的配置，默认返回专业严肃型
+         */
+        public InterviewerStyleConfig getByStyle(String styleCode) {
+            if (styleCode == null) {
+                return professional;
+            }
+            return switch (styleCode) {
+                case "friendly" -> friendly;
+                case "challenging" -> challenging;
+                default -> professional;
+            };
+        }
+    }
+
+    /**
+     * 面试官风格配置
+     *
+     * @author Azir
+     */
+    @Data
+    public static class InterviewerStyleConfig {
+        /**
+         * 系统提示词（定义面试官角色和行为规范）
+         */
+        private String systemPrompt;
+
+        /**
+         * 生成问题的用户提示词模板
+         * 占位符: {questionNumber}, {totalQuestions}, {position}, {conversationSummary}
+         */
+        private String questionPromptTemplate;
+
+        /**
+         * 生成回复的用户提示词模板
+         * 占位符: {candidateAnswer}
+         */
+        private String replyPromptTemplate;
     }
 
 }

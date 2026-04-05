@@ -1,5 +1,6 @@
 package com.landit.interview.voice.handler.impl;
 
+import com.landit.common.config.AIPromptProperties;
 import com.landit.common.config.VoiceProperties;
 import com.landit.interview.voice.dto.*;
 import com.landit.interview.voice.gateway.impl.InterviewVoiceGatewayImpl;
@@ -38,6 +39,7 @@ public class InterviewerAgentHandlerImpl implements InterviewerAgentHandler {
     private final VoiceProperties voiceProperties;
     private final ChatClient.Builder chatClientBuilder;
     private final RecordingService recordingService;
+    private final AIPromptProperties aiPromptProperties;
 
     @Autowired
     @Lazy
@@ -56,8 +58,18 @@ public class InterviewerAgentHandlerImpl implements InterviewerAgentHandler {
         // 创建 ASR 配置
         ASRConfig asrConfig = buildASRConfig();
 
-        // 获取会话上下文
-        ConversationContext context = contexts.computeIfAbsent(sessionId, k -> new ConversationContext());
+        // 获取会话上下文（从 Gateway 加载 JD/简历）
+        ConversationContext context = contexts.computeIfAbsent(sessionId, k -> {
+            ConversationContext ctx = new ConversationContext();
+            // 从 Gateway 获取会话状态
+            InterviewVoiceGatewayImpl.SessionState state = voiceGateway.getInternalState(k);
+            if (state != null) {
+                ctx.setPosition(state.getPosition() != null ? state.getPosition() : "Java 开发工程师");
+                ctx.setJdContent(state.getJdContent());
+                ctx.setResumeContent(state.getResumeContent());
+            }
+            return ctx;
+        });
 
         // 收集候选人音频数据
         context.appendCandidateAudio(audioData);
@@ -110,20 +122,32 @@ public class InterviewerAgentHandlerImpl implements InterviewerAgentHandler {
     public Flux<VoiceResponse> generateNextQuestion(String sessionId) {
         log.debug("[InterviewerAgent] Generating next question, sessionId={}", sessionId);
 
-        ConversationContext context = contexts.computeIfAbsent(sessionId, k -> new ConversationContext());
+        // 获取会话上下文（从 Gateway 加载 JD/简历）
+        ConversationContext context = contexts.computeIfAbsent(sessionId, k -> {
+            ConversationContext ctx = new ConversationContext();
+            InterviewVoiceGatewayImpl.SessionState state = voiceGateway.getInternalState(k);
+            if (state != null) {
+                ctx.setPosition(state.getPosition() != null ? state.getPosition() : "Java 开发工程师");
+                ctx.setJdContent(state.getJdContent());
+                ctx.setResumeContent(state.getResumeContent());
+            }
+            return ctx;
+        });
+
         InterviewVoiceGatewayImpl.SessionState state = voiceGateway.getInternalState(sessionId);
 
-        // 构建生成问题的提示词
-        String systemPrompt = buildInterviewerSystemPrompt();
-        String userPrompt = String.format(
-                "请生成第 %d 个面试问题（共 %d 个）。" +
-                        "面试岗位：%s。" +
-                        "之前的对话：%s",
-                state.getCurrentQuestion() + 1,
-                state.getTotalQuestions(),
-                context.getPosition(),
-                context.getConversationSummary()
-        );
+        // 根据面试官风格获取提示词配置
+        String style = state.getInterviewerStyle();
+        AIPromptProperties.InterviewerStyleConfig styleConfig = aiPromptProperties.getVoice().getByStyle(style);
+
+        // 构建生成问题的提示词（包含 JD + 简历上下文）
+        String systemPrompt = styleConfig.getSystemPrompt();
+        String baseUserPrompt = styleConfig.getQuestionPromptTemplate()
+                .replace("{questionNumber}", String.valueOf(state.getCurrentQuestion() + 1))
+                .replace("{totalQuestions}", String.valueOf(state.getTotalQuestions()))
+                .replace("{position}", context.getPosition())
+                .replace("{conversationSummary}", context.getConversationSummary());
+        String userPrompt = buildContextualUserPrompt(context, baseUserPrompt);
 
         // 调用 LLM 生成问题
         Flux<String> llmStream = callLLMStream(systemPrompt, userPrompt);
@@ -175,14 +199,15 @@ public class InterviewerAgentHandlerImpl implements InterviewerAgentHandler {
         // 开始新的录音片段
         context.startSegment();
 
+        // 根据面试官风格获取提示词配置
+        InterviewVoiceGatewayImpl.SessionState state = voiceGateway.getInternalState(sessionId);
+        String style = state != null ? state.getInterviewerStyle() : "professional";
+        AIPromptProperties.InterviewerStyleConfig styleConfig = aiPromptProperties.getVoice().getByStyle(style);
+
         // 构建提示词
-        String systemPrompt = buildInterviewerSystemPrompt();
-        String userPrompt = String.format(
-                "候选人回答：%s\n\n" +
-                        "请根据候选人的回答，给出评价和追问（如果有）。" +
-                        "回答要简洁专业，适合口语表达。",
-                candidateAnswer
-        );
+        String systemPrompt = styleConfig.getSystemPrompt();
+        String userPrompt = styleConfig.getReplyPromptTemplate()
+                .replace("{candidateAnswer}", candidateAnswer);
 
         // 调用 LLM 生成回复
         Flux<String> llmStream = callLLMStream(systemPrompt, userPrompt);
@@ -235,8 +260,7 @@ public class InterviewerAgentHandlerImpl implements InterviewerAgentHandler {
                     return textFlux;
                 })
                 .doOnComplete(() -> {
-                    // 更新问题计数
-                    InterviewVoiceGatewayImpl.SessionState state = voiceGateway.getInternalState(sessionId);
+                    // 更新问题计数（使用外部已定义的 state 变量）
                     if (state != null) {
                         state.setCurrentQuestion(state.getCurrentQuestion() + 1);
                     }
@@ -259,22 +283,29 @@ public class InterviewerAgentHandlerImpl implements InterviewerAgentHandler {
     }
 
     /**
-     * 构建面试官系统提示词
+     * 构建包含 JD 和简历的用户提示词
      */
-    private String buildInterviewerSystemPrompt() {
-        return """
-                你是一位经验丰富的技术面试官。你的职责是：
-                1. 提出专业的技术问题
-                2. 评估候选人的回答
-                3. 根据回答进行适当的追问
-                4. 给出简洁、专业的反馈
+    private String buildContextualUserPrompt(ConversationContext context, String basePrompt) {
+        if (context == null) {
+            return basePrompt;
+        }
 
-                你的回复要求：
-                - 语言简洁，适合口语表达
-                - 专业但不失亲和
-                - 适时给予鼓励
-                - 控制在 50-100 字之间
-                """;
+        StringBuilder prompt = new StringBuilder();
+
+        // 添加 JD 内容
+        if (context.getJdContent() != null && !context.getJdContent().isEmpty()) {
+            prompt.append("## 职位 JD\n").append(context.getJdContent()).append("\n\n");
+        }
+
+        // 添加简历内容
+        if (context.getResumeContent() != null && !context.getResumeContent().isEmpty()) {
+            prompt.append("## 候选人简历\n").append(context.getResumeContent()).append("\n\n");
+        }
+
+        // 添加基础提示
+        prompt.append(basePrompt);
+
+        return prompt.toString();
     }
 
     /**
@@ -395,7 +426,11 @@ public class InterviewerAgentHandlerImpl implements InterviewerAgentHandler {
      */
     @lombok.Data
     private static class ConversationContext {
+        // 面试上下文（从真实面试加载）
         private String position = "Java 开发工程师";
+        private String jdContent;
+        private String resumeContent;
+        // 对话历史
         private StringBuilder conversationHistory = new StringBuilder();
         private AtomicInteger segmentIndex = new AtomicInteger(0);
         private ByteArrayOutputStream candidateAudioBuffer = new ByteArrayOutputStream();

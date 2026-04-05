@@ -38,6 +38,14 @@ public class InterviewPreparationController {
         return ApiResponse.success(handler.addPreparation(interviewId, request));
     }
 
+    @Operation(summary = "批量添加准备事项")
+    @PostMapping("/batch")
+    public ApiResponse<List<PreparationVO>> batchAddPreparations(
+            @PathVariable String interviewId,
+            @Valid @RequestBody BatchAddPreparationRequest request) {
+        return ApiResponse.success(handler.batchAddPreparations(interviewId, request));
+    }
+
     @Operation(summary = "更新准备事项")
     @PutMapping("/{preparationId}")
     public ApiResponse<PreparationVO> updatePreparation(

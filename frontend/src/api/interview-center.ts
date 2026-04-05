@@ -131,6 +131,25 @@ export async function addPreparation(interviewId: string, data: AddPreparationRe
 }
 
 /**
+ * 批量添加准备事项（AI生成后保存）
+ */
+export async function batchAddPreparations(
+  interviewId: string,
+  items: Array<{ title: string; content: string; itemType?: string; priority?: string }>
+): Promise<PreparationVO[]> {
+  const response = await fetch(`${API_BASE}/interview-center/${interviewId}/preparations/batch`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items })
+  })
+  const result: ApiResponse<PreparationVO[]> = await response.json()
+  if (result.code !== 200) {
+    throw new Error(result.message || '批量保存失败')
+  }
+  return result.data
+}
+
+/**
  * 更新准备事项
  */
 export async function updatePreparation(interviewId: string, preparationId: string, data: UpdatePreparationRequest): Promise<PreparationVO> {

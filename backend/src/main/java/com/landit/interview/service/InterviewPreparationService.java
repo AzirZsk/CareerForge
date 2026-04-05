@@ -12,7 +12,9 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 面试准备事项服务
@@ -41,15 +43,44 @@ public class InterviewPreparationService extends ServiceImpl<InterviewPreparatio
     public PreparationVO addPreparation(String interviewId, AddPreparationRequest request) {
         InterviewPreparation preparation = new InterviewPreparation();
         preparation.setInterviewId(interviewId);
-        preparation.setItemType("todo");
+        // 使用请求中的 itemType，如果没有则默认 "todo"
+        preparation.setItemType(request.getItemType() != null ? request.getItemType() : "todo");
         preparation.setTitle(request.getTitle());
         preparation.setContent(request.getContent());
         preparation.setCompleted(false);
         preparation.setSource("manual");
+        preparation.setPriority(request.getPriority() != null ? request.getPriority() : "recommended");
         preparation.setSortOrder(getNextSortOrder(interviewId));
         this.save(preparation);
         log.info("添加准备事项成功: interviewId={}, preparationId={}", interviewId, preparation.getId());
         return convertToVO(preparation);
+    }
+
+    /**
+     * 批量添加准备事项（AI生成后保存）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public List<PreparationVO> batchAddPreparations(String interviewId, BatchAddPreparationRequest request) {
+        List<InterviewPreparation> preparations = new ArrayList<>();
+        int sortOrder = getNextSortOrder(interviewId);
+        for (AddPreparationRequest item : request.getItems()) {
+            InterviewPreparation preparation = new InterviewPreparation();
+            preparation.setInterviewId(interviewId);
+            // 使用请求中的 itemType
+            preparation.setItemType(item.getItemType() != null ? item.getItemType() : "todo");
+            preparation.setTitle(item.getTitle());
+            preparation.setContent(item.getContent());
+            preparation.setCompleted(false);
+            preparation.setSource("ai");
+            preparation.setPriority(item.getPriority() != null ? item.getPriority() : "recommended");
+            preparation.setSortOrder(sortOrder++);
+            preparations.add(preparation);
+        }
+        this.saveBatch(preparations);
+        log.info("批量添加准备事项成功: interviewId={}, count={}", interviewId, preparations.size());
+        return preparations.stream()
+                .map(this::convertToVO)
+                .collect(Collectors.toList());
     }
 
     /**

@@ -398,7 +398,7 @@ public class InterviewCenterHandler {
 
     /**
      * 构建简历上下文（用于 AI 工作流参考）
-     * 提取简历关键信息生成简洁摘要，避免注入过多冗余内容
+     * 提取整份简历的所有区块信息
      *
      * @param resumeId 简历ID
      * @return 简历上下文字符串
@@ -410,18 +410,16 @@ public class InterviewCenterHandler {
                 return "";
             }
             StringBuilder sb = new StringBuilder();
-            // 基本信息
+            // 目标岗位
             if (resume.getTargetPosition() != null && !resume.getTargetPosition().isBlank()) {
                 sb.append("【目标岗位】").append(resume.getTargetPosition()).append("\n");
             }
-            // 提取各区块摘要
+            // 提取所有区块内容
             if (resume.getSections() != null) {
                 for (ResumeDetailVO.ResumeSectionVO section : resume.getSections()) {
-                    String type = section.getType();
-                    // 只提取关键区块：技能、工作经历、项目经历
-                    if ("skills".equals(type) || "work".equals(type) || "project".equals(type)) {
-                        sb.append("【").append(section.getTitle()).append("】\n");
-                        String content = extractBriefContent(section.getContent(), type);
+                    sb.append("【").append(section.getTitle()).append("】\n");
+                    String content = section.getContent();
+                    if (content != null && !content.isBlank()) {
                         sb.append(content).append("\n");
                     }
                 }
@@ -429,25 +427,6 @@ public class InterviewCenterHandler {
             return sb.toString();
         } catch (Exception e) {
             log.warn("构建简历上下文失败: resumeId={}, error={}", resumeId, e.getMessage());
-            return "";
-        }
-    }
-
-    /**
-     * 提取区块内容的简要信息
-     */
-    private String extractBriefContent(String contentJson, String type) {
-        if (contentJson == null || contentJson.isBlank()) {
-            return "";
-        }
-        try {
-            // 简单处理：限制内容长度，避免注入过多内容
-            int maxLen = 500;
-            if (contentJson.length() > maxLen) {
-                return contentJson.substring(0, maxLen) + "...";
-            }
-            return contentJson;
-        } catch (Exception e) {
             return "";
         }
     }

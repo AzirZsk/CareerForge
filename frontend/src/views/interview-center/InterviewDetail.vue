@@ -16,6 +16,14 @@
         </div>
       </div>
       <div class="header-actions">
+        <button
+          class="btn btn-mock-interview"
+          :disabled="!canStartMockInterview"
+          :title="mockInterviewHint"
+          @click="startMockInterview"
+        >
+          🎙️ 模拟面试
+        </button>
         <button class="btn btn-secondary" @click="showEditDialog = true">编辑</button>
         <button class="btn btn-danger" @click="handleDelete" title="删除面试">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -324,8 +332,9 @@ import {
   deletePreparation as deletePreparationApi,
   deleteInterview,
   updateInterview,
-  addPreparation
+  batchAddPreparations
 } from '@/api/interview-center'
+import { createSession } from '@/api/interview-voice'
 import {
   INTERVIEW_STATUS_LABELS,
   INTERVIEW_RESULT_LABELS,
@@ -417,6 +426,19 @@ const sortedGroupTypes = computed(() => {
 
 const statusOptions = INTERVIEW_STATUS_LABELS
 const resultOptions = INTERVIEW_RESULT_LABELS
+
+// 是否可以开始模拟面试（必须关联职位）
+const canStartMockInterview = computed(() => {
+  return !!interview.value?.jobPositionId
+})
+
+// 模拟面试按钮提示
+const mockInterviewHint = computed(() => {
+  if (canStartMockInterview.value) {
+    return '基于该面试的职位 JD 进行模拟面试'
+  }
+  return '请先关联职位后再开始模拟面试'
+})
 
 function goBack() {
   router.back()
@@ -537,12 +559,12 @@ async function handleSavePreparationItems(items: typeof preparationState.prepara
   if (!interview.value || items.length === 0) return
 
   try {
-    for (const item of items) {
-      await addPreparation(interview.value!.id, {
-        title: item.title,
-        content: item.content
-      })
-    }
+    // 改为批量保存，传递完整字段包括 itemType
+    await batchAddPreparations(interview.value!.id, items.map(item => ({
+      title: item.title,
+      content: item.content || '',
+      itemType: item.itemType
+    })))
     showPrepModal.value = false
     loadDetail()
   } catch (error) {
@@ -565,6 +587,29 @@ function handleRetryPreparation() {
 function handleAIAnalysis() {
   if (!interview.value) return
   startAnalysis(interview.value.id, sessionTranscript.value)
+}
+
+// 开始模拟面试
+async function startMockInterview() {
+  if (!interview.value || !canStartMockInterview.value) {
+    toast.error(mockInterviewHint.value)
+    return
+  }
+
+  try {
+    // 调用后端创建语音面试会话
+    const response = await createSession({
+      interviewId: interview.value.id,
+      totalQuestions: 10,
+      assistLimit: 5,
+      voiceMode: 'half_voice'
+    })
+    // 跳转到模拟面试页面
+    router.push(`/interview-center/${interview.value.id}/mock/${response.sessionId}`)
+  } catch (error) {
+    console.error('创建模拟面试失败:', error)
+    toast.error('创建模拟面试失败，请稍后重试')
+  }
 }
 
 // 弹窗事件处理
@@ -934,6 +979,26 @@ onMounted(() => {
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+}
+
+.btn-mock-interview {
+  background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+  color: $color-bg-primary;
+  border: none;
+  font-weight: 500;
+  padding: $spacing-sm $spacing-md;
+
+  &:hover:not(:disabled) {
+    opacity: 0.9;
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: $color-bg-tertiary;
+    color: $color-text-tertiary;
   }
 }
 

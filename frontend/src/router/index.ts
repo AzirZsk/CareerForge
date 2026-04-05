@@ -60,14 +60,9 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/interview-center/InterviewDetail.vue'),
         meta: { title: '面试详情' }
       },
+      // 模拟面试路由（从详情页进入）
       {
-        path: 'mock',
-        name: 'MockInterviewEntry',
-        component: () => import('@/views/interview-center/MockEntry.vue'),
-        meta: { title: '模拟面试' }
-      },
-      {
-        path: 'mock/:sessionId',
+        path: ':id/mock/:sessionId',
         name: 'MockInterviewSession',
         component: () => import('@/views/InterviewSession.vue'),
         meta: { title: '面试进行中' }
@@ -95,11 +90,11 @@ const routes: RouteRecordRaw[] = [
   // ==================== 旧路由重定向（兼容性） ====================
   {
     path: '/interview',
-    redirect: '/interview-center/mock'
+    redirect: '/interview-center'
   },
   {
     path: '/interview/:id',
-    redirect: '/interview-center/mock/:id'
+    redirect: '/interview-center/:id'
   },
   {
     path: '/review',

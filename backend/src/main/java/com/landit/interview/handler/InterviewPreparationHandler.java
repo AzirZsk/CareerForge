@@ -42,6 +42,15 @@ public class InterviewPreparationHandler {
     }
 
     /**
+     * 批量添加准备事项
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public List<PreparationVO> batchAddPreparations(String interviewId, BatchAddPreparationRequest request) {
+        log.info("批量添加准备事项: interviewId={}, count={}", interviewId, request.getItems().size());
+        return preparationService.batchAddPreparations(interviewId, request);
+    }
+
+    /**
      * 更新准备事项
      */
     @Transactional(rollbackFor = Exception.class)

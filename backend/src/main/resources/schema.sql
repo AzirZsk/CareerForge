@@ -164,6 +164,7 @@ CREATE TABLE IF NOT EXISTS t_interview_question (
 CREATE TABLE IF NOT EXISTS t_interview_session (
     id VARCHAR(64) PRIMARY KEY,              -- 主键ID（雪花ID字符串）
     user_id VARCHAR(64),                     -- 所属用户ID
+    interview_id VARCHAR(64),                -- 关联的真实面试ID（语音面试依附于真实面试）
     type VARCHAR(20),                       -- 面试类型（technical-技术 behavioral-行为）
     position VARCHAR(100),                  -- 目标岗位
     status VARCHAR(20) DEFAULT 'in_progress', -- 会话状态（in_progress-进行中 completed-已完成）
@@ -174,6 +175,7 @@ CREATE TABLE IF NOT EXISTS t_interview_session (
     assist_count INT DEFAULT 0,             -- 已使用求助次数
     assist_limit INT DEFAULT 5,             -- 求助次数上限
     freeze_at DATETIME,                     -- 冻结时间点（求助时的面试暂停时间）
+    interviewer_style VARCHAR(20) DEFAULT 'professional', -- 面试官风格（professional/friendly/challenging）
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 更新时间
     deleted INTEGER DEFAULT 0               -- 逻辑删除标记
@@ -285,6 +287,7 @@ CREATE INDEX IF NOT EXISTS idx_interview_user_id ON t_interview(user_id);
 CREATE INDEX IF NOT EXISTS idx_interview_resume_id ON t_interview(resume_id);
 CREATE INDEX IF NOT EXISTS idx_review_interview_id ON t_interview_review(interview_id);
 CREATE INDEX IF NOT EXISTS idx_session_user_id ON t_interview_session(user_id);
+CREATE INDEX IF NOT EXISTS idx_session_interview_id ON t_interview_session(interview_id);
 CREATE INDEX IF NOT EXISTS idx_conversation_session_id ON t_conversation(session_id);
 CREATE INDEX IF NOT EXISTS idx_suggestion_section_id ON t_resume_suggestion(section_id);
 
@@ -381,13 +384,13 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_recording_index_session_id ON t_recording_
 -- t_company 公司表（公司调研信息）
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS t_company (
-    id VARCHAR(64) PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    research TEXT,
-    research_updated_at DATETIME,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    deleted INTEGER DEFAULT 0
+    id VARCHAR(64) PRIMARY KEY,              -- 主键ID（雪花ID字符串）
+    name VARCHAR(100) NOT NULL,              -- 公司名称
+    research TEXT,                           -- 公司调研信息（AI生成的调研内容）
+    research_updated_at DATETIME,            -- 调研信息更新时间
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 更新时间
+    deleted INTEGER DEFAULT 0                -- 逻辑删除标记（0-未删除 1-已删除）
 );
 
 CREATE INDEX IF NOT EXISTS idx_company_name ON t_company(name);
@@ -396,15 +399,15 @@ CREATE INDEX IF NOT EXISTS idx_company_name ON t_company(name);
 -- t_job_position 职位表（JD分析信息）
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS t_job_position (
-    id VARCHAR(64) PRIMARY KEY,
-    company_id VARCHAR(64) NOT NULL,
-    title VARCHAR(100) NOT NULL,
-    jd_content TEXT,
-    jd_analysis TEXT,
-    jd_analysis_updated_at DATETIME,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    deleted INTEGER DEFAULT 0
+    id VARCHAR(64) PRIMARY KEY,              -- 主键ID（雪花ID字符串）
+    company_id VARCHAR(64) NOT NULL,         -- 关联的公司ID
+    title VARCHAR(100) NOT NULL,             -- 职位名称
+    jd_content TEXT,                         -- JD原文内容
+    jd_analysis TEXT,                        -- JD分析结果（AI提取的关键信息）
+    jd_analysis_updated_at DATETIME,         -- JD分析更新时间
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 更新时间
+    deleted INTEGER DEFAULT 0                -- 逻辑删除标记（0-未删除 1-已删除）
 );
 
 CREATE INDEX IF NOT EXISTS idx_job_position_company_id ON t_job_position(company_id);
@@ -414,19 +417,19 @@ CREATE INDEX IF NOT EXISTS idx_job_position_title ON t_job_position(title);
 -- t_interview_preparation 表（面试准备事项表）
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS t_interview_preparation (
-    id VARCHAR(64) PRIMARY KEY,
-    interview_id VARCHAR(64) NOT NULL,
-    item_type VARCHAR(20) NOT NULL,
-    title VARCHAR(200) NOT NULL,
-    content TEXT,
-    completed INTEGER DEFAULT 0,
-    source VARCHAR(20) DEFAULT 'manual',
-    priority VARCHAR(20) DEFAULT 'recommended',
-    resources TEXT,
-    sort_order INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    deleted INTEGER DEFAULT 0
+    id VARCHAR(64) PRIMARY KEY,              -- 主键ID（雪花ID字符串）
+    interview_id VARCHAR(64) NOT NULL,       -- 关联的面试ID
+    item_type VARCHAR(20) NOT NULL,          -- 事项类型（company-公司调研 jd-JD分析 resume-简历复习 skill-技能准备）
+    title VARCHAR(200) NOT NULL,             -- 事项标题
+    content TEXT,                            -- 事项内容（Markdown格式）
+    completed INTEGER DEFAULT 0,             -- 完成状态（0-未完成 1-已完成）
+    source VARCHAR(20) DEFAULT 'manual',     -- 来源（manual-手动 ai-AI生成）
+    priority VARCHAR(20) DEFAULT 'recommended', -- 优先级（high-高 medium-中 low-低 recommended-推荐）
+    resources TEXT,                          -- 相关资源链接（JSON数组）
+    sort_order INTEGER DEFAULT 0,            -- 排序序号
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 更新时间
+    deleted INTEGER DEFAULT 0                -- 逻辑删除标记（0-未删除 1-已删除）
 );
 
 CREATE INDEX IF NOT EXISTS idx_interview_preparation_interview_id ON t_interview_preparation(interview_id);
@@ -437,17 +440,17 @@ CREATE INDEX IF NOT EXISTS idx_interview_preparation_priority ON t_interview_pre
 -- t_interview_review_note 表（面试复盘笔记表）
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS t_interview_review_note (
-    id VARCHAR(64) PRIMARY KEY,
-    interview_id VARCHAR(64) NOT NULL,
-    type VARCHAR(20) NOT NULL,
-    overall_feeling TEXT,
-    high_points TEXT,
-    weak_points TEXT,
-    lessons_learned TEXT,
-    suggestions TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    deleted INTEGER DEFAULT 0
+    id VARCHAR(64) PRIMARY KEY,              -- 主键ID（雪花ID字符串）
+    interview_id VARCHAR(64) NOT NULL,       -- 关联的面试ID
+    type VARCHAR(20) NOT NULL,               -- 笔记类型（preparation-准备 post-事后复盘）
+    overall_feeling TEXT,                    -- 整体感受
+    high_points TEXT,                        -- 表现好的地方
+    weak_points TEXT,                        -- 不足之处
+    lessons_learned TEXT,                    -- 经验教训
+    suggestions TEXT,                        -- 改进建议
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 更新时间
+    deleted INTEGER DEFAULT 0                -- 逻辑删除标记（0-未删除 1-已删除）
 );
 
 CREATE INDEX IF NOT EXISTS idx_interview_review_note_interview_id ON t_interview_review_note(interview_id);

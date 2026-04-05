@@ -2,6 +2,8 @@ package com.landit.interview.voice.gateway;
 
 import com.landit.interview.voice.dto.VoiceRequest;
 import com.landit.interview.voice.dto.VoiceResponse;
+import com.landit.interview.voice.dto.VoiceSessionCreateRequest;
+import com.landit.interview.voice.dto.VoiceSessionCreateVO;
 import jakarta.websocket.Session;
 
 /**
@@ -11,6 +13,14 @@ import jakarta.websocket.Session;
  * @author Azir
  */
 public interface InterviewVoiceGateway {
+
+    /**
+     * 创建语音面试会话
+     *
+     * @param request 创建请求
+     * @return 会话信息
+     */
+    VoiceSessionCreateVO createSession(VoiceSessionCreateRequest request);
 
     /**
      * 注册 WebSocket 会话

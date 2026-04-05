@@ -1,11 +1,21 @@
 package com.landit.interview.voice.gateway.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.landit.common.exception.BusinessException;
+import com.landit.interview.entity.Interview;
+import com.landit.interview.entity.InterviewSession;
+import com.landit.interview.mapper.InterviewMapper;
+import com.landit.interview.mapper.InterviewSessionMapper;
 import com.landit.interview.voice.dto.*;
 import com.landit.interview.voice.gateway.InterviewVoiceGateway;
 import com.landit.interview.voice.handler.AssistantAgentHandler;
 import com.landit.interview.voice.handler.InterviewerAgentHandler;
 import com.landit.interview.voice.service.RecordingService;
 import com.landit.interview.voice.service.VoiceSessionManager;
+import com.landit.jobposition.entity.JobPosition;
+import com.landit.jobposition.mapper.JobPositionMapper;
+import com.landit.resume.entity.Resume;
+import com.landit.resume.mapper.ResumeMapper;
 import jakarta.websocket.Session;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +23,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Base64;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -30,12 +41,89 @@ public class InterviewVoiceGatewayImpl implements InterviewVoiceGateway {
     private final AssistantAgentHandler assistantAgentHandler;
     private final RecordingService recordingService;
     private final VoiceSessionManager voiceSessionManager;
+    private final InterviewMapper interviewMapper;
+    private final InterviewSessionMapper interviewSessionMapper;
+    private final JobPositionMapper jobPositionMapper;
+    private final ResumeMapper resumeMapper;
 
     // 会话状态：sessionId -> SessionState
     private final Map<String, SessionState> sessionStates = new ConcurrentHashMap<>();
 
     // WebSocket 会话：sessionId -> Session
     private final Map<String, Session> wsSessions = new ConcurrentHashMap<>();
+
+    @Override
+    public VoiceSessionCreateVO createSession(VoiceSessionCreateRequest request) {
+        // 1. 查询关联的真实面试
+        Interview interview = interviewMapper.selectById(request.getInterviewId());
+        if (interview == null) {
+            throw new BusinessException("面试记录不存在");
+        }
+
+        // 2. 检查是否关联职位
+        if (interview.getJobPositionId() == null || interview.getJobPositionId().isEmpty()) {
+            throw new BusinessException("请先关联职位后再开始模拟面试");
+        }
+
+        // 3. 获取职位信息（JD）
+        JobPosition jobPosition = jobPositionMapper.selectById(interview.getJobPositionId());
+        if (jobPosition == null) {
+            throw new BusinessException("关联的职位不存在");
+        }
+
+        // 4. 获取简历内容（如果有）
+        String resumeContent = null;
+        if (interview.getResumeId() != null && !interview.getResumeId().isEmpty()) {
+            Resume resume = resumeMapper.selectById(interview.getResumeId());
+            if (resume != null) {
+                resumeContent = resume.getMarkdownContent();
+            }
+        }
+
+        // 5. 生成会话 ID
+        String sessionId = UUID.randomUUID().toString().replace("-", "");
+
+        // 6. 创建数据库记录
+        InterviewSession session = new InterviewSession();
+        session.setId(sessionId);
+        session.setInterviewId(request.getInterviewId());
+        session.setUserId(interview.getUserId());
+        session.setType(interview.getType());
+        session.setPosition(jobPosition.getTitle());
+        session.setStatus("in_progress");
+        session.setCurrentQuestionIndex(0);
+        session.setTotalQuestions(request.getTotalQuestions() != null ? request.getTotalQuestions() : 10);
+        session.setVoiceMode(request.getVoiceMode() != null ? request.getVoiceMode() : "half_voice");
+        session.setAssistCount(0);
+        session.setAssistLimit(request.getAssistLimit() != null ? request.getAssistLimit() : 5);
+        session.setInterviewerStyle(request.getInterviewerStyle() != null ? request.getInterviewerStyle() : "professional");
+        interviewSessionMapper.insert(session);
+
+        // 7. 初始化内存状态（包含 JD 和简历上下文）
+        SessionState state = new SessionState();
+        state.setInterviewId(request.getInterviewId());
+        state.setPosition(jobPosition.getTitle());
+        state.setJdContent(jobPosition.getJdContent());
+        state.setResumeContent(resumeContent);
+        state.setTotalQuestions(session.getTotalQuestions());
+        state.setAssistRemaining(session.getAssistLimit());
+        state.setAssistLimit(session.getAssistLimit());
+        state.setInterviewerStyle(session.getInterviewerStyle());
+        sessionStates.put(sessionId, state);
+
+        log.info("[VoiceGateway] Session created, sessionId={}, interviewId={}, position={}",
+                sessionId, request.getInterviewId(), jobPosition.getTitle());
+
+        // 8. 返回创建结果
+        return VoiceSessionCreateVO.builder()
+                .sessionId(sessionId)
+                .interviewId(request.getInterviewId())
+                .position(jobPosition.getTitle())
+                .voiceMode(session.getVoiceMode())
+                .totalQuestions(session.getTotalQuestions())
+                .assistLimit(session.getAssistLimit())
+                .build();
+    }
 
     @Override
     public void registerSession(String sessionId, Session wsSession) {
@@ -297,6 +385,14 @@ public class InterviewVoiceGatewayImpl implements InterviewVoiceGateway {
      */
     @lombok.Data
     public static class SessionState {
+        // 关联的真实面试信息
+        private String interviewId;
+        private String position;
+        private String jdContent;
+        private String resumeContent;
+        // 面试官风格
+        private String interviewerStyle = "professional";
+        // 会话状态
         private boolean active = false;
         private boolean frozen = false;
         private boolean completed = false;

@@ -1,7 +1,12 @@
 package com.landit.interview.voice.controller;
 
+import com.landit.common.response.ApiResponse;
 import com.landit.interview.voice.dto.AssistSSEEvent;
+import com.landit.interview.voice.dto.VoiceSessionCreateRequest;
+import com.landit.interview.voice.dto.VoiceSessionCreateVO;
+import com.landit.interview.voice.gateway.InterviewVoiceGateway;
 import com.landit.interview.voice.service.StreamAssistService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -22,6 +27,21 @@ import reactor.core.publisher.Flux;
 public class AssistantController {
 
     private final StreamAssistService streamAssistService;
+    private final InterviewVoiceGateway voiceGateway;
+
+    /**
+     * 创建语音面试会话
+     * 从真实面试详情页进入，关联 Interview
+     *
+     * @param request 创建请求
+     * @return 会话信息
+     */
+    @PostMapping
+    public ApiResponse<VoiceSessionCreateVO> createSession(@Valid @RequestBody VoiceSessionCreateRequest request) {
+        log.info("[VoiceSession] Create session request, interviewId={}", request.getInterviewId());
+        VoiceSessionCreateVO vo = voiceGateway.createSession(request);
+        return ApiResponse.success(vo);
+    }
 
     /**
      * SSE 流式求助接口

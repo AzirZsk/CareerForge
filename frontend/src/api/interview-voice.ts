@@ -10,6 +10,46 @@ import type { RecordingInfo } from '@/types/interview-voice'
 const API_BASE = '/landit'
 
 // ============================================================================
+// 创建会话 API
+// ============================================================================
+
+/** 创建语音面试会话请求 */
+export interface CreateSessionRequest {
+  interviewId: string
+  totalQuestions?: number
+  assistLimit?: number
+  voiceMode?: string
+}
+
+/** 创建语音面试会话响应 */
+export interface CreateSessionResponse {
+  sessionId: string
+  interviewId: string
+  position: string
+  voiceMode: string
+  totalQuestions: number
+  assistLimit: number
+}
+
+/**
+ * 创建语音面试会话
+ * 从真实面试详情页进入，关联 Interview
+ * @param request 创建请求
+ */
+export async function createSession(request: CreateSessionRequest): Promise<CreateSessionResponse> {
+  const response = await fetch(`${API_BASE}/interviews/sessions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request)
+  })
+  const result: ApiResponse<CreateSessionResponse> = await response.json()
+  if (result.code !== 200) {
+    throw new Error(result.message || '创建会话失败')
+  }
+  return result.data
+}
+
+// ============================================================================
 // 录音回放 API
 // ============================================================================
 
