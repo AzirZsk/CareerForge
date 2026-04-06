@@ -19,6 +19,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.ByteArrayOutputStream;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.concurrent.ConcurrentHashMap;
@@ -140,14 +141,17 @@ public class InterviewerAgentHandlerImpl implements InterviewerAgentHandler {
         String style = state.getInterviewerStyle();
         AIPromptProperties.InterviewerStyleConfig styleConfig = aiPromptProperties.getVoice().getByStyle(style);
 
-        // 构建生成问题的提示词（包含 JD + 简历上下文）
+        // 构建生成问题的提示词（包含所有上下文信息）
         String systemPrompt = styleConfig.getSystemPrompt();
-        String baseUserPrompt = styleConfig.getQuestionPromptTemplate()
+        String userPrompt = styleConfig.getQuestionPromptTemplate()
+                .replace("{position}", context.getPosition())
                 .replace("{questionNumber}", String.valueOf(state.getCurrentQuestion() + 1))
                 .replace("{totalQuestions}", String.valueOf(state.getTotalQuestions()))
-                .replace("{position}", context.getPosition())
+                .replace("{elapsedSeconds}", String.valueOf(context.getElapsedSeconds()))
+                .replace("{jdRequirements}", formatJDRequirements(context.getJdContent()))
+                .replace("{resumeSummary}", formatResumeSummary(context.getResumeContent()))
+                .replace("{askedQuestions}", formatAskedQuestions(context.getConversationSummary()))
                 .replace("{conversationSummary}", context.getConversationSummary());
-        String userPrompt = buildContextualUserPrompt(context, baseUserPrompt);
 
         // 调用 LLM 生成问题
         Flux<String> llmStream = callLLMStream(systemPrompt, userPrompt);
@@ -207,7 +211,11 @@ public class InterviewerAgentHandlerImpl implements InterviewerAgentHandler {
         // 构建提示词
         String systemPrompt = styleConfig.getSystemPrompt();
         String userPrompt = styleConfig.getReplyPromptTemplate()
-                .replace("{candidateAnswer}", candidateAnswer);
+                .replace("{candidateAnswer}", candidateAnswer)
+                .replace("{questionNumber}", String.valueOf(state != null ? state.getCurrentQuestion() : 1))
+                .replace("{totalQuestions}", String.valueOf(state != null ? state.getTotalQuestions() : 5))
+                .replace("{elapsedSeconds}", String.valueOf(context.getElapsedSeconds()))
+                .replace("{jdRequirements}", formatJDRequirements(context.getJdContent()));
 
         // 调用 LLM 生成回复
         Flux<String> llmStream = callLLMStream(systemPrompt, userPrompt);
@@ -306,6 +314,59 @@ public class InterviewerAgentHandlerImpl implements InterviewerAgentHandler {
         prompt.append(basePrompt);
 
         return prompt.toString();
+    }
+
+    /**
+     * 格式化 JD 核心要求（提取关键技能和职责）
+     */
+    private String formatJDRequirements(String jdContent) {
+        if (jdContent == null || jdContent.isBlank()) {
+            return "暂无 JD 信息";
+        }
+        // 如果 JD 内容过长，截取前 1000 字符
+        if (jdContent.length() > 1000) {
+            return jdContent.substring(0, 1000) + "\n...(内容过长已截断)";
+        }
+        return jdContent;
+    }
+
+    /**
+     * 格式化简历摘要（提取关键项目经历）
+     */
+    private String formatResumeSummary(String resumeContent) {
+        if (resumeContent == null || resumeContent.isBlank()) {
+            return "暂无简历信息";
+        }
+        // 如果简历内容过长，截取前 1500 字符
+        if (resumeContent.length() > 1500) {
+            return resumeContent.substring(0, 1500) + "\n...(内容过长已截断)";
+        }
+        return resumeContent;
+    }
+
+    /**
+     * 格式化已提问的问题列表（从对话历史中提取）
+     */
+    private String formatAskedQuestions(String conversationSummary) {
+        if (conversationSummary == null || conversationSummary.isBlank()) {
+            return "暂无已提问的问题";
+        }
+        // 提取面试官的问题（以"面试官："开头的行）
+        StringBuilder questions = new StringBuilder();
+        String[] lines = conversationSummary.split("\n");
+        int questionIndex = 1;
+        for (String line : lines) {
+            if (line.startsWith("面试官：")) {
+                String question = line.substring("面试官：".length()).trim();
+                if (!question.isEmpty()) {
+                    questions.append(questionIndex++).append(". ").append(question).append("\n");
+                }
+            }
+        }
+        if (questions.length() == 0) {
+            return "暂无已提问的问题";
+        }
+        return questions.toString();
     }
 
     /**
@@ -430,6 +491,8 @@ public class InterviewerAgentHandlerImpl implements InterviewerAgentHandler {
         private String position = "Java 开发工程师";
         private String jdContent;
         private String resumeContent;
+        // 面试开始时间（用于计算已面试时长）
+        private LocalDateTime interviewStartTime = LocalDateTime.now();
         // 对话历史
         private StringBuilder conversationHistory = new StringBuilder();
         private AtomicInteger segmentIndex = new AtomicInteger(0);
@@ -449,6 +512,13 @@ public class InterviewerAgentHandlerImpl implements InterviewerAgentHandler {
                 return conversationHistory.substring(conversationHistory.length() - 2000);
             }
             return conversationHistory.toString();
+        }
+
+        /**
+         * 获取已面试时长（秒）
+         */
+        public long getElapsedSeconds() {
+            return Duration.between(interviewStartTime, LocalDateTime.now()).getSeconds();
         }
 
         public int getNextSegmentIndex() {
