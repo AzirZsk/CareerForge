@@ -140,6 +140,13 @@
             <version>2.21.14</version>
         </dependency>
 
+        <!-- 显式声明 jsonschema-generator 版本，解决 dashscope-sdk 与 spring-ai 的版本冲突 -->
+        <dependency>
+            <groupId>com.github.victools</groupId>
+            <artifactId>jsonschema-generator</artifactId>
+            <version>4.38.0</version>
+        </dependency>
+
         <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
