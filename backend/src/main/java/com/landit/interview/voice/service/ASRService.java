@@ -6,13 +6,11 @@ import reactor.core.publisher.Flux;
 
 /**
  * ASR（语音识别）服务接口
- * 支持流式识别和同步识别，支持多服务商实现
+ * 支持流式识别和同步识别
  *
  * <p>实现类：
  * <ul>
  *   <li>{@code AliyunASRService} - 阿里云 Paraformer 实时语音识别</li>
- *   <li>{@code OpenAIASRService} - OpenAI Whisper（预留）</li>
- *   <li>{@code AzureASRService} - Azure Speech（预留）</li>
  * </ul>
  *
  * @author Azir
@@ -22,7 +20,7 @@ public interface ASRService {
     /**
      * 获取服务提供商标识
      *
-     * @return "aliyun", "openai", "azure" 等
+     * @return "aliyun"
      */
     String getProvider();
 

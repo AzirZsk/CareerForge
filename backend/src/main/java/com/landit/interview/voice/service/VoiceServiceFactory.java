@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
  * 语音服务工厂
  * 根据配置获取对应的 ASR/TTS 服务实例
  *
- * <p>支持的服务商：aliyun, openai, azure
+ * <p>支持的服务商：aliyun
  *
  * @author Azir
  */
@@ -58,7 +58,7 @@ public class VoiceServiceFactory {
     /**
      * 获取指定提供商的 ASR 服务
      *
-     * @param provider 提供商标识：aliyun, openai, azure
+     * @param provider 提供商标识：aliyun
      * @return ASR 服务实例
      * @throws BusinessException 如果服务不可用
      */
@@ -88,7 +88,7 @@ public class VoiceServiceFactory {
     /**
      * 获取指定提供商的 TTS 服务
      *
-     * @param provider 提供商标识：aliyun, openai, azure
+     * @param provider 提供商标识：aliyun
      * @return TTS 服务实例
      * @throws BusinessException 如果服务不可用
      */

@@ -12,50 +12,21 @@
       </button>
     </div>
 
-    <!-- 录音控制 -->
-    <div class="recording-controls">
-      <button
-        :class="['record-btn', { recording: isRecording }]"
-        @click="toggleRecording"
-        :disabled="isProcessing"
-      >
-        <span class="icon">{{ isRecording ? '⏹️' : '🎤' }}</span>
-        <span class="text">{{ isRecording ? '停止' : '录音' }}</span>
-      </button>
-
-      <!-- 状态指示器 -->
-      <div v-if="statusText" class="status-indicator">
-        <span class="status-dot" :class="statusClass"></span>
-        <span class="status-text">{{ statusText }}</span>
-      </div>
-    </div>
-
-    <!-- 音量控制 -->
-    <div class="volume-control">
-      <label>音量</label>
-      <input
-        type="range"
-        min="0"
-        max="100"
-        :value="volume * 100"
-        @input="updateVolume(Number(($event.target as HTMLInputElement).value) / 100)"
-      />
-      <button @click="toggleMute" :class="{ muted: isMuted }">
-        {{ isMuted ? '🔇' : '🔊' }}
-      </button>
+    <!-- 状态指示器（面试开始后显示） -->
+    <div v-if="statusText" class="status-indicator">
+      <span class="status-dot" :class="statusClass"></span>
+      <span class="status-text">{{ statusText }}</span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import type { VoiceMode } from '@/types/interview-voice'
 
 // Props
 interface Props {
   modelValue?: VoiceMode
-  isRecording?: boolean
-  isProcessing?: boolean
   statusText?: string
   statusType?: 'idle' | 'recording' | 'recognizing' | 'synthesizing' | 'error'
   hideModeSwitch?: boolean
@@ -63,19 +34,14 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   modelValue: 'half_voice',
-  isRecording: false,
-  isProcessing: false,
   statusText: '',
   statusType: 'idle',
   hideModeSwitch: false
 })
 
-// Emits - 使用传统函数签名语法
+// Emits
 const emit = defineEmits<{
   (e: 'update:modelValue', mode: VoiceMode): void
-  (e: 'toggle-recording'): void
-  (e: 'volume-change', volume: number): void
-  (e: 'mute-change', muted: boolean): void
 }>()
 
 // 语音模式选项
@@ -89,10 +55,6 @@ const currentMode = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value)
 })
-
-// 音量
-const volume = ref(0.8)
-const isMuted = ref(false)
 
 // 状态样式
 const statusClass = computed(() => {
@@ -109,23 +71,6 @@ const statusClass = computed(() => {
 // 切换模式
 function switchMode(mode: VoiceMode) {
   currentMode.value = mode
-}
-
-// 切换录音
-function toggleRecording() {
-  emit('toggle-recording')
-}
-
-// 更新音量
-function updateVolume(value: number) {
-  volume.value = value
-  emit('volume-change', value)
-}
-
-// 切换静音
-function toggleMute() {
-  isMuted.value = !isMuted.value
-  emit('mute-change', isMuted.value)
 }
 </script>
 
@@ -169,101 +114,30 @@ function toggleMute() {
   }
 }
 
-.recording-controls {
+.status-indicator {
   display: flex;
   align-items: center;
-  gap: $spacing-md;
+  justify-content: center;
+  gap: $spacing-sm;
+  padding: $spacing-md;
+  background: $color-bg-tertiary;
+  border-radius: $radius-md;
 
-  .record-btn {
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-    padding: $spacing-md $spacing-xl;
-    background: $color-accent;
-    color: $color-bg-deep;
-    border: none;
-    border-radius: $radius-full;
-    cursor: pointer;
-    font-size: $text-base;
-    font-weight: $weight-medium;
-    transition: all $transition-fast;
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
 
-    .icon {
-      font-size: 1.25rem;
-    }
-
-    &.recording {
-      background: $color-error;
-      animation: pulse 1.5s infinite;
-    }
-
-    &:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
+    &.status-idle { background: $color-text-tertiary; }
+    &.status-recording { background: $color-error; animation: pulse 1s infinite; }
+    &.status-recognizing { background: $color-warning; }
+    &.status-synthesizing { background: $color-success; }
+    &.status-error { background: $color-error; }
   }
 
-  .status-indicator {
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-
-      &.status-idle { background: $color-text-tertiary; }
-      &.status-recording { background: $color-error; animation: pulse 1s infinite; }
-      &.status-recognizing { background: $color-warning; }
-      &.status-synthesizing { background: $color-success; }
-      &.status-error { background: $color-error; }
-    }
-
-    .status-text {
-      font-size: $text-sm;
-      color: $color-text-secondary;
-    }
-  }
-}
-
-.volume-control {
-  display: flex;
-  align-items: center;
-  gap: $spacing-md;
-
-  label {
+  .status-text {
     font-size: $text-sm;
     color: $color-text-secondary;
-  }
-
-  input[type="range"] {
-    flex: 1;
-    height: 4px;
-    background: $color-border;
-    border-radius: 2px;
-    appearance: none;
-
-    &::-webkit-slider-thumb {
-      appearance: none;
-      width: 16px;
-      height: 16px;
-      background: $color-accent;
-      border-radius: 50%;
-      cursor: pointer;
-    }
-  }
-
-  button {
-    padding: $spacing-sm;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    font-size: 1.25rem;
-
-    &.muted {
-      opacity: 0.5;
-    }
   }
 }
 

@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 public class VoiceProperties {
 
     /**
-     * 语音服务提供商：aliyun, openai, azure
+     * 语音服务提供商：aliyun
      * 启动时确定，不支持运行时切换
      */
     private String provider = "aliyun";
@@ -25,16 +25,6 @@ public class VoiceProperties {
      * 阿里云语音服务配置
      */
     private AliyunConfig aliyun = new AliyunConfig();
-
-    /**
-     * OpenAI 语音服务配置（预留）
-     */
-    private OpenAIConfig openai = new OpenAIConfig();
-
-    /**
-     * Azure 语音服务配置（预留）
-     */
-    private AzureConfig azure = new AzureConfig();
 
     /**
      * 阿里云语音服务配置
@@ -131,92 +121,4 @@ public class VoiceProperties {
         }
     }
 
-    /**
-     * OpenAI 语音服务配置
-     */
-    @Data
-    public static class OpenAIConfig {
-        /**
-         * OpenAI API Key（如果与 LLM 不同）
-         */
-        private String apiKey;
-
-        /**
-         * ASR 配置
-         */
-        private OpenAIASRConfig asr = new OpenAIASRConfig();
-
-        /**
-         * TTS 配置
-         */
-        private OpenAITTSConfig tts = new OpenAITTSConfig();
-
-        @Data
-        public static class OpenAIASRConfig {
-            /**
-             * Whisper 模型
-             */
-            private String model = "whisper-1";
-        }
-
-        @Data
-        public static class OpenAITTSConfig {
-            /**
-             * TTS 模型
-             */
-            private String model = "tts-1";
-
-            /**
-             * 默认音色
-             */
-            private String defaultVoice = "alloy";
-        }
-    }
-
-    /**
-     * Azure 语音服务配置
-     */
-    @Data
-    public static class AzureConfig {
-        /**
-         * Azure 订阅 Key
-         */
-        private String subscriptionKey;
-
-        /**
-         * Azure 区域
-         */
-        private String region = "eastasia";
-
-        /**
-         * ASR 配置
-         */
-        private AzureASRConfig asr = new AzureASRConfig();
-
-        /**
-         * TTS 配置
-         */
-        private AzureTTSConfig tts = new AzureTTSConfig();
-
-        @Data
-        public static class AzureASRConfig {
-            /**
-             * 语音识别语言
-             */
-            private String language = "zh-CN";
-        }
-
-        @Data
-        public static class AzureTTSConfig {
-            /**
-             * 面试官音色名称
-             */
-            private String interviewerVoice = "zh-CN-XiaoxiaoNeural";
-
-            /**
-             * 助手音色名称
-             */
-            private String assistantVoice = "zh-CN-YunxiNeural";
-        }
-    }
 }

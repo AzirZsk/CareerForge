@@ -6,13 +6,11 @@ import reactor.core.publisher.Flux;
 
 /**
  * TTS（语音合成）服务接口
- * 支持流式合成和同步合成，支持多服务商实现
+ * 支持流式合成和同步合成
  *
  * <p>实现类：
  * <ul>
  *   <li>{@code AliyunTTSService} - 阿里云 CosyVoice 流式语音合成</li>
- *   <li>{@code OpenAITTSService} - OpenAI TTS（预留）</li>
- *   <li>{@code AzureTTSService} - Azure Speech（预留）</li>
  * </ul>
  *
  * @author Azir
@@ -22,7 +20,7 @@ public interface TTSService {
     /**
      * 获取服务提供商标识
      *
-     * @return "aliyun", "openai", "azure" 等
+     * @return "aliyun"
      */
     String getProvider();
 

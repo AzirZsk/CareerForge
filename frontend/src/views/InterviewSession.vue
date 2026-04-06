@@ -125,14 +125,9 @@
           <!-- 语音控制 -->
           <VoiceControls
             v-model="voiceMode"
-            :is-recording="isRecording"
-            :is-processing="isProcessing"
             :status-text="statusText"
             :status-type="statusType"
             :hide-mode-switch="isInterviewStarted"
-            @toggle-recording="toggleRecording"
-            @volume-change="handleVolumeChange"
-            @mute-change="handleMuteChange"
           />
 
           <!-- 助手面板（冻结状态时显示） -->
@@ -336,28 +331,7 @@ watch(() => messages.value.length, () => {
 })
 
 // ============================================================================
-// 录音控制
-// ============================================================================
-
-function toggleRecording() {
-  // statusText 和 statusType 是 computed 属性，会自动根据 isRecording 状态更新
-  if (isRecording.value) {
-    voiceInterview.stopRecording()
-  } else {
-    voiceInterview.startRecording()
-  }
-}
-
-function handleVolumeChange(volume: number) {
-  voiceInterview.setVolume(volume)
-}
-
-function handleMuteChange(muted: boolean) {
-  if (muted) {
-    voiceInterview.toggleMute()
-  }
-}
-
+// 音量控制
 // ============================================================================
 // 助手相关
 // ============================================================================
@@ -512,7 +486,6 @@ function goToQuestion(index: number): void {
   &.active {
     background: rgba(52, 211, 153, 0.15);
     color: $color-success;
-    animation: pulse 2s ease-in-out infinite;
   }
 
   &.frozen {
