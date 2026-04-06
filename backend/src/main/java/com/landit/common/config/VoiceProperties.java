@@ -54,9 +54,9 @@ public class VoiceProperties {
         @Data
         public static class ASRConfig {
             /**
-             * ASR 模型
+             * ASR 模型（快照版，支持中英日多语种）
              */
-            private String model = "paraformer-realtime-v2";
+            private String model = "fun-asr-realtime-2026-02-28";
 
             /**
              * 音频格式：pcm, wav, mp3

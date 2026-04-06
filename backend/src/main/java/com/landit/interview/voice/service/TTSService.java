@@ -6,7 +6,7 @@ import reactor.core.publisher.Flux;
 
 /**
  * TTS（语音合成）服务接口
- * 支持流式合成和同步合成
+ * 仅支持流式合成，适用于实时语音对话场景
  *
  * <p>实现类：
  * <ul>
@@ -74,17 +74,6 @@ public interface TTSService {
      * @return 合成块流（包含文本和音频）
      */
     Flux<TTSChunk> streamSynthesizeBySentence(Flux<String> textStream, TTSConfig config);
-
-    /**
-     * 同步语音合成
-     * 输入文本，输出完整音频数据
-     * 适用于短文本或需要完整音频的场景
-     *
-     * @param text   要合成的文本
-     * @param config 合成配置
-     * @return 完整音频数据
-     */
-    byte[] synthesize(String text, TTSConfig config);
 
     /**
      * 检查服务是否可用

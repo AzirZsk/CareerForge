@@ -38,12 +38,13 @@ public class AliyunVoiceAutoConfiguration {
 
     /**
      * 配置阿里云 ASR 服务
+     * 使用 Fun-ASR SDK，无需 ObjectMapper
      */
     @Bean
     @ConditionalOnMissingBean(ASRService.class)
-    public ASRService aliyunASRService(VoiceProperties voiceProperties, ObjectMapper objectMapper) {
-        log.info("[AliyunVoiceAutoConfiguration] Initializing Aliyun ASR service");
-        return new AliyunASRService(voiceProperties, objectMapper);
+    public ASRService aliyunASRService(VoiceProperties voiceProperties) {
+        log.info("[AliyunVoiceAutoConfiguration] Initializing Aliyun ASR service with Fun-ASR SDK");
+        return new AliyunASRService(voiceProperties);
     }
 
     /**

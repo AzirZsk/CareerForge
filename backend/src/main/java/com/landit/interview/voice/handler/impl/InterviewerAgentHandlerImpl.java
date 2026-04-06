@@ -56,9 +56,6 @@ public class InterviewerAgentHandlerImpl implements InterviewerAgentHandler {
         // 获取 ASR 服务
         ASRService asrService = voiceServiceFactory.getASRService();
 
-        // 创建 ASR 配置
-        ASRConfig asrConfig = buildASRConfig();
-
         // 获取会话上下文（从 Gateway 加载 JD/简历）
         ConversationContext context = contexts.computeIfAbsent(sessionId, k -> {
             ConversationContext ctx = new ConversationContext();
@@ -75,8 +72,8 @@ public class InterviewerAgentHandlerImpl implements InterviewerAgentHandler {
         // 收集候选人音频数据
         context.appendCandidateAudio(audioData);
 
-        // Step 1: ASR 识别
-        return asrService.streamRecognize(Flux.just(audioData), asrConfig)
+        // Step 1: ASR 识别（配置从 application.yml 读取）
+        return asrService.streamRecognize(Flux.just(audioData))
                 .flatMap(asrResult -> {
                     // 发送转录结果
                     Flux<VoiceResponse> transcriptFlux = Flux.just(VoiceResponse.transcript(
@@ -367,22 +364,6 @@ public class InterviewerAgentHandlerImpl implements InterviewerAgentHandler {
             return "暂无已提问的问题";
         }
         return questions.toString();
-    }
-
-    /**
-     * 构建 ASR 配置
-     */
-    private ASRConfig buildASRConfig() {
-        VoiceProperties.AliyunConfig.ASRConfig asrConfig = voiceProperties.getAliyun().getAsr();
-        return ASRConfig.builder()
-                .model(asrConfig.getModel())
-                .format(asrConfig.getFormat())
-                .sampleRate(asrConfig.getSampleRate())
-                .enablePunctuation(asrConfig.getEnablePunctuation())
-                .enableItn(asrConfig.getEnableItn())
-                .language(asrConfig.getLanguage())
-                .enableVad(asrConfig.getEnableVad())
-                .build();
     }
 
     /**

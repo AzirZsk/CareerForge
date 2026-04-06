@@ -1,45 +1,41 @@
 package com.landit.interview.voice.service.impl;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.alibaba.dashscope.audio.asr.recognition.Recognition;
+import com.alibaba.dashscope.audio.asr.recognition.RecognitionParam;
+import com.alibaba.dashscope.audio.asr.recognition.RecognitionResult;
+import com.alibaba.dashscope.common.ResultCallback;
+import com.alibaba.dashscope.utils.Constants;
 import com.landit.common.config.VoiceProperties;
-import com.landit.interview.voice.dto.ASRConfig;
 import com.landit.interview.voice.dto.ASRResult;
 import com.landit.interview.voice.service.ASRService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
-import reactor.core.publisher.Mono;
-import reactor.netty.http.client.HttpClient;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
+import java.nio.ByteBuffer;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * 阿里云 Paraformer 实时语音识别服务实现
- * 基于 WebSocket 实现流式语音识别
+ * 阿里云 Fun-ASR 实时语音识别服务实现
+ * 基于 DashScope SDK 官方封装，简化 WebSocket 管理
  *
- * <p>参考文档：https://help.aliyun.com/zh/model-studio/websocket-for-paraformer-real-time-service
+ * <p>参考文档：https://help.aliyun.com/zh/model-studio/real-time-speech-recognition-fun-asr
  *
  * @author Azir
  */
 @Slf4j
 @Service("aliyunASRService")
-public class AliyunASRService extends AliyunVoiceBaseService implements ASRService {
+public class AliyunASRService implements ASRService {
 
     private static final String PROVIDER = "aliyun";
-    private static final String WS_BASE_URL = "wss://dashscope.aliyuncs.com/api-ws/v1/inference/";
 
-    private final HttpClient httpClient;
+    private final VoiceProperties voiceProperties;
 
-    public AliyunASRService(VoiceProperties voiceProperties, ObjectMapper objectMapper) {
-        super(voiceProperties, objectMapper);
-        this.httpClient = HttpClient.create();
+    public AliyunASRService(VoiceProperties voiceProperties) {
+        this.voiceProperties = voiceProperties;
+        // 设置北京地域 WebSocket URL（新加坡地域用 dashscope-intl.aliyuncs.com）
+        Constants.baseWebsocketApiUrl = "wss://dashscope.aliyuncs.com/api-ws/v1/inference";
     }
 
     @Override
@@ -47,65 +43,71 @@ public class AliyunASRService extends AliyunVoiceBaseService implements ASRServi
         return PROVIDER;
     }
 
+    /**
+     * 流式语音识别
+     * 将音频流实时发送到 Fun-ASR 服务，返回识别结果流
+     *
+     * @param audioStream PCM 音频流（16kHz）
+     * @return 识别结果流（包含中间结果和最终结果）
+     */
     @Override
-    public Flux<ASRResult> streamRecognize(Flux<byte[]> audioStream, ASRConfig config) {
+    public Flux<ASRResult> streamRecognize(Flux<byte[]> audioStream) {
+        VoiceProperties.AliyunConfig.ASRConfig asrConfig = voiceProperties.getAliyun().getAsr();
+
         return Flux.create(emitter -> {
+            Recognition recognizer = new Recognition();
             String taskId = UUID.randomUUID().toString().replace("-", "");
-            AtomicBoolean connected = new AtomicBoolean(false);
-            AtomicReference<reactor.netty.Connection> connectionRef = new AtomicReference<>();
-            StringBuilder fullTextBuilder = new StringBuilder();
+            RecognitionParam param = buildRecognitionParam(asrConfig);
+
+            // 构建回调处理器，将 SDK 事件转换为 Flux 元素
+            ResultCallback<RecognitionResult> callback = new ResultCallback<>() {
+                @Override
+                public void onEvent(RecognitionResult result) {
+                    ASRResult asrResult = convertToASRResult(result);
+                    if (!emitter.isCancelled()) {
+                        emitter.next(asrResult);
+                    }
+                    log.trace("[AliyunASR] Recognition event: isFinal={}, text={}, taskId={}",
+                            asrResult.getIsFinal(), asrResult.getText(), taskId);
+                }
+
+                @Override
+                public void onComplete() {
+                    log.info("[AliyunASR] Recognition completed, taskId={}", taskId);
+                    if (!emitter.isCancelled()) {
+                        emitter.complete();
+                    }
+                    closeRecognizer(recognizer, taskId);
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    log.error("[AliyunASR] Recognition error, taskId={}", taskId, e);
+                    if (!emitter.isCancelled()) {
+                        emitter.error(e);
+                    }
+                    closeRecognizer(recognizer, taskId);
+                }
+            };
 
             try {
-                // 构建 WebSocket URL
-                String wsUrl = buildASRWebSocketUrl(config, taskId);
-                log.info("[AliyunASR] Connecting to WebSocket for taskId={}", taskId);
-                log.debug("[AliyunASR] WebSocket URL: {}", wsUrl.replaceAll("api-key=([^&]+)", "api-key=***"));
+                recognizer.call(param, callback);
+                log.info("[AliyunASR] Recognition started, taskId={}, model={}", taskId, asrConfig.getModel());
 
-                // 建立 WebSocket 连接
-                httpClient.websocket()
-                        .uri(wsUrl)
-                        .handle((inbound, outbound) -> {
-                            connected.set(true);
-                            log.info("[AliyunASR] WebSocket connected, taskId={}", taskId);
-
-                            // 处理接收到的消息
-                            Mono<Void> receiveMessages = inbound.receive()
-                                    .aggregate()
-                                    .asString()
-                                    .doOnNext(payload -> parseASRResponse(payload, emitter, fullTextBuilder, taskId))
-                                    .then();
-
-                            // 发送音频流
-                            Mono<Void> sendAudio = audioStream
-                                    .flatMap(audioData -> outbound.sendObject(Mono.just(audioData)))
-                                    .doOnComplete(() -> {
-                                        log.info("[AliyunASR] Audio stream completed, taskId={}", taskId);
-                                        sendFinishSignal(outbound, taskId);
-                                    })
-                                    .doOnError(error -> {
-                                        log.error("[AliyunASR] Audio stream error, taskId={}", taskId, error);
-                                        if (!emitter.isCancelled()) {
-                                            emitter.error(error);
-                                        }
-                                    })
-                                    .then();
-
-                            return Mono.when(receiveMessages, sendAudio);
-                        })
-                        .doOnError(error -> {
-                            log.error("[AliyunASR] WebSocket error, taskId={}", taskId, error);
-                            if (!emitter.isCancelled()) {
-                                emitter.error(error);
-                            }
-                        })
-                        .doOnTerminate(() -> {
-                            log.info("[AliyunASR] WebSocket terminated, taskId={}", taskId);
-                            if (!emitter.isCancelled()) {
-                                emitter.complete();
-                            }
-                        })
-                        .subscribe();
-
+                // 订阅音频流，将每帧音频发送到识别器
+                audioStream.subscribe(
+                    audioData -> recognizer.sendAudioFrame(ByteBuffer.wrap(audioData)),
+                    error -> {
+                        log.error("[AliyunASR] Audio stream error, taskId={}", taskId, error);
+                        if (!emitter.isCancelled()) {
+                            emitter.error(error);
+                        }
+                    },
+                    () -> {
+                        log.info("[AliyunASR] Audio stream completed, stopping recognition, taskId={}", taskId);
+                        recognizer.stop();
+                    }
+                );
             } catch (Exception e) {
                 log.error("[AliyunASR] Failed to start recognition, taskId={}", taskId, e);
                 if (!emitter.isCancelled()) {
@@ -113,143 +115,55 @@ public class AliyunASRService extends AliyunVoiceBaseService implements ASRServi
                 }
             }
 
-            // 清理资源
-            emitter.onDispose(() -> {
-                reactor.netty.Connection conn = connectionRef.get();
-                if (conn != null && !conn.isDisposed()) {
-                    conn.dispose();
-                    log.info("[AliyunASR] WebSocket disposed, taskId={}", taskId);
-                }
-            });
+            emitter.onDispose(() -> closeRecognizer(recognizer, taskId));
         }, FluxSink.OverflowStrategy.BUFFER);
     }
 
     @Override
-    public ASRResult recognize(byte[] audioData, ASRConfig config) {
-        log.warn("[AliyunASR] Synchronous recognition is not optimized, consider using streamRecognize");
-        try {
-            return streamRecognize(Flux.just(audioData), config)
-                    .filter(ASRResult::getIsFinal)
-                    .takeLast(1)
-                    .blockLast(Duration.ofSeconds(30));
-        } catch (Exception e) {
-            log.error("[AliyunASR] Synchronous recognition failed", e);
-            return ASRResult.finalResult("");
-        }
-    }
-
-    @Override
     public boolean isAvailable() {
-        return isApiKeyAvailable();
-    }
-
-    /**
-     * 构建 ASR WebSocket URL
-     */
-    private String buildASRWebSocketUrl(ASRConfig config, String taskId) {
         VoiceProperties.AliyunConfig aliyun = voiceProperties.getAliyun();
-        String apiKey = aliyun.getApiKey();
-        String model = config.getModel() != null ? config.getModel() : aliyun.getAsr().getModel();
-
-        StringBuilder urlBuilder = new StringBuilder();
-        urlBuilder.append(WS_BASE_URL).append(model);
-        urlBuilder.append("?api-key=").append(encodeUrl(apiKey));
-        urlBuilder.append("&task_id=").append(taskId);
-        urlBuilder.append("&model=").append(encodeUrl(model));
-        urlBuilder.append("&format=").append(config.getFormat() != null ? config.getFormat() : aliyun.getAsr().getFormat());
-        urlBuilder.append("&sample_rate=").append(config.getSampleRate() != null ? config.getSampleRate() : aliyun.getAsr().getSampleRate());
-        urlBuilder.append("&enable_punctuation_prediction=").append(config.getEnablePunctuation() != null ? config.getEnablePunctuation() : aliyun.getAsr().getEnablePunctuation());
-        urlBuilder.append("&enable_inverse_text_normalization=").append(config.getEnableItn() != null ? config.getEnableItn() : aliyun.getAsr().getEnableItn());
-        urlBuilder.append("&enable_vad=").append(config.getEnableVad() != null ? config.getEnableVad() : aliyun.getAsr().getEnableVad());
-        urlBuilder.append("&language=").append(config.getLanguage() != null ? config.getLanguage() : aliyun.getAsr().getLanguage());
-
-        return urlBuilder.toString();
+        return aliyun != null && aliyun.getApiKey() != null && !aliyun.getApiKey().isBlank();
     }
 
     /**
-     * 解析 ASR 响应
+     * 构建 Fun-ASR 识别参数
+     * 所有配置从 application.yml 读取，无需运行时传参
      */
-    private void parseASRResponse(String payload, FluxSink<ASRResult> emitter,
-                                  StringBuilder fullTextBuilder, String taskId) {
-        try {
-            JsonNode json = objectMapper.readTree(payload);
-            String event = json.path("event").asText();
-
-            log.trace("[AliyunASR] Received event: {}, taskId={}", event, taskId);
-
-            switch (event) {
-                case "result":
-                    JsonNode output = json.path("output");
-                    JsonNode sentence = output.path("sentence");
-                    String text = sentence.path("text").asText();
-                    boolean isFinal = sentence.path("end_time").asLong() > 0;
-
-                    if (!text.isEmpty()) {
-                        ASRResult result = ASRResult.builder()
-                                .text(text)
-                                .isFinal(isFinal)
-                                .confidence(sentence.path("confidence").asDouble(0.0))
-                                .startTime(sentence.path("begin_time").asLong(0L))
-                                .endTime(sentence.path("end_time").asLong(0L))
-                                .build();
-
-                        if (!emitter.isCancelled()) {
-                            emitter.next(result);
-                        }
-
-                        if (isFinal) {
-                            fullTextBuilder.append(text);
-                            log.debug("[AliyunASR] Final result: '{}', taskId={}", text, taskId);
-                        } else {
-                            log.trace("[AliyunASR] Partial result: '{}', taskId={}", text, taskId);
-                        }
-                    }
-                    break;
-
-                case "completed":
-                    log.info("[AliyunASR] Recognition completed, full text length={}, taskId={}",
-                            fullTextBuilder.length(), taskId);
-                    break;
-
-                case "error":
-                    String errorCode = json.path("error_code").asText();
-                    String errorMessage = json.path("error_message").asText();
-                    log.error("[AliyunASR] Recognition error: {} - {}, taskId={}", errorCode, errorMessage, taskId);
-                    if (!emitter.isCancelled()) {
-                        emitter.error(new RuntimeException("ASR error: " + errorCode + " - " + errorMessage));
-                    }
-                    break;
-
-                default:
-                    log.trace("[AliyunASR] Unknown event: {}, taskId={}", event, taskId);
-            }
-        } catch (Exception e) {
-            log.error("[AliyunASR] Failed to parse message: {}, taskId={}", payload, taskId, e);
-        }
+    private RecognitionParam buildRecognitionParam(VoiceProperties.AliyunConfig.ASRConfig config) {
+        return RecognitionParam.builder()
+                .model(config.getModel())
+                .apiKey(voiceProperties.getAliyun().getApiKey())
+                .format(config.getFormat())
+                .sampleRate(config.getSampleRate())
+                // 语言提示（数组形式，首个元素生效）
+                .parameter("language_hints", new String[]{config.getLanguage()})
+                // 标点预测（默认开启）
+                .parameter("punctuation_prediction_enabled",
+                        config.getEnablePunctuation() != null ? config.getEnablePunctuation() : true)
+                .build();
     }
 
     /**
-     * 发送结束信号
+     * 将 SDK 的 RecognitionResult 转换为业务 ASRResult
      */
-    private void sendFinishSignal(reactor.netty.http.websocket.WebsocketOutbound outbound, String taskId) {
-        try {
-            String finishMessage = "{\"action\":\"finish\"}";
-            outbound.sendString(Mono.just(finishMessage))
-                    .then()
-                    .subscribe(
-                            v -> log.info("[AliyunASR] Sent finish signal, taskId={}", taskId),
-                            e -> log.warn("[AliyunASR] Failed to send finish signal", e)
-                    );
-        } catch (Exception e) {
-            log.warn("[AliyunASR] Failed to send finish signal", e);
-        }
+    private ASRResult convertToASRResult(RecognitionResult result) {
+        return ASRResult.builder()
+                .text(result.getSentence().getText())
+                .isFinal(result.isSentenceEnd())
+                .startTime(result.getSentence().getBeginTime())
+                .endTime(result.getSentence().getEndTime())
+                .build();
     }
 
-    private String encodeUrl(String value) {
+    /**
+     * 安全关闭识别器
+     */
+    private void closeRecognizer(Recognition recognizer, String taskId) {
         try {
-            return URLEncoder.encode(value, StandardCharsets.UTF_8);
+            recognizer.getDuplexApi().close(1000, "bye");
+            log.debug("[AliyunASR] Recognizer closed, taskId={}", taskId);
         } catch (Exception e) {
-            return value;
+            log.warn("[AliyunASR] Failed to close recognizer, taskId={}", taskId, e);
         }
     }
 }

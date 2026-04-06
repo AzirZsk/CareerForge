@@ -150,31 +150,6 @@ public class AliyunTTSService extends AliyunVoiceBaseService implements TTSServi
     }
 
     @Override
-    public byte[] synthesize(String text, TTSConfig config) {
-        log.warn("[AliyunTTS] Synchronous synthesis is not optimized for long text, consider using streamSynthesize");
-        try {
-            return streamSynthesize(text, config)
-                    .collectList()
-                    .map(chunks -> {
-                        // 计算总长度
-                        int totalLength = chunks.stream().mapToInt(arr -> arr.length).sum();
-                        // 合并所有音频块
-                        byte[] result = new byte[totalLength];
-                        int offset = 0;
-                        for (byte[] chunk : chunks) {
-                            System.arraycopy(chunk, 0, result, offset, chunk.length);
-                            offset += chunk.length;
-                        }
-                        return result;
-                    })
-                    .block(Duration.ofSeconds(60));
-        } catch (Exception e) {
-            log.error("[AliyunTTS] Synchronous synthesis failed", e);
-            return new byte[0];
-        }
-    }
-
-    @Override
     public boolean isAvailable() {
         return isApiKeyAvailable();
     }
