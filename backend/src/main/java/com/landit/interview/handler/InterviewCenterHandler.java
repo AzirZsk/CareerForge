@@ -289,19 +289,19 @@ public class InterviewCenterHandler {
      * 流式执行复盘分析工作流
      *
      * @param id                面试ID
-     * @param sessionTranscript 面试过程文本（用户输入，持久化到 Interview 表）
+     * @param transcript        面试过程文字记录（用户输入，持久化到 Interview 表）
      * @param response          HTTP响应
      * @return SSE事件发射器
      */
-    public SseEmitter streamReviewAnalysis(String id, String sessionTranscript, HttpServletResponse response) {
+    public SseEmitter streamReviewAnalysis(String id, String transcript, HttpServletResponse response) {
         log.info("开始SSE流式复盘分析: interviewId={}", id);
-        // 如果传入了面试过程文本，先保存到 Interview 表
-        if (sessionTranscript != null && !sessionTranscript.isBlank()) {
+        // 如果传入了面试过程文字记录，先保存到 Interview 表
+        if (transcript != null && !transcript.isBlank()) {
             Interview interview = interviewCenterService.getById(id);
             if (interview != null) {
-                interview.setSessionTranscript(sessionTranscript);
+                interview.setTranscript(transcript);
                 interviewCenterService.updateById(interview);
-                log.info("保存面试过程文本: interviewId={}", id);
+                log.info("保存面试过程文字记录: interviewId={}", id);
             }
         }
         configureSseResponse(response);

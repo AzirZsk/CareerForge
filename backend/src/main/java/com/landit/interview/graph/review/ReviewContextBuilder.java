@@ -43,15 +43,15 @@ public class ReviewContextBuilder {
         String jdContent = resolveJdContent(interview, jobPosition);
         String jdAnalysis = resolveJdAnalysis(jobPosition);
         String resumeContent = buildResumeContext(interview != null ? interview.getResumeId() : null);
-        String sessionTranscript = interview != null ? interview.getSessionTranscript() : null;
+        String transcript = interview != null ? interview.getTranscript() : null;
         log.info("复盘上下文构建完成: 面试={}, 公司={}, 职位={}, JD={}, 简历={}, 对话记录={}",
                 interviewId,
                 companyName.isEmpty() ? "无" : "有",
                 positionTitle.isEmpty() ? "无" : "有",
                 jdContent.isEmpty() ? "无" : "有",
                 resumeContent.isEmpty() ? "无" : "有",
-                (sessionTranscript != null && !sessionTranscript.isBlank()) ? "有" : "无");
-        return new ReviewContext(companyName, positionTitle, jdContent, jdAnalysis, resumeContent, sessionTranscript);
+                (transcript != null && !transcript.isBlank()) ? "有" : "无");
+        return new ReviewContext(companyName, positionTitle, jdContent, jdAnalysis, resumeContent, transcript);
     }
 
     /**
@@ -163,7 +163,7 @@ public class ReviewContextBuilder {
             String jdContent,
             String jdAnalysis,
             String resumeContent,
-            String sessionTranscript
+            String transcript
     ) {}
 
 }

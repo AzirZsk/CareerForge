@@ -2095,7 +2095,7 @@ public class AIPromptProperties {
                     {resumeContent}
 
                     【面试对话文本】
-                    {sessionTranscript}
+                    {transcript}
                     """);
         }
 

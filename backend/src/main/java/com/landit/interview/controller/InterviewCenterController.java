@@ -80,7 +80,7 @@ public class InterviewCenterController {
             @PathVariable String id,
             @RequestBody(required = false) ReviewAnalysisRequest request,
             HttpServletResponse response) {
-        String transcript = (request != null) ? request.getSessionTranscript() : null;
+        String transcript = (request != null) ? request.getTranscript() : null;
         return handler.streamReviewAnalysis(id, transcript, response);
     }
 

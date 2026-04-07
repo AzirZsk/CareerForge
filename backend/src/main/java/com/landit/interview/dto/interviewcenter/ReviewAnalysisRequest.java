@@ -12,9 +12,9 @@ import lombok.Data;
 public class ReviewAnalysisRequest {
 
     /**
-     * 面试过程文本
-     * 用户输入的面试过程中的问题、回答、面试官反馈等内容
+     * 面试过程文字记录
+     * 用户输入或音频转录的面试过程中的问题、回答、面试官反馈等内容
      */
-    private String sessionTranscript;
+    private String transcript;
 
 }

@@ -49,7 +49,7 @@ export function useReviewAnalysis() {
   /**
    * 开始执行复盘分析工作流
    */
-  async function startAnalysis(interviewId: string, sessionTranscript: string): Promise<void> {
+  async function startAnalysis(interviewId: string, transcript: string): Promise<void> {
     resetState()
     stateInstance!.isConnecting = true
     stateInstance!.message = '正在连接...'
@@ -60,7 +60,7 @@ export function useReviewAnalysis() {
       const response = await fetch(`/landit/interview-center/${interviewId}/review-analysis/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionTranscript }),
+        body: JSON.stringify({ transcript }),
         signal: abortController.signal
       })
 

@@ -4,6 +4,8 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.landit.common.config.AIPromptProperties;
 import com.landit.common.util.ChatClientHelper;
+import com.landit.common.util.JsonParseHelper;
+import com.landit.interview.graph.review.dto.ListAdviceResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -34,12 +36,15 @@ public class GenerateAdviceNode implements NodeAction {
         AIPromptProperties.PromptConfig config = aiPromptProperties.getReviewGraph().getGenerateAdviceConfig();
         String systemPrompt = config.getSystemPrompt();
         String userPrompt = config.getUserPromptTemplate().replace("{analysisResult}", analysisResult);
-        String adviceJson = ChatClientHelper.callAndParse(
-                chatClient, systemPrompt, userPrompt, String.class
+        // 使用结构化 DTO 接收响应（JSON Schema 约束）
+        ListAdviceResponse response = ChatClientHelper.callAndParse(
+                chatClient, systemPrompt, userPrompt, ListAdviceResponse.class
         );
         log.info("改进建议生成完成");
+        // 序列化为 JSON 存储
+        String adviceJson = JsonParseHelper.toJsonString(response.getAdviceList());
         return buildNodeResult(NODE_GENERATE_ADVICE, 100, "改进建议生成完成",
-                adviceJson, STATE_ADVICE_LIST, adviceJson);
+                response.getAdviceList(), STATE_ADVICE_LIST, adviceJson);
     }
 
 }

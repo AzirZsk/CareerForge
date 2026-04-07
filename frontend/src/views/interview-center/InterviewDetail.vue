@@ -601,6 +601,9 @@ async function loadDetail() {
   loading.value = true
   try {
     interview.value = await getInterviewDetail(id)
+    // 加载时读取 transcript 字段， if (interview.value?.transcript) {
+      sessionTranscript.value = interview.value.transcript
+    }
   } catch (error) {
     console.error('加载面试详情失败:', error)
   } finally {
@@ -807,7 +810,7 @@ function handleApplyTranscriptEvent(event: Event) {
     try {
       const result = JSON.parse(task.result)
       sessionTranscript.value = result.transcriptText
-      toast.success('转录完成，已自动填充')
+      toast.success('转录完成，已自动保存到面试记录')
       // 标记已应用
       notificationStore.markTranscribeApplied(interview.value!.id)
     } catch (e) {

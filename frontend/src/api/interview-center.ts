@@ -241,14 +241,14 @@ export function streamPreparation(interviewId: string): EventSource {
  * 因为 EventSource 只支持 GET 请求
  *
  * @param interviewId 面试ID
- * @param sessionTranscript 面试过程文本
+ * @param transcript 面试过程文字记录
  * @param onEvent 事件回调
  * @param onError 错误回调
  * @param onComplete 完成回调
  */
 export async function streamReviewAnalysis(
   interviewId: string,
-  sessionTranscript: string,
+  transcript: string,
   onEvent: (event: import('@/types/interview-center').GraphProgressEvent) => void,
   onError: (error: Error) => void,
   onComplete: () => void
@@ -257,7 +257,7 @@ export async function streamReviewAnalysis(
     const response = await fetch(`${API_BASE}/interview-center/${interviewId}/review-analysis/stream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionTranscript })
+      body: JSON.stringify({ transcript })
     })
 
     if (!response.ok) {

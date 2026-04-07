@@ -7,6 +7,7 @@ import com.landit.common.util.ChatClientHelper;
 import com.landit.common.util.JsonParseHelper;
 import com.landit.interview.entity.Interview;
 import com.landit.interview.entity.InterviewReviewNote;
+import com.landit.interview.graph.review.dto.InterviewAnalysisResult;
 import com.landit.interview.service.InterviewCenterService;
 import com.landit.interview.service.InterviewReviewNoteService;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +17,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.List;
 import java.util.Map;
 
@@ -86,12 +86,15 @@ public class AnalyzeInterviewNode implements NodeAction {
         AIPromptProperties.PromptConfig config = aiPromptProperties.getReviewGraph().getAnalyzeInterviewConfig();
         String systemPrompt = config.getSystemPrompt();
         String userPrompt = config.getUserPromptTemplate().replace("{collectedData}", collectedDataJson);
-        String analysisResult = ChatClientHelper.callAndParse(
-                chatClient, systemPrompt, userPrompt, String.class
+        // 使用结构化 DTO 接收响应
+        InterviewAnalysisResult analysisResult = ChatClientHelper.callAndParse(
+                chatClient, systemPrompt, userPrompt, InterviewAnalysisResult.class
         );
         log.info("AI分析完成");
+        // 序列化为 JSON 存储（供后续节点使用）
+        String analysisResultJson = JsonParseHelper.toJsonString(analysisResult);
         return buildNodeResult(NODE_ANALYZE_INTERVIEW, 70, "AI分析完成",
-                analysisResult, STATE_ANALYSIS_RESULT, analysisResult);
+                analysisResult, STATE_ANALYSIS_RESULT, analysisResultJson);
     }
 
     /**
