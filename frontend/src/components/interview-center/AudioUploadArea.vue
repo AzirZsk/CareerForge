@@ -6,7 +6,8 @@
     <!-- 音频上传区域 -->
     <div
       class="upload-zone"
-      :class="{ 'drag-over': isDragOver }"
+      :class="{ 'drag-over': isDragOver, 'uploading': isUploading }"
+      @click="triggerFileSelect"
       @drop.prevent="handleDrop"
       @dragover.prevent="isDragOver = true"
       @dragleave.prevent="isDragOver = false"
@@ -109,6 +110,7 @@ function getFileExtension(filename: string): string {
 }
 
 function triggerFileSelect() {
+  if (isUploading.value) return
   fileInput.value?.click()
 }
 
@@ -189,6 +191,7 @@ function handleTextInput(event: Event) {
   transition: all 0.2s;
   margin-bottom: $spacing-md;
   background: $color-bg-tertiary;
+  cursor: pointer;
 
   &:hover {
     border-color: $color-accent;
@@ -198,6 +201,10 @@ function handleTextInput(event: Event) {
   &.drag-over {
     border-color: $color-accent;
     background: rgba($color-accent, 0.1);
+  }
+
+  &.uploading {
+    cursor: not-allowed;
   }
 }
 
