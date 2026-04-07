@@ -22,8 +22,6 @@ public class StatisticsVO {
 
     private List<WeeklyProgressVO> weeklyProgress;
 
-    private List<SkillRadarVO> skillRadar;
-
     private List<RecentActivityVO> recentActivity;
 
     /**
@@ -35,13 +33,25 @@ public class StatisticsVO {
     @AllArgsConstructor
     public static class StatisticsOverviewVO {
 
-        private Integer totalInterviews;
+        /**
+         * 真实面试次数
+         */
+        private Integer realInterviews;
 
-        private Integer averageScore;
+        /**
+         * 模拟面试次数
+         */
+        private Integer mockInterviews;
 
-        private Integer improvementRate;
+        /**
+         * 简历数量
+         */
+        private Integer resumeCount;
 
-        private Integer studyHours;
+        /**
+         * 准备完成率（百分比 0-100）
+         */
+        private Integer preparationCompletionRate;
 
     }
 
@@ -59,21 +69,6 @@ public class StatisticsVO {
         private Integer score;
 
         private Integer interviews;
-
-    }
-
-    /**
-     * 技能雷达VO
-     */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class SkillRadarVO {
-
-        private String skill;
-
-        private Integer score;
 
     }
 

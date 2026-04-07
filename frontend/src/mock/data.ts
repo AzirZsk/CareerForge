@@ -385,10 +385,10 @@ export const interviewDetail: InterviewDetail = {
 // 统计数据
 export const statistics: Statistics = {
   overview: {
-    totalInterviews: 28,
-    averageScore: 84,
-    improvementRate: 23,
-    studyHours: 45
+    realInterviews: 5,
+    mockInterviews: 28,
+    resumeCount: 3,
+    preparationCompletionRate: 75
   },
   weeklyProgress: [
     { week: 'W1', score: 72, interviews: 3 },
@@ -397,14 +397,6 @@ export const statistics: Statistics = {
     { week: 'W4', score: 85, interviews: 6 },
     { week: 'W5', score: 88, interviews: 5 },
     { week: 'W6', score: 90, interviews: 5 }
-  ],
-  skillRadar: [
-    { skill: 'Vue.js', score: 92 },
-    { skill: 'React', score: 85 },
-    { skill: 'TypeScript', score: 88 },
-    { skill: '性能优化', score: 82 },
-    { skill: '工程化', score: 86 },
-    { skill: '算法', score: 75 }
   ],
   recentActivity: [
     { type: 'interview', content: '完成字节跳动技术面试', time: '2小时前', score: 85 },

@@ -356,12 +356,6 @@ export interface WeeklyProgress {
   interviews: number
 }
 
-// 技能雷达
-export interface SkillRadar {
-  skill: string
-  score: number
-}
-
 // 活动类型
 export type ActivityType = 'interview' | 'resume' | 'practice' | 'review'
 
@@ -375,17 +369,16 @@ export interface RecentActivity {
 
 // 统计概览
 export interface StatisticsOverview {
-  totalInterviews: number
-  averageScore: number
-  improvementRate: number
-  studyHours: number
+  realInterviews: number
+  mockInterviews: number
+  resumeCount: number
+  preparationCompletionRate: number
 }
 
 // 统计数据
 export interface Statistics {
   overview: StatisticsOverview
   weeklyProgress: WeeklyProgress[]
-  skillRadar: SkillRadar[]
   recentActivity: RecentActivity[]
 }
 

@@ -11,11 +11,11 @@ import {
   interviewHistory,
   interviewQuestions,
   interviewDetail,
-  statistics,
   jobRecommendations
 } from '@/mock/data'
 import * as userApi from '@/api/user'
 import * as resumeApi from '@/api/resume'
+import * as statisticsApi from '@/api/statistics'
 import type {
   User,
   Resume,
@@ -54,7 +54,16 @@ export const useAppStore = defineStore('app', () => {
   const currentInterview = ref<InterviewDetail>(interviewDetail)
 
   // 统计数据
-  const stats = ref<Statistics>(statistics)
+  const stats = ref<Statistics>({
+    overview: {
+      realInterviews: 0,
+      mockInterviews: 0,
+      resumeCount: 0,
+      preparationCompletionRate: 0
+    },
+    weeklyProgress: [],
+    recentActivity: []
+  })
 
   // 职位推荐
   const jobs = ref<Job[]>(jobRecommendations)
@@ -423,6 +432,16 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
+  // 获取统计数据（从 API）
+  async function fetchStatistics(): Promise<void> {
+    try {
+      const result = await statisticsApi.getStatistics()
+      stats.value = result
+    } catch (error) {
+      console.error('获取统计数据失败', error)
+    }
+  }
+
   return {
     // 状态
     user,
@@ -465,6 +484,7 @@ export const useAppStore = defineStore('app', () => {
     deleteSuggestion,
     fetchSuggestions,
     fetchAllSuggestions,
-    updateResumeBasicInfo
+    updateResumeBasicInfo,
+    fetchStatistics
   }
 })

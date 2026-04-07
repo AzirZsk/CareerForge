@@ -25,6 +25,8 @@ import com.landit.jobposition.service.JobPositionService;
 import com.landit.resume.dto.ResumeDetailVO;
 import com.landit.resume.entity.Resume;
 import com.landit.resume.service.ResumeService;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -50,6 +52,7 @@ import java.util.stream.Collectors;
 // 使用完整限定名避免常量冲突
 import com.landit.interview.graph.preparation.InterviewPreparationGraphConstants;
 import com.landit.interview.graph.review.ReviewAnalysisGraphConstants;
+import com.landit.interview.graph.review.dto.AdviceItem;
 
 /**
  * 面试中心业务编排处理器
@@ -153,7 +156,8 @@ public class InterviewCenterHandler {
         }
         List<InterviewPreparation> preparations = preparationService.getByInterviewId(id);
         InterviewReviewNote reviewNote = reviewNoteService.getManualNoteByInterviewId(id);
-        return convertToDetailVO(interview, preparations, reviewNote);
+        InterviewReviewNote aiAnalysisNote = reviewNoteService.getAiAnalysisByInterviewId(id);
+        return convertToDetailVO(interview, preparations, reviewNote, aiAnalysisNote);
     }
 
     /**
@@ -301,6 +305,10 @@ public class InterviewCenterHandler {
         initialState.put(ReviewAnalysisGraphConstants.STATE_MESSAGES, new ArrayList<String>());
         // 发送开始事件
         sendSseEvent(emitter, GraphProgressEvent.startReviewAnalysis(id, threadId));
+
+        // 用于保存最终的 AI 分析结果
+        final List<AdviceItem> finalAdviceList = new ArrayList<>();
+
         // 订阅工作流（在独立线程池执行，避免阻塞调用线程）
         reviewGraphService.streamAnalysis(initialState, threadId)
                 .filter(output -> !isInterruptionOutput(output))
@@ -312,6 +320,25 @@ public class InterviewCenterHandler {
                             Map<String, Object> nodeOutput = (Map<String, Object>) data.get(ReviewAnalysisGraphConstants.STATE_NODE_OUTPUT);
                             GraphProgressEvent event = GraphProgressEvent.fromNodeOutput(output.node(), threadId, nodeOutput);
                             sendSseEvent(emitter, event);
+
+                            // 捕获最后一个节点（generate_advice）的 adviceList
+                            if (ReviewAnalysisGraphConstants.NODE_GENERATE_ADVICE.equals(output.node()) && nodeOutput != null) {
+                                @SuppressWarnings("unchecked")
+                                Object adviceData = nodeOutput.get("data");
+                                if (adviceData instanceof List) {
+                                    try {
+                                        // 将 List<Map> 转换为 List<AdviceItem>
+                                        String json = objectMapper.writeValueAsString(adviceData);
+                                        List<AdviceItem> adviceList = objectMapper.readValue(json,
+                                                new TypeReference<List<AdviceItem>>() {});
+                                        finalAdviceList.clear();
+                                        finalAdviceList.addAll(adviceList);
+                                        log.info("[SSE] 捕获 AI 分析结果: adviceCount={}", adviceList.size());
+                                    } catch (Exception e) {
+                                        log.error("[SSE] 解析 AI 分析结果失败", e);
+                                    }
+                                }
+                            }
                         },
                         error -> {
                             log.error("[SSE] 复盘分析工作流异常", error);
@@ -320,7 +347,16 @@ public class InterviewCenterHandler {
                         },
                         () -> {
                             log.info("[SSE] 复盘分析工作流完成: threadId={}", threadId);
-                            sendSseEvent(emitter, GraphProgressEvent.completeReviewAnalysis(threadId, null));
+                            // 保存 AI 分析结果到数据库
+                            if (!finalAdviceList.isEmpty()) {
+                                try {
+                                    reviewNoteService.saveAIAnalysis(id, finalAdviceList);
+                                    log.info("[SSE] AI 分析结果已保存到数据库: interviewId={}", id);
+                                } catch (Exception e) {
+                                    log.error("[SSE] 保存 AI 分析结果失败", e);
+                                }
+                            }
+                            sendSseEvent(emitter, GraphProgressEvent.completeReviewAnalysis(threadId, finalAdviceList));
                             emitter.complete();
                         }
                 );
@@ -464,7 +500,8 @@ public class InterviewCenterHandler {
 
     private InterviewDetailVO convertToDetailVO(Interview interview,
                                                  List<InterviewPreparation> preparations,
-                                                 InterviewReviewNote reviewNote) {
+                                                 InterviewReviewNote reviewNote,
+                                                 InterviewReviewNote aiAnalysisNote) {
         InterviewDetailVO vo = new InterviewDetailVO();
         BeanUtils.copyProperties(interview, vo);
 
@@ -491,6 +528,9 @@ public class InterviewCenterHandler {
         vo.setPreparations(preparations.stream().map(this::convertToPreparationVO).collect(Collectors.toList()));
         if (reviewNote != null) {
             vo.setReviewNote(convertToReviewNoteVO(reviewNote));
+        }
+        if (aiAnalysisNote != null) {
+            vo.setAiAnalysisNote(convertToReviewNoteVO(aiAnalysisNote));
         }
         return vo;
     }

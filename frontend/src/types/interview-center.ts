@@ -82,6 +82,8 @@ export interface InterviewDetail {
   transcript?: string
   preparations: PreparationVO[]
   reviewNote?: ReviewNoteVO
+  /** AI 分析记录 */
+  aiAnalysisNote?: ReviewNoteVO
   createdAt: string
   updatedAt: string
 }
@@ -415,6 +417,7 @@ export interface AdviceItem {
   description: string
   category?: string
   priority?: 'high' | 'medium' | 'low'
+  actionItems?: string[]
 }
 
 // ==================== 音频转录相关类型 ====================

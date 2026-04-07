@@ -270,18 +270,6 @@
       <section class="review-section">
         <div class="section-header">
           <h2>复盘笔记</h2>
-          <div class="header-actions">
-            <button
-              class="btn btn-sm btn-ai"
-              @click="handleAIAnalysis"
-              :disabled="reviewState.isRunning || !canStartAIAnalysis"
-              :title="aiAnalysisHint"
-            >
-              <span v-if="reviewState.isRunning">分析中...</span>
-              <span v-else>AI 分析</span>
-            </button>
-            <button v-if="interview.reviewNote" class="btn btn-sm" @click="showReviewDialog = true">编辑</button>
-          </div>
         </div>
 
         <!-- 面试过程输入区域（支持音频上传 + 文本输入） -->
@@ -292,6 +280,29 @@
           @save="handleSaveTranscript"
         />
 
+        <!-- AI 分析入口区域 -->
+        <div class="ai-analysis-entry">
+          <div class="entry-left">
+            <span class="entry-label">🤖 AI 分析</span>
+            <span class="entry-hint">{{ aiAnalysisEntryHint }}</span>
+          </div>
+          <div class="tooltip-wrapper" v-if="!canStartAIAnalysis && !reviewState.isRunning">
+            <button class="btn btn-sm btn-ai" disabled>
+              <span>开始分析</span>
+            </button>
+            <span class="tooltip-text">{{ aiAnalysisHint }}</span>
+          </div>
+          <button
+            v-else
+            class="btn btn-sm btn-ai"
+            @click="handleAIAnalysis"
+            :disabled="reviewState.isRunning"
+          >
+            <span v-if="reviewState.isRunning">分析中...</span>
+            <span v-else>开始分析</span>
+          </button>
+        </div>
+
         <!-- AI 分析进度 -->
         <div v-if="reviewState.isRunning" class="progress-indicator">
           <div class="progress-bar">
@@ -300,22 +311,27 @@
           <p class="progress-message">{{ reviewState.message }}</p>
         </div>
 
-        <!-- AI 分析结果 -->
-        <div v-if="reviewState.isCompleted && reviewState.adviceList.length > 0" class="ai-analysis-result">
-          <h4>AI 分析建议</h4>
-          <div class="advice-list">
-            <div v-for="(advice, index) in reviewState.adviceList" :key="index" class="advice-item">
-              <div class="advice-header">
-                <span class="advice-category" v-if="advice.category">{{ advice.category }}</span>
-                <span class="advice-title">{{ advice.title }}</span>
-              </div>
-              <p class="advice-description">{{ advice.description }}</p>
-            </div>
-          </div>
-        </div>
+        <!-- AI 分析卡片 -->
+        <AIAnalysisCard
+          v-if="interview.aiAnalysisNote || (reviewState.isCompleted && reviewState.adviceList.length > 0)"
+          :ai-analysis-note="interview.aiAnalysisNote"
+          :is-analyzing="reviewState.isRunning"
+          :default-expanded="reviewState.isCompleted && reviewState.adviceList.length > 0"
+          :show-reference-button="!interview.reviewNote"
+          @reanalyze="handleReanalyze"
+          @reference="handleReferenceAIAdvice"
+        />
+
+        <!-- 分隔线 -->
+        <div v-if="interview.aiAnalysisNote && interview.reviewNote" class="section-divider"></div>
 
         <!-- 手动复盘笔记 -->
         <div v-if="interview.reviewNote" class="review-note">
+          <div class="note-header">
+            <span class="note-icon">📋</span>
+            <span class="note-title">我的复盘笔记</span>
+            <button class="btn btn-sm btn-edit-note" @click="showReviewDialog = true">编辑</button>
+          </div>
           <div class="note-section">
             <h4>整体感受</h4>
             <p>{{ interview.reviewNote.overallFeeling || '暂无' }}</p>
@@ -333,9 +349,10 @@
             <p>{{ interview.reviewNote.lessonsLearned || '暂无' }}</p>
           </div>
         </div>
-        <div v-else-if="!reviewState.isCompleted" class="empty-review">
+        <!-- 添加复盘笔记按钮（只要没有手动笔记就显示） -->
+        <div v-else class="empty-review">
           <button class="btn btn-primary" @click="showReviewDialog = true">
-            添加复盘笔记
+            + 添加复盘笔记
           </button>
         </div>
       </section>
@@ -368,7 +385,8 @@ import {
   type InterviewStatus,
   type InterviewResult,
   type InterviewType,
-  type PreparationVO
+  type PreparationVO,
+  type AdviceItem
 } from '@/types/interview-center'
 import { useNotificationStore } from '@/stores/notification'
 // 弹窗组件
@@ -382,6 +400,7 @@ import MicrophonePermissionDialog from '@/components/interview-center/Microphone
 import PreparationProgress from '@/components/interview-center/PreparationProgress.vue'
 import PreparationGroup from '@/components/interview-center/PreparationGroup.vue'
 import AudioUploadArea from '@/components/interview-center/AudioUploadArea.vue'
+import AIAnalysisCard from '@/components/interview-center/AIAnalysisCard.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 // 工作流 composables
 import { useInterviewPreparation } from '@/composables/useInterviewPreparation'
@@ -401,6 +420,13 @@ const interview = ref<InterviewDetail | null>(null)
 const showAddPreparationDialog = ref(false)
 const showReviewDialog = ref(false)
 const showEditDialog = ref(false)
+// 临时存储 AI 建议参考内容（用于填充到复盘笔记表单）
+const referencedAdvice = ref<{
+  highPoints: string
+  weakPoints: string
+  lessonsLearned: string
+  overallFeeling: string
+} | null>(null)
 const showPrepModal = ref(false)
 const showMockConfigDialog = ref(false)
 
@@ -496,6 +522,20 @@ const aiAnalysisHint = computed(() => {
     return '基于面试过程文本进行 AI 分析'
   }
   return '请先输入或上传面试过程内容'
+})
+
+// AI 分析入口区域提示
+const aiAnalysisEntryHint = computed(() => {
+  if (reviewState.isCompleted) {
+    return '分析完成，查看下方结果'
+  }
+  if (reviewState.isRunning) {
+    return '正在分析中...'
+  }
+  if (canStartAIAnalysis.value) {
+    return '已准备好，点击开始分析'
+  }
+  return '需要先输入面试过程内容'
 })
 
 function goBack() {
@@ -672,6 +712,76 @@ function handleRetryPreparation() {
 function handleAIAnalysis() {
   if (!interview.value || !canStartAIAnalysis.value) return
   startAnalysis(interview.value.id, sessionTranscript.value)
+}
+
+// 重新分析
+async function handleReanalyze() {
+  if (!interview.value) return
+
+  // 弹出确认框
+  const confirmed = await confirm({
+    title: '重新分析',
+    message: '重新分析将覆盖之前的 AI 分析结果，确定继续吗？',
+    confirmText: '确定',
+    danger: true
+  })
+
+  if (confirmed) {
+    // 重置状态
+    reviewState.isCompleted = false
+    reviewState.adviceList = []
+    reviewState.hasError = false
+    // 重新分析
+    startAnalysis(interview.value.id, sessionTranscript.value)
+  }
+}
+
+// 参考 AI 建议
+function handleReferenceAIAdvice(adviceList: AdviceItem[]) {
+  if (!interview.value || adviceList.length === 0) return
+
+  // 将 AI 建议分类整理
+  const highPoints: string[] = []
+  const weakPoints: string[] = []
+  const lessonsLearned: string[] = []
+
+  adviceList.forEach(advice => {
+    const category = advice.category?.toLowerCase() || ''
+    let text = `${advice.title}: ${advice.description}`
+    if (advice.actionItems && advice.actionItems.length > 0) {
+      text += '\n' + advice.actionItems.map(item => `  - ${item}`).join('\n')
+    }
+
+    // 根据类别分类
+    if (category.includes('技能') || category.includes('知识')) {
+      lessonsLearned.push(text)
+    } else if (category.includes('表现') || category.includes('优点') || category.includes('亮点')) {
+      highPoints.push(text)
+    } else if (category.includes('不足') || category.includes('改进') || category.includes('问题')) {
+      weakPoints.push(text)
+    } else {
+      lessonsLearned.push(text)
+    }
+  })
+
+  // 弹出确认框
+  confirm({
+    title: '参考 AI 建议',
+    message: '是否将 AI 分析建议填充到复盘笔记？这将覆盖原有内容（如有）',
+    confirmText: '填充'
+  }).then(confirmed => {
+    if (confirmed && interview.value) {
+      // 临时存储参考内容，用于 ReviewNoteDialog 加载
+      referencedAdvice.value = {
+        highPoints: highPoints.join('\n\n') || interview.value.reviewNote?.highPoints || '',
+        weakPoints: weakPoints.join('\n\n') || interview.value.reviewNote?.weakPoints || '',
+        lessonsLearned: lessonsLearned.join('\n\n') || interview.value.reviewNote?.lessonsLearned || '',
+        overallFeeling: interview.value.reviewNote?.overallFeeling || ''
+      }
+      // 打开复盘笔记编辑弹窗
+      showReviewDialog.value = true
+    }
+  })
 }
 
 // 保存转译文本
@@ -1357,21 +1467,176 @@ function handleApplyTranscriptEvent(event: Event) {
 }
 
 .review-note {
+  .note-header {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-md;
+    padding-bottom: $spacing-sm;
+    border-bottom: 1px solid $color-bg-elevated;
+  }
+
+  .note-icon {
+    font-size: 1rem;
+  }
+
+  .note-title{
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: $color-text-primary;
+    flex: 1;
+  }
+
+  .btn-edit-note {
+    background: transparent;
+    border: 1px solid $color-bg-elevated;
+    color: $color-text-tertiary;
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    border-radius: $radius-sm;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      color: $color-accent;
+      border-color: $color-accent;
+    }
+  }
+
   .note-section {
-    margin-bottom: $spacing-lg;
+    margin-bottom: $spacing-md;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
 
     h4 {
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
       font-weight: 600;
-      color: $color-text-secondary;
-      margin-bottom: $spacing-sm;
+      color: $color-text-tertiary;
+      margin-bottom: $spacing-xs;
     }
 
     p {
       color: $color-text-primary;
       line-height: 1.6;
+      font-size: 0.875rem;
+      white-space: pre-wrap;
+      word-break: break-word;
     }
   }
+}
+
+// AI 分析入口区域
+.ai-analysis-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: $spacing-md;
+  padding: $spacing-md;
+  background: $color-bg-tertiary;
+  border-radius: $radius-md;
+
+  .entry-left {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+  }
+
+  .entry-label {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: $color-text-primary;
+  }
+
+  .entry-hint {
+    font-size: 0.75rem;
+    color: $color-text-tertiary;
+  }
+
+  .entry-right {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  .ai-btn-wrapper {
+    position: relative;
+  }
+
+  .btn-ai {
+    background: linear-gradient(135deg, $color-accent 0%, $color-accent-dark 100%);
+    color: $color-bg-primary;
+    border: none;
+    font-weight: 500;
+
+    &:hover:not(:disabled) {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  .btn-manual {
+    background: transparent;
+    border: 1px solid $color-bg-elevated;
+    color: $color-text-secondary;
+
+    &:hover {
+      border-color: $color-accent;
+      color: $color-accent;
+    }
+  }
+
+  // Tooltip（用于禁用按钮的 hover 提示）
+  .tooltip-wrapper {
+    position: relative;
+
+    .tooltip-text {
+      visibility: hidden;
+      opacity: 0;
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: $color-bg-elevated;
+      color: $color-text-primary;
+      padding: $spacing-xs $spacing-sm;
+      border-radius: $radius-sm;
+      font-size: 0.75rem;
+      white-space: nowrap;
+      z-index: 100;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: opacity 0.2s, visibility 0.2s;
+
+      // 小箭头
+      &::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 6px solid transparent;
+        border-top-color: $color-bg-elevated;
+      }
+    }
+
+    &:hover .tooltip-text {
+      visibility: visible;
+      opacity: 1;
+    }
+  }
+}
+
+.section-divider {
+  height: 1px;
+  background: $color-bg-elevated;
+  margin: $spacing-lg 0;
 }
 
 .empty-preparations, .empty-review {

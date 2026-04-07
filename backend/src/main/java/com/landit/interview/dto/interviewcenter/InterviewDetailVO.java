@@ -61,7 +61,15 @@ public class InterviewDetailVO {
 
     private List<PreparationVO> preparations;
 
+    /**
+     * 手动复盘笔记
+     */
     private ReviewNoteVO reviewNote;
+
+    /**
+     * AI 分析记录
+     */
+    private ReviewNoteVO aiAnalysisNote;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

@@ -64,27 +64,13 @@
               </svg>
             </div>
             <div class="stat-content">
-              <span class="stat-value">{{ store.stats.overview.totalInterviews }}</span>
-              <span class="stat-label">模拟面试次数</span>
-            </div>
-            <div class="stat-trend up">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-                <polyline points="17 6 23 6 23 12" />
-              </svg>
-              +12%
+              <span class="stat-value">{{ store.stats.overview.realInterviews }}</span>
+              <span class="stat-label">真实面试</span>
             </div>
           </div>
 
           <div class="stat-card">
-            <div class="stat-icon score">
+            <div class="stat-icon mock">
               <svg
                 width="24"
                 height="24"
@@ -97,27 +83,13 @@
               </svg>
             </div>
             <div class="stat-content">
-              <span class="stat-value">{{ store.stats.overview.averageScore }}</span>
-              <span class="stat-label">平均得分</span>
-            </div>
-            <div class="stat-trend up">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-                <polyline points="17 6 23 6 23 12" />
-              </svg>
-              +8%
+              <span class="stat-value">{{ store.stats.overview.mockInterviews }}</span>
+              <span class="stat-label">模拟面试</span>
             </div>
           </div>
 
           <div class="stat-card">
-            <div class="stat-icon improvement">
+            <div class="stat-icon resume">
               <svg
                 width="24"
                 height="24"
@@ -126,48 +98,21 @@
                 stroke="currentColor"
                 stroke-width="2"
               >
-                <line
-                  x1="12"
-                  y1="20"
-                  x2="12"
-                  y2="10"
-                />
-                <line
-                  x1="18"
-                  y1="20"
-                  x2="18"
-                  y2="4"
-                />
-                <line
-                  x1="6"
-                  y1="20"
-                  x2="6"
-                  y2="16"
-                />
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+                <polyline points="10 9 9 9 8 9" />
               </svg>
             </div>
             <div class="stat-content">
-              <span class="stat-value">{{ store.stats.overview.improvementRate }}%</span>
-              <span class="stat-label">能力提升率</span>
-            </div>
-            <div class="stat-trend up">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-                <polyline points="17 6 23 6 23 12" />
-              </svg>
-              +23%
+              <span class="stat-value">{{ store.stats.overview.resumeCount }}</span>
+              <span class="stat-label">简历数量</span>
             </div>
           </div>
 
           <div class="stat-card">
-            <div class="stat-icon study">
+            <div class="stat-icon preparation">
               <svg
                 width="24"
                 height="24"
@@ -176,20 +121,13 @@
                 stroke="currentColor"
                 stroke-width="2"
               >
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="10"
-                />
-                <polyline points="12 6 12 12 16 14" />
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
               </svg>
             </div>
             <div class="stat-content">
-              <span class="stat-value">{{ store.stats.overview.studyHours }}h</span>
-              <span class="stat-label">累计学习时长</span>
-            </div>
-            <div class="stat-trend neutral">
-              本周 +5h
+              <span class="stat-value">{{ store.stats.overview.preparationCompletionRate }}%</span>
+              <span class="stat-label">准备完成率</span>
             </div>
           </div>
         </div>
@@ -204,7 +142,7 @@
         >
           <div class="section-header">
             <h2 class="section-title">
-              学习进度
+              近期面试
             </h2>
             <div class="chart-tabs">
               <button
@@ -229,9 +167,9 @@
                 <div class="bar-wrapper">
                   <div
                     class="bar"
-                    :style="{ height: item.score + '%' }"
+                    :style="{ height: Math.max(item.interviews * 20, 10) + '%' }"
                   >
-                    <span class="bar-value">{{ item.score }}</span>
+                    <span class="bar-value">{{ item.interviews }}</span>
                   </div>
                 </div>
                 <span class="bar-label">{{ item.week }}</span>
@@ -240,52 +178,15 @@
           </div>
         </section>
 
-        <!-- 技能雷达 -->
-        <section
-          class="skills-section animate-in"
-          style="--delay: 3"
-        >
-          <div class="section-header">
-            <h2 class="section-title">
-              技能评估
-            </h2>
-          </div>
-          <div class="skills-list">
-            <div
-              v-for="(skill, index) in store.stats.skillRadar"
-              :key="skill.skill"
-              class="skill-item"
-              :style="{ '--index': index }"
-            >
-              <div class="skill-info">
-                <span class="skill-name">{{ skill.skill }}</span>
-                <span class="skill-score">{{ skill.score }}</span>
-              </div>
-              <div class="skill-bar">
-                <div
-                  class="skill-fill"
-                  :style="{ width: skill.score + '%' }"
-                />
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <!-- 最近动态 & 推荐岗位 -->
-      <div class="bottom-grid">
         <!-- 最近动态 -->
         <section
           class="activity-section animate-in"
-          style="--delay: 4"
+          style="--delay: 3"
         >
           <div class="section-header">
             <h2 class="section-title">
               最近动态
             </h2>
-            <button class="view-all-btn">
-              查看全部
-            </button>
           </div>
           <div class="activity-list">
             <div
@@ -318,62 +219,14 @@
             </div>
           </div>
         </section>
-
-        <!-- 推荐岗位 -->
-        <section
-          class="jobs-section animate-in"
-          style="--delay: 5"
-        >
-          <div class="section-header">
-            <h2 class="section-title">
-              推荐岗位
-            </h2>
-            <button class="view-all-btn">
-              更多职位
-            </button>
-          </div>
-          <div class="jobs-list">
-            <div
-              v-for="job in store.jobs.slice(0, 3)"
-              :key="job.id"
-              class="job-card"
-            >
-              <div class="job-header">
-                <div class="company-logo">
-                  {{ job.company.charAt(0) }}
-                </div>
-                <div class="job-info">
-                  <h4 class="job-position">
-                    {{ job.position }}
-                  </h4>
-                  <span class="job-company">{{ job.company }}</span>
-                </div>
-                <div class="match-score">
-                  <span class="score-value">{{ job.matchScore }}%</span>
-                  <span class="score-label">匹配度</span>
-                </div>
-              </div>
-              <div class="job-details">
-                <span class="job-salary">{{ job.salary }}</span>
-                <span class="job-location">{{ job.location }}</span>
-              </div>
-              <div class="job-tags">
-                <span
-                  v-for="tag in job.tags"
-                  :key="tag"
-                  class="job-tag"
-                >{{ tag }}</span>
-              </div>
-            </div>
-          </div>
-        </section>
       </div>
+
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAppStore } from '@/stores'
 import { useRouter } from 'vue-router'
 import type { WeeklyProgress } from '@/types'
@@ -393,6 +246,11 @@ const chartTabs: ChartTab[] = [
 ]
 
 const chartData = computed<WeeklyProgress[]>(() => store.stats.weeklyProgress)
+
+// 加载统计数据
+onMounted(async () => {
+  await store.fetchStatistics()
+})
 
 function startInterview(): void {
   router.push('/interview')
@@ -609,16 +467,27 @@ function goToResume(): void {
 // 主内容区域
 .main-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: $spacing-xl;
+  align-items: stretch;
+}
+
+.progress-section,
+.activity-section {
+  display: flex;
+  flex-direction: column;
 }
 
 // 进度图表
 .chart-container {
+  flex: 1;
   background: $gradient-card;
   border-radius: $radius-lg;
   padding: $spacing-xl;
   border: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  min-height: 320px;
 }
 
 .chart-tabs {
@@ -741,19 +610,15 @@ function goToResume(): void {
   transition: width 0.8s ease;
 }
 
-// 底部区域
-.bottom-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: $spacing-xl;
-}
-
 // 活动列表
 .activity-list {
+  flex: 1;
   background: $gradient-card;
   border-radius: $radius-lg;
   border: 1px solid rgba(255, 255, 255, 0.05);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .activity-item {
@@ -806,117 +671,6 @@ function goToResume(): void {
   font-size: $text-xs;
   font-weight: $weight-semibold;
   border-radius: $radius-sm;
-}
-
-// 岗位列表
-.jobs-list {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-md;
-}
-
-.job-card {
-  background: $gradient-card;
-  border-radius: $radius-lg;
-  padding: $spacing-lg;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: all $transition-fast;
-  &:hover {
-    transform: translateX(4px);
-    border-color: rgba(212, 168, 83, 0.2);
-  }
-}
-
-.job-header {
-  display: flex;
-  align-items: center;
-  gap: $spacing-md;
-  margin-bottom: $spacing-md;
-}
-
-.company-logo {
-  width: 44px;
-  height: 44px;
-  border-radius: $radius-md;
-  background: $gradient-gold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: $font-display;
-  font-weight: $weight-bold;
-  color: $color-bg-deep;
-}
-
-.job-info {
-  flex: 1;
-}
-
-.job-position {
-  font-size: $text-base;
-  font-weight: $weight-medium;
-  color: $color-text-primary;
-  margin-bottom: $spacing-xs;
-}
-
-.job-company {
-  font-size: $text-sm;
-  color: $color-text-tertiary;
-}
-
-.match-score {
-  text-align: right;
-}
-
-.score-value {
-  display: block;
-  font-size: $text-lg;
-  font-weight: $weight-semibold;
-  color: $color-accent;
-}
-
-.score-label {
-  font-size: $text-xs;
-  color: $color-text-tertiary;
-}
-
-.job-details {
-  display: flex;
-  gap: $spacing-md;
-  margin-bottom: $spacing-md;
-}
-
-.job-salary {
-  font-size: $text-sm;
-  font-weight: $weight-semibold;
-  color: $color-success;
-}
-
-.job-location {
-  font-size: $text-sm;
-  color: $color-text-tertiary;
-}
-
-.job-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: $spacing-xs;
-}
-
-.job-tag {
-  padding: $spacing-xs $spacing-sm;
-  background: rgba(255, 255, 255, 0.05);
-  color: $color-text-secondary;
-  font-size: $text-xs;
-  border-radius: $radius-sm;
-}
-
-.view-all-btn {
-  font-size: $text-sm;
-  color: $color-accent;
-  transition: color $transition-fast;
-  &:hover {
-    color: $color-accent-light;
-  }
 }
 
 // 动画

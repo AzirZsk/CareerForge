@@ -41,7 +41,7 @@
 
         <!-- 空闲状态 -->
         <div v-if="!isUploading" class="upload-prompt">
-          <p>拖拽音频文件到此处，或<span class="upload-link" @click.stop="triggerFileSelect">点击上传</span></p>
+          <p>拖拽音频文件到此处，或点击上传</p>
           <span class="format-hint">（wav/mp3/m4a 等，最大 50MB）</span>
         </div>
 
@@ -351,15 +351,6 @@ function handleTextInput(event: Event) {
     color: $color-text-secondary;
     font-size: 0.8125rem;
     margin: 0;
-  }
-
-  .upload-link {
-    color: $color-accent;
-    cursor: pointer;
-
-    &:hover {
-      text-decoration: underline;
-    }
   }
 
   .format-hint {
