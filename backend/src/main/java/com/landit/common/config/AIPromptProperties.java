@@ -2040,13 +2040,15 @@ public class AIPromptProperties {
         public PromptConfig getAnalyzeTranscriptConfig() {
             return ensurePromptConfig(analyzeTranscriptConfig,
                     """
-                    你是一位专业的面试对话分析师。请分析面试对话文本，提取每个问答对的详细信息。
+                    你是一位专业的面试对话分析师。请结合目标岗位的 JD 信息和候选人简历，分析面试对话文本，提取每个问答对的详细信息。
 
-                    对于每个问答对，请分析：
+                    对于每个问答对，请结合 JD 要求分析：
                     1. 问题意图：面试官为什么要问这个问题？考察什么能力或知识点？
-                    2. 回答清晰度评分：1-5分（1=完全不相关，2=理解有偏差，3=基本清楚但有遗漏，4=清晰完整，5=优秀有深度）
-                    3. 评分理由：为什么给这个分数？
-                    4. 改进建议：如果回答不够好，应该如何改进？
+                    2. JD 关联：该问题与 JD 中的哪项技能/要求相关？（如无法关联则标记为"综合能力考察"）
+                    3. 回答清晰度评分：1-5分（1=完全不相关，2=理解有偏差，3=基本清楚但有遗漏，4=清晰完整，5=优秀有深度）
+                    4. 评分理由：结合 JD 要求说明为什么给这个分数
+                    5. 简历匹配度：候选人的回答是否与其简历中声称的经验一致？（1=严重不符，3=基本一致，5=高度一致）
+                    6. 改进建议：针对该岗位要求，如何改进回答
 
                     请以JSON格式返回结果：
                     {
@@ -2055,42 +2057,113 @@ public class AIPromptProperties {
                           "question": "面试官的原始问题",
                           "questionIntent": "问题意图分析",
                           "assessmentTarget": "考察的能力/知识点",
+                          "jdRelevance": "与JD的关联（具体技能/要求）",
                           "answer": "候选人的原始回答",
                           "clarityScore": 3,
                           "clarityReason": "评分理由",
+                          "resumeMatchScore": 3,
+                          "resumeMatchReason": "简历匹配度理由",
                           "improvementSuggestion": "改进建议"
                         }
                       ],
                       "overallClarity": 3.5,
+                      "overallResumeMatch": 3.5,
+                      "jdMatchScore": 3,
+                      "jdMatchReason": "JD匹配度总体评价",
                       "summary": "整体对话质量总结"
                     }
 
                     注意：
                     - 如果对话中没有明确的问答对，返回空数组
                     - 分数必须是1-5的整数
-                    - overallClarity是所有问答对分数的平均值
+                    - overallClarity 和 overallResumeMatch 是所有问答对分数的平均值
+                    - jdMatchScore 是整体对话与 JD 要求匹配度的综合评分（1-5）
+                    - 如果没有提供 JD 信息或简历信息，相关维度返回 null 并在理由中说明"无JD信息"或"无简历信息"
                     """,
-                    "请分析以下面试对话文本：\n{sessionTranscript}");
+                    """
+                    请分析以下面试对话文本。
+
+                    【目标岗位】{companyName} - {positionTitle}
+
+                    【职位描述 JD】
+                    {jdContent}
+
+                    【JD 分析摘要】
+                    {jdAnalysis}
+
+                    【候选人简历摘要】
+                    {resumeContent}
+
+                    【面试对话文本】
+                    {sessionTranscript}
+                    """);
         }
 
         public PromptConfig getAnalyzeInterviewConfig() {
             return ensurePromptConfig(analyzeInterviewConfig,
                     """
-                    你是一位专业的面试复盘分析师。请根据收集的面试数据，分析面试表现：
+                    你是一位专业的面试复盘分析师。请根据收集的面试数据和上下文信息，分析面试表现。
+
+                    你将收到以下数据：
+                    - interview: 面试基本信息（轮次类型、日期、备注等）
+                    - reviewNote: 用户手动复盘笔记（整体感受、亮点、不足、经验教训）
+                    - context: 面试上下文信息
+                      - companyName: 公司名称
+                      - positionTitle: 职位名称
+                      - jdContent: 职位描述原文
+                      - jdAnalysis: JD 分析结果（包含必备技能、关键词等）
+                      - resumeContent: 候选人简历摘要
+                    - transcriptAnalysis: 前序节点对面试对话的详细分析结果（包含每个问答对的评分、JD关联、简历匹配度等）
 
                     分析维度：
-                    1. 整体表现评估（优秀/良好/一般/待改进）
-                    2. 优势亮点（表现好的方面）
-                    3. 不足之处（需要改进的方面）
-                    4. 轮次分析（各轮次的表现评价）
-                    5. 综合建议
+                    1. JD 匹配度评估：候选人回答与 JD 要求的匹配程度，结合 JD 中的必备技能逐项评估
+                    2. 整体表现评估（优秀/良好/一般/待改进）
+                    3. 优势亮点：结合 JD 要求，指出候选人表现突出的方面
+                    4. 不足之处：结合 JD 要求和简历描述，指出需要改进的方面
+                    5. 技能差距分析：对比 JD 必备技能和候选人实际表现，列出技能差距
+                    6. 简历一致性：候选人面试表现与简历描述的一致性
+                    7. 综合建议
 
-                    请以JSON格式返回结果，包含以下字段：
-                    - overallPerformance: 整体表现评级
-                    - strengths: 优势亮点列表
-                    - weaknesses: 不足之处列表
-                    - roundAnalysis: 各轮次分析
-                    - summary: 综合总结
+                    请以JSON格式返回结果：
+                    {
+                      "jdMatchScore": 7,
+                      "jdMatchDetails": [
+                        {
+                          "skill": "Java",
+                          "required": true,
+                          "matchLevel": "strong/medium/weak/missing",
+                          "evidence": "面试中的相关证据"
+                        }
+                      ],
+                      "overallPerformance": "良好",
+                      "overallScore": 75,
+                      "strengths": ["优势1", "优势2"],
+                      "weaknesses": ["不足1", "不足2"],
+                      "skillGaps": [
+                        {
+                          "skill": "缺失技能",
+                          "jdRequirement": "JD中的要求描述",
+                          "currentLevel": "当前水平评估",
+                          "gapDescription": "差距说明"
+                        }
+                      ],
+                      "resumeConsistency": {
+                        "score": 4,
+                        "findings": ["一致性发现1", "一致性发现2"]
+                      },
+                      "roundAnalysis": {
+                        "roundType": "技术面一轮",
+                        "performance": "表现评价"
+                      },
+                      "summary": "综合总结"
+                    }
+
+                    注意：
+                    - jdMatchScore 是 1-10 的整数，10 表示完美匹配
+                    - overallScore 是 0-100 的整数
+                    - 如果没有 JD 信息，jdMatchScore 和 skillGaps 返回 null，在 summary 中说明
+                    - 如果没有简历信息，resumeConsistency 返回 null，在 summary 中说明
+                    - 结合 transcriptAnalysis 中的问答对评分做综合判断
                     """,
                     "请分析以下面试数据：\n{collectedData}");
         }

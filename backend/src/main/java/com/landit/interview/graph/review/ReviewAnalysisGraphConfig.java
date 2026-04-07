@@ -9,6 +9,8 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -43,16 +45,22 @@ public class ReviewAnalysisGraphConfig {
         return () -> {
             Map<String, KeyStrategy> strategies = new HashMap<>();
             // 输入参数
-            strategies.put(STATE_INTERVIEW_ID, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
-            strategies.put(STATE_SESSION_TRANSCRIPT, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
+            strategies.put(STATE_INTERVIEW_ID, new ReplaceStrategy());
+            strategies.put(STATE_SESSION_TRANSCRIPT, new ReplaceStrategy());
+            // 面试上下文（Handler 注入）
+            strategies.put(STATE_COMPANY_NAME, new ReplaceStrategy());
+            strategies.put(STATE_POSITION_TITLE, new ReplaceStrategy());
+            strategies.put(STATE_JD_CONTENT, new ReplaceStrategy());
+            strategies.put(STATE_JD_ANALYSIS, new ReplaceStrategy());
+            strategies.put(STATE_RESUME_CONTENT, new ReplaceStrategy());
             // 中间结果
-            strategies.put(STATE_TRANSCRIPT_ANALYSIS, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
-            strategies.put(STATE_ANALYSIS_RESULT, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
-            strategies.put(STATE_ADVICE_LIST, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
+            strategies.put(STATE_TRANSCRIPT_ANALYSIS, new ReplaceStrategy());
+            strategies.put(STATE_ANALYSIS_RESULT, new ReplaceStrategy());
+            strategies.put(STATE_ADVICE_LIST, new ReplaceStrategy());
             // 消息日志
-            strategies.put(STATE_MESSAGES, new com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy());
+            strategies.put(STATE_MESSAGES, new AppendStrategy());
             // 节点输出
-            strategies.put(STATE_NODE_OUTPUT, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
+            strategies.put(STATE_NODE_OUTPUT, new ReplaceStrategy());
             return strategies;
         };
     }

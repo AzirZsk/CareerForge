@@ -304,6 +304,16 @@ public class InterviewCenterHandler {
         initialState.put(ReviewAnalysisGraphConstants.STATE_INTERVIEW_ID, id);
         initialState.put(ReviewAnalysisGraphConstants.STATE_SESSION_TRANSCRIPT, sessionTranscript);
         initialState.put(ReviewAnalysisGraphConstants.STATE_MESSAGES, new ArrayList<String>());
+        // 注入面试上下文（JD + 公司/职位 + 简历），供两个分析节点共用
+        initialState.put(ReviewAnalysisGraphConstants.STATE_COMPANY_NAME,
+                interview.getCompanyName() != null ? interview.getCompanyName() : "");
+        initialState.put(ReviewAnalysisGraphConstants.STATE_POSITION_TITLE,
+                interview.getPosition() != null ? interview.getPosition() : "");
+        // 一次查询 JobPosition，同时获取 JD 原文和分析结果
+        JobPosition linkedJobPosition = getLinkedJobPosition(interview);
+        initialState.put(ReviewAnalysisGraphConstants.STATE_JD_CONTENT, resolveJdContent(interview, linkedJobPosition));
+        initialState.put(ReviewAnalysisGraphConstants.STATE_JD_ANALYSIS, resolveJdAnalysis(linkedJobPosition));
+        initialState.put(ReviewAnalysisGraphConstants.STATE_RESUME_CONTENT, buildResumeContext(interview.getResumeId()));
         // 发送开始事件
         sendSseEvent(emitter, GraphProgressEvent.startReviewAnalysis(id, threadId));
         // 订阅工作流（在独立线程池执行，避免阻塞调用线程）
@@ -455,6 +465,9 @@ public class InterviewCenterHandler {
      */
     private String buildResumeContext(String resumeId) {
         try {
+            if (resumeId == null || resumeId.isBlank()) {
+                return "";
+            }
             ResumeDetailVO resume = resumeService.getResumeDetail(resumeId);
             if (resume == null) {
                 return "";
@@ -478,6 +491,48 @@ public class InterviewCenterHandler {
         } catch (Exception e) {
             log.warn("构建简历上下文失败: resumeId={}, error={}", resumeId, e.getMessage());
             return "";
+        }
+    }
+
+    /**
+     * 解析 JD 原文：优先取 Interview 上的，否则从关联的 JobPosition 取
+     */
+    private String resolveJdContent(InterviewDetailVO interview, JobPosition jobPosition) {
+        // 优先取面试上直接关联的 JD
+        if (interview.getJdContent() != null && !interview.getJdContent().isBlank()) {
+            return interview.getJdContent();
+        }
+        // 从关联的 JobPosition 取
+        if (jobPosition != null && jobPosition.getJdContent() != null) {
+            return jobPosition.getJdContent();
+        }
+        return "";
+    }
+
+    /**
+     * 解析 JD 分析结果：从 JobPosition 取（Interview 上的可能是初始化空值）
+     */
+    private String resolveJdAnalysis(JobPosition jobPosition) {
+        if (jobPosition != null && jobPosition.getJdAnalysis() != null
+                && !jobPosition.getJdAnalysis().isBlank()
+                && !jobPosition.getJdAnalysis().equals("{}")) {
+            return jobPosition.getJdAnalysis();
+        }
+        return "";
+    }
+
+    /**
+     * 获取面试关联的 JobPosition（带缓存，同一次请求内避免重复查询）
+     */
+    private JobPosition getLinkedJobPosition(InterviewDetailVO interview) {
+        if (interview.getJobPositionId() == null || interview.getJobPositionId().isBlank()) {
+            return null;
+        }
+        try {
+            return jobPositionService.getById(interview.getJobPositionId());
+        } catch (Exception e) {
+            log.warn("查询JobPosition失败: jobPositionId={}, error={}", interview.getJobPositionId(), e.getMessage());
+            return null;
         }
     }
 
