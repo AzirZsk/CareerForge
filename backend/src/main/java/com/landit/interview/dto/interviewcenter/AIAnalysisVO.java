@@ -1,29 +1,24 @@
 package com.landit.interview.dto.interviewcenter;
 
+import com.landit.interview.graph.review.dto.AdviceItem;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
- * 面试复盘笔记 VO
- * 用户手动记录的主观感受和反思
+ * AI 面试分析 VO
  *
  * @author Azir
  */
 @Data
-public class ReviewNoteVO {
+public class AIAnalysisVO {
 
     private String id;
 
     private String interviewId;
 
-    private String overallFeeling;
-
-    private String highPoints;
-
-    private String weakPoints;
-
-    private String lessonsLearned;
+    private List<AdviceItem> adviceList;
 
     private LocalDateTime createdAt;
 

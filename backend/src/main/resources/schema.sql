@@ -379,24 +379,37 @@ CREATE INDEX IF NOT EXISTS idx_interview_preparation_item_type ON t_interview_pr
 CREATE INDEX IF NOT EXISTS idx_interview_preparation_priority ON t_interview_preparation(priority);
 
 -- ----------------------------------------------------------------------------
+-- t_interview_ai_analysis 表（AI 面试分析表）
+-- 存储 AI 生成的结构化改进建议
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS t_interview_ai_analysis (
+    id VARCHAR(64) PRIMARY KEY,              -- 主键ID（雪花ID字符串）
+    interview_id VARCHAR(64) NOT NULL,       -- 关联的面试ID
+    advice_list TEXT,                        -- AI 建议列表（JSON格式: List<AdviceItem>）
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 更新时间
+    deleted INTEGER DEFAULT 0                -- 逻辑删除标记（0-未删除 1-已删除）
+);
+
+CREATE INDEX IF NOT EXISTS idx_interview_ai_analysis_interview_id ON t_interview_ai_analysis(interview_id);
+
+-- ----------------------------------------------------------------------------
 -- t_interview_review_note 表（面试复盘笔记表）
+-- 存储用户手动记录的主观感受和反思
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS t_interview_review_note (
     id VARCHAR(64) PRIMARY KEY,              -- 主键ID（雪花ID字符串）
     interview_id VARCHAR(64) NOT NULL,       -- 关联的面试ID
-    type VARCHAR(20) NOT NULL,               -- 笔记类型（preparation-准备 post-事后复盘）
     overall_feeling TEXT,                    -- 整体感受
     high_points TEXT,                        -- 表现好的地方
     weak_points TEXT,                        -- 不足之处
     lessons_learned TEXT,                    -- 经验教训
-    suggestions TEXT,                        -- 改进建议
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 更新时间
     deleted INTEGER DEFAULT 0                -- 逻辑删除标记（0-未删除 1-已删除）
 );
 
 CREATE INDEX IF NOT EXISTS idx_interview_review_note_interview_id ON t_interview_review_note(interview_id);
-CREATE INDEX IF NOT EXISTS idx_interview_review_note_type ON t_interview_review_note(type);
 
 -- ============================================================================
 -- 异步任务系统（v1.6.0）

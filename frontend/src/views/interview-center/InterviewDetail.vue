@@ -272,88 +272,123 @@
           <h2>复盘笔记</h2>
         </div>
 
-        <!-- 面试过程输入区域（支持音频上传 + 文本输入） -->
-        <AudioUploadArea
-          v-if="interview"
-          :interview-id="interview.id"
-          v-model="sessionTranscript"
-          @save="handleSaveTranscript"
-        />
-
-        <!-- AI 分析入口区域 -->
-        <div class="ai-analysis-entry">
-          <div class="entry-left">
-            <span class="entry-label">🤖 AI 分析</span>
-            <span class="entry-hint">{{ aiAnalysisEntryHint }}</span>
-          </div>
-          <div class="tooltip-wrapper" v-if="!canStartAIAnalysis && !reviewState.isRunning">
-            <button class="btn btn-sm btn-ai" disabled>
-              <span>开始分析</span>
-            </button>
-            <span class="tooltip-text">{{ aiAnalysisHint }}</span>
-          </div>
+        <!-- Tab 切换 -->
+        <div class="review-tabs">
           <button
-            v-else
-            class="btn btn-sm btn-ai"
-            @click="handleAIAnalysis"
-            :disabled="reviewState.isRunning"
+            class="tab-btn"
+            :class="{ active: activeReviewTab === 'analysis' }"
+            @click="activeReviewTab = 'analysis'"
+            type="button"
           >
-            <span v-if="reviewState.isRunning">分析中...</span>
-            <span v-else>开始分析</span>
+            <span class="tab-icon">🤖</span>
+            面试分析
+            <span v-if="interview.aiAnalysisNote" class="tab-dot" title="已有分析内容"></span>
+          </button>
+          <button
+            class="tab-btn"
+            :class="{ active: activeReviewTab === 'note' }"
+            @click="activeReviewTab = 'note'"
+            type="button"
+          >
+            <span class="tab-icon">📝</span>
+            我的笔记
+            <span v-if="interview.reviewNote" class="tab-dot" title="已有笔记内容"></span>
           </button>
         </div>
 
-        <!-- AI 分析进度 -->
-        <div v-if="reviewState.isRunning" class="progress-indicator">
-          <div class="progress-bar">
-            <div class="progress-fill" :style="{ width: reviewState.progress + '%' }"></div>
-          </div>
-          <p class="progress-message">{{ reviewState.message }}</p>
-        </div>
+        <!-- Tab 内容区域 -->
+        <div class="tab-content">
+          <!-- 面试分析 Tab -->
+          <div v-show="activeReviewTab === 'analysis'" class="analysis-panel">
+            <!-- 面试过程输入区域（支持音频上传 + 文本输入） -->
+            <AudioUploadArea
+              v-if="interview"
+              :interview-id="interview.id"
+              v-model="sessionTranscript"
+              @save="handleSaveTranscript"
+            />
 
-        <!-- AI 分析卡片 -->
-        <AIAnalysisCard
-          v-if="interview.aiAnalysisNote || (reviewState.isCompleted && reviewState.adviceList.length > 0)"
-          :ai-analysis-note="interview.aiAnalysisNote"
-          :is-analyzing="reviewState.isRunning"
-          :default-expanded="reviewState.isCompleted && reviewState.adviceList.length > 0"
-          :show-reference-button="!interview.reviewNote"
-          @reanalyze="handleReanalyze"
-          @reference="handleReferenceAIAdvice"
-        />
+            <!-- AI 分析入口区域 -->
+            <div class="ai-analysis-entry">
+              <div class="entry-left">
+                <span class="entry-label">🤖 AI 分析</span>
+                <span class="entry-hint">{{ aiAnalysisEntryHint }}</span>
+              </div>
+              <div class="tooltip-wrapper" v-if="!canStartAIAnalysis && !reviewState.isRunning">
+                <button class="btn btn-sm btn-ai" disabled>
+                  <span>开始分析</span>
+                </button>
+                <span class="tooltip-text">{{ aiAnalysisHint }}</span>
+              </div>
+              <button
+                v-else
+                class="btn btn-sm btn-ai"
+                @click="handleAIAnalysis"
+                :disabled="reviewState.isRunning"
+              >
+                <span v-if="reviewState.isRunning">分析中...</span>
+                <span v-else>开始分析</span>
+              </button>
+            </div>
 
-        <!-- 分隔线 -->
-        <div v-if="interview.aiAnalysisNote && interview.reviewNote" class="section-divider"></div>
+            <!-- AI 分析进度 -->
+            <div v-if="reviewState.isRunning" class="progress-indicator">
+              <div class="progress-bar">
+                <div class="progress-fill" :style="{ width: reviewState.progress + '%' }"></div>
+              </div>
+              <p class="progress-message">{{ reviewState.message }}</p>
+            </div>
 
-        <!-- 手动复盘笔记 -->
-        <div v-if="interview.reviewNote" class="review-note">
-          <div class="note-header">
-            <span class="note-icon">📋</span>
-            <span class="note-title">我的复盘笔记</span>
-            <button class="btn btn-sm btn-edit-note" @click="showReviewDialog = true">编辑</button>
+            <!-- AI 分析卡片 -->
+            <AIAnalysisCard
+              v-if="interview.aiAnalysisNote || (reviewState.isCompleted && reviewState.adviceList.length > 0)"
+              :ai-analysis-note="interview.aiAnalysisNote"
+              :is-analyzing="reviewState.isRunning"
+              :default-expanded="reviewState.isCompleted && reviewState.adviceList.length > 0"
+              :show-reference-button="!interview.reviewNote"
+              @reanalyze="handleReanalyze"
+              @reference="handleReferenceAIAdvice"
+            />
+
+            <!-- 空 AI 分析状态 -->
+            <div v-if="!interview.aiAnalysisNote && !reviewState.isRunning && !reviewState.isCompleted" class="empty-analysis">
+              <p>输入面试过程内容后，点击"开始分析"获取 AI 分析建议</p>
+            </div>
           </div>
-          <div class="note-section">
-            <h4>整体感受</h4>
-            <p>{{ interview.reviewNote.overallFeeling || '暂无' }}</p>
+
+          <!-- 我的笔记 Tab -->
+          <div v-show="activeReviewTab === 'note'" class="note-panel">
+            <!-- 手动复盘笔记 -->
+            <div v-if="interview.reviewNote" class="review-note">
+              <div class="note-header">
+                <span class="note-title">复盘笔记</span>
+                <button class="btn btn-sm btn-edit-note" @click="showReviewDialog = true">编辑</button>
+              </div>
+              <div class="note-section">
+                <h4>整体感受</h4>
+                <p>{{ interview.reviewNote.overallFeeling || '暂无' }}</p>
+              </div>
+              <div class="note-section">
+                <h4>好的方面</h4>
+                <p>{{ interview.reviewNote.highPoints || '暂无' }}</p>
+              </div>
+              <div class="note-section">
+                <h4>不足之处</h4>
+                <p>{{ interview.reviewNote.weakPoints || '暂无' }}</p>
+              </div>
+              <div class="note-section">
+                <h4>经验教训</h4>
+                <p>{{ interview.reviewNote.lessonsLearned || '暂无' }}</p>
+              </div>
+            </div>
+            <!-- 添加复盘笔记按钮 -->
+            <div v-else class="empty-review">
+              <p>记录你的面试感受和反思</p>
+              <button class="btn btn-primary" @click="showReviewDialog = true">
+                + 添加复盘笔记
+              </button>
+            </div>
           </div>
-          <div class="note-section">
-            <h4>好的方面</h4>
-            <p>{{ interview.reviewNote.highPoints || '暂无' }}</p>
-          </div>
-          <div class="note-section">
-            <h4>不足之处</h4>
-            <p>{{ interview.reviewNote.weakPoints || '暂无' }}</p>
-          </div>
-          <div class="note-section">
-            <h4>经验教训</h4>
-            <p>{{ interview.reviewNote.lessonsLearned || '暂无' }}</p>
-          </div>
-        </div>
-        <!-- 添加复盘笔记按钮（只要没有手动笔记就显示） -->
-        <div v-else class="empty-review">
-          <button class="btn btn-primary" @click="showReviewDialog = true">
-            + 添加复盘笔记
-          </button>
         </div>
       </section>
     </div>
@@ -453,6 +488,9 @@ const sessionTranscript = ref('')
 
 // 职位详情折叠状态
 const showPositionDetail = ref(false)
+
+// 复盘 Tab 切换状态
+const activeReviewTab = ref<'analysis' | 'note'>('analysis')
 
 // 优先级排序权重
 const PRIORITY_ORDER: Record<string, number> = { required: 0, recommended: 1, optional: 2 }
@@ -1633,13 +1671,129 @@ function handleApplyTranscriptEvent(event: Event) {
   }
 }
 
+// Tab 切换
+.review-tabs {
+  display: flex;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-lg;
+  border-bottom: 1px solid $color-bg-elevated;
+}
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-sm $spacing-md;
+  background: transparent;
+  border: none;
+  color: $color-text-tertiary;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: $radius-sm $radius-sm 0 0;
+  transition: all 0.2s;
+  position: relative;
+  margin-bottom: -1px;
+
+  &:hover {
+    color: $color-text-secondary;
+    background: $color-bg-tertiary;
+  }
+
+  // 键盘焦点样式
+  &:focus-visible {
+    outline: 2px solid $color-accent;
+    outline-offset: 2px;
+  }
+
+  &.active {
+    color: $color-accent;
+    background: rgba($color-accent, 0.1);
+
+    // 下划线直接贴合底部边框
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: $color-accent;
+      border-radius: 1px 1px 0 0;
+    }
+  }
+
+  .tab-icon {
+    font-size: 1rem;
+  }
+
+  // 小圆点样式优化
+  .tab-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: $color-success;
+    flex-shrink: 0;
+    cursor: help;
+    transition: transform 0.2s;
+
+    &:hover {
+      transform: scale(1.3);
+    }
+  }
+}
+
+.tab-content {
+  min-height: 200px;
+  animation: tabFadeIn 0.25s ease;
+}
+
+@keyframes tabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// AI 分析 Tab 面板
+.analysis-panel {
+  .empty-analysis {
+    text-align: center;
+    padding: $spacing-xl;
+    color: $color-text-tertiary;
+    background: $color-bg-tertiary;
+    border-radius: $radius-md;
+
+    p {
+      margin: 0;
+    }
+  }
+}
+
+// 笔记 Tab 面板
+.note-panel {
+  .empty-review {
+    text-align: center;
+    padding: $spacing-xl;
+    color: $color-text-tertiary;
+
+    p {
+      margin-bottom: $spacing-md;
+    }
+  }
+}
+
 .section-divider {
   height: 1px;
   background: $color-bg-elevated;
   margin: $spacing-lg 0;
 }
 
-.empty-preparations, .empty-review {
+.empty-preparations {
   text-align: center;
   padding: $spacing-xl;
   color: $color-text-tertiary;

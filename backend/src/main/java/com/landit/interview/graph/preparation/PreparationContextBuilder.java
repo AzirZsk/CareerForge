@@ -6,8 +6,11 @@ import com.landit.company.entity.Company;
 import com.landit.company.service.CompanyService;
 import com.landit.interview.entity.Interview;
 import com.landit.interview.entity.InterviewReviewNote;
+import com.landit.interview.entity.InterviewAIAnalysis;
 import com.landit.interview.service.InterviewCenterService;
 import com.landit.interview.service.InterviewReviewNoteService;
+import com.landit.interview.service.InterviewAIAnalysisService;
+import com.landit.interview.graph.review.dto.AdviceItem;
 import com.landit.jobposition.entity.JobPosition;
 import com.landit.jobposition.service.JobPositionService;
 import com.landit.resume.dto.ResumeDetailVO;
@@ -37,6 +40,7 @@ public class PreparationContextBuilder {
     private final CompanyService companyService;
     private final ResumeService resumeService;
     private final InterviewReviewNoteService reviewNoteService;
+    private final InterviewAIAnalysisService aiAnalysisService;
     private final ObjectMapper objectMapper;
 
     /**
@@ -168,14 +172,14 @@ public class PreparationContextBuilder {
                 return "";
             }
             Interview previousInterview = interviews.get(0);
-            InterviewReviewNote manualNote = reviewNoteService.getManualNoteByInterviewId(String.valueOf(previousInterview.getId()));
-            InterviewReviewNote aiAnalysis = reviewNoteService.getAiAnalysisByInterviewId(String.valueOf(previousInterview.getId()));
+            InterviewReviewNote manualNote = reviewNoteService.getByInterviewId(String.valueOf(previousInterview.getId()));
+            InterviewAIAnalysis aiAnalysis = aiAnalysisService.getByInterviewId(String.valueOf(previousInterview.getId()));
             List<Map<String, Object>> notesList = new ArrayList<>();
             if (manualNote != null) {
-                notesList.add(buildNoteMap("manual", manualNote));
+                notesList.add(buildManualNoteMap(manualNote));
             }
             if (aiAnalysis != null) {
-                notesList.add(buildNoteMap("ai_analysis", aiAnalysis));
+                notesList.add(buildAIAnalysisMap(aiAnalysis));
             }
             if (notesList.isEmpty()) {
                 return "";
@@ -188,14 +192,28 @@ public class PreparationContextBuilder {
     }
 
     /**
-     * 构建笔记Map
+     * 构建手动笔记Map
      */
-    private Map<String, Object> buildNoteMap(String type, InterviewReviewNote note) {
+    private Map<String, Object> buildManualNoteMap(InterviewReviewNote note) {
         Map<String, Object> noteMap = new HashMap<>();
-        noteMap.put("type", type);
+        noteMap.put("type", "manual");
         noteMap.put("weakPoints", note.getWeakPoints());
-        noteMap.put("suggestions", note.getSuggestions());
         noteMap.put("lessonsLearned", note.getLessonsLearned());
+        return noteMap;
+    }
+
+    /**
+     * 构建 AI 分析Map
+     */
+    private Map<String, Object> buildAIAnalysisMap(InterviewAIAnalysis aiAnalysis) {
+        Map<String, Object> noteMap = new HashMap<>();
+        noteMap.put("type", "ai_analysis");
+        List<AdviceItem> adviceList = aiAnalysisService.parseAdviceList(aiAnalysis);
+        // 提取关键建议信息
+        List<String> suggestions = adviceList.stream()
+                .map(item -> item.getTitle() + ": " + item.getDescription())
+                .toList();
+        noteMap.put("suggestions", suggestions);
         return noteMap;
     }
 

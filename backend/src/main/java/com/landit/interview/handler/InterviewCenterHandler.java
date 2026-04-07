@@ -13,11 +13,13 @@ import com.landit.interview.dto.interviewcenter.*;
 import com.landit.interview.entity.Interview;
 import com.landit.interview.entity.InterviewPreparation;
 import com.landit.interview.entity.InterviewReviewNote;
+import com.landit.interview.entity.InterviewAIAnalysis;
 import com.landit.interview.graph.preparation.InterviewPreparationGraphService;
 import com.landit.interview.graph.review.ReviewAnalysisGraphService;
 import com.landit.interview.service.InterviewCenterService;
 import com.landit.interview.service.InterviewPreparationService;
 import com.landit.interview.service.InterviewReviewNoteService;
+import com.landit.interview.service.InterviewAIAnalysisService;
 import com.landit.interview.voice.dto.FileASRResult;
 import com.landit.interview.voice.service.FileASRService;
 import com.landit.jobposition.entity.JobPosition;
@@ -70,6 +72,7 @@ public class InterviewCenterHandler {
     private final InterviewCenterService interviewCenterService;
     private final InterviewPreparationService preparationService;
     private final InterviewReviewNoteService reviewNoteService;
+    private final InterviewAIAnalysisService aiAnalysisService;
     private final JobPositionService jobPositionService;
     private final CompanyService companyService;
     private final InterviewPreparationGraphService preparationGraphService;
@@ -155,9 +158,9 @@ public class InterviewCenterHandler {
             throw new BusinessException("面试不存在: " + id);
         }
         List<InterviewPreparation> preparations = preparationService.getByInterviewId(id);
-        InterviewReviewNote reviewNote = reviewNoteService.getManualNoteByInterviewId(id);
-        InterviewReviewNote aiAnalysisNote = reviewNoteService.getAiAnalysisByInterviewId(id);
-        return convertToDetailVO(interview, preparations, reviewNote, aiAnalysisNote);
+        InterviewReviewNote reviewNote = reviewNoteService.getByInterviewId(id);
+        InterviewAIAnalysis aiAnalysis = aiAnalysisService.getByInterviewId(id);
+        return convertToDetailVO(interview, preparations, reviewNote, aiAnalysis);
     }
 
     /**
@@ -347,10 +350,10 @@ public class InterviewCenterHandler {
                         },
                         () -> {
                             log.info("[SSE] 复盘分析工作流完成: threadId={}", threadId);
-                            // 保存 AI 分析结果到数据库
+                            // 保存 AI 分析结果到新表
                             if (!finalAdviceList.isEmpty()) {
                                 try {
-                                    reviewNoteService.saveAIAnalysis(id, finalAdviceList);
+                                    aiAnalysisService.saveAnalysis(id, finalAdviceList);
                                     log.info("[SSE] AI 分析结果已保存到数据库: interviewId={}", id);
                                 } catch (Exception e) {
                                     log.error("[SSE] 保存 AI 分析结果失败", e);
@@ -501,7 +504,7 @@ public class InterviewCenterHandler {
     private InterviewDetailVO convertToDetailVO(Interview interview,
                                                  List<InterviewPreparation> preparations,
                                                  InterviewReviewNote reviewNote,
-                                                 InterviewReviewNote aiAnalysisNote) {
+                                                 InterviewAIAnalysis aiAnalysis) {
         InterviewDetailVO vo = new InterviewDetailVO();
         BeanUtils.copyProperties(interview, vo);
 
@@ -529,8 +532,8 @@ public class InterviewCenterHandler {
         if (reviewNote != null) {
             vo.setReviewNote(convertToReviewNoteVO(reviewNote));
         }
-        if (aiAnalysisNote != null) {
-            vo.setAiAnalysisNote(convertToReviewNoteVO(aiAnalysisNote));
+        if (aiAnalysis != null) {
+            vo.setAiAnalysisNote(convertToAIAnalysisVO(aiAnalysis));
         }
         return vo;
     }
@@ -544,6 +547,16 @@ public class InterviewCenterHandler {
     private ReviewNoteVO convertToReviewNoteVO(InterviewReviewNote note) {
         ReviewNoteVO vo = new ReviewNoteVO();
         BeanUtils.copyProperties(note, vo);
+        return vo;
+    }
+
+    private AIAnalysisVO convertToAIAnalysisVO(InterviewAIAnalysis aiAnalysis) {
+        AIAnalysisVO vo = new AIAnalysisVO();
+        vo.setId(String.valueOf(aiAnalysis.getId()));
+        vo.setInterviewId(aiAnalysis.getInterviewId());
+        vo.setAdviceList(aiAnalysisService.parseAdviceList(aiAnalysis));
+        vo.setCreatedAt(aiAnalysis.getCreatedAt());
+        vo.setUpdatedAt(aiAnalysis.getUpdatedAt());
         return vo;
     }
 

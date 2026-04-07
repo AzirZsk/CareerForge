@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 public class VoiceResponse {
 
     /**
-     * 消息类型：transcript, audio, state, error
+     * 消息类型：transcript, audio, state, error, pong
      */
     private String type;
 
@@ -52,6 +52,13 @@ public class VoiceResponse {
      */
     public static VoiceResponse error(ErrorData data) {
         return VoiceResponse.builder().type("error").data(data).build();
+    }
+
+    /**
+     * 创建心跳响应
+     */
+    public static VoiceResponse pong() {
+        return VoiceResponse.builder().type("pong").build();
     }
 
     /**

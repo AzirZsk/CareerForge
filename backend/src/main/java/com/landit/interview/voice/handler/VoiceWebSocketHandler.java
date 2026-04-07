@@ -1,5 +1,6 @@
 package com.landit.interview.voice.handler;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.landit.interview.voice.dto.VoiceRequest;
 import com.landit.interview.voice.dto.VoiceResponse;
@@ -61,7 +62,20 @@ public class VoiceWebSocketHandler implements WebSocketHandler {
     private void handleTextMessage(WebSocketSession session, TextMessage message, String sessionId) {
         log.debug("[VoiceWS] Received text message, sessionId={}, length={}", sessionId, message.getPayload().length());
         try {
-            VoiceRequest request = objectMapper.readValue(message.getPayload(), VoiceRequest.class);
+            String payload = message.getPayload();
+
+            // 先解析为 JsonNode 判断消息类型
+            JsonNode jsonNode = objectMapper.readTree(payload);
+            String messageType = jsonNode.path("type").asText();
+
+            // 处理心跳消息
+            if ("ping".equals(messageType)) {
+                sessionManager.sendResponse(session, VoiceResponse.pong());
+                return;
+            }
+
+            // 解析为业务请求
+            VoiceRequest request = objectMapper.treeToValue(jsonNode, VoiceRequest.class);
             voiceGateway.handleRequest(sessionId, session, request);
         } catch (Exception e) {
             log.error("[VoiceWS] Failed to handle text message, sessionId={}", sessionId, e);

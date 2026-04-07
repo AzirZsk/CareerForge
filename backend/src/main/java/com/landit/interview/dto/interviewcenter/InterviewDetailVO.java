@@ -69,7 +69,7 @@ public class InterviewDetailVO {
     /**
      * AI 分析记录
      */
-    private ReviewNoteVO aiAnalysisNote;
+    private AIAnalysisVO aiAnalysisNote;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

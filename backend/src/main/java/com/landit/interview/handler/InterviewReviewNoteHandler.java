@@ -21,10 +21,10 @@ public class InterviewReviewNoteHandler {
     private final InterviewReviewNoteService reviewNoteService;
 
     /**
-     * 获取手动复盘笔记
+     * 获取复盘笔记
      */
-    public ReviewNoteVO getManualNote(String interviewId) {
-        var note = reviewNoteService.getManualNoteByInterviewId(interviewId);
+    public ReviewNoteVO getNote(String interviewId) {
+        var note = reviewNoteService.getByInterviewId(interviewId);
         if (note == null) {
             return null;
         }
@@ -34,12 +34,12 @@ public class InterviewReviewNoteHandler {
     }
 
     /**
-     * 保存手动复盘笔记
+     * 保存复盘笔记
      */
     @Transactional(rollbackFor = Exception.class)
-    public ReviewNoteVO saveManualNote(String interviewId, SaveReviewNoteRequest request) {
-        log.info("保存手动复盘笔记: interviewId={}", interviewId);
-        return reviewNoteService.saveManualNote(interviewId, request);
+    public ReviewNoteVO saveNote(String interviewId, SaveReviewNoteRequest request) {
+        log.info("保存复盘笔记: interviewId={}", interviewId);
+        return reviewNoteService.saveNote(interviewId, request);
     }
 
 }

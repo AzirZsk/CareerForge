@@ -52,7 +52,7 @@ public class AnalyzeInterviewNode implements NodeAction {
         Interview interview = interviewService.getById(interviewId);
         Map<String, Object> interviewData = buildInterviewData(interview);
         // 收集用户笔记
-        InterviewReviewNote reviewNote = reviewNoteService.getManualNoteByInterviewId(interviewId);
+        InterviewReviewNote reviewNote = reviewNoteService.getByInterviewId(interviewId);
         Map<String, Object> reviewNoteData = buildReviewNoteData(reviewNote);
         // 通过 ContextBuilder 获取面试上下文
         ReviewContextBuilder.ReviewContext context = contextBuilder.buildContext(interviewId);
@@ -127,7 +127,6 @@ public class AnalyzeInterviewNode implements NodeAction {
         data.put("highPoints", reviewNote.getHighPoints());
         data.put("weakPoints", reviewNote.getWeakPoints());
         data.put("lessonsLearned", reviewNote.getLessonsLearned());
-        data.put("suggestions", reviewNote.getSuggestions());
         return data;
     }
 

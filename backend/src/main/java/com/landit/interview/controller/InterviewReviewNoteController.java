@@ -22,18 +22,18 @@ public class InterviewReviewNoteController {
 
     private final InterviewReviewNoteHandler handler;
 
-    @Operation(summary = "获取手动复盘笔记")
+    @Operation(summary = "获取复盘笔记")
     @GetMapping
-    public ApiResponse<ReviewNoteVO> getManualNote(@PathVariable String interviewId) {
-        return ApiResponse.success(handler.getManualNote(interviewId));
+    public ApiResponse<ReviewNoteVO> getNote(@PathVariable String interviewId) {
+        return ApiResponse.success(handler.getNote(interviewId));
     }
 
-    @Operation(summary = "保存手动复盘笔记")
+    @Operation(summary = "保存复盘笔记")
     @PostMapping
-    public ApiResponse<ReviewNoteVO> saveManualNote(
+    public ApiResponse<ReviewNoteVO> saveNote(
             @PathVariable String interviewId,
             @Valid @RequestBody SaveReviewNoteRequest request) {
-        return ApiResponse.success(handler.saveManualNote(interviewId, request));
+        return ApiResponse.success(handler.saveNote(interviewId, request));
     }
 
 }

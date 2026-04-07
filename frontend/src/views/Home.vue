@@ -56,7 +56,10 @@
           <span class="section-badge">本周</span>
         </div>
         <div class="stats-grid">
-          <div class="stat-card">
+          <div
+            class="stat-card clickable"
+            @click="goToInterviewCenter"
+          >
             <div class="stat-icon interviews">
               <font-awesome-icon icon="fa-solid fa-comments" />
             </div>
@@ -66,7 +69,10 @@
             </div>
           </div>
 
-          <div class="stat-card">
+          <div
+            class="stat-card clickable"
+            @click="goToMockInterview"
+          >
             <div class="stat-icon mock">
               <font-awesome-icon icon="fa-solid fa-star" />
             </div>
@@ -76,7 +82,10 @@
             </div>
           </div>
 
-          <div class="stat-card">
+          <div
+            class="stat-card clickable"
+            @click="goToResume"
+          >
             <div class="stat-icon resume">
               <font-awesome-icon icon="fa-solid fa-file-alt" />
             </div>
@@ -86,7 +95,10 @@
             </div>
           </div>
 
-          <div class="stat-card">
+          <div
+            class="stat-card clickable"
+            @click="goToInterviewCenter"
+          >
             <div class="stat-icon preparation">
               <font-awesome-icon icon="fa-solid fa-circle-check" />
             </div>
@@ -132,9 +144,9 @@
                 <div class="bar-wrapper">
                   <div
                     class="bar"
-                    :style="{ height: Math.max(item.interviews * 20, 10) + '%' }"
+                    :style="{ height: getBarHeight(item) + '%' }"
                   >
-                    <span class="bar-value">{{ item.interviews }}</span>
+                    <span class="bar-value">{{ getBarValue(item) }}</span>
                   </div>
                 </div>
                 <span class="bar-label">{{ item.week }}</span>
@@ -224,6 +236,16 @@ function goToResume(): void {
   store.setActiveNav('resume')
 }
 
+function goToInterviewCenter(): void {
+  router.push('/interview-center')
+  store.setActiveNav('interview-center')
+}
+
+function goToMockInterview(): void {
+  router.push('/interview')
+  store.setActiveNav('interview')
+}
+
 // 获取动态图标
 function getActivityIcon(type: string): string {
   const iconMap: Record<string, string> = {
@@ -233,6 +255,26 @@ function getActivityIcon(type: string): string {
     default: 'fa-solid fa-chart-line'
   }
   return iconMap[type] || iconMap.default
+}
+
+// 根据当前 tab 获取柱状图高度
+function getBarHeight(item: WeeklyProgress): number {
+  if (activeChartTab.value === 'score') {
+    // 分数范围 0-100，直接作为百分比
+    return Math.max(item.score, 5)
+  } else {
+    // 次数范围 0-10，放大到百分比（最大 10 次 = 100%）
+    return Math.max(item.interviews * 10, 5)
+  }
+}
+
+// 根据当前 tab 获取柱状图显示值
+function getBarValue(item: WeeklyProgress): string | number {
+  if (activeChartTab.value === 'score') {
+    return item.score
+  } else {
+    return item.interviews
+  }
 }
 </script>
 
@@ -353,6 +395,12 @@ function getActivityIcon(type: string): string {
     transform: translateY(-4px);
     border-color: rgba(212, 168, 83, 0.2);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+  &.clickable {
+    cursor: pointer;
+    &:active {
+      transform: translateY(-2px);
+    }
   }
 }
 

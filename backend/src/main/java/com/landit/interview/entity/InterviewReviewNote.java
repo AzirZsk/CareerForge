@@ -7,7 +7,7 @@ import lombok.EqualsAndHashCode;
 
 /**
  * 面试复盘笔记实体类
- * 管理面试后的复盘记录（手动 + AI分析）
+ * 存储用户手动记录的主观感受和反思
  *
  * @author Azir
  */
@@ -18,8 +18,6 @@ public class InterviewReviewNote extends BaseEntity {
 
     private String interviewId;
 
-    private String type;
-
     private String overallFeeling;
 
     private String highPoints;
@@ -27,7 +25,5 @@ public class InterviewReviewNote extends BaseEntity {
     private String weakPoints;
 
     private String lessonsLearned;
-
-    private String suggestions;
 
 }
