@@ -349,41 +349,6 @@ export interface InterviewDetail {
   analysis: InterviewAnalysis
 }
 
-// 复盘维度
-export interface ReviewDimension {
-  name: string
-  score: number
-  maxScore: number
-  feedback: string
-}
-
-// 问题分析
-export interface QuestionAnalysis {
-  question: string
-  yourAnswer: string
-  score: number
-  keyPointsCovered: string[]
-  keyPointsMissed: string[]
-  suggestion: string
-}
-
-// 改进计划项
-export interface ImprovementPlan {
-  category: string
-  items: string[]
-}
-
-// 面试复盘
-export interface InterviewReview {
-  id: string
-  interviewId: string
-  overallScore: number
-  analysis: InterviewAnalysis
-  dimensions: ReviewDimension[]
-  questionAnalysis: QuestionAnalysis[]
-  improvementPlan: ImprovementPlan[]
-}
-
 // 周进度
 export interface WeeklyProgress {
   week: string

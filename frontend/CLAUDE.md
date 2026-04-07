@@ -8,6 +8,7 @@
 
 | 日期 | 版本 | 变更内容 |
 |------|------|----------|
+| 2026-04-07 | 2.4.0 | **清理老版本复盘模块**：删除 Review.vue/ReviewDetail.vue 视图、currentReview 状态、interviewReview Mock 数据；复盘功能通过面试中心详情页实现 |
 | 2026-04-02 | 2.3.0 | **新增 useStreamAssist composable**：SSE 流式求助功能；更新 Composables 数量（17->18）；更新文件统计 |
 | 2026-04-02 | 2.2.0 | **新增 AI 语音面试前端**：6 个语音组件 + 2 个录音回放组件 + 3 个 Composables（useInterviewVoice/useStreamingAudio/useAudioRecorder）+ API（interview-voice.ts）+ Types（interview-voice.ts）+ Utils（recording-helpers.ts）；新增面试中心组件（7 个）+ Composables（2 个）+ API/Types； 更新文件统计 |
 | 2026-03-30 | 2.1.0 | 新增 ImagePreviewModal/AIIcon 组件（common 3->5）、stageHelpers 工具函数、ResumeSuggestionsGroup 组件;聊天组件更新（hideFloat、resume_selected 事件、内容分片机制）;更新文件统计 |
@@ -87,8 +88,6 @@ VITE_API_TARGET=http://localhost:8080
 | `/interview-center` | interview-center/Layout.vue | 面试中心 | 真实面试管理 | 登录 |
 | `/interview-center/create` | interview-center/CreateInterview.vue | 创建面试 | 新建面试记录 | 登录 |
 | `/interview-center/:id` | interview-center/InterviewDetail.vue | 面试详情 | 面试详情与准备 | 登录 |
-| `/review` | Review.vue | 面试复盘 | 复盘列表 | 登录 |
-| `/review/:id` | ReviewDetail.vue | 复盘详情 | 复盘分析查看 | 登录 |
 | `/profile` | Profile.vue | 个人中心 | 用户信息设置 | 登录 |
 
 ### 路由守卫
@@ -237,7 +236,6 @@ primaryResume: PrimaryResumeVO | null
 interviews: Interview[]
 questions: InterviewQuestions
 currentInterview: InterviewDetail
-currentReview: InterviewReview
 
 // 统计数据
 stats: Statistics
@@ -669,8 +667,6 @@ $radius-full: 9999px;
 | interview-center/InterviewList.vue | 面试列表 |
 | interview-center/InterviewDetail.vue | 面试详情 |
 | interview-center/PositionDetail.vue | 职位详情 |
-| Review.vue | 复盘列表 |
-| ReviewDetail.vue | 复盘详情,维度分析可视化 |
 | Profile.vue | 个人信息设置 |
 
 ### 公共组件 (components/common/) - 5 个
@@ -820,7 +816,6 @@ $radius-full: 9999px;
 - `interviewHistory` - 面试历史
 - `interviewQuestions` - 面试题库
 - `interviewDetail` - 面试详情
-- `interviewReview` - 面试复盘
 - `statistics` - 统计数据
 - `jobRecommendations` - 职位推荐
 
@@ -1006,7 +1001,7 @@ frontend/
 │   │   ├── useConfirm.ts        # 确认弹窗
 │   │   ├── useToast.ts          # Toast 提示
 │   │   └── useFormValidation.ts # 表单验证
-│   ├── views/                   # 页面组件（12+ 个）
+│   ├── views/                   # 页面组件（12 个）
 │   │   ├── Onboarding.vue
 │   │   ├── Home.vue
 │   │   ├── Resume.vue
@@ -1014,8 +1009,6 @@ frontend/
 │   │   ├── Interview.vue
 │   │   ├── InterviewSession.vue
 │   │   ├── InterviewRecording.vue
-│   │   ├── Review.vue
-│   │   ├── ReviewDetail.vue
 │   │   ├── Profile.vue
 │   │   └── interview-center/
 │   │       ├── Layout.vue

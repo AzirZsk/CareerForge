@@ -25,9 +25,8 @@ import static com.landit.interview.graph.review.ReviewAnalysisGraphConstants.*;
  * 复盘AI分析工作流 Graph 配置
  *
  * 工作流步骤：
- * 1. 收集面试数据
- * 2. AI分析面试表现
- * 3. 生成改进建议
+ * 1. AI分析面试表现（包含数据收集）
+ * 2. 生成改进建议
  *
  * @author Azir
  */
@@ -45,15 +44,10 @@ public class ReviewAnalysisGraphConfig {
             Map<String, KeyStrategy> strategies = new HashMap<>();
             // 输入参数
             strategies.put(STATE_INTERVIEW_ID, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
-            // 中间结果
-            strategies.put(STATE_COLLECTED_DATA, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
-            strategies.put(STATE_INTERVIEW_DATA, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
-            strategies.put(STATE_REVIEW_NOTES, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
             strategies.put(STATE_SESSION_TRANSCRIPT, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
+            // 中间结果
             strategies.put(STATE_ANALYSIS_RESULT, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
             strategies.put(STATE_ADVICE_LIST, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
-            // 流程控制
-            strategies.put(STATE_CURRENT_STEP, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
             // 消息日志
             strategies.put(STATE_MESSAGES, new com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy());
             // 节点输出
@@ -68,7 +62,6 @@ public class ReviewAnalysisGraphConfig {
     @Bean
     public CompiledGraph reviewAnalysisGraph(
             KeyStrategyFactory reviewAnalysisKeyStrategyFactory,
-            CollectInterviewDataNode collectInterviewDataNode,
             AnalyzeInterviewNode analyzeInterviewNode,
             GenerateAdviceNode generateAdviceNode
     ) throws GraphStateException {
@@ -76,12 +69,10 @@ public class ReviewAnalysisGraphConfig {
         // 构建工作流图
         StateGraph workflow = new StateGraph(GRAPH_REVIEW_ANALYSIS, reviewAnalysisKeyStrategyFactory)
                 // 添加节点
-                .addNode(NODE_COLLECT_DATA, AsyncNodeAction.node_async(collectInterviewDataNode))
                 .addNode(NODE_ANALYZE_INTERVIEW, AsyncNodeAction.node_async(analyzeInterviewNode))
                 .addNode(NODE_GENERATE_ADVICE, AsyncNodeAction.node_async(generateAdviceNode))
-                // 添加边：START -> 收集数据 -> AI分析 -> 生成建议 -> END
-                .addEdge(START, NODE_COLLECT_DATA)
-                .addEdge(NODE_COLLECT_DATA, NODE_ANALYZE_INTERVIEW)
+                // 添加边：START -> AI分析 -> 生成建议 -> END
+                .addEdge(START, NODE_ANALYZE_INTERVIEW)
                 .addEdge(NODE_ANALYZE_INTERVIEW, NODE_GENERATE_ADVICE)
                 .addEdge(NODE_GENERATE_ADVICE, END);
 

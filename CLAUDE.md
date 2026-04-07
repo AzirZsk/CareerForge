@@ -14,6 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | 日期 | 版本 | 变更内容 |
 |------|------|----------|
+| 2026-04-07 | 2.4.0 | **清理老版本复盘模块**：删除 `backend/.../review/` 目录（13 个 Java 文件）、4 张老版本复盘表、前端 Review.vue/ReviewDetail.vue 视图；复盘功能统一使用 `interview/graph/review/` 工作流 + `InterviewReviewNote` |
 | 2026-04-02 | 2.3.1 | **AI 上下文增量更新**：新增 useStreamAssist composable（SSE 流式求助）；更新前端 Composables 数量（17->18）；更新覆盖率报告 |
 | 2026-04-02 | 2.3.0 | **新增 AI 语音面试模块**（feat/ai-chat-voice 分支）：WebSocket 实时语音对话 + 阿里云 ASR/TTS + 求助系统 + 录音回放；后端新增 interview/voice 子模块（37 个 Java 文件）、company/jobposition 模块；前端新增语音面试组件（6 个）+ 录音回放组件（2 个）+ Composables（3 个）+ API/Types；数据库新增 3 张语音面试表；更新模块结构图 |
 | 2026-04-01 | 2.2.0 | 新增面试中心模块文档（真实面试管理 + 准备工作流 + 复盘分析工作流）；前端新增 interview-center 组件（7个）+ Composables（2个）+ API/Types |
@@ -74,12 +75,11 @@ graph TD
     B --> B2["user"]
     B --> B3["resume"]
     B --> B4["interview"]
-    B --> B5["review"]
-    B --> B6["statistics"]
-    B --> B7["job"]
-    B --> B8["chat"]
-    B --> B9["company"]
-    B --> B10["jobposition"]
+    B --> B5["statistics"]
+    B --> B6["job"]
+    B --> B7["chat"]
+    B --> B8["company"]
+    B --> B9["jobposition"]
 
     B3 --> B3a["graph"]
     B3a --> B3a1["optimize"]
@@ -129,7 +129,6 @@ graph TD
 | **interview/voice** | `backend/.../interview/voice/` | **AI 语音面试（WebSocket + ASR/TTS + 求助系统）** |
 | interview/graph/preparation | `backend/.../interview/graph/preparation/` | 面试准备工作流（AI 生成准备清单） |
 | interview/graph/review | `backend/.../interview/graph/review/` | 复盘分析工作流（AI 分析面试表现） |
-| review | `backend/.../review/` | 面试复盘、维度分析、改进计划 |
 | statistics | `backend/.../statistics/` | 数据统计与可视化 |
 | job | `backend/.../job/` | 职位推荐 |
 | **chat** | `backend/.../chat/` | **AI 对话式简历优化（ReactAgent + 技能系统）** |
@@ -538,10 +537,6 @@ START --> CollectData --> AnalyzeInterview --> GenerateAdvice --> END
 | t_interview_question | InterviewQuestion | 面试题库 |
 | t_interview_session | InterviewSession | 面试会话（含语音模式字段） |
 | t_conversation | Conversation | 面试对话 |
-| t_interview_review | InterviewReview | 面试复盘 |
-| t_review_dimension | ReviewDimension | 复盘维度 |
-| t_question_analysis | QuestionAnalysis | 问题分析 |
-| t_improvement_plan | ImprovementPlan | 改进计划 |
 | t_job | Job | 职位推荐 |
 | t_chat_message | ChatMessage | AI 聊天消息（含 actions、action_status、segments 字段） |
 | **t_assistant_conversation** | **AssistantConversation** | **助手对话记录（语音面试求助）** |
@@ -646,13 +641,6 @@ START --> CollectData --> AnalyzeInterview --> GenerateAdvice --> END
 | GET | /{id}/review-note | 获取复盘笔记 |
 | PUT | /{id}/review-note | 保存复盘笔记 |
 
-### 复盘模块 `/reviews`
-| 方法 | 路径 | 描述 |
-|------|------|------|
-| GET | / | 获取复盘列表 |
-| GET | /{id} | 获取复盘详情 |
-| GET | /{id}/export | 导出复盘报告 |
-
 ### 统计模块 `/statistics`
 | 方法 | 路径 | 描述 |
 |------|------|------|
@@ -737,18 +725,18 @@ START --> CollectData --> AnalyzeInterview --> GenerateAdvice --> END
 
 | 区域 | 文件数 | 说明 |
 |------|--------|------|
-| 后端 Java 文件 | 250 | 全部子模块（common/user/resume/interview/review/statistics/job/chat/company/jobposition/voice） |
-| 后端 Controllers | 17 | UserController, ResumeController, ResumeOptimizeGraphController, TailorResumeController, InterviewController, InterviewCenterController, InterviewVoiceController, AssistantController, RecordingController, InterviewPreparationController, InterviewReviewNoteController, ResumeSuggestionController, ReviewController, StatisticsController, JobController, JobPositionController, AIChatController |
-| 后端 Handlers | 18 | 各模块 Handler + AIChatHandler + InterviewCenterHandler + InterviewerAgentHandler + AssistantAgentHandler |
+| 后端 Java 文件 | 237 | 全部子模块（common/user/resume/interview/statistics/job/chat/company/jobposition/voice） |
+| 后端 Controllers | 16 | UserController, ResumeController, ResumeOptimizeGraphController, TailorResumeController, InterviewController, InterviewCenterController, InterviewVoiceController, AssistantController, RecordingController, InterviewPreparationController, InterviewReviewNoteController, ResumeSuggestionController, StatisticsController, JobController, JobPositionController, AIChatController |
+| 后端 Handlers | 17 | 各模块 Handler + AIChatHandler + InterviewCenterHandler + InterviewerAgentHandler + AssistantAgentHandler |
 | 后端 Graph 节点 | 14+1 | 优化 3 + 定制 3 + 准备 5 + 复盘 3 + BaseGraphConstants |
 | Chat 工具 | 8 | GetResume/GetSection/UpdateSection/AddSection/DeleteSection/CreateResume/GetResumeList/SelectResume |
-| 前端 Views | 16 | 页面组件（含 InterviewSession.vue、InterviewRecording.vue、InterviewDetail.vue） |
+| 前端 Views | 14 | 页面组件（含 InterviewSession.vue、InterviewRecording.vue、InterviewDetail.vue） |
 | 前端 Components | 89 | chat(10) + common(5) + resume(51) + interview-center(7) + interview/voice(4) + interview/recording(2) + App.vue |
 | 前端 Composables | 18 | useAIChat, useConfirm, useFormValidation, useMarkdown, useResumeOptimize, useResumeTailor, useSectionDiff, useSectionEdit, useSectionHelper, useStageEdit, useStageTimer, useToast, useInterviewPreparation, useReviewAnalysis, useInterviewVoice, useStreamingAudio, useStreamAssist, useAudioRecorder |
 | 前端 Utils | 2 | stageHelpers, recording-helpers |
 | 前端 Types | 8 | index.ts, ai-chat.ts, resume-optimize.ts, resume-tailor.ts, interview-center.ts, interview-voice.ts, job-position.ts, marked.d.ts |
 | 前端 API | 6 | user.ts, resume.ts, aiChat.ts, interview-center.ts, interview-voice.ts, job-position.ts |
-| 数据库表 | 23 | 业务表 + t_chat_message + 面试中心相关表 + 语音面试相关表 |
+| 数据库表 | 19 | 业务表 + t_chat_message + 面试中心相关表 + 语音面试相关表 |
 | 测试文件 | 2 | ChangeFieldTranslatorTest.java, ResumeChangeApplierTest.java |
 
 ---

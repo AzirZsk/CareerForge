@@ -12,7 +12,6 @@ import type {
   Interview,
   InterviewQuestions,
   InterviewDetail,
-  InterviewReview,
   Statistics,
   Job
 } from '@/types'
@@ -381,78 +380,6 @@ export const interviewDetail: InterviewDetail = {
     weaknesses: ['部分细节不够深入', '可以多用数据支撑'],
     overallFeedback: '整体表现良好，展现了扎实的技术功底和项目经验。建议在技术细节上可以更深入，并注意用数据量化成果。'
   }
-}
-
-// 面试复盘数据
-export const interviewReview: InterviewReview = {
-  id: 'review_001',
-  interviewId: 'interview_001',
-  overallScore: 85,
-  analysis: {
-    strengths: ['表达清晰有条理', '项目经验丰富', '技术深度较好', '对核心概念理解透彻'],
-    weaknesses: ['部分细节不够深入', '可以多用数据支撑', '追问时的应变能力可加强'],
-    overallFeedback: '整体表现良好，展现了扎实的技术功底和项目经验。建议在技术细节上可以更深入，并注意用数据量化成果。'
-  },
-  dimensions: [
-    {
-      name: '技术深度',
-      score: 88,
-      maxScore: 100,
-      feedback: '对核心概念理解透彻，能够举一反三'
-    },
-    {
-      name: '表达能力',
-      score: 90,
-      maxScore: 100,
-      feedback: '回答结构清晰，逻辑性强'
-    },
-    {
-      name: '项目经验',
-      score: 85,
-      maxScore: 100,
-      feedback: '项目经验丰富，但可以更多量化数据'
-    },
-    {
-      name: '问题解决',
-      score: 82,
-      maxScore: 100,
-      feedback: '思路正确，但解决方案可以更全面'
-    },
-    {
-      name: '应变能力',
-      score: 80,
-      maxScore: 100,
-      feedback: '对追问反应及时，但深度可以加强'
-    }
-  ],
-  questionAnalysis: [
-    {
-      question: '请解释 Vue 3 的响应式原理',
-      yourAnswer: 'Vue 3 使用 Proxy 实现响应式...',
-      score: 90,
-      keyPointsCovered: ['Proxy', '依赖收集', '触发更新'],
-      keyPointsMissed: ['Reflect API的作用'],
-      suggestion: '建议补充 Reflect 与 Proxy 配合使用的原理'
-    },
-    {
-      question: '微前端架构的落地挑战',
-      yourAnswer: '主要挑战包括样式隔离、应用间通信...',
-      score: 85,
-      keyPointsCovered: ['样式隔离', '应用通信', '公共依赖'],
-      keyPointsMissed: ['沙箱隔离机制'],
-      suggestion: '可以补充 JS 沙箱的实现原理'
-    }
-  ],
-  improvementPlan: [
-    {
-      category: '技术深化',
-      items: ['深入学习 Vue 3 源码', '了解微前端沙箱实现原理', '研究性能优化最佳实践']
-    },
-    {
-      category: '表达优化',
-      items: ['回答时多用 STAR 法则', '准备更多量化数据', '加强技术方案对比分析']
-    }
-  ]
 }
 
 // 统计数据

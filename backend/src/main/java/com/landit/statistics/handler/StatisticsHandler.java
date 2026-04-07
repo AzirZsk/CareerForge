@@ -2,7 +2,6 @@ package com.landit.statistics.handler;
 
 import com.landit.interview.service.InterviewService;
 import com.landit.resume.service.ResumeService;
-import com.landit.review.service.ReviewService;
 import com.landit.statistics.dto.StatisticsVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +21,6 @@ public class StatisticsHandler {
 
     private final InterviewService interviewService;
     private final ResumeService resumeService;
-    private final ReviewService reviewService;
 
     /**
      * 获取统计数据

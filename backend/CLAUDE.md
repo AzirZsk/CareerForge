@@ -8,6 +8,7 @@
 
 | 日期 | 版本 | 变更内容 |
 |------|------|----------|
+| 2026-04-07 | 2.3.0 | **清理老版本复盘模块**：删除 `review/` 目录（13 个 Java 文件），复盘功能统一使用 `interview/graph/review/` 工作流 + `InterviewReviewNote` |
 | 2026-04-02 | 2.2.0 | **新增 AI 语音面试模块**（37 个 Java 文件）：WebSocket + 阿里云 ASR/TTS + 求助系统 + 录音回放；新增 company/jobposition 模块（11+11 个文件）；新增面试中心相关表和语音面试相关表；新增 7 个 Controllers |
 | 2026-03-30 | 2.1.0 | Graph 子包重组（optimize/tailor 分包）、新增 BaseGraphConstants 公共常量基类、新增 ResumeChangeApplier 工具类、测试文件增至 2 个 |
 | 2026-03-30 | 2.0.0 | 新增 AI Chat 模块（30 个 Java 文件）：ReactAgent + 技能系统 + 8 个工具 + MemorySaver + SSE 流式输出 |
@@ -92,7 +93,6 @@ export ALIYUN_ACCESS_KEY_SECRET=your_access_key_secret
 | **interview-voice** | `/interviews` | **InterviewVoiceController (WebSocket)** | **AI 语音面试（WebSocket 端点）** |
 | **assistant** | `/interviews` | **AssistantController** | **语音面试求助系统** |
 | **recording** | `/recordings` | **RecordingController** | **录音回放管理** |
-| review | `/reviews` | ReviewController | 面试复盘 |
 | statistics | `/statistics` | StatisticsController | 数据统计 |
 | job | `/jobs` | JobController | 职位推荐 |
 | **job-position** | `/job-positions` | **JobPositionController** | **职位信息与 JD 分析** |
@@ -430,10 +430,6 @@ AI 功能通过 `AIPromptProperties` 配置类管理提示词：
 | t_interview_question | InterviewQuestion | 面试题库 |
 | t_interview_session | InterviewSession | 面试会话 |
 | t_conversation | Conversation | 面试对话 |
-| t_interview_review | InterviewReview | 面试复盘 |
-| t_review_dimension | ReviewDimension | 复盘维度 |
-| t_question_analysis | QuestionAnalysis | 问题分析 |
-| t_improvement_plan | ImprovementPlan | 改进计划 |
 | t_job | Job | 职位推荐 |
 | t_chat_message | ChatMessage | AI 聊天消息（含 actions、action_status、segments 字段） |
 | **t_company** | **Company** | **公司信息与调研** |
@@ -590,16 +586,6 @@ public abstract class BaseEntity {
 - **Controller**：JobPositionController
 - **Mapper**：JobPositionMapper
 
-### review - 复盘模块
-- **路径**：`src/main/java/com/landit/review/`
-- **文件统计**：13 个 Java 文件
-- **实体**：InterviewReview, ReviewDimension, QuestionAnalysis, ImprovementPlan
-- **核心功能**：
-  - 多维度评分
-  - 问题分析
-  - 改进计划生成
-  - 报告导出
-
 ### statistics - 统计模块
 - **路径**：`src/main/java/com/landit/statistics/`
 - **文件统计**：4 个 Java 文件
@@ -742,7 +728,6 @@ backend/
 │   │   │       └── util/                # 工具类
 │   │   ├── company/                     # 公司模块（6 个文件）
 │   │   ├── jobposition/                 # 职位模块（11 个文件）
-│   │   ├── review/                      # 复盘模块（13 个文件）
 │   │   ├── statistics/                  # 统计模块（4 个文件）
 │   │   └── job/                         # 职位模块（4 个文件）
 │   └── resources/

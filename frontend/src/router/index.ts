@@ -73,18 +73,6 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/InterviewRecording.vue'),
         meta: { title: '面试录音回放' }
       },
-      {
-        path: 'reviews',
-        name: 'ReviewList',
-        component: () => import('@/views/Review.vue'),
-        meta: { title: '复盘历史' }
-      },
-      {
-        path: 'reviews/:id',
-        name: 'ReviewDetail',
-        component: () => import('@/views/ReviewDetail.vue'),
-        meta: { title: '复盘详情' }
-      }
     ]
   },
   // ==================== 旧路由重定向（兼容性） ====================
@@ -95,14 +83,6 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/interview/:id',
     redirect: '/interview-center/:id'
-  },
-  {
-    path: '/review',
-    redirect: '/interview-center/reviews'
-  },
-  {
-    path: '/review/:id',
-    redirect: '/interview-center/reviews/:id'
   },
   // ==================== 个人中心 ====================
   {

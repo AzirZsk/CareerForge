@@ -198,64 +198,6 @@ CREATE TABLE IF NOT EXISTS t_conversation (
 );
 
 -- ----------------------------------------------------------------------------
--- 面试复盘表
--- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS t_interview_review (
-    id VARCHAR(64) PRIMARY KEY,              -- 主键ID（雪花ID字符串）
-    interview_id VARCHAR(64),                -- 关联的面试ID
-    user_id VARCHAR(64),                     -- 所属用户ID
-    overall_score INTEGER DEFAULT 0,        -- 总体评分（0-100）
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 更新时间
-    deleted INTEGER DEFAULT 0               -- 逻辑删除标记
-);
-
--- ----------------------------------------------------------------------------
--- 复盘维度表
--- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS t_review_dimension (
-    id VARCHAR(64) PRIMARY KEY,              -- 主键ID（雪花ID字符串）
-    review_id VARCHAR(64),                   -- 所属复盘ID
-    name VARCHAR(50),                       -- 维度名称（技术深度/表达能力/项目经验等）
-    score INTEGER DEFAULT 0,                -- 得分
-    max_score INTEGER DEFAULT 100,          -- 满分
-    feedback TEXT,                          -- 反馈说明
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 更新时间
-    deleted INTEGER DEFAULT 0               -- 逻辑删除标记
-);
-
--- ----------------------------------------------------------------------------
--- 问题分析表
--- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS t_question_analysis (
-    id VARCHAR(64) PRIMARY KEY,              -- 主键ID（雪花ID字符串）
-    review_id VARCHAR(64),                   -- 所属复盘ID
-    question TEXT,                          -- 问题内容
-    your_answer TEXT,                       -- 用户的回答
-    score INTEGER DEFAULT 0,                -- 得分（0-100）
-    key_points_covered TEXT,                -- 已覆盖要点（JSON数组）
-    key_points_missed TEXT,                 -- 遗漏要点（JSON数组）
-    suggestion TEXT,                        -- 改进建议
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 更新时间
-    deleted INTEGER DEFAULT 0               -- 逻辑删除标记
-);
-
--- ----------------------------------------------------------------------------
--- 改进计划表
--- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS t_improvement_plan (
-    id VARCHAR(64) PRIMARY KEY,              -- 主键ID（雪花ID字符串）
-    review_id VARCHAR(64),                   -- 所属复盘ID
-    category VARCHAR(50),                   -- 计划分类（技术深化/项目经验等）
-    items TEXT,                             -- 改进项列表（JSON数组）
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 更新时间
-    deleted INTEGER DEFAULT 0               -- 逻辑删除标记
-);
-
--- ----------------------------------------------------------------------------
 -- 职位推荐表
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS t_job (
@@ -285,7 +227,6 @@ CREATE INDEX IF NOT EXISTS idx_resume_version_resume_id ON t_resume_version(resu
 CREATE INDEX IF NOT EXISTS idx_resume_section_version_id ON t_resume_section(resume_version_id);
 CREATE INDEX IF NOT EXISTS idx_interview_user_id ON t_interview(user_id);
 CREATE INDEX IF NOT EXISTS idx_interview_resume_id ON t_interview(resume_id);
-CREATE INDEX IF NOT EXISTS idx_review_interview_id ON t_interview_review(interview_id);
 CREATE INDEX IF NOT EXISTS idx_session_user_id ON t_interview_session(user_id);
 CREATE INDEX IF NOT EXISTS idx_session_interview_id ON t_interview_session(interview_id);
 CREATE INDEX IF NOT EXISTS idx_conversation_session_id ON t_conversation(session_id);

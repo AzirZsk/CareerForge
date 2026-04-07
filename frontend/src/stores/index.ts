@@ -11,7 +11,6 @@ import {
   interviewHistory,
   interviewQuestions,
   interviewDetail,
-  interviewReview,
   statistics,
   jobRecommendations
 } from '@/mock/data'
@@ -26,7 +25,6 @@ import type {
   Interview,
   InterviewQuestions,
   InterviewDetail,
-  InterviewReview,
   Statistics,
   Job,
   UserUpdateInfo,
@@ -54,7 +52,6 @@ export const useAppStore = defineStore('app', () => {
   const interviews = ref<Interview[]>(interviewHistory)
   const questions = ref<InterviewQuestions>(interviewQuestions)
   const currentInterview = ref<InterviewDetail>(interviewDetail)
-  const currentReview = ref<InterviewReview>(interviewReview)
 
   // 统计数据
   const stats = ref<Statistics>(statistics)
@@ -439,7 +436,6 @@ export const useAppStore = defineStore('app', () => {
     interviews,
     questions,
     currentInterview,
-    currentReview,
     stats,
     jobs,
     activeNav,
