@@ -8,6 +8,8 @@ import com.landit.jobposition.mapper.JobPositionMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 /**
@@ -62,7 +64,7 @@ public class JobPositionService extends ServiceImpl<JobPositionMapper, JobPositi
             jobPosition = existingPosition.get();
             jobPosition.setJdContent(jdContent);
             jobPosition.setJdAnalysis(jdAnalysis);
-            jobPosition.setJdAnalysisUpdatedAt(java.time.LocalDateTime.now());
+            jobPosition.setJdAnalysisUpdatedAt(LocalDateTime.now());
             updateById(jobPosition);
         } else {
             jobPosition = new JobPosition();
@@ -70,7 +72,7 @@ public class JobPositionService extends ServiceImpl<JobPositionMapper, JobPositi
             jobPosition.setTitle(title);
             jobPosition.setJdContent(jdContent);
             jobPosition.setJdAnalysis(jdAnalysis);
-            jobPosition.setJdAnalysisUpdatedAt(java.time.LocalDateTime.now());
+            jobPosition.setJdAnalysisUpdatedAt(LocalDateTime.now());
             save(jobPosition);
         }
         return jobPosition;

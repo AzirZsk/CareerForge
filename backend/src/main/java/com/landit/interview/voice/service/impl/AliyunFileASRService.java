@@ -15,12 +15,18 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -266,7 +272,7 @@ public class AliyunFileASRService implements FileASRService {
     private String extractTranscriptText(TranscriptionResult result) {
         StringBuilder sb = new StringBuilder();
         // 获取子任务结果
-        java.util.List<TranscriptionTaskResult> taskResults = result.getResults();
+        List<TranscriptionTaskResult> taskResults = result.getResults();
         if (taskResults != null) {
             for (TranscriptionTaskResult taskResult : taskResults) {
                 // 获取转录 URL 并下载结果
@@ -291,12 +297,12 @@ public class AliyunFileASRService implements FileASRService {
      * 下载转录结果
      */
     private String downloadTranscriptionResult(String url) throws IOException {
-        java.net.HttpURLConnection conn = (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
+        HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
         conn.setRequestMethod("GET");
         conn.setConnectTimeout(10000);
         conn.setReadTimeout(30000);
-        try (java.io.BufferedReader reader = new java.io.BufferedReader(
-                new java.io.InputStreamReader(conn.getInputStream(), java.nio.charset.StandardCharsets.UTF_8))) {
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
             StringBuilder sb = new StringBuilder();
             String line;
             while ((line = reader.readLine()) != null) {

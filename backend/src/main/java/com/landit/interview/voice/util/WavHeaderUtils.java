@@ -2,6 +2,8 @@ package com.landit.interview.voice.util;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 /**
  * WAV 文件头工具类
@@ -27,11 +29,11 @@ public final class WavHeaderUtils {
      * @param startTime 开始时间
      * @return 时间戳（毫秒）
      */
-    public static long convertToTimestamp(java.time.LocalDateTime startTime) {
+    public static long convertToTimestamp(LocalDateTime startTime) {
         if (startTime == null) {
             return 0L;
         }
-        return startTime.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+        return startTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
     }
 
     /**

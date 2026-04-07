@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -203,7 +204,7 @@ public class RecordingMergeServiceImpl implements RecordingMergeService {
     /**
      * 转换时间戳
      */
-    private long convertToTimestamp(java.time.LocalDateTime startTime) {
+    private long convertToTimestamp(LocalDateTime startTime) {
         if (startTime == null) {
             return 0L;
         }

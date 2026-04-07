@@ -345,7 +345,7 @@ public class JobPositionHandler {
         // 否则从枚举获取描述
         if (roundType != null) {
             try {
-                com.landit.common.enums.RoundType type = com.landit.common.enums.RoundType.fromCode(roundType);
+                RoundType type = RoundType.fromCode(roundType);
                 if (type != null) {
                     return type.getDescription();
                 }

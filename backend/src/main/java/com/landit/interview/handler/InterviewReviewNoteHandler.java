@@ -4,6 +4,7 @@ import com.landit.interview.dto.interviewcenter.*;
 import com.landit.interview.service.InterviewReviewNoteService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +29,7 @@ public class InterviewReviewNoteHandler {
             return null;
         }
         var vo = new ReviewNoteVO();
-        org.springframework.beans.BeanUtils.copyProperties(note, vo);
+        BeanUtils.copyProperties(note, vo);
         return vo;
     }
 

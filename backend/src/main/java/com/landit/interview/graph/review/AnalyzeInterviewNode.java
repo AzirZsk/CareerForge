@@ -16,6 +16,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.List;
 import java.util.Map;
 
 import static com.landit.interview.graph.review.ReviewAnalysisGraphConstants.*;
@@ -42,7 +44,7 @@ public class AnalyzeInterviewNode implements NodeAction {
         String interviewId = (String) state.value(STATE_INTERVIEW_ID).orElse(null);
         if (interviewId == null) {
             log.warn("面试ID为空，无法分析");
-            return Map.of(STATE_MESSAGES, java.util.List.of("面试ID为空"));
+            return Map.of(STATE_MESSAGES, List.of("面试ID为空"));
         }
         // ==================== 第一步：收集数据 ====================
         log.info("=== 开始收集面试数据 ===");
