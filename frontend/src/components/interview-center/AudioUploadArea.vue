@@ -1,52 +1,78 @@
 <template>
   <div class="audio-upload-area">
-    <h4>面试过程记录</h4>
-    <p class="hint">请输入面试过程中的问题、回答、面试官反馈等内容，或上传面试录音自动转录</p>
-
-    <!-- 音频上传区域 -->
-    <div
-      class="upload-zone"
-      :class="{ 'drag-over': isDragOver, 'uploading': isUploading }"
-      @click="triggerFileSelect"
-      @drop.prevent="handleDrop"
-      @dragover.prevent="isDragOver = true"
-      @dragleave.prevent="isDragOver = false"
-    >
-      <input
-        ref="fileInput"
-        type="file"
-        accept="audio/*,.wav,.mp3,.m4a,.aac,.ogg,.flac,.opus,.webm,.mov,.mp4"
-        class="hidden-input"
-        @change="handleFileSelect"
-      />
-
-      <!-- 空闲状态 -->
-      <div v-if="!isUploading" class="upload-prompt">
-        <p>拖拽音频文件到此处，或<span class="upload-link" @click="triggerFileSelect">点击上传</span></p>
-        <span class="format-hint">（wav/mp3/m4a 等，最大 50MB）</span>
+    <!-- 只读模式：有转译文本且非编辑状态 -->
+    <div v-if="hasTranscript && !isEditing" class="transcript-display">
+      <div class="display-header">
+        <h4>面试过程记录</h4>
+        <button class="edit-btn" @click="startEditing" title="编辑">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+          <span>编辑</span>
+        </button>
       </div>
-
-      <!-- 上传中状态 -->
-      <div v-else class="upload-status">
-        <span class="upload-icon spinning">⏳</span>
-        <span>正在上传...</span>
+      <div class="transcript-content">
+        <p class="transcript-text">{{ modelValue }}</p>
       </div>
     </div>
 
-    <!-- 文本输入区域 -->
-    <div class="text-input-area">
-      <div class="input-header">
-        <span>或直接输入/编辑文本</span>
-        <span v-if="charCount" class="char-count">{{ charCount }} 字</span>
+    <!-- 编辑模式：无转译文本或正在编辑 -->
+    <template v-else>
+      <h4>面试过程记录</h4>
+      <p class="hint">请输入面试过程中的问题、回答、面试官反馈等内容，或上传面试录音自动转录</p>
+
+      <!-- 音频上传区域 -->
+      <div
+        class="upload-zone"
+        :class="{ 'drag-over': isDragOver, 'uploading': isUploading }"
+        @click="triggerFileSelect"
+        @drop.prevent="handleDrop"
+        @dragover.prevent="isDragOver = true"
+        @dragleave.prevent="isDragOver = false"
+      >
+        <input
+          ref="fileInput"
+          type="file"
+          accept="audio/*,.wav,.mp3,.m4a,.aac,.ogg,.flac,.opus,.webm,.mov,.mp4"
+          class="hidden-input"
+          @change="handleFileSelect"
+        />
+
+        <!-- 空闲状态 -->
+        <div v-if="!isUploading" class="upload-prompt">
+          <p>拖拽音频文件到此处，或<span class="upload-link" @click.stop="triggerFileSelect">点击上传</span></p>
+          <span class="format-hint">（wav/mp3/m4a 等，最大 50MB）</span>
+        </div>
+
+        <!-- 上传中状态 -->
+        <div v-else class="upload-status">
+          <span class="upload-icon spinning">⏳</span>
+          <span>正在上传...</span>
+        </div>
       </div>
-      <textarea
-        :value="displayText"
-        @input="handleTextInput"
-        placeholder="例如：&#10;1. 面试官：请介绍一下你的项目经验？&#10;我：我负责过 xxx 项目...&#10;&#10;2. 面试官：你遇到过什么技术难题？&#10;我：..."
-        rows="6"
-        class="transcript-textarea"
-      ></textarea>
-    </div>
+
+      <!-- 文本输入区域 -->
+      <div class="text-input-area">
+        <div class="input-header">
+          <span>或直接输入/编辑文本</span>
+          <span v-if="charCount" class="char-count">{{ charCount }} 字</span>
+        </div>
+        <textarea
+          :value="displayText"
+          @input="handleTextInput"
+          placeholder="例如：&#10;1. 面试官：请介绍一下你的项目经验？&#10;我：我负责过 xxx 项目...&#10;&#10;2. 面试官：你遇到过什么技术难题？&#10;我：..."
+          rows="6"
+          class="transcript-textarea"
+        ></textarea>
+      </div>
+
+      <!-- 编辑模式下的操作按钮 -->
+      <div v-if="hasTranscript" class="edit-actions">
+        <button class="btn btn-sm btn-secondary" @click="cancelEditing">取消</button>
+        <button class="btn btn-sm btn-primary" @click="saveEditing">保存</button>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -66,6 +92,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
+  'save': [value: string]
 }>()
 
 const notificationStore = useNotificationStore()
@@ -75,6 +102,12 @@ const fileInput = ref<HTMLInputElement>()
 const isDragOver = ref(false)
 const localText = ref('')
 const isUploading = ref(false)
+const isEditing = ref(false)
+
+// 是否有转译文本
+const hasTranscript = computed(() => {
+  return !!props.modelValue?.trim()
+})
 
 // 显示文本：本地编辑或传入值
 const displayText = computed(() => {
@@ -85,6 +118,32 @@ const displayText = computed(() => {
 const charCount = computed(() => {
   return displayText.value.length || 0
 })
+
+/**
+ * 开始编辑模式
+ */
+function startEditing() {
+  localText.value = props.modelValue
+  isEditing.value = true
+}
+
+/**
+ * 取消编辑
+ */
+function cancelEditing() {
+  localText.value = ''
+  isEditing.value = false
+}
+
+/**
+ * 保存编辑
+ */
+function saveEditing() {
+  emit('update:modelValue', localText.value)
+  emit('save', localText.value)
+  isEditing.value = false
+  toast.success('已保存')
+}
 
 /**
  * 验证文件格式和大小
@@ -161,7 +220,10 @@ async function processFile(file: File) {
 function handleTextInput(event: Event) {
   const target = event.target as HTMLTextAreaElement
   localText.value = target.value
-  emit('update:modelValue', target.value)
+  // 实时同步到父组件（仅在没有原有转译文本时）
+  if (!hasTranscript.value) {
+    emit('update:modelValue', target.value)
+  }
 }
 </script>
 
@@ -180,6 +242,72 @@ function handleTextInput(event: Event) {
     font-size: 0.75rem;
     color: $color-text-tertiary;
     margin-bottom: $spacing-sm;
+  }
+}
+
+// 只读模式样式
+.transcript-display {
+  background: $color-bg-tertiary;
+  border-radius: $radius-md;
+  overflow: hidden;
+
+  .display-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: $spacing-sm $spacing-md;
+    background: $color-bg-secondary;
+    border-bottom: 1px solid $color-bg-elevated;
+
+    h4 {
+      margin: 0;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: $color-text-primary;
+    }
+
+    .edit-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      background: transparent;
+      border: 1px solid $color-bg-elevated;
+      border-radius: $radius-sm;
+      color: $color-text-tertiary;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      svg {
+        opacity: 0.7;
+      }
+
+      &:hover {
+        color: $color-accent;
+        border-color: $color-accent;
+        background: rgba($color-accent, 0.1);
+
+        svg {
+          opacity: 1;
+        }
+      }
+    }
+  }
+
+  .transcript-content {
+    padding: $spacing-md;
+    max-height: 300px;
+    overflow-y: auto;
+
+    .transcript-text {
+      margin: 0;
+      font-size: 0.875rem;
+      line-height: 1.7;
+      color: $color-text-secondary;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
   }
 }
 
@@ -219,10 +347,6 @@ function handleTextInput(event: Event) {
   gap: $spacing-sm;
   flex-wrap: wrap;
 
-  .upload-icon {
-    font-size: 1.25rem;
-  }
-
   p {
     color: $color-text-secondary;
     font-size: 0.8125rem;
@@ -232,7 +356,6 @@ function handleTextInput(event: Event) {
   .upload-link {
     color: $color-accent;
     cursor: pointer;
-    margin-left: 2px;
 
     &:hover {
       text-decoration: underline;
@@ -242,10 +365,6 @@ function handleTextInput(event: Event) {
   .format-hint {
     font-size: 0.6875rem;
     color: $color-text-tertiary;
-  }
-
-  .task-hint {
-    display: none;
   }
 }
 
@@ -264,64 +383,6 @@ function handleTextInput(event: Event) {
     color: $color-text-secondary;
     font-size: 0.8125rem;
   }
-}
-
-.progress-ring {
-  position: relative;
-  width: 60px;
-  height: 60px;
-  margin: 0 auto $spacing-sm;
-
-  svg {
-    transform: rotate(-90deg);
-  }
-
-  circle {
-    fill: none;
-    stroke-width: 3;
-
-    &.bg {
-      stroke: $color-bg-elevated;
-    }
-
-    &.progress {
-      stroke: $color-accent;
-      stroke-linecap: round;
-      stroke-dasharray: 100;
-      transition: stroke-dashoffset 0.3s;
-    }
-  }
-
-  .progress-text {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: $color-accent;
-  }
-}
-
-.transcript-preview {
-  margin-top: $spacing-sm;
-  padding: $spacing-sm;
-  background: $color-bg-secondary;
-  border-radius: $radius-sm;
-
-  .preview-text {
-    font-size: 0.75rem;
-    color: $color-text-secondary;
-    text-align: left;
-    line-height: 1.5;
-    margin: 0;
-  }
-}
-
-.status-actions {
-  display: flex;
-  gap: $spacing-sm;
-  justify-content: center;
 }
 
 .text-input-area {
@@ -361,6 +422,13 @@ function handleTextInput(event: Event) {
   }
 }
 
+// 编辑模式操作按钮
+.edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+  margin-top: $spacing-md;
+}
 
 @keyframes spin {
   from {

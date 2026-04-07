@@ -43,4 +43,9 @@ public class UpdateInterviewRequest {
      */
     private String resumeId;
 
+    /**
+     * 面试过程转译文本
+     */
+    private String transcript;
+
 }

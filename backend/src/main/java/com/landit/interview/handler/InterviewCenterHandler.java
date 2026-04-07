@@ -203,6 +203,9 @@ public class InterviewCenterHandler {
         if (request.getResumeId() != null) {
             interview.setResumeId(request.getResumeId());
         }
+        if (request.getTranscript() != null) {
+            interview.setTranscript(request.getTranscript());
+        }
         interviewCenterService.updateById(interview);
         log.info("更新面试成功: id={}", id);
         return getInterviewDetail(id);

@@ -274,7 +274,8 @@
             <button
               class="btn btn-sm btn-ai"
               @click="handleAIAnalysis"
-              :disabled="reviewState.isRunning"
+              :disabled="reviewState.isRunning || !canStartAIAnalysis"
+              :title="aiAnalysisHint"
             >
               <span v-if="reviewState.isRunning">分析中...</span>
               <span v-else>AI 分析</span>
@@ -288,6 +289,7 @@
           v-if="interview"
           :interview-id="interview.id"
           v-model="sessionTranscript"
+          @save="handleSaveTranscript"
         />
 
         <!-- AI 分析进度 -->
@@ -483,6 +485,19 @@ const mockInterviewHint = computed(() => {
   return '请先关联职位后再开始模拟面试'
 })
 
+// 是否可以进行 AI 复盘分析（必须有转译文本）
+const canStartAIAnalysis = computed(() => {
+  return !!sessionTranscript.value?.trim()
+})
+
+// AI 分析按钮提示
+const aiAnalysisHint = computed(() => {
+  if (canStartAIAnalysis.value) {
+    return '基于面试过程文本进行 AI 分析'
+  }
+  return '请先输入或上传面试过程内容'
+})
+
 function goBack() {
   router.back()
 }
@@ -601,7 +616,8 @@ async function loadDetail() {
   loading.value = true
   try {
     interview.value = await getInterviewDetail(id)
-    // 加载时读取 transcript 字段， if (interview.value?.transcript) {
+    // 加载时读取 transcript 字段
+    if (interview.value?.transcript) {
       sessionTranscript.value = interview.value.transcript
     }
   } catch (error) {
@@ -654,8 +670,20 @@ function handleRetryPreparation() {
 }
 
 function handleAIAnalysis() {
-  if (!interview.value) return
+  if (!interview.value || !canStartAIAnalysis.value) return
   startAnalysis(interview.value.id, sessionTranscript.value)
+}
+
+// 保存转译文本
+async function handleSaveTranscript(transcript: string) {
+  if (!interview.value) return
+  try {
+    await updateInterview(interview.value.id, { transcript })
+    sessionTranscript.value = transcript
+  } catch (error) {
+    console.error('保存转译文本失败:', error)
+    toast.error('保存失败，请稍后重试')
+  }
 }
 
 // 开始模拟面试 - 打开配置弹窗

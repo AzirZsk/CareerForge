@@ -79,6 +79,7 @@ export interface InterviewDetail {
   resumeName?: string
   companyResearch?: string
   jdAnalysis?: string
+  transcript?: string
   preparations: PreparationVO[]
   reviewNote?: ReviewNoteVO
   createdAt: string
@@ -158,6 +159,7 @@ export interface UpdateInterviewRequest {
   status?: InterviewStatus
   overallResult?: InterviewResult
   resumeId?: string
+  transcript?: string
 }
 
 // 添加准备事项请求
