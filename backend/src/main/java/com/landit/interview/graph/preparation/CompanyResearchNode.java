@@ -34,13 +34,15 @@ public class CompanyResearchNode implements NodeAction {
     private final ChatClient chatClient;
     private final AIPromptProperties aiPromptProperties;
     private final CompanyService companyService;
+    private final PreparationContextBuilder contextBuilder;
 
     @Override
     public Map<String, Object> apply(OverAllState state) {
         log.info("=== 开始公司调研 ===");
-
-        // 从工作流状态中获取公司名称
-        String companyName = (String) state.value(STATE_COMPANY_NAME).orElse(null);
+        // 从工作流状态中获取面试ID，通过 ContextBuilder 获取公司名称
+        String interviewId = (String) state.value(STATE_INTERVIEW_ID).orElse(null);
+        PreparationContextBuilder.PreparationContext context = contextBuilder.buildContext(interviewId);
+        String companyName = context.companyName();
 
         // 如果公司名称为空，跳过调研
         if (companyName == null || companyName.isEmpty()) {

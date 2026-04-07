@@ -2299,8 +2299,9 @@ public class AIPromptProperties {
                     """
                     请根据以下数据综合分析面试表现：
 
-                    【面试数据】
+                    <collected_data>
                     {collectedData}
+                    </collected_data>
                     """);
         }
 
@@ -2399,7 +2400,9 @@ public class AIPromptProperties {
                     """
                     请根据以下分析结果生成改进建议：
 
+                    <analysis_result>
                     {analysisResult}
+                    </analysis_result>
                     """);
         }
 
@@ -2474,22 +2477,27 @@ public class AIPromptProperties {
                     - 追问失败给台阶："这个确实不常碰到。我们来看看其他方面。"
                     """);
             config.setQuestionPromptTemplate("""
-                    ## 当前面试状态
+                    <interview_state>
                     - 面试岗位：{position}
                     - 当前问题：第 {questionNumber} 个（共 {totalQuestions} 个）
                     - 已面试时长：{elapsedSeconds} 秒
+                    </interview_state>
 
-                    ## JD 核心要求
+                    <jd_requirements>
                     {jdRequirements}
+                    </jd_requirements>
 
-                    ## 候选人简历摘要
+                    <resume_summary>
                     {resumeSummary}
+                    </resume_summary>
 
-                    ## 已提问的问题
+                    <asked_questions>
                     {askedQuestions}
+                    </asked_questions>
 
-                    ## 最近的对话
+                    <conversation_summary>
                     {conversationSummary}
+                    </conversation_summary>
 
                     ---
 
@@ -2507,15 +2515,18 @@ public class AIPromptProperties {
                     - 口语化表达，像真人面试官在问
                     """);
             config.setReplyPromptTemplate("""
-                    ## JD 核心要求
+                    <jd_requirements>
                     {jdRequirements}
+                    </jd_requirements>
 
-                    ## 候选人最新回答
+                    <candidate_answer>
                     {candidateAnswer}
+                    </candidate_answer>
 
-                    ## 面试进展
+                    <interview_progress>
                     - 当前问题：第 {questionNumber} 个（共 {totalQuestions} 个）
                     - 已面试时长：{elapsedSeconds} 秒
+                    </interview_progress>
 
                     ---
 
@@ -2577,22 +2588,27 @@ public class AIPromptProperties {
                     - 换话题鼓励："这个问题确实有点偏，我们聊聊你更熟悉的内容吧。"
                     """);
             config.setQuestionPromptTemplate("""
-                    ## 当前面试状态
+                    <interview_state>
                     - 面试岗位：{position}
                     - 当前问题：第 {questionNumber} 个（共 {totalQuestions} 个）
                     - 已面试时长：{elapsedSeconds} 秒
+                    </interview_state>
 
-                    ## JD 核心要求
+                    <jd_requirements>
                     {jdRequirements}
+                    </jd_requirements>
 
-                    ## 候选人简历摘要
+                    <resume_summary>
                     {resumeSummary}
+                    </resume_summary>
 
-                    ## 已提问的问题
+                    <asked_questions>
                     {askedQuestions}
+                    </asked_questions>
 
-                    ## 最近的对话
+                    <conversation_summary>
                     {conversationSummary}
+                    </conversation_summary>
 
                     ---
 
@@ -2611,15 +2627,18 @@ public class AIPromptProperties {
                     - 可以加一点过渡语，如"接下来聊聊..."
                     """);
             config.setReplyPromptTemplate("""
-                    ## JD 核心要求
+                    <jd_requirements>
                     {jdRequirements}
+                    </jd_requirements>
 
-                    ## 候选人最新回答
+                    <candidate_answer>
                     {candidateAnswer}
+                    </candidate_answer>
 
-                    ## 面试进展
+                    <interview_progress>
                     - 当前问题：第 {questionNumber} 个（共 {totalQuestions} 个）
                     - 已面试时长：{elapsedSeconds} 秒
+                    </interview_progress>
 
                     ---
 
@@ -2682,22 +2701,27 @@ public class AIPromptProperties {
                     - 接受解释："嗯，这个考虑是对的。那我们聊聊其他方面。"（解释清楚后给台阶）
                     """);
             config.setQuestionPromptTemplate("""
-                    ## 当前面试状态
+                    <interview_state>
                     - 面试岗位：{position}
                     - 当前问题：第 {questionNumber} 个（共 {totalQuestions} 个）
                     - 已面试时长：{elapsedSeconds} 秒
+                    </interview_state>
 
-                    ## JD 核心要求
+                    <jd_requirements>
                     {jdRequirements}
+                    </jd_requirements>
 
-                    ## 候选人简历摘要
+                    <resume_summary>
                     {resumeSummary}
+                    </resume_summary>
 
-                    ## 已提问的问题
+                    <asked_questions>
                     {askedQuestions}
+                    </asked_questions>
 
-                    ## 最近的对话
+                    <conversation_summary>
                     {conversationSummary}
+                    </conversation_summary>
 
                     ---
 
@@ -2715,15 +2739,18 @@ public class AIPromptProperties {
                     - 直接、有挑战性，但不是刁难
                     """);
             config.setReplyPromptTemplate("""
-                    ## JD 核心要求
+                    <jd_requirements>
                     {jdRequirements}
+                    </jd_requirements>
 
-                    ## 候选人最新回答
+                    <candidate_answer>
                     {candidateAnswer}
+                    </candidate_answer>
 
-                    ## 面试进展
+                    <interview_progress>
                     - 当前问题：第 {questionNumber} 个（共 {totalQuestions} 个）
                     - 已面试时长：{elapsedSeconds} 秒
+                    </interview_progress>
 
                     ---
 

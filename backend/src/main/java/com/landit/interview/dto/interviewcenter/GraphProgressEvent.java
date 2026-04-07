@@ -76,19 +76,14 @@ public class GraphProgressEvent {
      *
      * @param interviewId 面试ID
      * @param threadId    线程ID
-     * @param company     公司名称
-     * @param position    职位名称
      * @return 开始事件
      */
-    public static GraphProgressEvent startPreparation(String interviewId, String threadId,
-                                                       String company, String position) {
+    public static GraphProgressEvent startPreparation(String interviewId, String threadId) {
         Map<String, Object> data = new HashMap<>();
         data.put("interviewId", interviewId);
-        data.put("company", company);
-        data.put("position", position);
 
         return new GraphProgressEvent("start", "start", 5,
-                "开始生成准备事项 - " + company + " " + position,
+                "开始生成准备事项",
                 threadId, data, System.currentTimeMillis());
     }
 

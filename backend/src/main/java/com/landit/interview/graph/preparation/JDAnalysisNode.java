@@ -34,15 +34,18 @@ public class JDAnalysisNode implements NodeAction {
     private final ChatClient chatClient;
     private final AIPromptProperties aiPromptProperties;
     private final JobPositionService jobPositionService;
+    private final PreparationContextBuilder contextBuilder;
 
     @Override
     public Map<String, Object> apply(OverAllState state) {
         log.info("=== 开始JD分析 ===");
-
-        // 从工作流状态中获取上下文
+        // 从工作流状态中获取公司ID（前序节点产出）
         String companyId = (String) state.value(STATE_COMPANY_ID).orElse(null);
-        String positionTitle = (String) state.value(STATE_POSITION_TITLE).orElse(null);
-        String jdContent = (String) state.value(STATE_JD_CONTENT).orElse(null);
+        // 通过 ContextBuilder 获取职位名称和JD内容
+        String interviewId = (String) state.value(STATE_INTERVIEW_ID).orElse(null);
+        PreparationContextBuilder.PreparationContext context = contextBuilder.buildContext(interviewId);
+        String positionTitle = context.positionTitle();
+        String jdContent = context.jdContent();
 
         // 如果没有公司ID或职位名称，跳过分析
         if (companyId == null || companyId.isEmpty() || positionTitle == null || positionTitle.isEmpty()) {

@@ -30,6 +30,7 @@ public class GeneratePreparationNode implements NodeAction {
 
     private final ChatClient chatClient;
     private final AIPromptProperties aiPromptProperties;
+    private final PreparationContextBuilder preparationContextBuilder;
 
     @Override
     public Map<String, Object> apply(OverAllState state) {
@@ -40,12 +41,15 @@ public class GeneratePreparationNode implements NodeAction {
             log.warn("面试ID为空，跳过准备事项生成");
             return buildEmptyResult();
         }
-        String companyName = (String) state.value(STATE_COMPANY_NAME).orElse("");
-        String positionTitle = (String) state.value(STATE_POSITION_TITLE).orElse("");
+        // 通过 ContextBuilder 获取基本信息
+        PreparationContextBuilder.PreparationContext context = preparationContextBuilder.buildContext(interviewId);
+        String companyName = context.companyName();
+        String positionTitle = context.positionTitle();
+        String resumeContent = context.resumeContent();
+        String previousReviewNotes = context.previousReviewNotes();
+        // 从状态获取前序节点产出的中间结果
         String companyResearch = (String) state.value(STATE_COMPANY_RESEARCH_RESULT).orElse("{}");
         String jdAnalysis = (String) state.value(STATE_JD_ANALYSIS_RESULT).orElse("{}");
-        String resumeContent = (String) state.value(STATE_RESUME_CONTENT).orElse("");
-        String previousReviewNotes = (String) state.value(STATE_PREVIOUS_REVIEW_NOTES).orElse("");
         // 获取AI提示词配置并构建用户提示词
         AIPromptProperties.PromptConfig config = aiPromptProperties.getPreparationGraph().getGeneratePreparationConfig();
         String userPrompt = config.getUserPromptTemplate()
