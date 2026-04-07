@@ -610,6 +610,7 @@ function goToQuestion(index: number): void {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .messages-container {

@@ -21,17 +21,15 @@
 
       <!-- 空闲状态 -->
       <div v-if="!isUploading" class="upload-prompt">
-        <div class="upload-icon">🎵</div>
         <p>拖拽音频文件到此处，或</p>
         <button class="btn btn-secondary" @click="triggerFileSelect">点击上传</button>
-        <p class="format-hint">支持 wav/mp3/m4a/aac/ogg/flac 等格式，最大 50MB</p>
-        <p class="task-hint">上传后可在右上角消息中心查看转录进度</p>
+        <span class="format-hint">（wav/mp3/m4a 等，最大 50MB）</span>
       </div>
 
       <!-- 上传中状态 -->
       <div v-else class="upload-status">
-        <div class="upload-icon spinning">⏳</div>
-        <p>正在上传...</p>
+        <span class="upload-icon spinning">⏳</span>
+        <span>正在上传...</span>
       </div>
     </div>
 
@@ -185,9 +183,9 @@ function handleTextInput(event: Event) {
 }
 
 .upload-zone {
-  border: 2px dashed $color-bg-elevated;
-  border-radius: $radius-md;
-  padding: $spacing-lg;
+  border: 1.5px dashed $color-bg-elevated;
+  border-radius: $radius-sm;
+  padding: $spacing-sm $spacing-md;
   text-align: center;
   transition: all 0.2s;
   margin-bottom: $spacing-md;
@@ -209,55 +207,46 @@ function handleTextInput(event: Event) {
 }
 
 .upload-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+
   .upload-icon {
-    font-size: 2.5rem;
-    margin-bottom: $spacing-sm;
+    font-size: 1.25rem;
   }
 
   p {
     color: $color-text-secondary;
-    margin-bottom: $spacing-sm;
+    font-size: 0.8125rem;
+    margin: 0;
   }
 
   .format-hint {
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     color: $color-text-tertiary;
-    margin-top: $spacing-sm;
   }
 
   .task-hint {
-    font-size: 0.6875rem;
-    color: $color-accent;
-    margin-top: $spacing-md;
-    opacity: 0.8;
+    display: none;
   }
 }
 
 .upload-status {
-  .upload-icon {
-    font-size: 2.5rem;
-    margin-bottom: $spacing-sm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-xs;
 
-    &.spinning {
-      animation: spin 1s linear infinite;
-    }
+  .upload-icon.spinning {
+    display: inline-block;
+    animation: spin 1s linear infinite;
   }
 
-  p {
+  span {
     color: $color-text-secondary;
-    margin-bottom: $spacing-sm;
-  }
-
-  &.success {
-    .upload-icon {
-      color: $color-success;
-    }
-  }
-
-  &.error {
-    .upload-icon {
-      color: $color-error;
-    }
+    font-size: 0.8125rem;
   }
 }
 
