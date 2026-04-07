@@ -346,7 +346,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   getInterviewDetail,
@@ -368,6 +368,7 @@ import {
   type InterviewType,
   type PreparationVO
 } from '@/types/interview-center'
+import { useNotificationStore } from '@/stores/notification'
 // 弹窗组件
 import AddPreparationDialog from '@/components/interview-center/AddPreparationDialog.vue'
 import ReviewNoteDialog from '@/components/interview-center/ReviewNoteDialog.vue'
@@ -391,6 +392,7 @@ import { useMicrophonePermission } from '@/composables/useMicrophonePermission'
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
+const notificationStore = useNotificationStore()
 const { confirm, visible: confirmVisible, title: confirmTitle, message: confirmMessage, confirmText, danger: confirmDanger, handleConfirm, handleCancel } = useConfirm()
 const loading = ref(true)
 const interview = ref<InterviewDetail | null>(null)
@@ -777,22 +779,42 @@ function handleInterviewUpdated() {
 // AI 聊天状态
 const { state: aiChatState } = useAIChat()
 
-// 弹窗打开时隐藏 AI 悬浮球
-watch(showPrepModal, (val) => {
-  aiChatState.hideFloat = val
-})
+// 统一处理弹窗隐藏悬浮球
+function updateFloatVisibility(show: boolean) {
+  aiChatState.hideFloat = show
+}
 
-watch(showMockConfigDialog, (val) => {
-  aiChatState.hideFloat = val
-})
-
-watch(showPermissionDialog, (val) => {
-  aiChatState.hideFloat = val
-})
+// 监听弹窗状态
+watch(showPrepModal, updateFloatVisibility)
+watch(showMockConfigDialog, updateFloatVisibility)
+watch(showPermissionDialog, updateFloatVisibility)
 
 onMounted(() => {
   loadDetail()
+  // 监听转录完成事件（从 AppNavbar 触发）
+  window.addEventListener('apply-transcript', handleApplyTranscriptEvent as EventListener)
 })
+
+onUnmounted(() => {
+  window.removeEventListener('apply-transcript', handleApplyTranscriptEvent as EventListener)
+})
+
+// 处理转录完成事件
+function handleApplyTranscriptEvent(event: Event) {
+  const customEvent = event as CustomEvent
+  const { task } = customEvent.detail
+  if (task?.taskType === 'audio_transcribe' && task?.businessId === interview.value?.id) {
+    try {
+      const result = JSON.parse(task.result)
+      sessionTranscript.value = result.transcriptText
+      toast.success('转录完成，已自动填充')
+      // 标记已应用
+      notificationStore.markTranscribeApplied(interview.value!.id)
+    } catch (e) {
+      console.error('[InterviewDetail] 解析转录结果失败:', e)
+    }
+  }
+}
 </script>
 
 <style scoped lang="scss">
@@ -1192,106 +1214,6 @@ onMounted(() => {
     font-size: 0.875rem;
     color: $color-text-secondary;
     margin: 0;
-  }
-}
-
-.ai-result-preview {
-  margin-bottom: $spacing-lg;
-  padding: $spacing-lg;
-  background: rgba($color-accent, 0.1);
-  border: 1px solid rgba($color-accent, 0.2);
-  border-radius: $radius-md;
-
-  h4 {
-    font-size: 1rem;
-    font-weight: 600;
-    color: $color-accent;
-    margin-bottom: $spacing-md;
-  }
-
-  .preview-list {
-    display: flex;
-    flex-direction: column;
-    gap: $spacing-sm;
-    margin-bottom: $spacing-md;
-  }
-
-  .preview-item {
-    display: flex;
-    align-items: flex-start;
-    gap: $spacing-sm;
-    padding: $spacing-sm;
-    background: $color-bg-secondary;
-    border-radius: $radius-sm;
-
-    input[type="checkbox"] {
-      margin-top: 4px;
-      accent-color: $color-accent;
-    }
-
-    .preview-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .preview-title {
-      color: $color-text-primary;
-      font-size: 0.875rem;
-    }
-
-    .preview-desc {
-      color: $color-text-tertiary;
-      font-size: 0.75rem;
-    }
-  }
-
-  .preview-actions {
-    display: flex;
-    gap: $spacing-sm;
-  }
-}
-
-.transcript-input-area {
-  margin-bottom: $spacing-lg;
-  padding: $spacing-md;
-  background: $color-bg-tertiary;
-  border-radius: $radius-md;
-
-  h4 {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: $color-text-primary;
-    margin-bottom: $spacing-xs;
-  }
-
-  .hint {
-    font-size: 0.75rem;
-    color: $color-text-tertiary;
-    margin-bottom: $spacing-sm;
-  }
-
-  .transcript-textarea {
-    width: 100%;
-    padding: $spacing-sm;
-    background: $color-bg-secondary;
-    border: 1px solid $color-bg-elevated;
-    border-radius: $radius-sm;
-    color: $color-text-primary;
-    font-size: 0.875rem;
-    line-height: 1.5;
-    resize: vertical;
-    min-height: 120px;
-
-    &:focus {
-      outline: none;
-      border-color: $color-accent;
-    }
-
-    &::placeholder {
-      color: $color-text-tertiary;
-    }
   }
 }
 

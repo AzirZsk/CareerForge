@@ -396,3 +396,30 @@ CREATE TABLE IF NOT EXISTS t_interview_review_note (
 
 CREATE INDEX IF NOT EXISTS idx_interview_review_note_interview_id ON t_interview_review_note(interview_id);
 CREATE INDEX IF NOT EXISTS idx_interview_review_note_type ON t_interview_review_note(type);
+
+-- ============================================================================
+-- 异步任务系统（v1.6.0）
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- t_async_task 异步任务表
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS t_async_task (
+    id VARCHAR(64) PRIMARY KEY,              -- 主键ID（雪花ID字符串）
+    user_id VARCHAR(64) NOT NULL,            -- 所属用户ID
+    task_type VARCHAR(50) NOT NULL,          -- 任务类型（audio_transcribe/resume_optimize/review_analysis）
+    business_id VARCHAR(64),                 -- 关联业务ID（面试ID/简历ID）
+    status VARCHAR(20) DEFAULT 'pending',    -- 状态（pending/running/completed/failed）
+    progress INTEGER DEFAULT 0,              -- 进度 0-100
+    message VARCHAR(500),                    -- 状态消息
+    result TEXT,                             -- 任务结果（JSON格式）
+    error_message TEXT,                      -- 错误信息
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    deleted INTEGER DEFAULT 0                -- 逻辑删除标记（0-未删除 1-已删除）
+);
+
+CREATE INDEX IF NOT EXISTS idx_async_task_user_id ON t_async_task(user_id);
+CREATE INDEX IF NOT EXISTS idx_async_task_status ON t_async_task(status);
+CREATE INDEX IF NOT EXISTS idx_async_task_business_id ON t_async_task(business_id);
+CREATE INDEX IF NOT EXISTS idx_async_task_task_type ON t_async_task(task_type);

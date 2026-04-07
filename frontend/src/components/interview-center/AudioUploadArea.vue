@@ -20,56 +20,18 @@
       />
 
       <!-- 空闲状态 -->
-      <div v-if="transcribeState.status === 'idle'" class="upload-prompt">
+      <div v-if="!isUploading" class="upload-prompt">
         <div class="upload-icon">🎵</div>
         <p>拖拽音频文件到此处，或</p>
         <button class="btn btn-secondary" @click="triggerFileSelect">点击上传</button>
         <p class="format-hint">支持 wav/mp3/m4a/aac/ogg/flac 等格式，最大 50MB</p>
+        <p class="task-hint">上传后可在右上角消息中心查看转录进度</p>
       </div>
 
       <!-- 上传中状态 -->
-      <div v-else-if="transcribeState.status === 'uploading'" class="upload-status">
+      <div v-else class="upload-status">
         <div class="upload-icon spinning">⏳</div>
-        <p>{{ transcribeState.message }}</p>
-      </div>
-
-      <!-- 转录中状态 -->
-      <div v-else-if="transcribeState.status === 'processing'" class="upload-status">
-        <div class="progress-ring">
-          <svg viewBox="0 0 36 36">
-            <circle cx="18" cy="18" r="16" class="bg" />
-            <circle
-              cx="18"
-              cy="18"
-              r="16"
-              class="progress"
-              :style="{ strokeDashoffset: 100 - transcribeState.progress }"
-            />
-          </svg>
-          <span class="progress-text">{{ transcribeState.progress }}%</span>
-        </div>
-        <p>{{ transcribeState.message }}</p>
-        <button class="btn btn-sm btn-secondary" @click="cancelTranscribe">取消</button>
-      </div>
-
-      <!-- 转录完成 -->
-      <div v-else-if="transcribeState.status === 'completed'" class="upload-status success">
-        <div class="upload-icon">✅</div>
-        <p>转录完成</p>
-        <div class="transcript-preview" v-if="transcribeState.transcriptText">
-          <p class="preview-text">{{ previewText }}</p>
-        </div>
-        <div class="status-actions">
-          <button class="btn btn-sm btn-ai" @click="applyTranscript">应用转录结果</button>
-          <button class="btn btn-sm btn-secondary" @click="resetTranscribe">重新上传</button>
-        </div>
-      </div>
-
-      <!-- 转录失败 -->
-      <div v-else-if="transcribeState.status === 'failed'" class="upload-status error">
-        <div class="upload-icon">❌</div>
-        <p>{{ transcribeState.error || '转录失败' }}</p>
-        <button class="btn btn-sm btn-secondary" @click="resetTranscribe">重试</button>
+        <p>正在上传...</p>
       </div>
     </div>
 
@@ -91,8 +53,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { useAudioTranscribe } from '@/composables/useAudioTranscribe'
+import { ref, computed } from 'vue'
+import { useNotificationStore } from '@/stores/notification'
+import { useToast } from '@/composables/useToast'
+
+// 支持的音频格式
+const SUPPORTED_FORMATS = ['wav', 'mp3', 'm4a', 'aac', 'ogg', 'flac', 'opus', 'webm', 'mov', 'mp4']
+const MAX_FILE_SIZE_MB = 50
 
 const props = defineProps<{
   interviewId: string
@@ -103,23 +70,16 @@ const emit = defineEmits<{
   'update:modelValue': [value: string]
 }>()
 
-const {
-  state: transcribeState,
-  transcribe,
-  cancel,
-  reset,
-  validateFile
-} = useAudioTranscribe(props.interviewId)
+const notificationStore = useNotificationStore()
+const toast = useToast()
 
 const fileInput = ref<HTMLInputElement>()
 const isDragOver = ref(false)
 const localText = ref('')
+const isUploading = ref(false)
 
-// 显示文本：优先显示转录结果，否则显示本地编辑或传入值
+// 显示文本：本地编辑或传入值
 const displayText = computed(() => {
-  if (transcribeState.transcriptText) {
-    return transcribeState.transcriptText
-  }
   return localText.value || props.modelValue
 })
 
@@ -128,12 +88,28 @@ const charCount = computed(() => {
   return displayText.value.length || 0
 })
 
-// 转录文本预览（前 200 字符）
-const previewText = computed(() => {
-  const text = transcribeState.transcriptText
-  if (text.length <= 200) return text
-  return text.substring(0, 200) + '...'
-})
+/**
+ * 验证文件格式和大小
+ */
+function validateFile(file: File): string | null {
+  const ext = getFileExtension(file.name)
+  if (!ext || !SUPPORTED_FORMATS.includes(ext)) {
+    return `不支持的文件格式，支持: ${SUPPORTED_FORMATS.join(', ')}`
+  }
+  if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+    return `文件大小超过 ${MAX_FILE_SIZE_MB}MB 限制`
+  }
+  return null
+}
+
+/**
+ * 获取文件扩展名
+ */
+function getFileExtension(filename: string): string {
+  if (!filename) return ''
+  const dotIndex = filename.lastIndexOf('.')
+  return dotIndex > 0 ? filename.substring(dotIndex + 1).toLowerCase() : ''
+}
 
 function triggerFileSelect() {
   fileInput.value?.click()
@@ -145,6 +121,8 @@ function handleFileSelect(event: Event) {
   if (file) {
     processFile(file)
   }
+  // 清空 input 以便重复选择同一文件
+  target.value = ''
 }
 
 function handleDrop(event: DragEvent) {
@@ -155,13 +133,30 @@ function handleDrop(event: DragEvent) {
   }
 }
 
-function processFile(file: File) {
+async function processFile(file: File) {
   const error = validateFile(file)
   if (error) {
-    alert(error)
+    toast.error(error)
     return
   }
-  transcribe(file)
+
+  isUploading.value = true
+  try {
+    const taskId = await notificationStore.createAudioTranscribeTask(
+      props.interviewId,
+      file
+    )
+    if (taskId) {
+      toast.success('音频已提交，转录任务已创建，请在消息中心查看进度')
+    } else {
+      toast.error('创建转录任务失败')
+    }
+  } catch (e) {
+    console.error('[AudioUploadArea] 创建任务失败:', e)
+    toast.error('创建转录任务失败')
+  } finally {
+    isUploading.value = false
+  }
 }
 
 function handleTextInput(event: Event) {
@@ -169,27 +164,6 @@ function handleTextInput(event: Event) {
   localText.value = target.value
   emit('update:modelValue', target.value)
 }
-
-function applyTranscript() {
-  emit('update:modelValue', transcribeState.transcriptText)
-  reset()
-}
-
-function cancelTranscribe() {
-  cancel()
-}
-
-function resetTranscribe() {
-  reset()
-}
-
-// 监听转录完成，自动填充
-watch(() => transcribeState.status, (status) => {
-  if (status === 'completed' && transcribeState.transcriptText) {
-    // 可以选择自动填充
-    // emit('update:modelValue', transcribeState.transcriptText)
-  }
-})
 </script>
 
 <style scoped lang="scss">
@@ -249,6 +223,13 @@ watch(() => transcribeState.status, (status) => {
     font-size: 0.75rem;
     color: $color-text-tertiary;
     margin-top: $spacing-sm;
+  }
+
+  .task-hint {
+    font-size: 0.6875rem;
+    color: $color-accent;
+    margin-top: $spacing-md;
+    opacity: 0.8;
   }
 }
 
@@ -375,17 +356,6 @@ watch(() => transcribeState.status, (status) => {
   }
 }
 
-.btn-ai {
-  background: linear-gradient(135deg, $color-accent 0%, $color-accent-dark 100%);
-  color: $color-bg-primary;
-  border: none;
-  font-weight: 500;
-
-  &:hover {
-    opacity: 0.9;
-    transform: translateY(-1px);
-  }
-}
 
 @keyframes spin {
   from {
