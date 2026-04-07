@@ -136,6 +136,7 @@ CREATE TABLE IF NOT EXISTS t_interview (
     location VARCHAR(500),                   -- 现场面试地址
     online_link VARCHAR(500),                -- 线上面试链接
     meeting_password VARCHAR(100),           -- 线上面试密码/会议号
+    session_transcript TEXT,                  -- 面试过程记录文本（手动输入或音频转录）
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 更新时间
     deleted INTEGER DEFAULT 0               -- 逻辑删除标记

@@ -35,6 +35,7 @@ public class AnalyzeInterviewNode implements NodeAction {
     private final AIPromptProperties aiPromptProperties;
     private final InterviewCenterService interviewService;
     private final InterviewReviewNoteService reviewNoteService;
+    private final ReviewContextBuilder contextBuilder;
 
     @Override
     public Map<String, Object> apply(OverAllState state) {
@@ -51,20 +52,16 @@ public class AnalyzeInterviewNode implements NodeAction {
         // 收集用户笔记
         InterviewReviewNote reviewNote = reviewNoteService.getManualNoteByInterviewId(interviewId);
         Map<String, Object> reviewNoteData = buildReviewNoteData(reviewNote);
-        // 从状态读取面试上下文（Handler 预注入）
-        String companyName = (String) state.value(STATE_COMPANY_NAME).orElse("");
-        String positionTitle = (String) state.value(STATE_POSITION_TITLE).orElse("");
-        String jdContent = (String) state.value(STATE_JD_CONTENT).orElse("");
-        String jdAnalysis = (String) state.value(STATE_JD_ANALYSIS).orElse("");
-        String resumeContent = (String) state.value(STATE_RESUME_CONTENT).orElse("");
+        // 通过 ContextBuilder 获取面试上下文
+        ReviewContextBuilder.ReviewContext context = contextBuilder.buildContext(interviewId);
         String transcriptAnalysis = (String) state.value(STATE_TRANSCRIPT_ANALYSIS).orElse(null);
         // 组装收集的数据
         Map<String, Object> contextData = new LinkedHashMap<>();
-        contextData.put("companyName", companyName);
-        contextData.put("positionTitle", positionTitle);
-        contextData.put("jdContent", jdContent);
-        contextData.put("jdAnalysis", jdAnalysis);
-        contextData.put("resumeContent", resumeContent);
+        contextData.put("companyName", context.companyName());
+        contextData.put("positionTitle", context.positionTitle());
+        contextData.put("jdContent", context.jdContent());
+        contextData.put("jdAnalysis", context.jdAnalysis());
+        contextData.put("resumeContent", context.resumeContent());
         Map<String, Object> collectedData = new LinkedHashMap<>();
         collectedData.put("interview", interviewData);
         collectedData.put("reviewNote", reviewNoteData);
@@ -77,10 +74,10 @@ public class AnalyzeInterviewNode implements NodeAction {
         log.info("数据收集完成: 面试信息={}, 笔记={}, 上下文(公司={}, 职位={}, JD={}, 简历={})",
                 interviewData != null ? "有" : "无",
                 reviewNoteData != null ? "有" : "无",
-                companyName.isEmpty() ? "无" : "有",
-                positionTitle.isEmpty() ? "无" : "有",
-                jdContent.isEmpty() ? "无" : "有",
-                resumeContent.isEmpty() ? "无" : "有");
+                context.companyName().isEmpty() ? "无" : "有",
+                context.positionTitle().isEmpty() ? "无" : "有",
+                context.jdContent().isEmpty() ? "无" : "有",
+                context.resumeContent().isEmpty() ? "无" : "有");
 
         // ==================== 第二步：AI分析 ====================
         log.info("=== 开始AI分析面试表现 ===");

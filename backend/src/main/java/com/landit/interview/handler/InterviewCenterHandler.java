@@ -289,31 +289,28 @@ public class InterviewCenterHandler {
      * 流式执行复盘分析工作流
      *
      * @param id                面试ID
-     * @param sessionTranscript 面试过程文本（用户输入）
+     * @param sessionTranscript 面试过程文本（用户输入，持久化到 Interview 表）
      * @param response          HTTP响应
      * @return SSE事件发射器
      */
     public SseEmitter streamReviewAnalysis(String id, String sessionTranscript, HttpServletResponse response) {
         log.info("开始SSE流式复盘分析: interviewId={}", id);
-        InterviewDetailVO interview = getInterviewDetail(id);
+        // 如果传入了面试过程文本，先保存到 Interview 表
+        if (sessionTranscript != null && !sessionTranscript.isBlank()) {
+            Interview interview = interviewCenterService.getById(id);
+            if (interview != null) {
+                interview.setSessionTranscript(sessionTranscript);
+                interviewCenterService.updateById(interview);
+                log.info("保存面试过程文本: interviewId={}", id);
+            }
+        }
         configureSseResponse(response);
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT);
         String threadId = UUID.randomUUID().toString();
-        // 构建初始状态
+        // 构建初始状态：仅传 interviewId 和 messages
         Map<String, Object> initialState = new HashMap<>();
         initialState.put(ReviewAnalysisGraphConstants.STATE_INTERVIEW_ID, id);
-        initialState.put(ReviewAnalysisGraphConstants.STATE_SESSION_TRANSCRIPT, sessionTranscript);
         initialState.put(ReviewAnalysisGraphConstants.STATE_MESSAGES, new ArrayList<String>());
-        // 注入面试上下文（JD + 公司/职位 + 简历），供两个分析节点共用
-        initialState.put(ReviewAnalysisGraphConstants.STATE_COMPANY_NAME,
-                interview.getCompanyName() != null ? interview.getCompanyName() : "");
-        initialState.put(ReviewAnalysisGraphConstants.STATE_POSITION_TITLE,
-                interview.getPosition() != null ? interview.getPosition() : "");
-        // 一次查询 JobPosition，同时获取 JD 原文和分析结果
-        JobPosition linkedJobPosition = getLinkedJobPosition(interview);
-        initialState.put(ReviewAnalysisGraphConstants.STATE_JD_CONTENT, resolveJdContent(interview, linkedJobPosition));
-        initialState.put(ReviewAnalysisGraphConstants.STATE_JD_ANALYSIS, resolveJdAnalysis(linkedJobPosition));
-        initialState.put(ReviewAnalysisGraphConstants.STATE_RESUME_CONTENT, buildResumeContext(interview.getResumeId()));
         // 发送开始事件
         sendSseEvent(emitter, GraphProgressEvent.startReviewAnalysis(id, threadId));
         // 订阅工作流（在独立线程池执行，避免阻塞调用线程）
@@ -491,48 +488,6 @@ public class InterviewCenterHandler {
         } catch (Exception e) {
             log.warn("构建简历上下文失败: resumeId={}, error={}", resumeId, e.getMessage());
             return "";
-        }
-    }
-
-    /**
-     * 解析 JD 原文：优先取 Interview 上的，否则从关联的 JobPosition 取
-     */
-    private String resolveJdContent(InterviewDetailVO interview, JobPosition jobPosition) {
-        // 优先取面试上直接关联的 JD
-        if (interview.getJdContent() != null && !interview.getJdContent().isBlank()) {
-            return interview.getJdContent();
-        }
-        // 从关联的 JobPosition 取
-        if (jobPosition != null && jobPosition.getJdContent() != null) {
-            return jobPosition.getJdContent();
-        }
-        return "";
-    }
-
-    /**
-     * 解析 JD 分析结果：从 JobPosition 取（Interview 上的可能是初始化空值）
-     */
-    private String resolveJdAnalysis(JobPosition jobPosition) {
-        if (jobPosition != null && jobPosition.getJdAnalysis() != null
-                && !jobPosition.getJdAnalysis().isBlank()
-                && !jobPosition.getJdAnalysis().equals("{}")) {
-            return jobPosition.getJdAnalysis();
-        }
-        return "";
-    }
-
-    /**
-     * 获取面试关联的 JobPosition（带缓存，同一次请求内避免重复查询）
-     */
-    private JobPosition getLinkedJobPosition(InterviewDetailVO interview) {
-        if (interview.getJobPositionId() == null || interview.getJobPositionId().isBlank()) {
-            return null;
-        }
-        try {
-            return jobPositionService.getById(interview.getJobPositionId());
-        } catch (Exception e) {
-            log.warn("查询JobPosition失败: jobPositionId={}, error={}", interview.getJobPositionId(), e.getMessage());
-            return null;
         }
     }
 

@@ -90,4 +90,9 @@ public class Interview extends BaseEntity {
      */
     private String meetingPassword;
 
+    /**
+     * 面试过程记录文本（用户手动输入或音频转录）
+     */
+    private String sessionTranscript;
+
 }

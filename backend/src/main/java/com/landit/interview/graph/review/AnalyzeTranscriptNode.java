@@ -26,33 +26,30 @@ public class AnalyzeTranscriptNode implements NodeAction {
 
     private final ChatClient chatClient;
     private final AIPromptProperties aiPromptProperties;
+    private final ReviewContextBuilder contextBuilder;
 
     @Override
     public Map<String, Object> apply(OverAllState state) {
         log.info("=== 开始分析面试对话 ===");
-        // 获取输入
-        String sessionTranscript = (String) state.value(STATE_SESSION_TRANSCRIPT).orElse("");
+        // 获取面试ID并查询上下文
+        String interviewId = (String) state.value(STATE_INTERVIEW_ID).orElse(null);
+        ReviewContextBuilder.ReviewContext context = contextBuilder.buildContext(interviewId);
+        String sessionTranscript = context.sessionTranscript() != null ? context.sessionTranscript() : "";
         // 空文本处理：跳过分析
-        if (sessionTranscript == null || sessionTranscript.isBlank()) {
+        if (sessionTranscript.isBlank()) {
             log.warn("面试对话文本为空，跳过分析");
             return buildNodeResult(NODE_ANALYZE_TRANSCRIPT, 30, "对话文本为空，跳过分析",
                     "{}", STATE_TRANSCRIPT_ANALYSIS, "{}");
         }
-        // 读取面试上下文
-        String companyName = (String) state.value(STATE_COMPANY_NAME).orElse("");
-        String positionTitle = (String) state.value(STATE_POSITION_TITLE).orElse("");
-        String jdContent = (String) state.value(STATE_JD_CONTENT).orElse("");
-        String jdAnalysis = (String) state.value(STATE_JD_ANALYSIS).orElse("");
-        String resumeContent = (String) state.value(STATE_RESUME_CONTENT).orElse("");
         // 渲染提示词模板
         AIPromptProperties.PromptConfig config = aiPromptProperties.getReviewGraph().getAnalyzeTranscriptConfig();
         String systemPrompt = config.getSystemPrompt();
         Map<String, String> variables = Map.of(
-                "companyName", companyName.isEmpty() ? "未知公司" : companyName,
-                "positionTitle", positionTitle.isEmpty() ? "未知职位" : positionTitle,
-                "jdContent", jdContent.isEmpty() ? "无JD信息" : jdContent,
-                "jdAnalysis", jdAnalysis.isEmpty() ? "无JD分析" : jdAnalysis,
-                "resumeContent", resumeContent.isEmpty() ? "无简历信息" : resumeContent,
+                "companyName", context.companyName().isEmpty() ? "未知公司" : context.companyName(),
+                "positionTitle", context.positionTitle().isEmpty() ? "未知职位" : context.positionTitle(),
+                "jdContent", context.jdContent().isEmpty() ? "无JD信息" : context.jdContent(),
+                "jdAnalysis", context.jdAnalysis().isEmpty() ? "无JD分析" : context.jdAnalysis(),
+                "resumeContent", context.resumeContent().isEmpty() ? "无简历信息" : context.resumeContent(),
                 "sessionTranscript", sessionTranscript
         );
         String userPrompt = ChatClientHelper.renderTemplate(config.getUserPromptTemplate(), variables);

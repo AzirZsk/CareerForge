@@ -47,38 +47,6 @@ public final class ReviewAnalysisGraphConstants extends BaseGraphConstants {
      */
     public static final String STATE_INTERVIEW_ID = "interview_id";
 
-    /**
-     * 面试过程转录文本（用户输入）
-     */
-    public static final String STATE_SESSION_TRANSCRIPT = "session_transcript";
-
-    // ==================== 状态键 - 面试上下文（Handler 注入） ====================
-
-    /**
-     * 公司名称
-     */
-    public static final String STATE_COMPANY_NAME = "company_name";
-
-    /**
-     * 职位名称
-     */
-    public static final String STATE_POSITION_TITLE = "position_title";
-
-    /**
-     * JD 原文（来自 Interview 或 JobPosition）
-     */
-    public static final String STATE_JD_CONTENT = "jd_content";
-
-    /**
-     * JD 分析结果 JSON（来自 JobPosition.jdAnalysis）
-     */
-    public static final String STATE_JD_ANALYSIS = "jd_analysis";
-
-    /**
-     * 简历摘要文本（来自 Handler.buildResumeContext）
-     */
-    public static final String STATE_RESUME_CONTENT = "resume_content";
-
     // ==================== 状态键 - 中间结果 ====================
 
     /**

@@ -46,13 +46,6 @@ public class ReviewAnalysisGraphConfig {
             Map<String, KeyStrategy> strategies = new HashMap<>();
             // 输入参数
             strategies.put(STATE_INTERVIEW_ID, new ReplaceStrategy());
-            strategies.put(STATE_SESSION_TRANSCRIPT, new ReplaceStrategy());
-            // 面试上下文（Handler 注入）
-            strategies.put(STATE_COMPANY_NAME, new ReplaceStrategy());
-            strategies.put(STATE_POSITION_TITLE, new ReplaceStrategy());
-            strategies.put(STATE_JD_CONTENT, new ReplaceStrategy());
-            strategies.put(STATE_JD_ANALYSIS, new ReplaceStrategy());
-            strategies.put(STATE_RESUME_CONTENT, new ReplaceStrategy());
             // 中间结果
             strategies.put(STATE_TRANSCRIPT_ANALYSIS, new ReplaceStrategy());
             strategies.put(STATE_ANALYSIS_RESULT, new ReplaceStrategy());
