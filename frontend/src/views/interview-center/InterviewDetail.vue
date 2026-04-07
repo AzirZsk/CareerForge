@@ -283,17 +283,12 @@
           </div>
         </div>
 
-        <!-- 面试过程输入区域 -->
-        <div class="transcript-input-area">
-          <h4>面试过程记录</h4>
-          <p class="hint">请输入面试过程中的问题、回答、面试官反馈等内容，AI 将基于此进行分析</p>
-          <textarea
-            v-model="sessionTranscript"
-            placeholder="例如：&#10;1. 面试官：请介绍一下你的项目经验？&#10;我：我负责过 xxx 项目...&#10;&#10;2. 面试官：你遇到过什么技术难题？&#10;我：..."
-            rows="6"
-            class="transcript-textarea"
-          ></textarea>
-        </div>
+        <!-- 面试过程输入区域（支持音频上传 + 文本输入） -->
+        <AudioUploadArea
+          v-if="interview"
+          :interview-id="interview.id"
+          v-model="sessionTranscript"
+        />
 
         <!-- AI 分析进度 -->
         <div v-if="reviewState.isRunning" class="progress-indicator">
@@ -383,6 +378,7 @@ import MicrophonePermissionDialog from '@/components/interview-center/Microphone
 // 新增组件
 import PreparationProgress from '@/components/interview-center/PreparationProgress.vue'
 import PreparationGroup from '@/components/interview-center/PreparationGroup.vue'
+import AudioUploadArea from '@/components/interview-center/AudioUploadArea.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 // 工作流 composables
 import { useInterviewPreparation } from '@/composables/useInterviewPreparation'

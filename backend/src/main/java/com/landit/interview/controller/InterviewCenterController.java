@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
@@ -81,6 +82,15 @@ public class InterviewCenterController {
             HttpServletResponse response) {
         String transcript = (request != null) ? request.getSessionTranscript() : null;
         return handler.streamReviewAnalysis(id, transcript, response);
+    }
+
+    @Operation(summary = "上传音频文件进行转录")
+    @PostMapping("/{id}/review-analysis/transcribe")
+    public SseEmitter transcribeAudio(
+            @PathVariable String id,
+            @RequestParam("file") MultipartFile file,
+            HttpServletResponse response) {
+        return handler.transcribeAudio(id, file, response);
     }
 
 }

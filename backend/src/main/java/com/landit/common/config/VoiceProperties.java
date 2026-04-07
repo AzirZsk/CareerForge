@@ -51,6 +51,11 @@ public class VoiceProperties {
          */
         private VoicesConfig voices = new VoicesConfig();
 
+        /**
+         * 离线 ASR 配置（录音文件识别）
+         */
+        private FileASRConfig fileAsr = new FileASRConfig();
+
         @Data
         public static class ASRConfig {
             /**
@@ -118,6 +123,34 @@ public class VoiceProperties {
              * AI助手音色（更亲切）
              */
             private String assistant = "zhimiao_emo_v2";
+        }
+
+        /**
+         * 离线 ASR 配置（录音文件识别）
+         * 用于复盘场景上传音频文件转文字
+         */
+        @Data
+        public static class FileASRConfig {
+            /**
+             * 离线 ASR 模型
+             * Paraformer 录音文件识别模型
+             */
+            private String model = "paraformer-v2";
+
+            /**
+             * 语言：zh, en, ja, ko 等
+             */
+            private String language = "zh";
+
+            /**
+             * 最大文件大小（MB）
+             */
+            private Integer maxFileSizeMb = 50;
+
+            /**
+             * 轮询间隔（毫秒）
+             */
+            private Long pollingIntervalMs = 2000L;
         }
     }
 

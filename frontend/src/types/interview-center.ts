@@ -414,3 +414,26 @@ export interface AdviceItem {
   category?: string
   priority?: 'high' | 'medium' | 'low'
 }
+
+// ==================== 音频转录相关类型 ====================
+
+// 转录状态
+export type TranscribeStatus = 'idle' | 'uploading' | 'processing' | 'completed' | 'failed'
+
+// 转录结果（SSE 事件数据）
+export interface TranscribeResult {
+  status: 'processing' | 'completed' | 'failed'
+  text?: string
+  progress?: number
+  message?: string
+  errorMessage?: string
+}
+
+// 转录状态
+export interface AudioTranscribeState {
+  status: TranscribeStatus
+  progress: number
+  message: string
+  transcriptText: string
+  error: string | null
+}
