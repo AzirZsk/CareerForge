@@ -22,6 +22,11 @@ public final class ReviewAnalysisGraphConstants extends BaseGraphConstants {
     // ==================== 节点名称 ====================
 
     /**
+     * 分析面试对话节点（提取问答对、分析问题意图和回答清晰度）
+     */
+    public static final String NODE_ANALYZE_TRANSCRIPT = "analyze_transcript";
+
+    /**
      * AI分析表现节点（合并数据收集+AI分析）
      */
     public static final String NODE_ANALYZE_INTERVIEW = "analyze_interview";
@@ -43,6 +48,23 @@ public final class ReviewAnalysisGraphConstants extends BaseGraphConstants {
      */
     public static final String STATE_SESSION_TRANSCRIPT = "session_transcript";
 
+    // ==================== 状态键 - 中间结果 ====================
+
+    /**
+     * 对话分析结果（包含问答对分析）
+     */
+    public static final String STATE_TRANSCRIPT_ANALYSIS = "transcript_analysis";
+
+    /**
+     * 分析结果（JSON格式）
+     */
+    public static final String STATE_ANALYSIS_RESULT = "analysis_result";
+
+    /**
+     * 改进建议列表
+     */
+    public static final String STATE_ADVICE_LIST = "advice_list";
+
     // ==================== 节点输出字段 ====================
 
     /**
@@ -54,17 +76,5 @@ public final class ReviewAnalysisGraphConstants extends BaseGraphConstants {
      * 节点输出 - 进度
      */
     public static final String OUTPUT_PROGRESS = "progress";
-
-    // ==================== 状态键 - 中间结果 ====================
-
-    /**
-     * 分析结果（JSON格式）
-     */
-    public static final String STATE_ANALYSIS_RESULT = "analysis_result";
-
-    /**
-     * 改进建议列表
-     */
-    public static final String STATE_ADVICE_LIST = "advice_list";
 
 }

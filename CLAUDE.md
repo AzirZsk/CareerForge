@@ -452,8 +452,9 @@ START --> CheckCompany --> [条件路由] --> CompanyResearch --> CheckJobPositi
 **复盘分析工作流 Graph（Review Analysis）：**
 
 ```
-START --> CollectData --> AnalyzeInterview --> GenerateAdvice --> END
-           (收集数据)      (AI分析表现)         (生成改进建议)
+START --> AnalyzeTranscript --> AnalyzeInterview --> GenerateAdvice --> END
+           (分析面试对话)        (AI分析表现)         (生成改进建议)
+           进度: 0% -> 30%        进度: 30% -> 70%      进度: 70% -> 100%
 ```
 
 **关键组件：**
@@ -463,8 +464,8 @@ START --> CollectData --> AnalyzeInterview --> GenerateAdvice --> END
 | `ReviewAnalysisGraphConfig` | `interview/graph/review/` | 定义复盘工作流节点、边 |
 | `ReviewAnalysisGraphService` | `interview/graph/review/` | 执行复盘分析工作流 |
 | `ReviewAnalysisGraphConstants` | `interview/graph/review/` | 状态键、节点名称常量 |
-| `CollectInterviewDataNode` | `interview/graph/review/` | 收集面试相关数据 |
-| `AnalyzeInterviewNode` | `interview/graph/review/` | AI 分析面试表现 |
+| `AnalyzeTranscriptNode` | `interview/graph/review/` | **分析面试对话文本（提取问答对、分析问题意图和回答清晰度）** |
+| `AnalyzeInterviewNode` | `interview/graph/review/` | AI 分析面试表现（收集数据 + AI 分析） |
 | `GenerateAdviceNode` | `interview/graph/review/` | 生成改进建议 |
 
 **前端面试中心组件：**

@@ -2033,8 +2033,45 @@ public class AIPromptProperties {
     @Data
     public static class ReviewGraphPrompt {
 
+        private PromptConfig analyzeTranscriptConfig = new PromptConfig();
         private PromptConfig analyzeInterviewConfig = new PromptConfig();
         private PromptConfig generateAdviceConfig = new PromptConfig();
+
+        public PromptConfig getAnalyzeTranscriptConfig() {
+            return ensurePromptConfig(analyzeTranscriptConfig,
+                    """
+                    你是一位专业的面试对话分析师。请分析面试对话文本，提取每个问答对的详细信息。
+
+                    对于每个问答对，请分析：
+                    1. 问题意图：面试官为什么要问这个问题？考察什么能力或知识点？
+                    2. 回答清晰度评分：1-5分（1=完全不相关，2=理解有偏差，3=基本清楚但有遗漏，4=清晰完整，5=优秀有深度）
+                    3. 评分理由：为什么给这个分数？
+                    4. 改进建议：如果回答不够好，应该如何改进？
+
+                    请以JSON格式返回结果：
+                    {
+                      "qaPairs": [
+                        {
+                          "question": "面试官的原始问题",
+                          "questionIntent": "问题意图分析",
+                          "assessmentTarget": "考察的能力/知识点",
+                          "answer": "候选人的原始回答",
+                          "clarityScore": 3,
+                          "clarityReason": "评分理由",
+                          "improvementSuggestion": "改进建议"
+                        }
+                      ],
+                      "overallClarity": 3.5,
+                      "summary": "整体对话质量总结"
+                    }
+
+                    注意：
+                    - 如果对话中没有明确的问答对，返回空数组
+                    - 分数必须是1-5的整数
+                    - overallClarity是所有问答对分数的平均值
+                    """,
+                    "请分析以下面试对话文本：\n{sessionTranscript}");
+        }
 
         public PromptConfig getAnalyzeInterviewConfig() {
             return ensurePromptConfig(analyzeInterviewConfig,

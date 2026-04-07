@@ -46,6 +46,7 @@ public class ReviewAnalysisGraphConfig {
             strategies.put(STATE_INTERVIEW_ID, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
             strategies.put(STATE_SESSION_TRANSCRIPT, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
             // 中间结果
+            strategies.put(STATE_TRANSCRIPT_ANALYSIS, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
             strategies.put(STATE_ANALYSIS_RESULT, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
             strategies.put(STATE_ADVICE_LIST, new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
             // 消息日志
@@ -62,6 +63,7 @@ public class ReviewAnalysisGraphConfig {
     @Bean
     public CompiledGraph reviewAnalysisGraph(
             KeyStrategyFactory reviewAnalysisKeyStrategyFactory,
+            AnalyzeTranscriptNode analyzeTranscriptNode,
             AnalyzeInterviewNode analyzeInterviewNode,
             GenerateAdviceNode generateAdviceNode
     ) throws GraphStateException {
@@ -69,10 +71,12 @@ public class ReviewAnalysisGraphConfig {
         // 构建工作流图
         StateGraph workflow = new StateGraph(GRAPH_REVIEW_ANALYSIS, reviewAnalysisKeyStrategyFactory)
                 // 添加节点
+                .addNode(NODE_ANALYZE_TRANSCRIPT, AsyncNodeAction.node_async(analyzeTranscriptNode))
                 .addNode(NODE_ANALYZE_INTERVIEW, AsyncNodeAction.node_async(analyzeInterviewNode))
                 .addNode(NODE_GENERATE_ADVICE, AsyncNodeAction.node_async(generateAdviceNode))
-                // 添加边：START -> AI分析 -> 生成建议 -> END
-                .addEdge(START, NODE_ANALYZE_INTERVIEW)
+                // 添加边：START -> 对话分析 -> AI分析 -> 生成建议 -> END
+                .addEdge(START, NODE_ANALYZE_TRANSCRIPT)
+                .addEdge(NODE_ANALYZE_TRANSCRIPT, NODE_ANALYZE_INTERVIEW)
                 .addEdge(NODE_ANALYZE_INTERVIEW, NODE_GENERATE_ADVICE)
                 .addEdge(NODE_GENERATE_ADVICE, END);
 

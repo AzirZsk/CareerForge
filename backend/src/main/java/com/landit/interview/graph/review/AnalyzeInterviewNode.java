@@ -83,11 +83,17 @@ public class AnalyzeInterviewNode implements NodeAction {
             reviewNoteData.put("lessonsLearned", reviewNote.getLessonsLearned());
             reviewNoteData.put("suggestions", reviewNote.getSuggestions());
         }
+        // 获取前序节点的对话分析结果
+        String transcriptAnalysis = (String) state.value(STATE_TRANSCRIPT_ANALYSIS).orElse(null);
         // 组装收集的数据
         Map<String, Object> collectedData = new HashMap<>();
         collectedData.put("interview", interviewData);
         collectedData.put("reviewNote", reviewNoteData);
         collectedData.put("sessionTranscript", sessionTranscript);
+        // 如果有对话分析结果，也加入数据中
+        if (transcriptAnalysis != null && !transcriptAnalysis.equals("{}")) {
+            collectedData.put("transcriptAnalysis", transcriptAnalysis);
+        }
         String collectedDataJson = JsonParseHelper.toJsonString(collectedData);
         log.info("数据收集完成: 面试信息={}, 笔记={}", interviewData != null ? "有" : "无", reviewNoteData != null ? "有" : "无");
 
