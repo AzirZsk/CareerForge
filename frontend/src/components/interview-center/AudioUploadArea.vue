@@ -67,8 +67,8 @@
         ></textarea>
       </div>
 
-      <!-- 编辑模式下的操作按钮 -->
-      <div v-if="hasTranscript" class="edit-actions">
+      <!-- 编辑模式下的操作按钮（有内容时显示） -->
+      <div v-if="hasTranscript || localText.trim()" class="edit-actions">
         <button class="btn btn-sm btn-secondary" @click="cancelEditing">取消</button>
         <button class="btn btn-sm btn-primary" @click="saveEditing">保存</button>
       </div>
@@ -220,10 +220,8 @@ async function processFile(file: File) {
 function handleTextInput(event: Event) {
   const target = event.target as HTMLTextAreaElement
   localText.value = target.value
-  // 实时同步到父组件（仅在没有原有转译文本时）
-  if (!hasTranscript.value) {
-    emit('update:modelValue', target.value)
-  }
+  // 不再实时同步到父组件，避免触发自动保存
+  // 用户需要点击"保存"按钮才会同步
 }
 </script>
 
