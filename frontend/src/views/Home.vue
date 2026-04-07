@@ -25,14 +25,20 @@
             class="action-btn primary"
             @click="startInterview"
           >
-            <span class="action-icon">🎯</span>
+            <font-awesome-icon
+              icon="fa-solid fa-bullseye"
+              class="action-icon"
+            />
             <span>开始面试</span>
           </button>
           <button
             class="action-btn secondary"
             @click="goToResume"
           >
-            <span class="action-icon">📄</span>
+            <font-awesome-icon
+              icon="fa-solid fa-file-lines"
+              class="action-icon"
+            />
             <span>优化简历</span>
           </button>
         </div>
@@ -52,16 +58,7 @@
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-icon interviews">
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-              </svg>
+              <font-awesome-icon icon="fa-solid fa-comments" />
             </div>
             <div class="stat-content">
               <span class="stat-value">{{ store.stats.overview.realInterviews }}</span>
@@ -71,16 +68,7 @@
 
           <div class="stat-card">
             <div class="stat-icon mock">
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-              </svg>
+              <font-awesome-icon icon="fa-solid fa-star" />
             </div>
             <div class="stat-content">
               <span class="stat-value">{{ store.stats.overview.mockInterviews }}</span>
@@ -90,20 +78,7 @@
 
           <div class="stat-card">
             <div class="stat-icon resume">
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-                <line x1="16" y1="13" x2="8" y2="13" />
-                <line x1="16" y1="17" x2="8" y2="17" />
-                <polyline points="10 9 9 9 8 9" />
-              </svg>
+              <font-awesome-icon icon="fa-solid fa-file-alt" />
             </div>
             <div class="stat-content">
               <span class="stat-value">{{ store.stats.overview.resumeCount }}</span>
@@ -113,17 +88,7 @@
 
           <div class="stat-card">
             <div class="stat-icon preparation">
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                <polyline points="22 4 12 14.01 9 11.01" />
-              </svg>
+              <font-awesome-icon icon="fa-solid fa-circle-check" />
             </div>
             <div class="stat-content">
               <span class="stat-value">{{ store.stats.overview.preparationCompletionRate }}%</span>
@@ -199,10 +164,7 @@
                 class="activity-icon"
                 :class="activity.type"
               >
-                <span v-if="activity.type === 'interview'">🎯</span>
-                <span v-else-if="activity.type === 'resume'">📄</span>
-                <span v-else-if="activity.type === 'practice'">📝</span>
-                <span v-else>📊</span>
+                <font-awesome-icon :icon="getActivityIcon(activity.type)" />
               </div>
               <div class="activity-content">
                 <p class="activity-text">
@@ -260,6 +222,17 @@ function startInterview(): void {
 function goToResume(): void {
   router.push('/resume')
   store.setActiveNav('resume')
+}
+
+// 获取动态图标
+function getActivityIcon(type: string): string {
+  const iconMap: Record<string, string> = {
+    interview: 'fa-solid fa-briefcase',
+    resume: 'fa-solid fa-file-pen',
+    practice: 'fa-solid fa-pencil',
+    default: 'fa-solid fa-chart-line'
+  }
+  return iconMap[type] || iconMap.default
 }
 </script>
 
@@ -337,6 +310,9 @@ function goToResume(): void {
   font-size: $text-sm;
   font-weight: $weight-medium;
   transition: all $transition-fast;
+  .action-icon {
+    font-size: 18px; // FA 图标大小
+  }
   &.primary {
     background: $gradient-gold;
     color: $color-bg-deep;
@@ -387,19 +363,20 @@ function goToResume(): void {
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 20px; // FA 图标大小
   &.interviews {
     background: rgba(96, 165, 250, 0.15);
     color: #60a5fa;
   }
-  &.score {
-    background: rgba(212, 168, 83, 0.15);
-    color: $color-accent;
+  &.mock {
+    background: rgba(251, 191, 36, 0.15);
+    color: #fbbf24;
   }
-  &.improvement {
+  &.resume {
     background: rgba(52, 211, 153, 0.15);
     color: #34d399;
   }
-  &.study {
+  &.preparation {
     background: rgba(167, 139, 250, 0.15);
     color: #a78bfa;
   }
@@ -647,6 +624,19 @@ function goToResume(): void {
   align-items: center;
   justify-content: center;
   background: rgba(255, 255, 255, 0.05);
+  font-size: 16px; // FA 图标大小
+  &.interview {
+    background: rgba(96, 165, 250, 0.15);
+    color: #60a5fa;
+  }
+  &.resume {
+    background: rgba(52, 211, 153, 0.15);
+    color: #34d399;
+  }
+  &.practice {
+    background: rgba(251, 191, 36, 0.15);
+    color: #fbbf24;
+  }
 }
 
 .activity-content {
