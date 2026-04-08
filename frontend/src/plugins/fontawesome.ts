@@ -74,7 +74,8 @@ import {
   faKey, // 密码
   faPaperclip, // 附件
   faVideo, // 视频
-  faLaptop // 电脑
+  faLaptop, // 电脑
+  faStopwatch // 倒计时
 } from '@fortawesome/free-solid-svg-icons'
 
 // 导入面试中心模块需要的图标 - 内容/类型类
@@ -95,7 +96,15 @@ import {
 import {
   faHourglassHalf, // 等待
   faChartBar, // 统计图表
-  faChevronRight // 右箭头
+  faChevronRight, // 右箭头
+  faEllipsisVertical // 更多操作（竖向省略号）
+} from '@fortawesome/free-solid-svg-icons'
+
+// 导入通知模块需要的图标
+import {
+  faBell, // 通知铃铛
+  faInbox, // 空收件箱
+  faRotate // 旋转/进行中
 } from '@fortawesome/free-solid-svg-icons'
 
 // 注册图标到库
@@ -151,6 +160,7 @@ library.add(
   faPaperclip,
   faVideo,
   faLaptop,
+  faStopwatch,
   // 面试中心 - 内容/类型类
   faRobot,
   faClipboard,
@@ -165,7 +175,12 @@ library.add(
   // 面试中心 - 状态/指示类
   faHourglassHalf,
   faChartBar,
-  faChevronRight
+  faChevronRight,
+  faEllipsisVertical,
+  // 通知模块
+  faBell,
+  faInbox,
+  faRotate
 )
 
 // 导出组件供全局注册

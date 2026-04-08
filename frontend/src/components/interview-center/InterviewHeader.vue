@@ -25,14 +25,14 @@
               v-for="(label, key) in statusOptions"
               :key="key"
               :class="['status-option', { active: interview.status === key }]"
-              @click="handleStatusChange(key)"
+              @click="handleStatusChange(key as InterviewStatus)"
             >
               <span class="status-dot" :class="key"></span>
               {{ label }}
             </button>
           </div>
         </div>
-        <div class="result-badge-wrapper" ref="resultMenuRef" v-if="interview.overallResult">
+        <div class="result-badge-wrapper" ref="resultMenuRef">
           <span class="result-badge clickable" :class="resultClass" @click="toggleResultMenu">
             <span class="result-dot"></span>
             {{ resultLabel }}
@@ -42,28 +42,13 @@
             <button
               v-for="(label, key) in resultOptions"
               :key="key"
-              :class="['result-option', { active: interview.overallResult === key }]"
-              @click="handleResultChange(key)"
+              :class="['result-option', { active: effectiveResult === key }]"
+              @click="handleResultChange(key as InterviewResult)"
             >
               <span class="result-dot" :class="key"></span>
               {{ label }}
             </button>
           </div>
-        </div>
-        <span v-else-if="!interview.overallResult" class="result-badge add-result" @click="toggleResultMenu">
-          <font-awesome-icon icon="fa-solid fa-plus" />
-          添加结果
-        </span>
-        <div v-if="showResultMenu && !interview.overallResult" class="result-dropdown" ref="resultMenuRef">
-          <button
-            v-for="(label, key) in resultOptions"
-            :key="key"
-            :class="['result-option', { active: interview.overallResult === key }]"
-            @click="handleResultChange(key)"
-          >
-            <span class="result-dot" :class="key"></span>
-            {{ label }}
-          </button>
         </div>
       </div>
     </div>
@@ -191,7 +176,7 @@
               <font-awesome-icon icon="fa-solid fa-building" />
             </div>
             <p class="empty-title">暂无公司调研信息</p>
-            <p class="empty-hint">点击上方「AI 生成」按钮，系统将自动调研目标公司</p>
+            <p class="empty-hint">生成面试准备清单后，系统将自动调研目标公司并展示在此处</p>
           </div>
         </div>
 
@@ -203,7 +188,7 @@
               <font-awesome-icon icon="fa-solid fa-magnifying-glass" />
             </div>
             <p class="empty-title">暂无 JD 分析信息</p>
-            <p class="empty-hint">点击上方「AI 生成」按钮，系统将自动分析职位 JD</p>
+            <p class="empty-hint">生成面试准备清单后，系统将自动分析职位要求并展示在此处</p>
           </div>
         </div>
       </div>
@@ -219,7 +204,9 @@ import {
   INTERVIEW_RESULT_LABELS,
   ROUND_TYPE_LABELS,
   INTERVIEW_TYPE_LABELS,
-  type InterviewDetail
+  type InterviewDetail,
+  type InterviewStatus,
+  type InterviewResult
 } from '@/types/interview-center'
 
 const props = defineProps<{
@@ -236,8 +223,8 @@ const emit = defineEmits<{
   edit: []
   delete: []
   'toggle-position': []
-  'status-change': [status: string]
-  'result-change': [result: string]
+  'status-change': [status: InterviewStatus]
+  'result-change': [result: InterviewResult]
 }>()
 
 const showMoreMenu = ref(false)
@@ -261,15 +248,20 @@ const statusClass = computed(() => {
   return props.interview.status
 })
 
+// 实际结果值（空时为 null，不参与下拉高亮）
+const effectiveResult = computed(() => {
+  return props.interview.overallResult || null
+})
+
 // 结果标签
 const resultLabel = computed(() => {
-  if (!props.interview.overallResult) return ''
-  return INTERVIEW_RESULT_LABELS[props.interview.overallResult] || ''
+  if (!effectiveResult.value) return '未设置'
+  return INTERVIEW_RESULT_LABELS[effectiveResult.value] || '未设置'
 })
 
 // 结果样式类
 const resultClass = computed(() => {
-  return props.interview.overallResult || ''
+  return effectiveResult.value || 'pending'
 })
 
 // 轮次标签
@@ -347,13 +339,6 @@ function toggleMoreMenu() {
   showMoreMenu.value = !showMoreMenu.value
 }
 
-// 关闭更多菜单
-function closeMoreMenu(event: MouseEvent) {
-  if (moreMenuRef.value && !moreMenuRef.value.contains(event.target as Node)) {
-    showMoreMenu.value = false
-  }
-}
-
 // 处理编辑
 function handleEdit() {
   showMoreMenu.value = false
@@ -379,13 +364,13 @@ function toggleResultMenu() {
 }
 
 // 处理状态变更
-function handleStatusChange(status: string) {
+function handleStatusChange(status: InterviewStatus) {
   showStatusMenu.value = false
   emit('status-change', status)
 }
 
 // 处理结果变更
-function handleResultChange(result: string) {
+function handleResultChange(result: InterviewResult) {
   showResultMenu.value = false
   emit('result-change', result)
 }
@@ -882,13 +867,15 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  padding: 0;
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: $color-text-secondary;
   cursor: pointer;
-  border-radius: $radius-md;
+  border-radius: $radius-sm;
   transition: all 0.2s;
   font-size: 1rem;
 

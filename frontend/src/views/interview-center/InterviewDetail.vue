@@ -15,11 +15,11 @@
       @status-change="handleStatusChange"
       @result-change="handleResultChange"
     >
-      <template #company-research>
-        <CompanyResearchContent v-if="parsedCompanyResearch" :data="parsedCompanyResearch" />
+      <template v-if="parsedCompanyResearch" #company-research>
+        <CompanyResearchContent :data="parsedCompanyResearch" />
       </template>
-      <template #jd-analysis>
-        <JDAnalysisContent v-if="parsedJdAnalysis" :data="parsedJdAnalysis" />
+      <template v-if="parsedJdAnalysis" #jd-analysis>
+        <JDAnalysisContent :data="parsedJdAnalysis" />
       </template>
     </InterviewHeader>
 
@@ -136,7 +136,6 @@
           >
             <font-awesome-icon icon="fa-solid fa-robot" class="tab-icon" />
             AI 分析
-            <span v-if="interview.aiAnalysisNote" class="tab-dot" title="已有分析内容"></span>
           </button>
           <button
             class="tab-btn"
@@ -146,7 +145,6 @@
           >
             <font-awesome-icon icon="fa-solid fa-sticky-note" class="tab-icon" />
             复盘笔记
-            <span v-if="interview.reviewNote" class="tab-dot" title="已有笔记内容"></span>
           </button>
         </div>
 
@@ -267,7 +265,9 @@ import {
   type AdviceItem,
   type CompanyResearchResult,
   type JDAnalysisResult,
-  type ReviewNoteVO
+  type ReviewNoteVO,
+  type InterviewStatus,
+  type InterviewResult
 } from '@/types/interview-center'
 import { useNotificationStore } from '@/stores/notification'
 // 弹窗组件
@@ -804,11 +804,11 @@ function handleInterviewUpdated() {
   loadDetail()
 }
 
-async function handleStatusChange(status: string) {
+async function handleStatusChange(status: InterviewStatus) {
   if (!interview.value) return
   try {
     await updateInterview(interview.value.id, { status })
-    interview.value.status = status as any
+    interview.value.status = status
     toast.success('状态已更新')
   } catch (error) {
     console.error('更新状态失败:', error)
@@ -816,11 +816,11 @@ async function handleStatusChange(status: string) {
   }
 }
 
-async function handleResultChange(result: string) {
+async function handleResultChange(result: InterviewResult) {
   if (!interview.value) return
   try {
     await updateInterview(interview.value.id, { overallResult: result })
-    interview.value.overallResult = result as any
+    interview.value.overallResult = result
     if (result !== 'pending') {
       interview.value.status = 'completed'
     }
@@ -1315,20 +1315,6 @@ function handleApplyTranscriptEvent(event: Event) {
     font-size: 1rem;
   }
 
-  // 小圆点样式优化
-  .tab-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: $color-success;
-    flex-shrink: 0;
-    cursor: help;
-    transition: transform 0.2s;
-
-    &:hover {
-      transform: scale(1.3);
-    }
-  }
 }
 
 .tab-content {

@@ -81,25 +81,25 @@ export const TASK_STATUS_CONFIG: Record<TaskStatus, {
   pending: {
     label: '等待中',
     color: '#a1a1aa',
-    icon: '⏳',
+    icon: 'fa-solid fa-hourglass-half',
     bgColor: 'rgba(161, 161, 170, 0.1)'
   },
   running: {
     label: '进行中',
     color: '#d4a853',
-    icon: '🔄',
+    icon: 'fa-solid fa-rotate',
     bgColor: 'rgba(212, 168, 83, 0.1)'
   },
   completed: {
     label: '已完成',
     color: '#34d399',
-    icon: '✅',
+    icon: 'fa-solid fa-circle-check',
     bgColor: 'rgba(52, 211, 153, 0.1)'
   },
   failed: {
     label: '失败',
     color: '#f87171',
-    icon: '❌',
+    icon: 'fa-solid fa-circle-xmark',
     bgColor: 'rgba(248, 113, 113, 0.1)'
   }
 }

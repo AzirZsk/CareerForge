@@ -36,7 +36,7 @@
             v-if="notificationStore.isLoading && tasks.length === 0"
             class="empty-state"
           >
-            <div class="loading-icon">⏳</div>
+            <div class="loading-icon"><font-awesome-icon icon="fa-solid fa-hourglass-half" class="spinning" /></div>
             <p>加载中...</p>
           </div>
 
@@ -45,7 +45,7 @@
             v-else-if="tasks.length === 0"
             class="empty-state"
           >
-            <div class="empty-icon">📭</div>
+            <div class="empty-icon"><font-awesome-icon icon="fa-solid fa-inbox" /></div>
             <p>暂无任务通知</p>
           </div>
 
@@ -64,12 +64,12 @@
               <!-- 任务图标 -->
               <div
                 class="task-icon"
-                :style="{ background: statusConfig[task.status]?.bgColor }"
+                :style="{ background: statusConfig[task.status]?.bgColor, color: statusConfig[task.status]?.color }"
               >
-                <span v-if="task.status === 'running'" class="spinning">
-                  {{ statusConfig[task.status]?.icon }}
-                </span>
-                <span v-else>{{ statusConfig[task.status]?.icon }}</span>
+                <font-awesome-icon
+                  :icon="statusConfig[task.status]?.icon"
+                  :class="{ spinning: task.status === 'running' }"
+                />
               </div>
 
               <!-- 任务内容 -->
