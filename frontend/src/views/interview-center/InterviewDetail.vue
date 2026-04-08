@@ -382,10 +382,6 @@
               @reference="handleReferenceAIAdvice"
             />
 
-            <!-- 空 AI 分析状态 -->
-            <div v-if="!interview.aiAnalysisNote && !reviewState.isRunning && !reviewState.isCompleted" class="empty-analysis">
-              <p>输入面试过程内容后，点击"开始分析"获取 AI 分析建议</p>
-            </div>
           </div>
 
           <!-- 我的笔记 Tab -->
@@ -1928,21 +1924,6 @@ function handleApplyTranscriptEvent(event: Event) {
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-
-// AI 分析 Tab 面板
-.analysis-panel {
-  .empty-analysis {
-    text-align: center;
-    padding: $spacing-xl;
-    color: $color-text-tertiary;
-    background: $color-bg-tertiary;
-    border-radius: $radius-md;
-
-    p {
-      margin: 0;
-    }
   }
 }
 
