@@ -105,6 +105,13 @@
             <groupId>org.apache.pdfbox</groupId>
             <artifactId>pdfbox</artifactId>
             <version>3.0.4</version>
+            <exclusions>
+                <!-- 排除 commons-logging，Spring Boot 已通过 jcl-over-slf4j 桥接 -->
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- Apache POI - Word 文档处理 -->
@@ -138,6 +145,13 @@
             <groupId>com.alibaba</groupId>
             <artifactId>dashscope-sdk-java</artifactId>
             <version>2.21.14</version>
+            <exclusions>
+                <!-- 排除 slf4j-simple，使用 Spring Boot 自带的 logback -->
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-simple</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- 显式声明 jsonschema-generator 版本，解决 dashscope-sdk 与 spring-ai 的版本冲突 -->

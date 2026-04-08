@@ -83,6 +83,19 @@
         @cancel="handleCancel"
       />
 
+      <!-- 创建会话 loading 遮罩 -->
+      <Teleport to="body">
+        <div v-if="isCreatingSession" class="session-loading-overlay">
+          <div class="session-loading-content">
+            <div class="session-loading-spinner">
+              <div class="spinner-ring"></div>
+            </div>
+            <h3 class="session-loading-title">正在生成面试问题...</h3>
+            <p class="session-loading-desc">AI 正在根据职位 JD 生成面试问题，预计 1~2 分钟，请耐心等待</p>
+          </div>
+        </div>
+      </Teleport>
+
       <section class="preparations-section">
         <div class="section-header">
           <h2>准备清单</h2>
@@ -183,9 +196,9 @@
               </button>
             </div>
 
-            <!-- AI 分析进度 -->
+            <!-- AI 分析进度（仅分析进行中时显示，完成后由 AIAnalysisCard 展示结果） -->
             <ReviewAnalysisProgress
-              v-if="reviewState.isRunning || reviewState.isCompleted"
+              v-if="reviewState.isRunning"
               :state="reviewState"
               @toggle-expand="toggleStageExpand"
             />
@@ -297,6 +310,7 @@ import { useToast } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
 import { useAIChat } from '@/composables/useAIChat'
 import { useMicrophonePermission } from '@/composables/useMicrophonePermission'
+import { useScrollLock } from '@vueuse/core'
 
 const route = useRoute()
 const router = useRouter()
@@ -317,6 +331,13 @@ const referencedAdvice = ref<{
 } | null>(null)
 const showPrepModal = ref(false)
 const showMockConfigDialog = ref(false)
+const isCreatingSession = ref(false)
+const isBodyScrollLocked = useScrollLock(document.body)
+
+// 创建会话遮罩层显示时锁定背景滚动
+watch(isCreatingSession, (creating) => {
+  isBodyScrollLocked.value = creating
+})
 
 // 麦克风权限相关状态
 const showPermissionDialog = ref(false)
@@ -331,7 +352,7 @@ const pendingMockConfig = ref<{
 
 // 工作流状态
 const { state: preparationState, startPreparation } = useInterviewPreparation()
-const { state: reviewState, startAnalysis, toggleStageExpand } = useReviewAnalysis()
+const { state: reviewState, startAnalysis, resetState, toggleStageExpand } = useReviewAnalysis()
 
 // 麦克风权限管理
 const { checkPermission, requestPermission, releaseStream } = useMicrophonePermission()
@@ -540,6 +561,11 @@ async function loadDetail() {
     // 加载时读取 transcript 字段
     if (interview.value?.transcript) {
       sessionTranscript.value = interview.value.transcript
+    }
+    // 如果后端已有持久化的 AI 分析结果，重置 reviewState 单例
+    // 避免同时显示 ReviewAnalysisProgress 和 AIAnalysisCard
+    if (interview.value?.aiAnalysisNote) {
+      resetState()
     }
   } catch (error) {
     console.error('加载面试详情失败:', error)
@@ -773,6 +799,7 @@ async function createSessionAndNavigate() {
   const config = pendingMockConfig.value
   pendingMockConfig.value = null
 
+  isCreatingSession.value = true
   try {
     const response = await createSession({
       interviewId: interview.value.id,
@@ -785,6 +812,8 @@ async function createSessionAndNavigate() {
   } catch (error) {
     console.error('创建模拟面试失败:', error)
     toast.error('创建模拟面试失败，请稍后重试')
+  } finally {
+    isCreatingSession.value = false
   }
 }
 
@@ -843,6 +872,7 @@ function updateFloatVisibility(show: boolean) {
 watch(showPrepModal, updateFloatVisibility)
 watch(showMockConfigDialog, updateFloatVisibility)
 watch(showPermissionDialog, updateFloatVisibility)
+watch(isCreatingSession, updateFloatVisibility)
 
 onMounted(() => {
   loadDetail()
@@ -1364,5 +1394,55 @@ function handleApplyTranscriptEvent(event: Event) {
   align-items: center;
   min-height: 400px;
   color: $color-text-tertiary;
+}
+
+// 创建会话 loading 遮罩
+.session-loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: $z-modal-overlay;
+}
+
+.session-loading-content {
+  text-align: center;
+  max-width: 360px;
+}
+
+.session-loading-spinner {
+  margin-bottom: $spacing-xl;
+
+  .spinner-ring {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto;
+    border: 3px solid rgba(212, 168, 83, 0.2);
+    border-top-color: $color-accent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+}
+
+.session-loading-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: $color-text-primary;
+  margin-bottom: $spacing-sm;
+}
+
+.session-loading-desc {
+  font-size: 0.8125rem;
+  color: $color-text-tertiary;
+  line-height: 1.5;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 </style>

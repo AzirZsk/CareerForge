@@ -83,7 +83,7 @@ export interface InterviewDetail {
   preparations: PreparationVO[]
   reviewNote?: ReviewNoteVO
   /** AI 分析记录 */
-  aiAnalysisNote?: ReviewNoteVO
+  aiAnalysisNote?: AIAnalysisVO
   createdAt: string
   updatedAt: string
 }
@@ -122,6 +122,15 @@ export interface ReviewNoteVO {
   weakPoints?: string
   lessonsLearned?: string
   suggestions?: string
+  createdAt: string
+  updatedAt: string
+}
+
+// AI 分析记录 VO（对齐后端 AIAnalysisVO）
+export interface AIAnalysisVO {
+  id: string
+  interviewId: string
+  adviceList: AdviceItem[]
   createdAt: string
   updatedAt: string
 }
@@ -485,19 +494,44 @@ export interface TranscriptAnalysisResult {
 }
 
 // 面试分析维度评分
-export interface InterviewDimensionScore {
-  dimension: string
-  score: number
-  reason: string
+// JD 匹配详情
+export interface JdMatchDetail {
+  skill: string
+  required: boolean
+  matchLevel: string   // strong/medium/weak/missing
+  evidence: string
 }
 
-// 面试分析结果（analyze_interview 阶段输出）
+// 技能差距
+export interface SkillGap {
+  skill: string
+  jdRequirement: string
+  currentLevel: string
+  gapDescription: string
+}
+
+// 简历一致性分析
+export interface ResumeConsistency {
+  score: number
+  findings: string[]
+}
+
+// 轮次分析
+export interface RoundAnalysis {
+  roundType: string
+  performance: string
+}
+
+// 面试分析结果（analyze_interview 阶段输出，对齐后端 InterviewAnalysisResult DTO）
 export interface InterviewAnalysisResult {
+  jdMatchScore: number
+  jdMatchDetails: JdMatchDetail[]
+  overallPerformance: string
   overallScore: number
-  overallAssessment: string
   strengths: string[]
   weaknesses: string[]
-  dimensionScores: InterviewDimensionScore[]
-  keyFindings?: string
-  recommendations?: string[]
+  skillGaps: SkillGap[]
+  resumeConsistency: ResumeConsistency
+  roundAnalysis: RoundAnalysis
+  summary: string
 }

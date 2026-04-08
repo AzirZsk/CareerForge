@@ -177,7 +177,7 @@ export function useInterviewVoice(sessionId: string) {
   function handleWsOpen(): void {
     reconnectAttempts.value = 0
     startHeartbeat()
-    sendControlMessage('start')
+    // 不再连接后自动发 start，等用户点击"开始面试"按钮
   }
 
   /**

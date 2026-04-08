@@ -279,6 +279,8 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
+@use 'sass:color';
+
 .position-detail-page {
   padding: $spacing-xl;
   max-width: 900px;
@@ -424,7 +426,7 @@ onMounted(() => {
   transition: all 0.2s;
 
   &:hover {
-    background: lighten($color-bg-tertiary, 5%);
+    background: color.adjust($color-bg-tertiary, $lightness: 5%);
   }
 }
 

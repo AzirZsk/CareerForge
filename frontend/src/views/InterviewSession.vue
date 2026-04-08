@@ -362,7 +362,7 @@ const showEndModal = ref(false)
 const messagesContainer = ref<HTMLElement | null>(null)
 
 // 倒计时相关
-const showCountdown = ref(true)
+const showCountdown = ref(false)
 const countdown = ref(3)
 
 // 面试标题

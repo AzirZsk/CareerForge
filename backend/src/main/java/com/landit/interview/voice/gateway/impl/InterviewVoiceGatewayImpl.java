@@ -118,7 +118,7 @@ public class InterviewVoiceGatewayImpl implements InterviewVoiceGateway {
         log.info("[VoiceGateway] Session created, sessionId={}, interviewId={}, position={}",
                 sessionId, request.getInterviewId(), jobPosition.getTitle());
 
-        // 8. 异步预生成开场白 + 第一个问题
+        // 8. 同步预生成开场白 + 第一个问题（阻塞等待完成后再返回响应）
         PreGenerateContext preGenContext = PreGenerateContext.builder()
                 .position(jobPosition.getTitle())
                 .jdContent(jobPosition.getJdContent())
@@ -127,20 +127,13 @@ public class InterviewVoiceGatewayImpl implements InterviewVoiceGateway {
                 .totalQuestions(session.getTotalQuestions())
                 .build();
 
-        questionPreGenerateService.preGenerateFirstQuestion(sessionId, preGenContext)
-                .thenAccept(question -> {
-                    // 预生成完成，推送 ready 事件
-                    sendResponse(sessionId, VoiceResponse.ready(VoiceResponse.ReadyData.builder()
-                            .state("ready")
-                            .message("面试准备就绪，点击开始面试")
-                            .build()));
-                    log.info("[VoiceGateway] 预生成完成，推送 ready 事件, sessionId={}", sessionId);
-                })
-                .exceptionally(ex -> {
-                    log.error("[VoiceGateway] 预生成失败, sessionId={}", sessionId, ex);
-                    // 预生成失败不影响面试，降级到实时生成
-                    return null;
-                });
+        try {
+            questionPreGenerateService.preGenerateFirstQuestion(sessionId, preGenContext).join();
+            log.info("[VoiceGateway] 预生成完成, sessionId={}", sessionId);
+        } catch (Exception ex) {
+            log.error("[VoiceGateway] 预生成失败，将降级到实时生成, sessionId={}", sessionId, ex);
+            // 预生成失败不阻断，面试开始时降级到实时生成
+        }
 
         // 9. 返回创建结果
         return VoiceSessionCreateVO.builder()

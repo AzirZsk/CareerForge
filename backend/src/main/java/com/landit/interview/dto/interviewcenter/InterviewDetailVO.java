@@ -71,6 +71,11 @@ public class InterviewDetailVO {
      */
     private AIAnalysisVO aiAnalysisNote;
 
+    /**
+     * 面试过程转译文本
+     */
+    private String transcript;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

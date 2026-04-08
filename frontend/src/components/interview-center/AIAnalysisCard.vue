@@ -62,11 +62,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import type { ReviewNoteVO, AdviceItem } from '@/types/interview-center'
+import type { AIAnalysisVO, AdviceItem } from '@/types/interview-center'
 
 const props = defineProps<{
-  /** AI 分析记录（包含 suggestions 字段，是 JSON 字符串） */
-  aiAnalysisNote?: ReviewNoteVO | null
+  /** AI 分析记录（包含 adviceList 字段） */
+  aiAnalysisNote?: AIAnalysisVO | null
   /** 是否正在分析中 */
   isAnalyzing?: boolean
   /** 是否显示操作按钮（重新分析、参考建议） */
@@ -84,15 +84,9 @@ const emit = defineEmits<{
 
 const isExpanded = ref(props.defaultExpanded ?? false)
 
-// 解析 AI 建议列表
+// AI 建议列表（直接从后端 VO 的 adviceList 字段读取）
 const adviceList = computed<AdviceItem[]>(() => {
-  if (!props.aiAnalysisNote?.suggestions) return []
-  try {
-    return JSON.parse(props.aiAnalysisNote.suggestions) as AdviceItem[]
-  } catch {
-    console.error('解析 AI 分析结果失败')
-    return []
-  }
+  return props.aiAnalysisNote?.adviceList ?? []
 })
 
 // 生成时间
