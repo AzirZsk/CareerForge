@@ -357,13 +357,13 @@ export function useAIChat() {
 
   function handleErrorEvent(errorMessage: string): void {
     if (currentAiMessage) {
-      currentAiMessage.content += `\n\n❌ 错误：${errorMessage}`
+      currentAiMessage.content += `\n\n错误：${errorMessage}`
       currentAiMessage.isStreaming = false
     } else {
       state.messages.push({
         id: generateId(),
         role: 'system',
-        content: `❌ 错误：${errorMessage}`,
+        content: `错误：${errorMessage}`,
         timestamp: Date.now()
       })
     }
@@ -434,7 +434,7 @@ export function useAIChat() {
       state.messages.push({
         id: generateId(),
         role: 'system',
-        content: '❌ 开始新会话失败，请稍后重试',
+        content: '开始新会话失败，请稍后重试',
         timestamp: Date.now()
       })
     }

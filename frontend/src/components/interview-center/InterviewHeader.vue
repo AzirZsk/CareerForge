@@ -53,7 +53,7 @@
       </div>
     </div>
 
-    <!-- 第二行：五个信息块 -->
+    <!-- 第二行：信息块 -->
     <div class="header-row info-row">
       <div class="info-block">
         <font-awesome-icon icon="fa-solid fa-calendar" class="info-icon" />
@@ -83,27 +83,36 @@
           <span class="info-value">{{ timeUrgency.text }}</span>
         </div>
       </div>
-      <div class="info-block resume-block" v-if="interview.resumeId">
-        <font-awesome-icon icon="fa-solid fa-file-alt" class="info-icon" />
-        <div class="info-content">
-          <span class="info-label">简历</span>
-          <router-link :to="`/resume/${interview.resumeId}`" class="info-value resume-link">
-            {{ interview.resumeName || '查看简历' }}
-          </router-link>
-        </div>
-      </div>
     </div>
 
-    <!-- 第三行：会议链接（仅线上面试） -->
+    <!-- 第三行：面试地点/链接 -->
+    <div v-if="interview.interviewType === 'onsite' && interview.location" class="detail-bar">
+      <font-awesome-icon icon="fa-solid fa-location-dot" class="detail-icon" />
+      <span class="detail-label">面试地点:</span>
+      <span class="detail-value">{{ interview.location }}</span>
+      <button class="detail-action-btn" @click="copyLocation">
+        {{ locationCopied ? '已复制' : '复制' }}
+      </button>
+    </div>
     <MeetingLinkBar
-      v-if="interview.interviewType === 'online'"
+      v-else-if="interview.interviewType === 'online'"
       :link="interview.onlineLink"
       :password="interview.meetingPassword"
     />
 
     <!-- 第四行：操作按钮 -->
     <div class="header-row actions-row">
-      <div class="actions-spacer"></div>
+      <a
+        v-if="interview.resumeId"
+        :href="`/resume/${interview.resumeId}`"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="resume-link-inline"
+      >
+        <font-awesome-icon icon="fa-solid fa-file-alt" />
+        关联简历
+      </a>
+      <div v-else class="actions-spacer"></div>
       <div class="actions-group">
         <button
           class="btn btn-position"
@@ -199,6 +208,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import MeetingLinkBar from './MeetingLinkBar.vue'
+import { useToast } from '@/composables/useToast'
 import {
   INTERVIEW_STATUS_LABELS,
   INTERVIEW_RESULT_LABELS,
@@ -234,6 +244,21 @@ const showStatusMenu = ref(false)
 const showResultMenu = ref(false)
 const statusMenuRef = ref<HTMLElement | null>(null)
 const resultMenuRef = ref<HTMLElement | null>(null)
+const locationCopied = ref(false)
+
+const toast = useToast()
+
+async function copyLocation() {
+  if (!props.interview.location) return
+  try {
+    await navigator.clipboard.writeText(props.interview.location)
+    locationCopied.value = true
+    toast.success('地点已复制')
+    setTimeout(() => { locationCopied.value = false }, 2000)
+  } catch {
+    toast.error('复制失败，请手动复制')
+  }
+}
 
 const statusOptions = INTERVIEW_STATUS_LABELS
 const resultOptions = INTERVIEW_RESULT_LABELS
@@ -327,11 +352,7 @@ const timeUrgency = computed(() => {
   }
 
   // 更远
-  const date = new Date(props.interview.interviewDate)
-  return {
-    text: date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }),
-    class: 'normal'
-  }
+  return { text: `${days} 天后`, class: 'normal' }
 })
 
 // 切换更多菜单
@@ -729,9 +750,10 @@ onUnmounted(() => {
   align-items: center;
   gap: $spacing-sm;
   padding: $spacing-sm $spacing-md;
-  min-height: 56px;
+  height: 56px;
   background: $color-bg-tertiary;
   border-radius: $radius-md;
+  overflow: hidden;
 
   .info-icon {
     font-size: 1.25rem;
@@ -753,6 +775,9 @@ onUnmounted(() => {
     font-size: 0.875rem;
     font-weight: 500;
     color: $color-text-primary;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   // 紧迫感样式
@@ -779,14 +804,50 @@ onUnmounted(() => {
     }
   }
 
-  &.resume-block {
-    .info-value {
-      color: $color-accent;
-      text-decoration: none;
+}
 
-      &:hover {
-        text-decoration: underline;
-      }
+// 面试详情栏（地点等）
+.detail-bar {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  background: $color-bg-tertiary;
+  border-radius: $radius-md;
+  margin-top: $spacing-sm;
+  margin-bottom: $spacing-sm;
+
+  .detail-icon {
+    font-size: 1rem;
+    color: $color-text-secondary;
+  }
+
+  .detail-label {
+    font-size: 0.875rem;
+    color: $color-text-tertiary;
+    white-space: nowrap;
+  }
+
+  .detail-value {
+    flex: 1;
+    font-size: 0.875rem;
+    color: $color-text-primary;
+    min-width: 0;
+  }
+
+  .detail-action-btn {
+    padding: 3px 8px;
+    font-size: 0.7rem;
+    background: transparent;
+    border: none;
+    border-radius: $radius-sm;
+    color: $color-text-tertiary;
+    cursor: pointer;
+    transition: color 0.2s;
+    white-space: nowrap;
+
+    &:hover {
+      color: $color-text-primary;
     }
   }
 }
@@ -800,6 +861,26 @@ onUnmounted(() => {
 .actions-row {
   .actions-spacer {
     flex: 1;
+  }
+
+  .resume-link-inline {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    color: $color-text-secondary;
+    font-size: 0.875rem;
+    text-decoration: none;
+    padding: $spacing-xs 0;
+    transition: color 0.2s;
+    flex: 1;
+
+    svg {
+      font-size: 0.875rem;
+    }
+
+    &:hover {
+      color: $color-accent;
+    }
   }
 
   .actions-group {

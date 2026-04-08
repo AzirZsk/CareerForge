@@ -17,7 +17,7 @@
         class="command-btn"
         @click="$emit('select', cmd.prompt)"
       >
-        <span class="command-icon">{{ getCategoryIcon(cmd.category) }}</span>
+        <font-awesome-icon :icon="getCategoryIcon(cmd.category)" class="command-icon" />
         <span class="command-label">{{ cmd.label }}</span>
       </button>
 
@@ -61,16 +61,16 @@ const displayCommands = computed(() => {
   return showAll.value ? currentCommands.value : currentCommands.value.slice(0, 4)
 })
 
-// 获取分类图标
+// 获取分类图标（FontAwesome 图标名称）
 function getCategoryIcon(category: string): string {
   const icons: Record<string, string> = {
-    'optimize': '✨',
-    'adjust': '🔧',
-    'diagnose': '🔍',
-    'create': '✍️',
-    'general': '💬'
+    'optimize': 'fa-wand-magic-sparkles',
+    'adjust': 'fa-screwdriver-wrench',
+    'diagnose': 'fa-magnifying-glass',
+    'create': 'fa-pen-fancy',
+    'general': 'fa-comment'
   }
-  return icons[category] || '📝'
+  return icons[category] || 'fa-pencil-square'
 }
 </script>
 
@@ -116,7 +116,9 @@ function getCategoryIcon(category: string): string {
   }
 
   .command-icon {
-    font-size: $text-base;
+    font-size: $text-sm;
+    width: 14px;
+    height: 14px;
   }
 
   .command-label {

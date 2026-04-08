@@ -107,6 +107,14 @@ import {
   faRotate // 旋转/进行中
 } from '@fortawesome/free-solid-svg-icons'
 
+// 导入 AI Chat 模块需要的图标
+import {
+  faScrewdriverWrench, // 🔧 调整
+  faPenFancy, // ✍️ 创建
+  faComment, // 💬 通用聊天
+  faPencilSquare // 📝 默认
+} from '@fortawesome/free-solid-svg-icons'
+
 // 注册图标到库
 library.add(
   // 工作台页面图标
@@ -180,7 +188,12 @@ library.add(
   // 通知模块
   faBell,
   faInbox,
-  faRotate
+  faRotate,
+  // AI Chat 模块
+  faScrewdriverWrench,
+  faPenFancy,
+  faComment,
+  faPencilSquare
 )
 
 // 导出组件供全局注册
