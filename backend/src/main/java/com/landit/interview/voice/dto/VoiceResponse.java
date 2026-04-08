@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 public class VoiceResponse {
 
     /**
-     * 消息类型：transcript, audio, state, error, pong
+     * 消息类型：transcript, audio, state, error, pong, ready
      */
     private String type;
 
@@ -59,6 +59,13 @@ public class VoiceResponse {
      */
     public static VoiceResponse pong() {
         return VoiceResponse.builder().type("pong").build();
+    }
+
+    /**
+     * 创建准备就绪响应（预生成完成）
+     */
+    public static VoiceResponse ready(ReadyData data) {
+        return VoiceResponse.builder().type("ready").data(data).build();
     }
 
     /**
@@ -163,6 +170,25 @@ public class VoiceResponse {
 
         /**
          * 错误消息
+         */
+        private String message;
+    }
+
+    /**
+     * 准备就绪数据（预生成完成通知）
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ReadyData {
+        /**
+         * 就绪状态：ready
+         */
+        private String state;
+
+        /**
+         * 提示消息
          */
         private String message;
     }

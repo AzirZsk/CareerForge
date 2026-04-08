@@ -6,6 +6,7 @@ import com.landit.interview.voice.dto.*;
 import com.landit.interview.voice.gateway.impl.InterviewVoiceGatewayImpl;
 import com.landit.interview.voice.handler.InterviewerAgentHandler;
 import com.landit.interview.voice.service.ASRService;
+import com.landit.interview.voice.service.QuestionPreGenerateService;
 import com.landit.interview.voice.service.RecordingService;
 import com.landit.interview.voice.service.TTSService;
 import com.landit.interview.voice.service.VoiceServiceFactory;
@@ -41,6 +42,7 @@ public class InterviewerAgentHandlerImpl implements InterviewerAgentHandler {
     private final ChatClient.Builder chatClientBuilder;
     private final RecordingService recordingService;
     private final AIPromptProperties aiPromptProperties;
+    private final QuestionPreGenerateService questionPreGenerateService;
 
     @Autowired
     @Lazy
@@ -120,6 +122,59 @@ public class InterviewerAgentHandlerImpl implements InterviewerAgentHandler {
     public Flux<VoiceResponse> generateNextQuestion(String sessionId) {
         log.debug("[InterviewerAgent] Generating next question, sessionId={}", sessionId);
 
+        // 获取当前问题索引
+        InterviewVoiceGatewayImpl.SessionState state = voiceGateway.getInternalState(sessionId);
+        int questionIndex = state != null ? state.getCurrentQuestion() : 0;
+
+        // 优先检查缓存
+        Optional<PreGeneratedQuestion> cachedQuestion = questionPreGenerateService
+                .getCachedQuestion(sessionId, questionIndex);
+
+        if (cachedQuestion.isPresent()) {
+            PreGeneratedQuestion question = cachedQuestion.get();
+            questionPreGenerateService.markQuestionUsed(sessionId, questionIndex);
+            log.info("[InterviewerAgent] 使用缓存问题（零延迟）, sessionId={}, index={}", sessionId, questionIndex);
+            return buildResponseFromCache(question);
+        }
+
+        // 无缓存，实时生成
+        log.debug("[InterviewerAgent] 缓存未命中，实时生成, sessionId={}, index={}", sessionId, questionIndex);
+        return generateQuestionRealTime(sessionId);
+    }
+
+    /**
+     * 从缓存构建响应（零延迟）
+     */
+    private Flux<VoiceResponse> buildResponseFromCache(PreGeneratedQuestion question) {
+        // 文本响应
+        Flux<VoiceResponse> textFlux = Flux.just(VoiceResponse.transcript(
+                VoiceResponse.TranscriptData.builder()
+                        .text(question.getText())
+                        .isFinal(true)
+                        .role("interviewer")
+                        .build()
+        ));
+
+        // 音频响应（如果有）
+        if (question.getAudioData() != null && question.getAudioData().length > 0) {
+            String audioBase64 = Base64.getEncoder().encodeToString(question.getAudioData());
+            Flux<VoiceResponse> audioFlux = Flux.just(VoiceResponse.audio(
+                    VoiceResponse.AudioData.builder()
+                            .audio(audioBase64)
+                            .format(question.getAudioFormat())
+                            .sampleRate(question.getSampleRate())
+                            .build()
+            ));
+            return textFlux.concatWith(audioFlux);
+        }
+
+        return textFlux;
+    }
+
+    /**
+     * 实时生成问题
+     */
+    private Flux<VoiceResponse> generateQuestionRealTime(String sessionId) {
         // 获取会话上下文（从 Gateway 加载 JD/简历）
         ConversationContext context = contexts.computeIfAbsent(sessionId, k -> {
             ConversationContext ctx = new ConversationContext();

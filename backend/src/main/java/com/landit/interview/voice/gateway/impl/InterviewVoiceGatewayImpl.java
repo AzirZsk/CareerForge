@@ -10,6 +10,7 @@ import com.landit.interview.voice.dto.*;
 import com.landit.interview.voice.gateway.InterviewVoiceGateway;
 import com.landit.interview.voice.handler.AssistantAgentHandler;
 import com.landit.interview.voice.handler.InterviewerAgentHandler;
+import com.landit.interview.voice.service.QuestionPreGenerateService;
 import com.landit.interview.voice.service.RecordingService;
 import com.landit.interview.voice.service.VoiceSessionManager;
 import com.landit.jobposition.entity.JobPosition;
@@ -23,6 +24,7 @@ import org.springframework.web.socket.WebSocketSession;
 
 import java.util.Base64;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -40,6 +42,7 @@ public class InterviewVoiceGatewayImpl implements InterviewVoiceGateway {
 
     private final InterviewerAgentHandler interviewerAgentHandler;
     private final AssistantAgentHandler assistantAgentHandler;
+    private final QuestionPreGenerateService questionPreGenerateService;
     private final RecordingService recordingService;
     private final VoiceSessionManager voiceSessionManager;
     private final InterviewMapper interviewMapper;
@@ -115,7 +118,31 @@ public class InterviewVoiceGatewayImpl implements InterviewVoiceGateway {
         log.info("[VoiceGateway] Session created, sessionId={}, interviewId={}, position={}",
                 sessionId, request.getInterviewId(), jobPosition.getTitle());
 
-        // 8. 返回创建结果
+        // 8. 异步预生成开场白 + 第一个问题
+        PreGenerateContext preGenContext = PreGenerateContext.builder()
+                .position(jobPosition.getTitle())
+                .jdContent(jobPosition.getJdContent())
+                .resumeContent(resumeContent)
+                .interviewerStyle(session.getInterviewerStyle())
+                .totalQuestions(session.getTotalQuestions())
+                .build();
+
+        questionPreGenerateService.preGenerateFirstQuestion(sessionId, preGenContext)
+                .thenAccept(question -> {
+                    // 预生成完成，推送 ready 事件
+                    sendResponse(sessionId, VoiceResponse.ready(VoiceResponse.ReadyData.builder()
+                            .state("ready")
+                            .message("面试准备就绪，点击开始面试")
+                            .build()));
+                    log.info("[VoiceGateway] 预生成完成，推送 ready 事件, sessionId={}", sessionId);
+                })
+                .exceptionally(ex -> {
+                    log.error("[VoiceGateway] 预生成失败, sessionId={}", sessionId, ex);
+                    // 预生成失败不影响面试，降级到实时生成
+                    return null;
+                });
+
+        // 9. 返回创建结果
         return VoiceSessionCreateVO.builder()
                 .sessionId(sessionId)
                 .interviewId(request.getInterviewId())
@@ -363,13 +390,50 @@ public class InterviewVoiceGatewayImpl implements InterviewVoiceGateway {
                 .elapsedTime(0)
                 .build()));
 
-        // 面试官先说话：生成开场白和第一个问题
-        interviewerAgentHandler.generateNextQuestion(sessionId)
-                .subscribe(
-                        response -> sendResponse(sessionId, response),
-                        error -> log.error("[VoiceGateway] 面试官生成开场白失败, sessionId={}", sessionId, error),
-                        () -> log.debug("[VoiceGateway] 面试官开场白发送完成, sessionId={}", sessionId)
-                );
+        // 优先使用缓存的预生成问题（零延迟）
+        Optional<PreGeneratedQuestion> cachedQuestion = questionPreGenerateService
+                .getCachedQuestion(sessionId, 0);
+
+        if (cachedQuestion.isPresent()) {
+            PreGeneratedQuestion question = cachedQuestion.get();
+            questionPreGenerateService.markQuestionUsed(sessionId, 0);
+
+            // 零延迟推送预生成的开场白
+            sendCachedQuestion(sessionId, question);
+            log.info("[VoiceGateway] 使用预生成开场白（零延迟）, sessionId={}", sessionId);
+
+        } else {
+            // 降级：实时生成
+            log.warn("[VoiceGateway] 预生成未完成，降级到实时生成, sessionId={}", sessionId);
+            interviewerAgentHandler.generateNextQuestion(sessionId)
+                    .subscribe(
+                            response -> sendResponse(sessionId, response),
+                            error -> log.error("[VoiceGateway] 面试官生成开场白失败, sessionId={}", sessionId, error),
+                            () -> log.debug("[VoiceGateway] 面试官开场白发送完成, sessionId={}", sessionId)
+                    );
+        }
+    }
+
+    /**
+     * 推送缓存的问题（零延迟）
+     */
+    private void sendCachedQuestion(String sessionId, PreGeneratedQuestion question) {
+        // 推送文本
+        sendResponse(sessionId, VoiceResponse.transcript(VoiceResponse.TranscriptData.builder()
+                .text(question.getText())
+                .isFinal(true)
+                .role("interviewer")
+                .build()));
+
+        // 推送音频（如果有）
+        if (question.getAudioData() != null && question.getAudioData().length > 0) {
+            String audioBase64 = Base64.getEncoder().encodeToString(question.getAudioData());
+            sendResponse(sessionId, VoiceResponse.audio(VoiceResponse.AudioData.builder()
+                    .audio(audioBase64)
+                    .format(question.getAudioFormat())
+                    .sampleRate(question.getSampleRate())
+                    .build()));
+        }
     }
 
     /**
