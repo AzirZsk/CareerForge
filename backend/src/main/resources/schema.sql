@@ -49,32 +49,11 @@ CREATE TABLE IF NOT EXISTS t_resume (
 );
 
 -- ----------------------------------------------------------------------------
--- 简历历史版本表
--- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS t_resume_version (
-    id VARCHAR(64) PRIMARY KEY,              -- 主键ID（雪花ID字符串）
-    resume_id VARCHAR(64) NOT NULL,          -- 关联的主简历ID
-    version INTEGER NOT NULL,               -- 版本号
-    -- 冗余存储完整简历数据（快照）
-    name VARCHAR(200),                      -- 简历名称
-    target_position VARCHAR(100),           -- 目标岗位
-    status VARCHAR(20),                     -- 简历状态
-    score INTEGER DEFAULT 0,                -- 综合评分
-    completeness INTEGER DEFAULT 0,         -- 完整度
-    -- 变更信息
-    change_summary VARCHAR(500),            -- 本次变更说明
-    change_type VARCHAR(20),                -- 变更类型（MANUAL/AI_OPTIMIZE/DERIVE/ROLLBACK）
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
-    deleted INTEGER DEFAULT 0               -- 逻辑删除标记
-);
-
--- ----------------------------------------------------------------------------
 -- 简历模块表
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS t_resume_section (
     id VARCHAR(64) PRIMARY KEY,              -- 主键ID（雪花ID字符串）
     resume_id VARCHAR(64) NOT NULL,          -- 所属简历ID
-    resume_version_id VARCHAR(64),           -- 关联版本ID（为空表示当前版本）
     type VARCHAR(50),                       -- 模块类型（basic/experience/project/skill等）
     title VARCHAR(100),                     -- 模块标题
     content TEXT,                           -- 模块内容（JSON格式）
@@ -203,8 +182,6 @@ CREATE TABLE IF NOT EXISTS t_conversation (
 -- ============================================================================
 CREATE INDEX IF NOT EXISTS idx_resume_user_id ON t_resume(user_id);
 CREATE INDEX IF NOT EXISTS idx_resume_source_id ON t_resume(source_resume_id);
-CREATE INDEX IF NOT EXISTS idx_resume_version_resume_id ON t_resume_version(resume_id);
-CREATE INDEX IF NOT EXISTS idx_resume_section_version_id ON t_resume_section(resume_version_id);
 CREATE INDEX IF NOT EXISTS idx_interview_user_id ON t_interview(user_id);
 CREATE INDEX IF NOT EXISTS idx_interview_resume_id ON t_interview(resume_id);
 CREATE INDEX IF NOT EXISTS idx_session_user_id ON t_interview_session(user_id);

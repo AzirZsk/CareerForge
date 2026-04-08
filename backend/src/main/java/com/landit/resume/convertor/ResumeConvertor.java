@@ -1,17 +1,15 @@
 package com.landit.resume.convertor;
 
 import com.landit.resume.dto.ResumeDetailVO;
-import com.landit.resume.dto.ResumeVersionVO;
 import com.landit.resume.entity.Resume;
 import com.landit.resume.entity.ResumeSection;
-import com.landit.resume.entity.ResumeVersion;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 import java.util.List;
 
 /**
- * 简历对象转换器
+ * 简历转换器
  *
  * @author Azir
  */
@@ -19,31 +17,15 @@ import java.util.List;
 public interface ResumeConvertor {
 
     /**
-     * ResumeVersion -> ResumeVersionVO
+     * Resume -> ResumeDetailVO
      */
-    ResumeVersionVO toVersionVO(ResumeVersion version);
-
-    /**
-     * List<ResumeVersion> -> List<ResumeVersionVO>
-     */
-    List<ResumeVersionVO> toVersionVOList(List<ResumeVersion> versions);
-
-    /**
-     * Resume -> ResumeVersion（用于创建版本快照）
-     */
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "resumeId", source = "id")
-    @Mapping(target = "changeSummary", ignore = true)
-    @Mapping(target = "changeType", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "deleted", ignore = true)
-    ResumeVersion toResumeVersion(Resume resume);
-
-    /**
-     * Resume -> ResumeDetailVO（基础映射，不含sections）
-     */
-    @Mapping(target = "sections", ignore = true)
+    @Mapping(target = "id", source = "id")
+    @Mapping(target = "name", source = "name")
+    @Mapping(target = "targetPosition", source = "targetPosition")
+    @Mapping(target = "status", source = "status")
+    @Mapping(target = "score", source = "score")
+    @Mapping(target = "completeness", source = "completeness")
+    @Mapping(target = "isPrimary", source = "isPrimary")
     @Mapping(target = "overallScore", source = "overallScore")
     @Mapping(target = "contentScore", source = "contentScore")
     @Mapping(target = "structureScore", source = "structureScore")

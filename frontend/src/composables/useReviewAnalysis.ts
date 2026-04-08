@@ -6,196 +6,169 @@
 import { reactive } from 'vue'
 import type {
   ReviewAnalysisState,
-  GraphProgressEvent,
-  AdviceItem
+  ReviewStage,
+  GraphProgressEvent
 } from '@/types/interview-center'
+import { streamReviewAnalysis } from '@/api/interview-center'
 
-// 单例状态
-let stateInstance: ReviewAnalysisState | null = null
+// 创建单例状态
+const stateInstance = reactive<ReviewAnalysisState>({
+  isConnecting: false,
+  isRunning: false,
+  isCompleted: false,
+  hasError: false,
+  currentStage: '',
+  progress: 0,
+  message: '',
+  adviceList: [],
+  errorMessage: null,
+  stageHistory: []
+})
 
-// 初始状态工厂
-function createInitialState(): ReviewAnalysisState {
-  return {
-    isConnecting: false,
-    isRunning: false,
-    isCompleted: false,
-    hasError: false,
-    currentStage: 'start',
-    progress: 0,
-    message: '',
-    adviceList: [],
-    errorMessage: null
-  }
-}
-
-// 开发环境日志
-function devLog(...args: unknown[]): void {
-  if (import.meta.env.DEV) {
-    console.log('[useReviewAnalysis]', ...args)
-  }
-}
-
-/**
- * 复盘分析工作流 Composable
- * 使用 fetch + ReadableStream 处理 POST SSE 请求
- */
 export function useReviewAnalysis() {
-  if (!stateInstance) {
-    stateInstance = reactive<ReviewAnalysisState>(createInitialState())
+  // 重置状态
+  function resetState() {
+    stateInstance.isConnecting = false
+    stateInstance.isRunning = false
+    stateInstance.isCompleted = false
+    stateInstance.hasError = false
+    stateInstance.currentStage = ''
+    stateInstance.progress = 0
+    stateInstance.message = ''
+    stateInstance.adviceList = []
+    stateInstance.errorMessage = null
+    stateInstance.stageHistory = []
   }
 
-  let abortController: AbortController | null = null
+  // 切换阶段展开状态
+  function toggleStageExpand(stage: ReviewStage) {
+    const historyItem = stateInstance.stageHistory.find(h => h.stage === stage)
+    if (historyItem) {
+      historyItem.expanded = !historyItem.expanded
+    }
+  }
 
-  /**
-   * 开始执行复盘分析工作流
-   */
-  async function startAnalysis(interviewId: string, transcript: string): Promise<void> {
+  // 开始复盘分析
+  async function startAnalysis(interviewId: string, sessionTranscript: string) {
     resetState()
-    stateInstance!.isConnecting = true
-    stateInstance!.message = '正在连接...'
-
-    abortController = new AbortController()
+    stateInstance.isConnecting = true
+    stateInstance.message = '正在连接...'
 
     try {
-      const response = await fetch(`/landit/interview-center/${interviewId}/review-analysis/stream`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transcript }),
-        signal: abortController.signal
-      })
+      await streamReviewAnalysis(
+        interviewId,
+        sessionTranscript,
+        (event: GraphProgressEvent) => {
+          // 处理工作流进度事件
+          switch (event.event) {
+            case 'start':
+              stateInstance.isConnecting = false
+              stateInstance.isRunning = true
+              stateInstance.message = event.message || '开始分析...'
+              break
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-      }
+            case 'progress':
+              stateInstance.currentStage = event.nodeId || ''
+              stateInstance.progress = event.progress || 0
+              stateInstance.message = event.message || ''
 
-      stateInstance!.isConnecting = false
-      stateInstance!.isRunning = true
+              // 更新或创建阶段历史项
+              let historyItem = stateInstance.stageHistory.find(h => h.stage === event.nodeId)
+              if (!historyItem && event.nodeId) {
+                historyItem = {
+                  stage: event.nodeId as ReviewStage,
+                  message: event.message || '',
+                  timestamp: event.timestamp,
+                  startTime: event.timestamp,
+                  completed: false,
+                  data: null,
+                  expanded: false
+                }
+                stateInstance.stageHistory.push(historyItem)
+              } else if (historyItem) {
+                historyItem.message = event.message || ''
+              }
+              break
 
-      const reader = response.body?.getReader()
-      if (!reader) {
-        throw new Error('无法获取响应流')
-      }
+            case 'complete':
+              // 标记阶段完成
+              if (event.nodeId) {
+                const historyItem = stateInstance.stageHistory.find(h => h.stage === event.nodeId)
+                if (historyItem) {
+                  historyItem.completed = true
+                  historyItem.endTime = event.timestamp
+                  historyItem.cached = event.cached
+                  // 存储数据（需要根据节点类型进行类型断言）
+                  if (event.data) {
+                    if (event.nodeId === 'analyze_transcript') {
+                      historyItem.data = event.data as any
+                    } else if (event.nodeId === 'analyze_interview') {
+                      historyItem.data = event.data as any
+                    } else if (event.nodeId === 'generate_advice') {
+                      historyItem.data = event.data as any
+                    }
+                  }
+                }
 
-      await processStream(reader)
+                // 根据节点类型存储数据
+                if (event.nodeId === 'analyze_transcript' && event.data) {
+                  console.log('[useReviewAnalysis] 对话分析完成:', event.data)
+                } else if (event.nodeId === 'analyze_interview' && event.data) {
+                  console.log('[useReviewAnalysis] 面试分析完成:', event.data)
+                } else if (event.nodeId === 'generate_advice' && event.data) {
+                  const adviceData = event.data as any
+                  if (Array.isArray(adviceData)) {
+                    stateInstance.adviceList = adviceData
+                  }
+                  console.log('[useReviewAnalysis] 建议生成完成:', event.data)
+                }
+              }
 
-      if (!stateInstance!.isCompleted && !stateInstance!.hasError) {
-        stateInstance!.isRunning = false
-        stateInstance!.isCompleted = true
-        stateInstance!.currentStage = 'complete'
-        stateInstance!.progress = 100
-        stateInstance!.message = '复盘分析完成'
-      }
+              // 如果是整体完成事件
+              if (!event.nodeId) {
+                stateInstance.isRunning = false
+                stateInstance.isCompleted = true
+                stateInstance.progress = 100
+                stateInstance.message = '分析完成'
+              }
+              break
 
-    } catch (error) {
-      if ((error as Error).name === 'AbortError') {
-        devLog('[SSE] 请求已取消')
-        return
-      }
-      devLog('[SSE] 请求错误:', error)
-      stateInstance!.hasError = true
-      stateInstance!.errorMessage = (error as Error).message || '连接失败，请稍后重试'
-      stateInstance!.isRunning = false
-    }
-  }
-
-  /**
-   * 处理 SSE 响应流
-   */
-  async function processStream(reader: ReadableStreamDefaultReader<Uint8Array>): Promise<void> {
-    const decoder = new TextDecoder()
-    let buffer = ''
-
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n')
-      buffer = lines.pop() || ''
-
-      for (const line of lines) {
-        if (line.startsWith('data:')) {
-          const json = line.slice(5).trim()
-          if (json) {
-            try {
-              const event: GraphProgressEvent = JSON.parse(json)
-              handleEvent(event)
-            } catch (e) {
-              devLog('[SSE] 解析事件失败:', e, json)
-            }
+            case 'error':
+              stateInstance.isConnecting = false
+              stateInstance.isRunning = false
+              stateInstance.hasError = true
+              stateInstance.errorMessage = event.errorMessage || '分析失败'
+              stateInstance.message = `分析失败: ${event.errorMessage}`
+              break
           }
+        },
+        (error: Error) => {
+          stateInstance.isConnecting = false
+          stateInstance.isRunning = false
+          stateInstance.hasError = true
+          stateInstance.errorMessage = error.message
+          stateInstance.message = `分析失败: ${error.message}`
+        },
+        () => {
+          stateInstance.isRunning = false
+          stateInstance.isCompleted = true
+          stateInstance.progress = 100
+          stateInstance.message = '分析完成'
         }
-      }
+      )
+    } catch (error) {
+      stateInstance.isConnecting = false
+      stateInstance.isRunning = false
+      stateInstance.hasError = true
+      stateInstance.errorMessage = error instanceof Error ? error.message : '分析失败'
+      stateInstance.message = `分析失败: ${stateInstance.errorMessage}`
     }
-  }
-
-  /**
-   * 处理 SSE 事件
-   */
-  function handleEvent(event: GraphProgressEvent): void {
-    devLog('[SSE] 收到事件:', event)
-
-    if (event.event === 'start') {
-      stateInstance!.currentStage = 'start'
-      stateInstance!.progress = 5
-      stateInstance!.message = event.message || '开始分析面试表现...'
-      return
-    }
-
-    if (event.event === 'progress') {
-      if (event.nodeId) {
-        stateInstance!.currentStage = event.nodeId as ReviewAnalysisState['currentStage']
-      }
-      stateInstance!.progress = event.progress || stateInstance!.progress
-      stateInstance!.message = event.message || stateInstance!.message
-      return
-    }
-
-    if (event.event === 'complete') {
-      stateInstance!.isRunning = false
-      stateInstance!.isCompleted = true
-      stateInstance!.currentStage = 'complete'
-      stateInstance!.progress = 100
-      stateInstance!.message = event.message || '复盘分析完成'
-      if (event.data && typeof event.data === 'object') {
-        const data = event.data as { adviceList?: AdviceItem[] }
-        if (data.adviceList) {
-          stateInstance!.adviceList = data.adviceList
-        }
-      }
-      return
-    }
-
-    if (event.event === 'error') {
-      stateInstance!.hasError = true
-      stateInstance!.errorMessage = event.errorMessage || '分析失败'
-      stateInstance!.isRunning = false
-    }
-  }
-
-  /**
-   * 取消请求
-   */
-  function cancelAnalysis(): void {
-    if (abortController) {
-      abortController.abort()
-      abortController = null
-      devLog('[SSE] 请求已取消')
-    }
-  }
-
-  /**
-   * 重置状态
-   */
-  function resetState(): void {
-    cancelAnalysis()
-    Object.assign(stateInstance!, createInitialState())
   }
 
   return {
     state: stateInstance,
     startAnalysis,
-    cancelAnalysis,
-    resetState
+    resetState,
+    toggleStageExpand
   }
 }

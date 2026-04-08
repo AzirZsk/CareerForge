@@ -1,32 +1,16 @@
 <template>
   <div class="interview-detail-page" v-if="!loading && interview">
-    <header class="page-header">
-      <div class="header-left">
-        <button class="back-btn" @click="goBack">
-          <font-awesome-icon icon="fa-solid fa-arrow-left" />
-        </button>
-        <div class="header-title">
-          <span class="company-name">{{ interview.companyName }}</span>
-          <span class="separator">/</span>
-          <span class="position-name">{{ interview.position }}</span>
-          <span v-if="interview.roundType" class="round-badge">{{ getRoundLabel(interview) }}</span>
-        </div>
-      </div>
-      <div class="header-actions">
-        <button
-          class="btn btn-mock-interview"
-          :disabled="!canStartMockInterview"
-          :title="mockInterviewHint"
-          @click="startMockInterview"
-        >
-          <font-awesome-icon icon="fa-solid fa-microphone" /> 模拟面试
-        </button>
-        <button class="btn btn-secondary" @click="showEditDialog = true">编辑</button>
-        <button class="btn btn-danger" @click="handleDelete" title="删除面试">
-          <font-awesome-icon icon="fa-solid fa-trash" />
-        </button>
-      </div>
-    </header>
+    <!-- 新头部组件 -->
+    <InterviewHeader
+      :interview="interview"
+      :can-start-mock-interview="canStartMockInterview"
+      :mock-interview-hint="mockInterviewHint"
+      @back="goBack"
+      @start-mock="startMockInterview"
+      @edit="showEditDialog = true"
+      @delete="handleDelete"
+      @edit-resume="showEditDialog = true"
+    />
 
     <div class="detail-content">
       <!-- 弹窗组件 -->
@@ -88,107 +72,9 @@
         @cancel="handleCancel"
       />
 
-      <!-- 面试信息卡片 -->
-      <section class="interview-info-card">
-        <!-- 面试时间单独一行 -->
-        <div class="info-row">
-          <span class="info-item">
-            <font-awesome-icon icon="fa-solid fa-calendar" class="info-icon" />
-            <span class="info-label">面试时间：</span>
-            <span class="info-value">{{ formatDateTime(interview.interviewDate) }}</span>
-          </span>
-        </div>
-        <!-- 面试类型和相关信息 -->
-        <div class="info-row">
-          <span class="info-item">
-            <font-awesome-icon icon="fa-solid fa-laptop" class="info-icon" />
-            <span class="info-label">面试类型：</span>
-            <span class="info-value" v-if="interview.interviewType">{{ getInterviewTypeLabel(interview.interviewType) }}</span>
-            <span class="info-value" v-else>未设置</span>
-          </span>
-          <template v-if="interview.interviewType === 'onsite' && interview.location">
-            <span class="info-item">
-              <font-awesome-icon icon="fa-solid fa-location-dot" class="info-icon" />
-              <span class="info-label">地点：</span>
-              <span class="info-value">{{ interview.location }}</span>
-            </span>
-          </template>
-          <template v-if="interview.interviewType === 'online' && interview.onlineLink">
-            <span class="info-item">
-              <font-awesome-icon icon="fa-solid fa-link" class="info-icon" />
-              <span class="info-label">会议链接：</span>
-              <a :href="interview.onlineLink" target="_blank" class="link-value">{{ interview.onlineLink }}</a>
-              <button class="copy-btn" @click="copyToClipboard(interview.onlineLink)">复制</button>
-            </span>
-          </template>
-          <template v-if="interview.interviewType === 'online' && interview.meetingPassword">
-            <span class="info-item">
-              <font-awesome-icon icon="fa-solid fa-key" class="info-icon" />
-              <span class="info-label">会议密码：</span>
-              <span class="info-value">{{ interview.meetingPassword }}</span>
-              <button class="copy-btn" @click="copyToClipboard(interview.meetingPassword)">复制</button>
-            </span>
-          </template>
-        </div>
-        <div class="info-row">
-          <span class="info-item">
-            <font-awesome-icon icon="fa-solid fa-chart-bar" class="info-icon" />
-            <span class="info-label">状态：</span>
-            <select
-              class="status-select"
-              :class="interview.status"
-              :value="interview.status"
-              @change="handleStatusChange(($event.target as HTMLSelectElement).value)"
-            >
-              <option v-for="(label, key) in statusOptions" :key="key" :value="key">
-                {{ label }}
-              </option>
-            </select>
-          </span>
-          <span class="info-item">
-            <font-awesome-icon icon="fa-solid fa-bullseye" class="info-icon" />
-            <span class="info-label">最终结果：</span>
-            <select
-              class="result-select"
-              :value="interview.overallResult || ''"
-              @change="handleResultChange(($event.target as HTMLSelectElement).value)"
-            >
-              <option value="">未设置</option>
-              <option v-for="(label, key) in resultOptions" :key="key" :value="key">
-                {{ label }}
-              </option>
-            </select>
-          </span>
-        </div>
-
-        <!-- 关联简历 -->
-        <div class="info-row" v-if="interview.resumeId">
-          <span class="info-item">
-            <font-awesome-icon icon="fa-solid fa-file-lines" class="info-icon" />
-            <span class="info-label">关联简历：</span>
-            <router-link
-              :to="`/resume/${interview.resumeId}`"
-              class="resume-link"
-            >
-              {{ interview.resumeName || '查看简历' }}
-            </router-link>
-          </span>
-        </div>
-
-        <!-- 备注 -->
-        <div class="info-row" v-if="interview.notes">
-          <span class="info-item notes-item">
-            <font-awesome-icon icon="fa-solid fa-pen" class="info-icon" />
-            <span class="info-label">备注：</span>
-            <span class="info-value notes-content">{{ interview.notes }}</span>
-          </span>
-        </div>
-
-        <!-- 职位信息折叠区域 -->
-        <div
-          class="position-detail-toggle"
-          v-if="interview.jdContent"
-        >
+      <!-- 职位信息折叠区域 -->
+      <section class="position-detail-section" v-if="interview.jdContent">
+        <div class="position-detail-toggle">
           <button class="toggle-btn" @click="showPositionDetail = !showPositionDetail">
             <font-awesome-icon
               icon="fa-solid fa-chevron-down"
@@ -364,12 +250,11 @@
             </div>
 
             <!-- AI 分析进度 -->
-            <div v-if="reviewState.isRunning" class="progress-indicator">
-              <div class="progress-bar">
-                <div class="progress-fill" :style="{ width: reviewState.progress + '%' }"></div>
-              </div>
-              <p class="progress-message">{{ reviewState.message }}</p>
-            </div>
+            <ReviewAnalysisProgress
+              v-if="reviewState.isRunning || reviewState.isCompleted"
+              :state="reviewState"
+              @toggle-expand="toggleStageExpand"
+            />
 
             <!-- AI 分析卡片 -->
             <AIAnalysisCard
@@ -440,14 +325,7 @@ import {
 } from '@/api/interview-center'
 import { createSession } from '@/api/interview-voice'
 import {
-  INTERVIEW_STATUS_LABELS,
-  INTERVIEW_RESULT_LABELS,
-  ROUND_TYPE_LABELS,
-  INTERVIEW_TYPE_LABELS,
   type InterviewDetail,
-  type InterviewStatus,
-  type InterviewResult,
-  type InterviewType,
   type PreparationVO,
   type AdviceItem,
   type CompanyResearchResult,
@@ -462,6 +340,8 @@ import EditInterviewDialog from '@/components/interview-center/EditInterviewDial
 import PreparationProgressModal from '@/components/interview-center/PreparationProgressModal.vue'
 import MockInterviewConfigDialog from '@/components/interview-center/MockInterviewConfigDialog.vue'
 import MicrophonePermissionDialog from '@/components/interview-center/MicrophonePermissionDialog.vue'
+// 头部组件
+import InterviewHeader from '@/components/interview-center/InterviewHeader.vue'
 // 新增组件
 import PreparationProgress from '@/components/interview-center/PreparationProgress.vue'
 import PreparationGroup from '@/components/interview-center/PreparationGroup.vue'
@@ -471,6 +351,8 @@ import ConfirmModal from '@/components/common/ConfirmModal.vue'
 // 职位详情展示组件
 import CompanyResearchContent from '@/components/interview-center/preparation/CompanyResearchContent.vue'
 import JDAnalysisContent from '@/components/interview-center/preparation/JDAnalysisContent.vue'
+// 复盘分析进度组件
+import ReviewAnalysisProgress from '@/components/interview-center/ReviewAnalysisProgress.vue'
 // 工作流 composables
 import { useInterviewPreparation } from '@/composables/useInterviewPreparation'
 import { useReviewAnalysis } from '@/composables/useReviewAnalysis'
@@ -512,7 +394,7 @@ const pendingMockConfig = ref<{
 
 // 工作流状态
 const { state: preparationState, startPreparation } = useInterviewPreparation()
-const { state: reviewState, startAnalysis } = useReviewAnalysis()
+const { state: reviewState, startAnalysis, toggleStageExpand } = useReviewAnalysis()
 
 // 麦克风权限管理
 const { checkPermission, requestPermission, releaseStream } = useMicrophonePermission()
@@ -610,8 +492,7 @@ const sortedGroupTypes = computed(() => {
   })
 })
 
-const statusOptions = INTERVIEW_STATUS_LABELS
-const resultOptions = INTERVIEW_RESULT_LABELS
+// 状态和结果选择功能已移到头部组件，// 这些变量不再需要
 
 // 是否可以开始模拟面试（必须关联职位）
 const canStartMockInterview = computed(() => {
@@ -655,36 +536,6 @@ const aiAnalysisEntryHint = computed(() => {
 
 function goBack() {
   router.back()
-}
-
-function getRoundTypeLabel(type: string): string {
-  return ROUND_TYPE_LABELS[type as keyof typeof ROUND_TYPE_LABELS] || type
-}
-
-// 获取轮次标签（支持自定义轮次名称）
-function getRoundLabel(interviewData: InterviewDetail): string {
-  // 如果是自定义轮次且有自定义名称，显示自定义名称
-  if (interviewData.roundType === 'custom' && interviewData.roundName) {
-    return interviewData.roundName
-  }
-  // 否则使用默认标签
-  return getRoundTypeLabel(interviewData.roundType!)
-}
-
-function getInterviewTypeLabel(type: InterviewType): string {
-  return INTERVIEW_TYPE_LABELS[type] || type
-}
-
-function formatDateTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleString('zh-CN')
-}
-
-function copyToClipboard(text: string) {
-  navigator.clipboard.writeText(text).then(() => {
-    toast.success('已复制到剪贴板')
-  }).catch(() => {
-    toast.error('复制失败，请手动复制')
-  })
 }
 
 async function togglePreparation(preparationId: string) {
@@ -742,28 +593,6 @@ async function handleDelete() {
   }
 }
 
-async function handleStatusChange(newStatus: string) {
-  if (!interview.value || interview.value.status === newStatus) return
-  try {
-    await updateInterview(interview.value.id, { status: newStatus as InterviewStatus })
-    interview.value.status = newStatus as InterviewStatus
-  } catch (error) {
-    console.error('更新面试状态失败:', error)
-    toast.error('更新状态失败，请稍后重试')
-  }
-}
-
-async function handleResultChange(newResult: string) {
-  if (!interview.value) return
-  try {
-    const result = newResult ? (newResult as InterviewResult) : undefined
-    await updateInterview(interview.value.id, { overallResult: result })
-    interview.value.overallResult = result
-  } catch (error) {
-    console.error('更新面试结果失败:', error)
-    toast.error('更新结果失败，请稍后重试')
-  }
-}
 
 async function loadDetail() {
   const id = route.params.id as string
@@ -1092,240 +921,18 @@ function handleApplyTranscriptEvent(event: Event) {
   margin: 0 auto;
 }
 
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: $spacing-xl;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: $spacing-md;
-}
-
-.back-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  background: transparent;
-  border: 1px solid $color-bg-elevated;
-  color: $color-text-secondary;
-  cursor: pointer;
-  border-radius: $radius-md;
-  transition: all 0.2s;
-
-  svg {
-    transition: transform 0.2s;
-  }
-
-  &:hover {
-    color: $color-text-primary;
-    background: $color-bg-secondary;
-    border-color: rgba(255, 255, 255, 0.1);
-
-    svg {
-      transform: translateX(-2px);
-    }
-  }
-}
-
-.header-title {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  font-size: 1.125rem;
-
-  .company-name {
-    font-weight: 600;
-    color: $color-text-primary;
-  }
-
-  .separator {
-    color: $color-text-tertiary;
-  }
-
-  .position-name {
-    color: $color-text-secondary;
-  }
-
-  .round-badge {
-    font-size: 0.75rem;
-    padding: 4px 10px;
-    background: rgba($color-accent, 0.15);
-    color: $color-accent;
-    border-radius: $radius-full;
-  }
-}
-
-.header-actions {
-  display: flex;
-  gap: $spacing-sm;
-}
-
-// 面试信息卡片
-.interview-info-card {
+// 职位信息区域
+.position-detail-section {
   background: $color-bg-secondary;
   border-radius: $radius-lg;
   padding: $spacing-lg;
   margin-bottom: $spacing-xl;
 }
 
-.info-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: $spacing-lg;
-  margin-bottom: $spacing-md;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
-}
-
-.info-item {
-  display: flex;
-  align-items: center;
-  gap: $spacing-xs;
-  font-size: 0.875rem;
-
-  .info-icon {
-    font-size: 1rem;
-  }
-
-  .info-label {
-    color: $color-text-tertiary;
-  }
-
-  .info-value {
-    color: $color-text-primary;
-  }
-
-  .link-value {
-    color: $color-accent;
-    text-decoration: none;
-    word-break: break-all;
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-
-  .resume-link {
-    color: $color-accent;
-    text-decoration: none;
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-
-  .notes-item {
-    align-items: flex-start;
-  }
-
-  .notes-content {
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
-
-  .copy-btn {
-    padding: 2px 8px;
-    font-size: 0.75rem;
-    background: transparent;
-    border: 1px solid $color-bg-elevated;
-    border-radius: $radius-sm;
-    color: $color-text-tertiary;
-    cursor: pointer;
-    transition: all 0.2s;
-
-    &:hover {
-      border-color: $color-accent;
-      color: $color-accent;
-    }
-  }
-}
-
-.status-select {
-  appearance: none;
-  background: transparent;
-  border: none;
-  font-size: 0.875rem;
-  padding: 4px 24px 4px 8px;
-  border-radius: $radius-sm;
-  cursor: pointer;
-  color: inherit;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%23a1a1aa' d='M5 7L1 3h8z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: rgba($color-text-tertiary, 0.1);
-  }
-
-  &:focus {
-    outline: none;
-  }
-
-  &.preparing {
-    color: $color-warning;
-  }
-
-  &.in_progress {
-    color: $color-info;
-  }
-
-  &.completed {
-    color: $color-success;
-  }
-
-  &.cancelled {
-    color: $color-text-tertiary;
-  }
-
-  option {
-    background: $color-bg-secondary;
-    color: $color-text-primary;
-  }
-}
-
-.result-select {
-  appearance: none;
-  background: transparent;
-  border: 1px solid $color-bg-tertiary;
-  font-size: 0.875rem;
-  padding: 4px 28px 4px 8px;
-  border-radius: $radius-sm;
-  cursor: pointer;
-  color: $color-text-secondary;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%23a1a1aa' d='M5 7L1 3h8z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-  transition: border-color 0.2s;
-
-  &:hover {
-    border-color: $color-accent;
-  }
-
-  &:focus {
-    outline: none;
-    border-color: $color-accent;
-  }
-
-  option {
-    background: $color-bg-secondary;
-    color: $color-text-primary;
-  }
-}
-
 // 职位详情折叠
 .position-detail-toggle {
-  margin-top: $spacing-lg;
-  padding-top: $spacing-md;
-  border-top: 1px solid $color-bg-elevated;
+  display: flex;
+  justify-content: center;
 }
 
 .toggle-btn {

@@ -380,6 +380,22 @@ export interface PreparationState {
   workflowStartTime?: number
 }
 
+// 复盘分析阶段类型
+export type ReviewStage = 'analyze_transcript' | 'analyze_interview' | 'generate_advice'
+
+// 复盘分析阶段历史项（用于追踪每个阶段的执行状态、计时、数据)
+export interface ReviewStageHistoryItem {
+  stage: ReviewStage
+  message: string
+  timestamp: number
+  startTime?: number
+  endTime?: number
+  completed: boolean
+  cached?: boolean  // 是否使用缓存（跳过实际执行）
+  data: TranscriptAnalysisResult | InterviewAnalysisResult | AdviceItem[] | null
+  expanded: boolean
+}
+
 // 复盘分析工作流状态
 export interface ReviewAnalysisState {
   isConnecting: boolean
@@ -391,6 +407,7 @@ export interface ReviewAnalysisState {
   message: string
   adviceList: AdviceItem[]
   errorMessage: string | null
+  stageHistory: ReviewStageHistoryItem[]
 }
 
 // 准备事项（工作流生成/后端返回的实体格式）
@@ -440,4 +457,47 @@ export interface AudioTranscribeState {
   message: string
   transcriptText: string
   error: string | null
+}
+
+// ==================== 复盘分析结果类型 ====================
+
+// Q&A 对分析结果
+export interface QAPairAnalysis {
+  question: string
+  answer: string
+  questionIntent: string
+  assessmentTarget: string
+  jdRelevance?: string
+  clarityScore: number
+  clarityReason: string
+  resumeMatchScore: number
+  resumeMatchReason: string
+  improvementSuggestion: string
+}
+
+// 对话分析结果（analyze_transcript 阶段输出）
+export interface TranscriptAnalysisResult {
+  overallClarity: number
+  overallResumeMatch: number
+  jdMatchScore?: number
+  qaPairs: QAPairAnalysis[]
+  summary: string
+}
+
+// 面试分析维度评分
+export interface InterviewDimensionScore {
+  dimension: string
+  score: number
+  reason: string
+}
+
+// 面试分析结果（analyze_interview 阶段输出）
+export interface InterviewAnalysisResult {
+  overallScore: number
+  overallAssessment: string
+  strengths: string[]
+  weaknesses: string[]
+  dimensionScores: InterviewDimensionScore[]
+  keyFindings?: string
+  recommendations?: string[]
 }
