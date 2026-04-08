@@ -155,14 +155,14 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .ai-analysis-card {
-  background: rgba($color-info, 0.08);
-  border: 1px solid rgba($color-info, 0.2);
+  background: $color-bg-secondary;
+  border: 1px solid $color-border;
   border-radius: $radius-md;
   overflow: hidden;
   transition: all 0.2s;
 
   &.expanded {
-    background: rgba($color-info, 0.1);
+    background: $color-bg-tertiary;
   }
 }
 
@@ -175,7 +175,7 @@ onMounted(() => {
   transition: background 0.2s;
 
   &:hover {
-    background: rgba($color-info, 0.1);
+    background: $color-bg-tertiary;
   }
 }
 
@@ -187,12 +187,13 @@ onMounted(() => {
 
 .card-icon {
   font-size: 1.125rem;
+  color: $color-accent;
 }
 
 .card-title {
   font-size: 0.9375rem;
   font-weight: 600;
-  color: $color-info;
+  color: $color-accent;
 }
 
 .generated-time {
@@ -209,8 +210,8 @@ onMounted(() => {
 
 .btn-reanalyze {
   background: transparent;
-  border: 1px solid rgba($color-info, 0.3);
-  color: $color-info;
+  border: 1px solid rgba($color-accent, 0.3);
+  color: $color-accent;
   padding: 4px 10px;
   font-size: 0.75rem;
   border-radius: $radius-sm;
@@ -218,8 +219,8 @@ onMounted(() => {
   transition: all 0.2s;
 
   &:hover:not(:disabled) {
-    background: rgba($color-info, 0.15);
-    border-color: $color-info;
+    background: rgba($color-accent, 0.15);
+    border-color: $color-accent;
   }
 
   &:disabled {
@@ -239,7 +240,7 @@ onMounted(() => {
 
 .card-content {
   padding: 0 $spacing-md $spacing-md;
-  border-top: 1px solid rgba($color-info, 0.15);
+  border-top: 1px solid $color-border;
 }
 
 .advice-list {
@@ -329,14 +330,14 @@ onMounted(() => {
 .card-footer {
   margin-top: $spacing-md;
   padding-top: $spacing-md;
-  border-top: 1px solid rgba($color-info, 0.15);
+  border-top: 1px solid $color-border;
 }
 
 .btn-reference {
   width: 100%;
-  background: rgba($color-info, 0.15);
-  border: 1px solid rgba($color-info, 0.3);
-  color: $color-info;
+  background: rgba($color-accent, 0.15);
+  border: 1px solid rgba($color-accent, 0.3);
+  color: $color-accent;
   padding: $spacing-sm;
   font-size: 0.875rem;
   border-radius: $radius-sm;
@@ -344,8 +345,8 @@ onMounted(() => {
   transition: all 0.2s;
 
   &:hover {
-    background: rgba($color-info, 0.25);
-    border-color: $color-info;
+    background: rgba($color-accent, 0.25);
+    border-color: $color-accent;
   }
 }
 </style>

@@ -11,7 +11,6 @@
       @start-mock="startMockInterview"
       @edit="showEditDialog = true"
       @delete="handleDelete"
-      @edit-resume="showEditDialog = true"
       @toggle-position="showPositionDetail = !showPositionDetail"
     >
       <template #company-research>
@@ -209,6 +208,7 @@
             <!-- 手动复盘笔记 -->
             <div v-if="interview.reviewNote" class="review-note">
               <div class="note-header">
+                <font-awesome-icon icon="fa-solid fa-sticky-note" class="note-icon" />
                 <span class="note-title">复盘笔记</span>
                 <button class="btn btn-sm btn-edit-note" @click="showReviewDialog = true">编辑</button>
               </div>
@@ -1058,29 +1058,35 @@ function handleApplyTranscriptEvent(event: Event) {
 }
 
 .review-note {
+  background: $color-bg-secondary;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  padding: $spacing-md;
+
   .note-header {
     display: flex;
     align-items: center;
     gap: $spacing-sm;
     margin-bottom: $spacing-md;
     padding-bottom: $spacing-sm;
-    border-bottom: 1px solid $color-bg-elevated;
+    border-bottom: 1px solid $color-border;
   }
 
   .note-icon {
     font-size: 1rem;
+    color: $color-accent;
   }
 
   .note-title{
     font-size: 0.9375rem;
     font-weight: 600;
-    color: $color-text-primary;
+    color: $color-accent;
     flex: 1;
   }
 
   .btn-edit-note {
     background: transparent;
-    border: 1px solid $color-bg-elevated;
+    border: 1px solid $color-border;
     color: $color-text-tertiary;
     padding: 4px 10px;
     font-size: 0.75rem;
