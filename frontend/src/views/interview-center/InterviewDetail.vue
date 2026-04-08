@@ -3,10 +3,7 @@
     <header class="page-header">
       <div class="header-left">
         <button class="back-btn" @click="goBack">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M19 12H5"></path>
-            <polyline points="12 19 5 12 12 5"></polyline>
-          </svg>
+          <font-awesome-icon icon="fa-solid fa-arrow-left" />
         </button>
         <div class="header-title">
           <span class="company-name">{{ interview.companyName }}</span>
@@ -22,14 +19,11 @@
           :title="mockInterviewHint"
           @click="startMockInterview"
         >
-          🎙️ 模拟面试
+          <font-awesome-icon icon="fa-solid fa-microphone" /> 模拟面试
         </button>
         <button class="btn btn-secondary" @click="showEditDialog = true">编辑</button>
         <button class="btn btn-danger" @click="handleDelete" title="删除面试">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="3 6 5 6 21 6"></polyline>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-          </svg>
+          <font-awesome-icon icon="fa-solid fa-trash" />
         </button>
       </div>
     </header>
@@ -99,7 +93,7 @@
         <!-- 面试时间单独一行 -->
         <div class="info-row">
           <span class="info-item">
-            <span class="info-icon">📅</span>
+            <font-awesome-icon icon="fa-solid fa-calendar" class="info-icon" />
             <span class="info-label">面试时间：</span>
             <span class="info-value">{{ formatDateTime(interview.interviewDate) }}</span>
           </span>
@@ -107,21 +101,21 @@
         <!-- 面试类型和相关信息 -->
         <div class="info-row">
           <span class="info-item">
-            <span class="info-icon">💻</span>
+            <font-awesome-icon icon="fa-solid fa-laptop" class="info-icon" />
             <span class="info-label">面试类型：</span>
             <span class="info-value" v-if="interview.interviewType">{{ getInterviewTypeLabel(interview.interviewType) }}</span>
             <span class="info-value" v-else>未设置</span>
           </span>
           <template v-if="interview.interviewType === 'onsite' && interview.location">
             <span class="info-item">
-              <span class="info-icon">📍</span>
+              <font-awesome-icon icon="fa-solid fa-location-dot" class="info-icon" />
               <span class="info-label">地点：</span>
               <span class="info-value">{{ interview.location }}</span>
             </span>
           </template>
           <template v-if="interview.interviewType === 'online' && interview.onlineLink">
             <span class="info-item">
-              <span class="info-icon">🔗</span>
+              <font-awesome-icon icon="fa-solid fa-link" class="info-icon" />
               <span class="info-label">会议链接：</span>
               <a :href="interview.onlineLink" target="_blank" class="link-value">{{ interview.onlineLink }}</a>
               <button class="copy-btn" @click="copyToClipboard(interview.onlineLink)">复制</button>
@@ -129,7 +123,7 @@
           </template>
           <template v-if="interview.interviewType === 'online' && interview.meetingPassword">
             <span class="info-item">
-              <span class="info-icon">🔑</span>
+              <font-awesome-icon icon="fa-solid fa-key" class="info-icon" />
               <span class="info-label">会议密码：</span>
               <span class="info-value">{{ interview.meetingPassword }}</span>
               <button class="copy-btn" @click="copyToClipboard(interview.meetingPassword)">复制</button>
@@ -138,7 +132,7 @@
         </div>
         <div class="info-row">
           <span class="info-item">
-            <span class="info-icon">📊</span>
+            <font-awesome-icon icon="fa-solid fa-chart-bar" class="info-icon" />
             <span class="info-label">状态：</span>
             <select
               class="status-select"
@@ -152,7 +146,7 @@
             </select>
           </span>
           <span class="info-item">
-            <span class="info-icon">🎯</span>
+            <font-awesome-icon icon="fa-solid fa-bullseye" class="info-icon" />
             <span class="info-label">最终结果：</span>
             <select
               class="result-select"
@@ -170,7 +164,7 @@
         <!-- 关联简历 -->
         <div class="info-row" v-if="interview.resumeId">
           <span class="info-item">
-            <span class="info-icon">📄</span>
+            <font-awesome-icon icon="fa-solid fa-file-lines" class="info-icon" />
             <span class="info-label">关联简历：</span>
             <router-link
               :to="`/resume/${interview.resumeId}`"
@@ -184,7 +178,7 @@
         <!-- 备注 -->
         <div class="info-row" v-if="interview.notes">
           <span class="info-item notes-item">
-            <span class="info-icon">📝</span>
+            <font-awesome-icon icon="fa-solid fa-pen" class="info-icon" />
             <span class="info-label">备注：</span>
             <span class="info-value notes-content">{{ interview.notes }}</span>
           </span>
@@ -196,19 +190,10 @@
           v-if="interview.jdContent || parsedCompanyResearch || parsedJdAnalysis"
         >
           <button class="toggle-btn" @click="showPositionDetail = !showPositionDetail">
-            <svg
+            <font-awesome-icon
+              icon="fa-solid fa-chevron-down"
               :class="{ rotated: showPositionDetail }"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
+            />
             <span>{{ showPositionDetail ? '收起职位详情' : '展开职位详情' }}</span>
           </button>
         </div>
@@ -221,7 +206,7 @@
               :class="{ active: activePositionTab === 'jd' }"
               @click="activePositionTab = 'jd'"
             >
-              📋 职位描述
+              <font-awesome-icon icon="fa-solid fa-clipboard-list" /> 职位描述
             </button>
             <button
               v-if="parsedCompanyResearch"
@@ -229,7 +214,7 @@
               :class="{ active: activePositionTab === 'research' }"
               @click="activePositionTab = 'research'"
             >
-              🏢 公司调研
+              <font-awesome-icon icon="fa-solid fa-building" /> 公司调研
             </button>
             <button
               v-if="parsedJdAnalysis"
@@ -237,7 +222,7 @@
               :class="{ active: activePositionTab === 'analysis' }"
               @click="activePositionTab = 'analysis'"
             >
-              🔍 JD 分析
+              <font-awesome-icon icon="fa-solid fa-magnifying-glass" /> JD 分析
             </button>
           </div>
 
@@ -255,7 +240,9 @@
             <div v-show="activePositionTab === 'research'" class="tab-panel">
               <CompanyResearchContent v-if="parsedCompanyResearch" :data="parsedCompanyResearch" />
               <div v-else class="empty-state with-action">
-                <div class="empty-icon">🏢</div>
+                <div class="empty-icon">
+                  <font-awesome-icon icon="fa-solid fa-building" />
+                </div>
                 <p class="empty-title">暂无公司调研信息</p>
                 <p class="empty-hint">点击上方「AI 生成」按钮，系统将自动调研目标公司</p>
               </div>
@@ -265,7 +252,9 @@
             <div v-show="activePositionTab === 'analysis'" class="tab-panel">
               <JDAnalysisContent v-if="parsedJdAnalysis" :data="parsedJdAnalysis" />
               <div v-else class="empty-state with-action">
-                <div class="empty-icon">🔍</div>
+                <div class="empty-icon">
+                  <font-awesome-icon icon="fa-solid fa-magnifying-glass" />
+                </div>
                 <p class="empty-title">暂无 JD 分析信息</p>
                 <p class="empty-hint">点击上方「AI 生成」按钮，系统将自动分析职位 JD</p>
               </div>
@@ -325,7 +314,7 @@
             @click="activeReviewTab = 'analysis'"
             type="button"
           >
-            <span class="tab-icon">🤖</span>
+            <font-awesome-icon icon="fa-solid fa-robot" class="tab-icon" />
             AI 分析
             <span v-if="interview.aiAnalysisNote" class="tab-dot" title="已有分析内容"></span>
           </button>
@@ -335,7 +324,7 @@
             @click="activeReviewTab = 'note'"
             type="button"
           >
-            <span class="tab-icon">📝</span>
+            <font-awesome-icon icon="fa-solid fa-sticky-note" class="tab-icon" />
             复盘笔记
             <span v-if="interview.reviewNote" class="tab-dot" title="已有笔记内容"></span>
           </button>

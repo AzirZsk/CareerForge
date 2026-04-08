@@ -242,13 +242,13 @@ export const PRIORITY_CONFIG: Record<
 
 // 准备项类型分组标签
 export const ITEM_TYPE_CONFIG: Record<string, { label: string; icon: string }> = {
-  company_research: { label: '公司调研', icon: '🏢' },
-  jd_keywords: { label: 'JD 关键词', icon: '📋' },
-  tech_prep: { label: '技术准备', icon: '💻' },
-  behavioral: { label: '行为面试', icon: '🗣️' },
-  case_study: { label: '案例准备', icon: '📦' },
-  todo: { label: '准备事项', icon: '📝' },
-  manual: { label: '其他准备', icon: '📌' }
+  company_research: { label: '公司调研', icon: 'fa-solid fa-building' },
+  jd_keywords: { label: 'JD 关键词', icon: 'fa-solid fa-clipboard-list' },
+  tech_prep: { label: '技术准备', icon: 'fa-solid fa-laptop' },
+  behavioral: { label: '行为面试', icon: 'fa-solid fa-comments' },
+  case_study: { label: '案例准备', icon: 'fa-solid fa-briefcase' },
+  todo: { label: '准备事项', icon: 'fa-solid fa-pen' },
+  manual: { label: '其他准备', icon: 'fa-solid fa-thumbtack' }
 }
 
 // 准备项类型排序顺序

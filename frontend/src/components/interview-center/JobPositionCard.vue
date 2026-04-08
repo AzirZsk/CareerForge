@@ -15,7 +15,9 @@
 
     <!-- 下次面试高亮区域 -->
     <div class="next-interview-highlight" v-if="jobPosition.nextInterviewDate">
-      <div class="next-interview-icon">📅</div>
+      <div class="next-interview-icon">
+          <font-awesome-icon icon="fa-solid fa-calendar" />
+        </div>
       <div class="next-interview-info">
         <span class="next-interview-time">{{ formatNextInterview(jobPosition.nextInterviewDate) }}</span>
         <span class="next-interview-round" v-if="jobPosition.nextInterviewRound">
@@ -33,17 +35,14 @@
 
     <div class="card-actions">
       <button class="action-btn" @click.stop="$emit('add-interview', jobPosition)">
-        <span class="icon">+</span>
+        <font-awesome-icon icon="fa-solid fa-plus" />
         新建面试
       </button>
       <button class="action-btn secondary" @click.stop="$emit('view-detail', jobPosition)">
         查看详情
       </button>
       <button class="action-btn icon-btn danger" @click.stop="$emit('delete', jobPosition)" title="删除">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="3 6 5 6 21 6" />
-          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-        </svg>
+        <font-awesome-icon icon="fa-solid fa-trash" />
       </button>
     </div>
   </div>

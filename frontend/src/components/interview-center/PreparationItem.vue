@@ -71,12 +71,12 @@ function openResource(resource: PreparationResource) {
 
 function getResourceIcon(type: string): string {
   const icons: Record<string, string> = {
-    link: '🔗',
-    note: '📝',
-    code: '💻',
-    video: '🎬'
+    link: 'fa-solid fa-link',
+    note: 'fa-solid fa-pen',
+    code: 'fa-solid fa-laptop',
+    video: 'fa-solid fa-video'
   }
-  return icons[type] || '📎'
+  return icons[type] || 'fa-solid fa-paperclip'
 }
 </script>
 
@@ -106,18 +106,17 @@ function getResourceIcon(type: string): string {
           :class="{ active: showResources }"
           @click="toggleResources"
         >
-          📎 {{ preparation.resources?.length || 0 }}
+          <font-awesome-icon icon="fa-solid fa-paperclip" /> {{ preparation.resources?.length || 0 }}
         </button>
         <button class="action-btn delete-btn" title="删除" @click="handleDelete">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="3 6 5 6 21 6"></polyline>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-          </svg>
+          <font-awesome-icon icon="fa-solid fa-trash" />
         </button>
       </div>
     </div>
     <div v-if="showResources && hasResources" class="resources-panel">
-      <div class="resources-header">📎 参考资料</div>
+      <div class="resources-header">
+        <font-awesome-icon icon="fa-solid fa-paperclip" /> 参考资料
+      </div>
       <div class="resources-list">
         <div
           v-for="(resource, index) in preparation.resources"
@@ -126,9 +125,9 @@ function getResourceIcon(type: string): string {
           :class="{ clickable: resource.url }"
           @click="openResource(resource)"
         >
-          <span class="resource-icon">{{ getResourceIcon(resource.type) }}</span>
+          <font-awesome-icon :icon="getResourceIcon(resource.type)" class="resource-icon" />
           <span class="resource-title">{{ resource.title }}</span>
-          <span v-if="resource.url" class="external-link-icon">↗</span>
+          <font-awesome-icon v-if="resource.url" icon="fa-solid fa-arrow-up-right-from-square" class="external-link-icon" />
         </div>
       </div>
     </div>

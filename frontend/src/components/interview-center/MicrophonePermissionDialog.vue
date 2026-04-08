@@ -17,14 +17,10 @@
         <!-- 内容区 -->
         <div class="dialog-content">
           <!-- 检查中/请求中状态 -->
+          <!-- 检查中/请求中状态 -->
           <div v-if="state === 'checking' || state === 'requesting'" class="state-content">
             <div class="icon-wrapper requesting">
-              <svg class="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                <line x1="12" y1="19" x2="12" y2="23"/>
-                <line x1="8" y1="23" x2="16" y2="23"/>
-              </svg>
+              <font-awesome-icon icon="fa-solid fa-microphone" class="mic-icon" />
               <div class="pulse-ring"></div>
             </div>
             <p class="state-text">{{ state === 'checking' ? '正在检查麦克风权限...' : '请在浏览器弹窗中允许访问麦克风' }}</p>
@@ -34,9 +30,7 @@
           <!-- 成功状态 -->
           <div v-else-if="state === 'success'" class="state-content">
             <div class="icon-wrapper success">
-              <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
+              <font-awesome-icon icon="fa-solid fa-check" class="check-icon" />
             </div>
             <p class="state-text">麦克风已授权</p>
             <p class="hint-text">正在进入面试...</p>
@@ -45,10 +39,7 @@
           <!-- 拒绝状态（临时拒绝） -->
           <div v-else-if="state === 'denied'" class="state-content">
             <div class="icon-wrapper denied">
-              <svg class="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                <line x1="1" y1="1" x2="23" y2="23"/>
-              </svg>
+              <font-awesome-icon icon="fa-solid fa-microphone-slash" class="mic-icon" />
             </div>
             <p class="state-text">麦克风权限被拒绝</p>
             <p class="hint-text">面试需要使用麦克风，请允许访问后重试</p>
@@ -57,10 +48,7 @@
           <!-- 永久拒绝状态（需要手动设置） -->
           <div v-else-if="state === 'permanently_denied'" class="state-content">
             <div class="icon-wrapper permanently-denied">
-              <svg class="settings-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-              </svg>
+              <font-awesome-icon icon="fa-solid fa-gear" class="settings-icon" />
             </div>
             <p class="state-text">需要在浏览器中手动设置</p>
 
@@ -76,11 +64,7 @@
           <!-- 设备错误 -->
           <div v-else-if="state === 'device_error'" class="state-content">
             <div class="icon-wrapper error">
-              <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="15" y1="9" x2="9" y2="15"/>
-                <line x1="9" y1="9" x2="15" y2="15"/>
-              </svg>
+              <font-awesome-icon icon="fa-solid fa-circle-xmark" class="error-icon" />
             </div>
             <p class="state-text">麦克风不可用</p>
             <p class="hint-text">{{ errorMessage || '请检查麦克风设备是否正常连接' }}</p>

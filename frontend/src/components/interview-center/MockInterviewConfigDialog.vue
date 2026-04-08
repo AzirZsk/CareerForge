@@ -66,7 +66,9 @@
                 :class="['style-card', { active: config.interviewerStyle === style.value }]"
                 @click="config.interviewerStyle = style.value"
               >
-                <div class="style-icon">{{ style.icon }}</div>
+                <div class="style-icon">
+                  <font-awesome-icon :icon="style.icon" />
+                </div>
                 <div class="style-name">{{ style.label }}</div>
                 <div class="style-desc">{{ style.desc }}</div>
               </button>
@@ -118,19 +120,19 @@ const interviewerStyles = [
   {
     value: 'professional',
     label: '专业严肃型',
-    icon: '🎯',
+    icon: 'fa-solid fa-bullseye',
     desc: '像大厂面试官，严谨专业，追问深入'
   },
   {
     value: 'friendly',
     label: '亲和引导型',
-    icon: '☕',
+    icon: 'fa-solid fa-mug-hot',
     desc: '像导师面试，温和引导，给予鼓励'
   },
   {
     value: 'challenging',
     label: '压力挑战型',
-    icon: '🔥',
+    icon: 'fa-solid fa-fire',
     desc: '像压力面试，刻意追问，测试应变'
   }
 ]

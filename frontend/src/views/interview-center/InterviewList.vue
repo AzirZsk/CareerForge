@@ -4,7 +4,7 @@
       <h1 class="page-title">面试中心</h1>
       <div class="header-actions">
         <button class="btn btn-primary" @click="showCreateDialog = true">
-          <span class="icon">+</span>
+          <font-awesome-icon icon="fa-solid fa-plus" />
           <span>新建面试</span>
         </button>
       </div>

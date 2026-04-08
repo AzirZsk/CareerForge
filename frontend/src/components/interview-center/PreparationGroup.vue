@@ -49,12 +49,12 @@ function handleDelete(id: string) {
   <div class="preparation-group">
     <div class="group-header" @click="toggleGroup">
       <div class="group-info">
-        <span class="group-icon">{{ groupConfig.icon }}</span>
+        <font-awesome-icon :icon="groupConfig.icon" class="group-icon" />
         <span class="group-title">{{ groupConfig.label }}</span>
         <span class="group-progress">{{ progressText }}</span>
       </div>
       <button class="toggle-btn" :class="{ expanded: isExpanded }">
-        <span class="toggle-icon">▼</span>
+        <font-awesome-icon icon="fa-solid fa-chevron-down" class="toggle-icon" />
       </button>
     </div>
     <Transition name="collapse">

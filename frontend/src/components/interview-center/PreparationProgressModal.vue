@@ -15,22 +15,10 @@
           <div class="modal-header">
             <div class="header-left">
               <div class="header-icon" :class="headerClass">
-                <svg v-if="state.isRunning" class="spinner" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="10" stroke-opacity="0.3" />
-                  <path d="M12 2a10 10 0 0 1 10 10" />
-                </svg>
-                <svg v-else-if="state.hasError" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="15" y1="9" x2="9" y2="15" />
-                  <line x1="9" y1="9" x2="15" y2="15" />
-                </svg>
-                <svg v-else-if="state.isCompleted" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                  <polyline points="22 4 12 14.01 9 11.01" />
-                </svg>
-                <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                </svg>
+                <font-awesome-icon v-if="state.isRunning" icon="fa-solid fa-spinner" class="spinner" />
+                <font-awesome-icon v-else-if="state.hasError" icon="fa-solid fa-circle-xmark" />
+                <font-awesome-icon v-else-if="state.isCompleted" icon="fa-solid fa-circle-check" />
+                <font-awesome-icon v-else icon="fa-solid fa-bolt" />
               </div>
               <div class="header-title">
                 <h3>{{ headerTitle }}</h3>
@@ -38,10 +26,7 @@
               </div>
             </div>
             <button class="close-btn" @click="handleClose">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
+              <font-awesome-icon icon="fa-solid fa-xmark" />
             </button>
           </div>
 
@@ -78,17 +63,10 @@
                 <div class="stage-left">
                   <!-- 阶段指示器 -->
                   <div class="stage-indicator">
-                    <svg
+                    <font-awesome-icon
                       v-if="item.completed"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
+                      icon="fa-solid fa-check"
+                    />
                     <div
                       v-else-if="item.stage === state.currentStage && state.isRunning"
                       class="spinner"
@@ -116,17 +94,10 @@
                   v-if="item.completed && item.data"
                   class="expand-indicator"
                 >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
+                  <font-awesome-icon
+                    icon="fa-solid fa-chevron-down"
                     :class="{ rotated: item.expanded }"
-                  >
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
+                  />
                 </div>
               </div>
 
@@ -164,11 +135,7 @@
 
           <!-- 错误提示 -->
           <div v-if="state.hasError" class="error-section">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
+            <font-awesome-icon icon="fa-solid fa-circle-exclamation" />
             <span>{{ state.errorMessage || '生成失败，请重试' }}</span>
           </div>
 
@@ -177,10 +144,7 @@
             <template v-if="state.hasError">
               <button class="btn btn-secondary" @click="handleClose">关闭</button>
               <button class="btn btn-primary" @click="handleRetry">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="23 4 23 10 17 10" />
-                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-                </svg>
+                <font-awesome-icon icon="fa-solid fa-arrows-rotate" />
                 重试
               </button>
             </template>
