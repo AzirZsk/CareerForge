@@ -6,13 +6,21 @@
       :can-start-mock-interview="canStartMockInterview"
       :mock-interview-hint="mockInterviewHint"
       :show-position="showPositionDetail"
+      :jd-content="interview.jdContent"
       @back="goBack"
       @start-mock="startMockInterview"
       @edit="showEditDialog = true"
       @delete="handleDelete"
       @edit-resume="showEditDialog = true"
       @toggle-position="showPositionDetail = !showPositionDetail"
-    />
+    >
+      <template #company-research>
+        <CompanyResearchContent v-if="parsedCompanyResearch" :data="parsedCompanyResearch" />
+      </template>
+      <template #jd-analysis>
+        <JDAnalysisContent v-if="parsedJdAnalysis" :data="parsedJdAnalysis" />
+      </template>
+    </InterviewHeader>
 
     <div class="detail-content">
       <!-- 弹窗组件 -->
@@ -73,81 +81,6 @@
         @confirm="handleConfirm"
         @cancel="handleCancel"
       />
-
-      <!-- 职位信息折叠区域 -->
-      <section class="position-detail-section" v-if="interview.jdContent">
-        <div class="position-detail-toggle">
-          <button class="toggle-btn" @click="showPositionDetail = !showPositionDetail">
-            <font-awesome-icon
-              icon="fa-solid fa-chevron-down"
-              :class="{ rotated: showPositionDetail }"
-            />
-            <span>{{ showPositionDetail ? '收起职位信息' : '展开职位信息' }}</span>
-          </button>
-        </div>
-
-        <div class="position-detail-content" v-if="showPositionDetail">
-          <!-- Tab 切换栏 -->
-          <div class="position-tabs">
-            <button
-              class="position-tab-btn"
-              :class="{ active: activePositionTab === 'jd' }"
-              @click="activePositionTab = 'jd'"
-            >
-              <font-awesome-icon icon="fa-solid fa-clipboard-list" /> 职位描述
-            </button>
-            <button
-              class="position-tab-btn"
-              :class="{ active: activePositionTab === 'research' }"
-              @click="activePositionTab = 'research'"
-            >
-              <font-awesome-icon icon="fa-solid fa-building" /> 公司调研
-            </button>
-            <button
-              class="position-tab-btn"
-              :class="{ active: activePositionTab === 'analysis' }"
-              @click="activePositionTab = 'analysis'"
-            >
-              <font-awesome-icon icon="fa-solid fa-magnifying-glass" /> JD 分析
-            </button>
-          </div>
-
-          <!-- Tab 内容区域 -->
-          <div class="position-tab-content">
-            <!-- JD 原文 -->
-            <div v-show="activePositionTab === 'jd'" class="tab-panel">
-              <div v-if="interview.jdContent" class="jd-content">
-                {{ interview.jdContent }}
-              </div>
-              <div v-else class="empty-state">暂无职位描述</div>
-            </div>
-
-            <!-- 公司调研 -->
-            <div v-show="activePositionTab === 'research'" class="tab-panel">
-              <CompanyResearchContent v-if="parsedCompanyResearch" :data="parsedCompanyResearch" />
-              <div v-else class="empty-state with-action">
-                <div class="empty-icon">
-                  <font-awesome-icon icon="fa-solid fa-building" />
-                </div>
-                <p class="empty-title">暂无公司调研信息</p>
-                <p class="empty-hint">点击上方「AI 生成」按钮，系统将自动调研目标公司</p>
-              </div>
-            </div>
-
-            <!-- JD 分析 -->
-            <div v-show="activePositionTab === 'analysis'" class="tab-panel">
-              <JDAnalysisContent v-if="parsedJdAnalysis" :data="parsedJdAnalysis" />
-              <div v-else class="empty-state with-action">
-                <div class="empty-icon">
-                  <font-awesome-icon icon="fa-solid fa-magnifying-glass" />
-                </div>
-                <p class="empty-title">暂无 JD 分析信息</p>
-                <p class="empty-hint">点击上方「AI 生成」按钮，系统将自动分析职位 JD</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       <section class="preparations-section">
         <div class="section-header">
@@ -407,8 +340,8 @@ const sessionTranscript = ref('')
 // 职位详情折叠状态
 const showPositionDetail = ref(false)
 
-// 职位详情 Tab 切换状态
-const activePositionTab = ref<'jd' | 'research' | 'analysis'>('jd')
+// 职位详情 Tab 切换状态（已移至 InterviewHeader 组件）
+// const activePositionTab = ref<'jd' | 'research' | 'analysis'>('jd')
 
 // 复盘 Tab 切换状态
 const activeReviewTab = ref<'analysis' | 'note'>('analysis')
@@ -639,14 +572,8 @@ async function handleSavePreparationItems(items: typeof preparationState.prepara
     showPrepModal.value = false
     // 刷新数据
     await loadDetail()
-    // 自动展开职位详情区域，并切换到公司调研或 JD 分析 Tab
+    // 自动展开职位详情区域
     showPositionDetail.value = true
-    // 优先显示公司调研，如果没有则显示 JD 分析
-    if (parsedCompanyResearch.value) {
-      activePositionTab.value = 'research'
-    } else if (parsedJdAnalysis.value) {
-      activePositionTab.value = 'analysis'
-    }
   } catch (error) {
     console.error('保存准备事项失败:', error)
     toast.error('保存失败，请稍后重试')
@@ -921,157 +848,6 @@ function handleApplyTranscriptEvent(event: Event) {
   padding: $spacing-xl;
   max-width: 900px;
   margin: 0 auto;
-}
-
-// 职位信息区域
-.position-detail-section {
-  background: $color-bg-secondary;
-  border-radius: $radius-md;
-  padding: $spacing-md;
-  margin-bottom: $spacing-lg;
-}
-
-// 职位详情折叠
-.position-detail-toggle {
-  display: flex;
-  justify-content: center;
-}
-
-.toggle-btn {
-  display: flex;
-  align-items: center;
-  gap: $spacing-xs;
-  background: transparent;
-  border: none;
-  color: $color-text-secondary;
-  cursor: pointer;
-  font-size: 0.8125rem;
-  padding: $spacing-xs $spacing-sm;
-  border-radius: $radius-sm;
-  transition: all 0.2s;
-
-  &:hover {
-    color: $color-accent;
-    background: rgba($color-accent, 0.1);
-  }
-
-  svg {
-    width: 14px;
-    height: 14px;
-    transition: transform 0.2s;
-
-    &.rotated {
-      transform: rotate(180deg);
-    }
-  }
-}
-
-.position-detail-content {
-  margin-top: $spacing-sm;
-  padding: $spacing-sm;
-  background: $color-bg-tertiary;
-  border-radius: $radius-sm;
-}
-
-// 职位详情 Tab 样式
-.position-tabs {
-  display: flex;
-  gap: $spacing-xs;
-  margin-bottom: $spacing-sm;
-  border-bottom: 1px solid $color-bg-elevated;
-  padding-bottom: $spacing-xs;
-}
-
-.position-tab-btn {
-  display: flex;
-  align-items: center;
-  gap: $spacing-xs;
-  padding: $spacing-xs $spacing-sm;
-  background: transparent;
-  border: none;
-  color: $color-text-tertiary;
-  font-size: 0.8125rem;
-  cursor: pointer;
-  border-radius: $radius-xs $radius-xs 0 0;
-  transition: all 0.2s;
-  position: relative;
-
-  &:hover {
-    color: $color-text-secondary;
-    background: rgba($color-text-tertiary, 0.1);
-  }
-
-  &.active {
-    color: $color-accent;
-    background: rgba($color-accent, 0.1);
-
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: -5px;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: $color-accent;
-    }
-  }
-}
-
-.position-tab-content {
-  min-height: 120px;
-}
-
-.tab-panel {
-  animation: tabFadeIn 0.2s ease;
-}
-
-@keyframes tabFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.jd-content {
-  font-size: 0.8125rem;
-  color: $color-text-secondary;
-  line-height: 1.6;
-  white-space: pre-wrap;
-}
-
-.empty-state {
-  text-align: center;
-  color: $color-text-tertiary;
-  padding: $spacing-lg;
-  font-size: $text-sm;
-
-  &.with-action {
-    padding: $spacing-xl $spacing-lg;
-
-    .empty-icon {
-      font-size: 2.5rem;
-      margin-bottom: $spacing-md;
-      opacity: 0.6;
-    }
-
-    .empty-title {
-      color: $color-text-secondary;
-      font-size: $text-base;
-      font-weight: 500;
-      margin: 0 0 $spacing-sm;
-    }
-
-    .empty-hint {
-      color: $color-text-tertiary;
-      font-size: $text-sm;
-      margin: 0;
-      line-height: 1.6;
-    }
-  }
 }
 
 .section-header {

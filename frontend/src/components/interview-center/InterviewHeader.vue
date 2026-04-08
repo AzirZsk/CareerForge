@@ -79,7 +79,7 @@
       <div class="actions-group">
         <button
           class="btn btn-position"
-          v-if="interview.jdContent"
+          v-if="jdContent"
           @click="$emit('toggle-position')"
         >
           <font-awesome-icon icon="fa-solid fa-clipboard-list" />
@@ -106,6 +106,66 @@
         </div>
       </div>
     </div>
+
+    <!-- 职位详情展开区域 -->
+    <div v-if="showPosition && jdContent" class="position-detail-content">
+      <!-- Tab 切换栏 -->
+      <div class="position-tabs">
+        <button
+          class="position-tab-btn"
+          :class="{ active: activeTab === 'jd' }"
+          @click="activeTab = 'jd'"
+        >
+          <font-awesome-icon icon="fa-solid fa-clipboard-list" /> 职位描述
+        </button>
+        <button
+          class="position-tab-btn"
+          :class="{ active: activeTab === 'research' }"
+          @click="activeTab = 'research'"
+        >
+          <font-awesome-icon icon="fa-solid fa-building" /> 公司调研
+        </button>
+        <button
+          class="position-tab-btn"
+          :class="{ active: activeTab === 'analysis' }"
+          @click="activeTab = 'analysis'"
+        >
+          <font-awesome-icon icon="fa-solid fa-magnifying-glass" /> JD 分析
+        </button>
+      </div>
+
+      <!-- Tab 内容区域 -->
+      <div class="position-tab-content">
+        <!-- JD 原文 -->
+        <div v-show="activeTab === 'jd'" class="tab-panel">
+          <div class="jd-content">{{ jdContent }}</div>
+        </div>
+
+        <!-- 公司调研 -->
+        <div v-show="activeTab === 'research'" class="tab-panel">
+          <slot name="company-research"></slot>
+          <div v-if="!$slots['company-research']" class="empty-state with-action">
+            <div class="empty-icon">
+              <font-awesome-icon icon="fa-solid fa-building" />
+            </div>
+            <p class="empty-title">暂无公司调研信息</p>
+            <p class="empty-hint">点击上方「AI 生成」按钮，系统将自动调研目标公司</p>
+          </div>
+        </div>
+
+        <!-- JD 分析 -->
+        <div v-show="activeTab === 'analysis'" class="tab-panel">
+          <slot name="jd-analysis"></slot>
+          <div v-if="!$slots['jd-analysis']" class="empty-state with-action">
+            <div class="empty-icon">
+              <font-awesome-icon icon="fa-solid fa-magnifying-glass" />
+            </div>
+            <p class="empty-title">暂无 JD 分析信息</p>
+            <p class="empty-hint">点击上方「AI 生成」按钮，系统将自动分析职位 JD</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </header>
 </template>
 
@@ -125,6 +185,7 @@ const props = defineProps<{
   canStartMockInterview: boolean
   mockInterviewHint: string
   showPosition?: boolean
+  jdContent?: string
 }>()
 
 const emit = defineEmits<{
@@ -138,6 +199,7 @@ const emit = defineEmits<{
 
 const showMoreMenu = ref(false)
 const moreMenuRef = ref<HTMLElement | null>(null)
+const activeTab = ref<'jd' | 'research' | 'analysis'>('jd')
 
 // 状态标签
 const statusLabel = computed(() => {
@@ -671,6 +733,109 @@ onUnmounted(() => {
   .btn-mock {
     flex: 1;
     justify-content: center;
+  }
+}
+
+// 职位详情展开区域样式
+.position-detail-content {
+  margin-top: $spacing-md;
+  padding-top: $spacing-md;
+  border-top: 1px solid $color-bg-elevated;
+}
+
+.position-tabs {
+  display: flex;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-sm;
+  border-bottom: 1px solid $color-bg-elevated;
+  padding-bottom: $spacing-xs;
+}
+
+.position-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-xs $spacing-sm;
+  background: transparent;
+  border: none;
+  color: $color-text-tertiary;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  border-radius: $radius-xs $radius-xs 0 0;
+  transition: all 0.2s;
+  position: relative;
+
+  &:hover {
+    color: $color-text-secondary;
+    background: rgba($color-accent, 0.05);
+  }
+
+  &.active {
+    color: $color-accent;
+    font-weight: 500;
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -$spacing-xs;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: $color-accent;
+      border-radius: $radius-xs;
+    }
+  }
+}
+
+.position-tab-content {
+  .tab-panel {
+    animation: fadeIn 0.2s ease-in;
+  }
+
+  .jd-content {
+    white-space: pre-wrap;
+    line-height: 1.6;
+    font-size: 0.875rem;
+    color: $color-text-secondary;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: $spacing-xl $spacing-lg;
+    color: $color-text-tertiary;
+
+    &.with-action {
+      .empty-icon {
+        font-size: 2rem;
+        margin-bottom: $spacing-sm;
+        opacity: 0.5;
+      }
+
+      .empty-title {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: $color-text-secondary;
+        margin-bottom: $spacing-xs;
+      }
+
+      .empty-hint {
+        font-size: 0.75rem;
+        color: $color-text-tertiary;
+      }
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 </style>
