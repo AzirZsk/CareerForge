@@ -63,6 +63,41 @@ import {
   faWandMagicSparkles // 优化建议
 } from '@fortawesome/free-solid-svg-icons'
 
+// 导入面试中心模块需要的图标 - 操作/功能类
+import {
+  faArrowLeft, // 返回
+  faLink, // 链接
+  faCalendar, // 日历
+  faMicrophone, // 麦克风
+  faMicrophoneSlash, // 麦克风禁用
+  faGear, // 设置
+  faKey, // 密码
+  faPaperclip, // 附件
+  faVideo, // 视频
+  faLaptop // 电脑
+} from '@fortawesome/free-solid-svg-icons'
+
+// 导入面试中心模块需要的图标 - 内容/类型类
+import {
+  faRobot, // AI 机器人
+  faClipboard, // 剪贴板
+  faClipboardList, // 剪贴板列表
+  faBuilding, // 公司
+  faPen, // 笔/编辑
+  faStickyNote, // 便签
+  faFire, // 火
+  faMugHot, // 咖啡杯
+  faThumbtack, // 图钉
+  faCircleExclamation // 错误提示
+} from '@fortawesome/free-solid-svg-icons'
+
+// 导入面试中心模块需要的图标 - 状态/指示类
+import {
+  faHourglassHalf, // 等待
+  faChartBar, // 统计图表
+  faChevronRight // 右箭头
+} from '@fortawesome/free-solid-svg-icons'
+
 // 注册图标到库
 library.add(
   // 工作台页面图标
@@ -104,7 +139,33 @@ library.add(
   // 简历模块 - 建议类型
   faTriangleExclamation,
   faLightbulb,
-  faWandMagicSparkles
+  faWandMagicSparkles,
+  // 面试中心 - 操作/功能类
+  faArrowLeft,
+  faLink,
+  faCalendar,
+  faMicrophone,
+  faMicrophoneSlash,
+  faGear,
+  faKey,
+  faPaperclip,
+  faVideo,
+  faLaptop,
+  // 面试中心 - 内容/类型类
+  faRobot,
+  faClipboard,
+  faClipboardList,
+  faBuilding,
+  faPen,
+  faStickyNote,
+  faFire,
+  faMugHot,
+  faThumbtack,
+  faCircleExclamation,
+  // 面试中心 - 状态/指示类
+  faHourglassHalf,
+  faChartBar,
+  faChevronRight
 )
 
 // 导出组件供全局注册

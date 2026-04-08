@@ -354,7 +354,7 @@ public class InterviewVoiceGatewayImpl implements InterviewVoiceGateway {
 
         log.info("[VoiceGateway] Interview started, sessionId={}", sessionId);
 
-        // 通知客户端
+        // 通知客户端面试开始
         sendResponse(sessionId, VoiceResponse.state(VoiceResponse.StateData.builder()
                 .state("interviewing")
                 .currentQuestion(state.getCurrentQuestion())
@@ -362,6 +362,14 @@ public class InterviewVoiceGatewayImpl implements InterviewVoiceGateway {
                 .assistRemaining(state.getAssistRemaining())
                 .elapsedTime(0)
                 .build()));
+
+        // 面试官先说话：生成开场白和第一个问题
+        interviewerAgentHandler.generateNextQuestion(sessionId)
+                .subscribe(
+                        response -> sendResponse(sessionId, response),
+                        error -> log.error("[VoiceGateway] 面试官生成开场白失败, sessionId={}", sessionId, error),
+                        () -> log.debug("[VoiceGateway] 面试官开场白发送完成, sessionId={}", sessionId)
+                );
     }
 
     /**

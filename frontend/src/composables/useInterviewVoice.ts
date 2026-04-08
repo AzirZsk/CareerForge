@@ -288,7 +288,8 @@ export function useInterviewVoice(sessionId: string) {
     assistCount.value = assistLimit.value - data.assistRemaining
     elapsedTime.value = data.elapsedTime
 
-    // 状态变为 interviewing 时自动开始录音
+    // 状态变为 interviewing 时立即开始录音
+    // 录音和音频播放是并行的，用户可以随时打断面试官
     if (data.state === 'interviewing' && !recorder.isRecording.value) {
       recorder.startRecording()
     }

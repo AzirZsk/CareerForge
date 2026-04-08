@@ -3,7 +3,7 @@
     <!-- 卡片头部 -->
     <div class="card-header" @click="toggleExpand">
       <div class="header-left">
-        <span class="card-icon">🤖</span>
+        <font-awesome-icon icon="fa-solid fa-robot" class="card-icon" />
         <span class="card-title">AI 分析建议</span>
         <span v-if="generatedTime" class="generated-time">
           生成于 {{ formatTime(generatedTime) }}
@@ -18,18 +18,11 @@
         >
           {{ isAnalyzing ? '分析中...' : '重新分析' }}
         </button>
-        <svg
+        <font-awesome-icon
+          icon="fa-solid fa-chevron-down"
           class="expand-icon"
           :class="{ rotated: isExpanded }"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <polyline points="6 9 12 15 18 9"></polyline>
-        </svg>
+        />
       </div>
     </div>
 
@@ -60,7 +53,7 @@
       <!-- 参考建议按钮 -->
       <div v-if="showReferenceButton && adviceList.length > 0" class="card-footer">
         <button class="btn btn-sm btn-reference" @click="handleReference">
-          📋 参考 AI 建议写笔记
+          <font-awesome-icon icon="fa-solid fa-clipboard" /> 参考 AI 建议写笔记
         </button>
       </div>
     </div>
