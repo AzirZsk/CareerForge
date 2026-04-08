@@ -7,16 +7,16 @@ import type { ChangeItem, WeaknessItem } from '@/types/resume-optimize'
 
 // ==================== 严重性相关 ====================
 
-/** 严重性图标映射 */
+/** 严重性图标映射 - Font Awesome 图标类名 */
 export const SEVERITY_ICONS: Record<string, string> = {
-  high: '⚠️',
-  medium: '💡',
-  low: '✨'
+  high: 'fa-solid fa-triangle-exclamation',
+  medium: 'fa-solid fa-lightbulb',
+  low: 'fa-solid fa-wand-magic-sparkles'
 }
 
 /** 获取严重性图标 */
 export function getSeverityIcon(severity: string): string {
-  return SEVERITY_ICONS[severity] || '•'
+  return SEVERITY_ICONS[severity] || 'fa-solid fa-circle'
 }
 
 /** 获取劣势项内容 */

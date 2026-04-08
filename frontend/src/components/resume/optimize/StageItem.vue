@@ -19,17 +19,10 @@
       <div class="stage-left">
         <!-- 阶段指示器 -->
         <div class="stage-indicator">
-          <svg
+          <font-awesome-icon
             v-if="item.completed"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
+            icon="fa-solid fa-check"
+          />
           <div
             v-else-if="isActive"
             class="spinner"
@@ -55,17 +48,10 @@
         v-if="item.completed && item.data"
         class="expand-indicator"
       >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
+        <font-awesome-icon
+          icon="fa-solid fa-chevron-down"
           :class="{ rotated: item.expanded }"
-        >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
+        />
       </div>
     </div>
 
@@ -175,6 +161,7 @@ defineEmits<{
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 16px;
   color: $color-success;
 
   .spinner {
@@ -213,15 +200,13 @@ defineEmits<{
 .expand-indicator {
   display: flex;
   align-items: center;
+  font-size: 16px;
   color: $color-text-tertiary;
   transition: color $transition-fast;
 
-  svg {
+  .rotated {
+    transform: rotate(180deg);
     transition: transform $transition-fast;
-
-    &.rotated {
-      transform: rotate(180deg);
-    }
   }
 }
 

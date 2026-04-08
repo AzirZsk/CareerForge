@@ -193,7 +193,7 @@
         <!-- 职位详情折叠区域 -->
         <div
           class="position-detail-toggle"
-          v-if="interview.jdContent || interview.companyResearch || interview.jdAnalysis"
+          v-if="interview.jdContent || parsedCompanyResearch || parsedJdAnalysis"
         >
           <button class="toggle-btn" @click="showPositionDetail = !showPositionDetail">
             <svg
@@ -214,17 +214,62 @@
         </div>
 
         <div class="position-detail-content" v-if="showPositionDetail">
-          <div v-if="interview.jdContent" class="detail-item">
-            <h4>职位描述 (JD)</h4>
-            <div class="detail-text">{{ interview.jdContent }}</div>
+          <!-- Tab 切换栏 -->
+          <div class="position-tabs">
+            <button
+              class="position-tab-btn"
+              :class="{ active: activePositionTab === 'jd' }"
+              @click="activePositionTab = 'jd'"
+            >
+              📋 职位描述
+            </button>
+            <button
+              v-if="parsedCompanyResearch"
+              class="position-tab-btn"
+              :class="{ active: activePositionTab === 'research' }"
+              @click="activePositionTab = 'research'"
+            >
+              🏢 公司调研
+            </button>
+            <button
+              v-if="parsedJdAnalysis"
+              class="position-tab-btn"
+              :class="{ active: activePositionTab === 'analysis' }"
+              @click="activePositionTab = 'analysis'"
+            >
+              🔍 JD 分析
+            </button>
           </div>
-          <div v-if="interview.companyResearch" class="detail-item">
-            <h4>公司调研</h4>
-            <div class="detail-text">{{ interview.companyResearch }}</div>
-          </div>
-          <div v-if="interview.jdAnalysis" class="detail-item">
-            <h4>JD 分析</h4>
-            <div class="detail-text">{{ interview.jdAnalysis }}</div>
+
+          <!-- Tab 内容区域 -->
+          <div class="position-tab-content">
+            <!-- JD 原文 -->
+            <div v-show="activePositionTab === 'jd'" class="tab-panel">
+              <div v-if="interview.jdContent" class="jd-content">
+                {{ interview.jdContent }}
+              </div>
+              <div v-else class="empty-state">暂无职位描述</div>
+            </div>
+
+            <!-- 公司调研 -->
+            <div v-show="activePositionTab === 'research'" class="tab-panel">
+              <CompanyResearchContent v-if="parsedCompanyResearch" :data="parsedCompanyResearch" />
+              <div v-else class="empty-state with-action">
+                <div class="empty-icon">🏢</div>
+                <p class="empty-title">暂无公司调研信息</p>
+                <p class="empty-hint">点击上方「AI 生成」按钮，系统将自动调研目标公司</p>
+              </div>
+            </div>
+
+            <!-- JD 分析 -->
+            <div v-show="activePositionTab === 'analysis'" class="tab-panel">
+              <JDAnalysisContent v-if="parsedJdAnalysis" :data="parsedJdAnalysis" />
+              <div v-else class="empty-state with-action">
+                <div class="empty-icon">🔍</div>
+                <p class="empty-title">暂无 JD 分析信息</p>
+                <p class="empty-hint">点击上方「AI 生成」按钮，系统将自动分析职位 JD</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -269,7 +314,7 @@
 
       <section class="review-section">
         <div class="section-header">
-          <h2>复盘笔记</h2>
+          <h2>面试复盘</h2>
         </div>
 
         <!-- Tab 切换 -->
@@ -281,7 +326,7 @@
             type="button"
           >
             <span class="tab-icon">🤖</span>
-            面试分析
+            AI 分析
             <span v-if="interview.aiAnalysisNote" class="tab-dot" title="已有分析内容"></span>
           </button>
           <button
@@ -291,7 +336,7 @@
             type="button"
           >
             <span class="tab-icon">📝</span>
-            我的笔记
+            复盘笔记
             <span v-if="interview.reviewNote" class="tab-dot" title="已有笔记内容"></span>
           </button>
         </div>
@@ -421,7 +466,9 @@ import {
   type InterviewResult,
   type InterviewType,
   type PreparationVO,
-  type AdviceItem
+  type AdviceItem,
+  type CompanyResearchResult,
+  type JDAnalysisResult
 } from '@/types/interview-center'
 import { useNotificationStore } from '@/stores/notification'
 // 弹窗组件
@@ -437,6 +484,9 @@ import PreparationGroup from '@/components/interview-center/PreparationGroup.vue
 import AudioUploadArea from '@/components/interview-center/AudioUploadArea.vue'
 import AIAnalysisCard from '@/components/interview-center/AIAnalysisCard.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
+// 职位详情展示组件
+import CompanyResearchContent from '@/components/interview-center/preparation/CompanyResearchContent.vue'
+import JDAnalysisContent from '@/components/interview-center/preparation/JDAnalysisContent.vue'
 // 工作流 composables
 import { useInterviewPreparation } from '@/composables/useInterviewPreparation'
 import { useReviewAnalysis } from '@/composables/useReviewAnalysis'
@@ -489,8 +539,51 @@ const sessionTranscript = ref('')
 // 职位详情折叠状态
 const showPositionDetail = ref(false)
 
+// 职位详情 Tab 切换状态
+const activePositionTab = ref<'jd' | 'research' | 'analysis'>('jd')
+
 // 复盘 Tab 切换状态
 const activeReviewTab = ref<'analysis' | 'note'>('analysis')
+
+// 解析公司调研数据
+const parsedCompanyResearch = computed(() => {
+  if (!interview.value?.companyResearch) return null
+  try {
+    const data = JSON.parse(interview.value.companyResearch)
+    // 检查是否有效数据（不是空对象、不是空字符串）
+    if (Object.keys(data).length === 0) return null
+    // 检查是否有实际内容（至少有一个非空字段）
+    const hasContent = Object.values(data).some(v => {
+      if (Array.isArray(v)) return v.length > 0
+      if (typeof v === 'string') return v.trim().length > 0
+      return v != null
+    })
+    if (!hasContent) return null
+    return data as CompanyResearchResult
+  } catch {
+    return null
+  }
+})
+
+// 解析 JD 分析数据
+const parsedJdAnalysis = computed(() => {
+  if (!interview.value?.jdAnalysis) return null
+  try {
+    const data = JSON.parse(interview.value.jdAnalysis)
+    // 检查是否有效数据（不是空对象）
+    if (Object.keys(data).length === 0) return null
+    // 检查是否有实际内容（至少有一个非空字段）
+    const hasContent = Object.values(data).some(v => {
+      if (Array.isArray(v)) return v.length > 0
+      if (typeof v === 'string') return v.trim().length > 0
+      return v != null
+    })
+    if (!hasContent) return null
+    return data as JDAnalysisResult
+  } catch {
+    return null
+  }
+})
 
 // 优先级排序权重
 const PRIORITY_ORDER: Record<string, number> = { required: 0, recommended: 1, optional: 2 }
@@ -729,7 +822,16 @@ async function handleSavePreparationItems(items: typeof preparationState.prepara
       priority: item.priority
     })))
     showPrepModal.value = false
-    loadDetail()
+    // 刷新数据
+    await loadDetail()
+    // 自动展开职位详情区域，并切换到公司调研或 JD 分析 Tab
+    showPositionDetail.value = true
+    // 优先显示公司调研，如果没有则显示 JD 分析
+    if (parsedCompanyResearch.value) {
+      activePositionTab.value = 'research'
+    } else if (parsedJdAnalysis.value) {
+      activePositionTab.value = 'analysis'
+    }
   } catch (error) {
     console.error('保存准备事项失败:', error)
     toast.error('保存失败，请稍后重试')
@@ -1273,26 +1375,105 @@ function handleApplyTranscriptEvent(event: Event) {
   padding: $spacing-md;
   background: $color-bg-tertiary;
   border-radius: $radius-md;
+}
 
-  .detail-item {
-    margin-bottom: $spacing-lg;
+// 职位详情 Tab 样式
+.position-tabs {
+  display: flex;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-md;
+  border-bottom: 1px solid $color-bg-elevated;
+  padding-bottom: $spacing-sm;
+}
 
-    &:last-child {
-      margin-bottom: 0;
+.position-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-xs $spacing-md;
+  background: transparent;
+  border: none;
+  color: $color-text-tertiary;
+  font-size: $text-sm;
+  cursor: pointer;
+  border-radius: $radius-sm $radius-sm 0 0;
+  transition: all 0.2s;
+  position: relative;
+
+  &:hover {
+    color: $color-text-secondary;
+    background: rgba($color-text-tertiary, 0.1);
+  }
+
+  &.active {
+    color: $color-accent;
+    background: rgba($color-accent, 0.1);
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: $color-accent;
+    }
+  }
+}
+
+.position-tab-content {
+  min-height: 150px;
+}
+
+.tab-panel {
+  animation: tabFadeIn 0.2s ease;
+}
+
+@keyframes tabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.jd-content {
+  font-size: $text-sm;
+  color: $color-text-secondary;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+.empty-state {
+  text-align: center;
+  color: $color-text-tertiary;
+  padding: $spacing-lg;
+  font-size: $text-sm;
+
+  &.with-action {
+    padding: $spacing-xl $spacing-lg;
+
+    .empty-icon {
+      font-size: 2.5rem;
+      margin-bottom: $spacing-md;
+      opacity: 0.6;
     }
 
-    h4 {
-      font-size: 0.875rem;
-      font-weight: 600;
+    .empty-title {
       color: $color-text-secondary;
-      margin-bottom: $spacing-sm;
+      font-size: $text-base;
+      font-weight: 500;
+      margin: 0 0 $spacing-sm;
     }
 
-    .detail-text {
-      color: $color-text-primary;
-      font-size: 0.875rem;
+    .empty-hint {
+      color: $color-text-tertiary;
+      font-size: $text-sm;
+      margin: 0;
       line-height: 1.6;
-      white-space: pre-wrap;
     }
   }
 }

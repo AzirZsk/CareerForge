@@ -21,27 +21,7 @@
               class="close-btn"
               @click="$emit('update:visible', false)"
             >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <line
-                  x1="18"
-                  y1="6"
-                  x2="6"
-                  y2="18"
-                />
-                <line
-                  x1="6"
-                  y1="6"
-                  x2="18"
-                  y2="18"
-                />
-              </svg>
+              <font-awesome-icon icon="fa-solid fa-xmark" />
             </button>
           </header>
 
@@ -62,7 +42,10 @@
                 class="type-card"
                 @click="handleSelectType(typeInfo.type)"
               >
-                <span class="type-icon">{{ typeInfo.icon }}</span>
+                <font-awesome-icon
+                  :icon="typeInfo.icon"
+                  class="type-icon"
+                />
                 <span class="type-label">{{ typeInfo.label }}</span>
                 <span
                   v-if="typeInfo.tooltip"
@@ -81,16 +64,16 @@
 import { computed } from 'vue'
 import type { SectionType } from '@/types'
 
-// 模块类型配置
+// 模块类型配置 - Font Awesome 图标类名
 const SECTION_TYPE_CONFIG: Array<{ type: SectionType; label: string; icon: string; tooltip?: string }> = [
-  { type: 'BASIC_INFO', label: '基本信息', icon: '👤' },
-  { type: 'EDUCATION', label: '教育经历', icon: '🎓' },
-  { type: 'WORK', label: '工作经历', icon: '💼' },
-  { type: 'PROJECT', label: '项目经历', icon: '📦' },
-  { type: 'SKILLS', label: '专业技能', icon: '⚡' },
-  { type: 'CERTIFICATE', label: '证书荣誉', icon: '🏆' },
-  { type: 'OPEN_SOURCE', label: '开源贡献', icon: '🔧' },
-  { type: 'CUSTOM', label: '自定义区块', icon: '📝', tooltip: '适用于游戏经历、志愿者活动、竞赛经历等' }
+  { type: 'BASIC_INFO', label: '基本信息', icon: 'fa-solid fa-user' },
+  { type: 'EDUCATION', label: '教育经历', icon: 'fa-solid fa-graduation-cap' },
+  { type: 'WORK', label: '工作经历', icon: 'fa-solid fa-briefcase' },
+  { type: 'PROJECT', label: '项目经历', icon: 'fa-solid fa-diagram-project' },
+  { type: 'SKILLS', label: '专业技能', icon: 'fa-solid fa-bolt' },
+  { type: 'CERTIFICATE', label: '证书荣誉', icon: 'fa-solid fa-trophy' },
+  { type: 'OPEN_SOURCE', label: '开源贡献', icon: 'fa-solid fa-code-branch' },
+  { type: 'CUSTOM', label: '自定义区块', icon: 'fa-solid fa-rectangle-list', tooltip: '适用于游戏经历、志愿者活动、竞赛经历等' }
 ]
 
 const props = withDefaults(defineProps<{
@@ -215,6 +198,7 @@ function handleSelectType(type: SectionType): void {
 
 .type-icon {
   font-size: 1.75rem;
+  color: $color-accent;
 }
 
 .type-label {

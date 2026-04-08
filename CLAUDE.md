@@ -14,6 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | 日期 | 版本 | 变更内容 |
 |------|------|----------|
+| 2026-04-08 | 2.6.0 | **复盘模块改名**：模块名「复盘笔记」→「面试复盘」、Tab 名「面试分析」→「AI 分析」、「我的笔记」→「复盘笔记」 |
 | 2026-04-07 | 2.5.0 | **新增异步任务模块**：后端新增 task 模块（10 个 Java 文件）、t_async_task 表、TaskController；前端新增 useAudioTranscribe/useMicrophonePermission composables、task.ts API、notification.ts 类型；更新文件统计 |
 | 2026-04-07 | 2.4.0 | **清理老版本复盘模块**：删除 `backend/.../review/` 目录（13 个 Java 文件）、4 张老版本复盘表、前端 Review.vue/ReviewDetail.vue 视图；复盘功能统一使用 `interview/graph/review/` 工作流 + `InterviewReviewNote` |
 | 2026-04-02 | 2.3.1 | **AI 上下文增量更新**：新增 useStreamAssist composable（SSE 流式求助）；更新前端 Composables 数量（17->18）；更新覆盖率报告 |

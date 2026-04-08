@@ -46,7 +46,7 @@
         :class="getWeaknessSeverity(weakness)"
       >
         <span class="issue-severity">
-          {{ getSeverityIcon(getWeaknessSeverity(weakness)) }}
+          <font-awesome-icon :icon="getSeverityIcon(getWeaknessSeverity(weakness))" />
         </span>
         {{ getWeaknessContent(weakness) }}
       </div>

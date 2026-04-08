@@ -508,13 +508,19 @@ public class InterviewCenterHandler {
         InterviewDetailVO vo = new InterviewDetailVO();
         BeanUtils.copyProperties(interview, vo);
 
-        // 通过 jobPositionId 关联查询公司名和职位名
+        // 通过 jobPositionId 关联查询公司名、职位名、调研数据、分析数据
         if (interview.getJobPositionId() != null) {
             JobPosition jobPosition = jobPositionService.getById(interview.getJobPositionId());
             if (jobPosition != null) {
                 vo.setPosition(jobPosition.getTitle());
+                // 填充 JD 分析数据（从 JobPosition 表获取）
+                vo.setJdAnalysis(jobPosition.getJdAnalysis());
                 Company company = companyService.getById(jobPosition.getCompanyId());
                 vo.setCompanyName(company != null ? company.getName() : "");
+                // 填充公司调研数据（从 Company 表获取）
+                if (company != null && company.getResearch() != null) {
+                    vo.setCompanyResearch(company.getResearch());
+                }
             }
         }
 
