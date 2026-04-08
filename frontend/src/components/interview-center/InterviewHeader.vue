@@ -14,14 +14,57 @@
         </div>
       </div>
       <div class="header-right">
-        <span class="status-badge" :class="statusClass">
-          <span class="status-dot"></span>
-          {{ statusLabel }}
+        <div class="status-badge-wrapper" ref="statusMenuRef">
+          <span class="status-badge clickable" :class="statusClass" @click="toggleStatusMenu">
+            <span class="status-dot"></span>
+            {{ statusLabel }}
+            <font-awesome-icon icon="fa-solid fa-chevron-down" class="dropdown-icon" />
+          </span>
+          <div v-if="showStatusMenu" class="status-dropdown">
+            <button
+              v-for="(label, key) in statusOptions"
+              :key="key"
+              :class="['status-option', { active: interview.status === key }]"
+              @click="handleStatusChange(key)"
+            >
+              <span class="status-dot" :class="key"></span>
+              {{ label }}
+            </button>
+          </div>
+        </div>
+        <div class="result-badge-wrapper" ref="resultMenuRef" v-if="interview.overallResult">
+          <span class="result-badge clickable" :class="resultClass" @click="toggleResultMenu">
+            <span class="result-dot"></span>
+            {{ resultLabel }}
+            <font-awesome-icon icon="fa-solid fa-chevron-down" class="dropdown-icon" />
+          </span>
+          <div v-if="showResultMenu" class="result-dropdown">
+            <button
+              v-for="(label, key) in resultOptions"
+              :key="key"
+              :class="['result-option', { active: interview.overallResult === key }]"
+              @click="handleResultChange(key)"
+            >
+              <span class="result-dot" :class="key"></span>
+              {{ label }}
+            </button>
+          </div>
+        </div>
+        <span v-else-if="!interview.overallResult" class="result-badge add-result" @click="toggleResultMenu">
+          <font-awesome-icon icon="fa-solid fa-plus" />
+          添加结果
         </span>
-        <span v-if="resultLabel" class="result-badge" :class="resultClass">
-          <span class="result-dot"></span>
-          {{ resultLabel }}
-        </span>
+        <div v-if="showResultMenu && !interview.overallResult" class="result-dropdown" ref="resultMenuRef">
+          <button
+            v-for="(label, key) in resultOptions"
+            :key="key"
+            :class="['result-option', { active: interview.overallResult === key }]"
+            @click="handleResultChange(key)"
+          >
+            <span class="result-dot" :class="key"></span>
+            {{ label }}
+          </button>
+        </div>
       </div>
     </div>
 
@@ -193,11 +236,20 @@ const emit = defineEmits<{
   edit: []
   delete: []
   'toggle-position': []
+  'status-change': [status: string]
+  'result-change': [result: string]
 }>()
 
 const showMoreMenu = ref(false)
 const moreMenuRef = ref<HTMLElement | null>(null)
 const activeTab = ref<'jd' | 'research' | 'analysis'>('jd')
+const showStatusMenu = ref(false)
+const showResultMenu = ref(false)
+const statusMenuRef = ref<HTMLElement | null>(null)
+const resultMenuRef = ref<HTMLElement | null>(null)
+
+const statusOptions = INTERVIEW_STATUS_LABELS
+const resultOptions = INTERVIEW_RESULT_LABELS
 
 // 状态标签
 const statusLabel = computed(() => {
@@ -314,13 +366,51 @@ function handleDelete() {
   emit('delete')
 }
 
+// 切换状态菜单
+function toggleStatusMenu() {
+  showStatusMenu.value = !showStatusMenu.value
+  showResultMenu.value = false
+}
+
+// 切换结果菜单
+function toggleResultMenu() {
+  showResultMenu.value = !showResultMenu.value
+  showStatusMenu.value = false
+}
+
+// 处理状态变更
+function handleStatusChange(status: string) {
+  showStatusMenu.value = false
+  emit('status-change', status)
+}
+
+// 处理结果变更
+function handleResultChange(result: string) {
+  showResultMenu.value = false
+  emit('result-change', result)
+}
+
+// 关闭所有下拉菜单
+function closeAllMenus(event: MouseEvent) {
+  const target = event.target as Node
+  if (statusMenuRef.value && !statusMenuRef.value.contains(target)) {
+    showStatusMenu.value = false
+  }
+  if (resultMenuRef.value && !resultMenuRef.value.contains(target)) {
+    showResultMenu.value = false
+  }
+  if (moreMenuRef.value && !moreMenuRef.value.contains(target)) {
+    showMoreMenu.value = false
+  }
+}
+
 // 点击外部关闭菜单
 onMounted(() => {
-  document.addEventListener('click', closeMoreMenu)
+  document.addEventListener('click', closeAllMenus)
 })
 
 onUnmounted(() => {
-  document.removeEventListener('click', closeMoreMenu)
+  document.removeEventListener('click', closeAllMenus)
 })
 </script>
 
@@ -408,6 +498,10 @@ onUnmounted(() => {
 }
 
 // 状态标签
+.status-badge-wrapper {
+  position: relative;
+}
+
 .status-badge {
   display: inline-flex;
   align-items: center;
@@ -416,11 +510,24 @@ onUnmounted(() => {
   border-radius: $radius-full;
   font-size: 0.875rem;
   font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
 
   .status-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
+  }
+
+  .dropdown-icon {
+    font-size: 0.625rem;
+    margin-left: 4px;
+    opacity: 0.6;
+  }
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   }
 
   &.preparing {
@@ -448,7 +555,63 @@ onUnmounted(() => {
   }
 }
 
+.status-dropdown {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: $spacing-xs;
+  background: $color-bg-elevated;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: $radius-md;
+  padding: $spacing-xs;
+  min-width: 140px;
+  z-index: 100;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+
+  .status-option {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    width: 100%;
+    padding: $spacing-sm $spacing-md;
+    text-align: left;
+    background: transparent;
+    border: none;
+    color: $color-text-secondary;
+    border-radius: $radius-sm;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+
+      &.preparing { background: $color-warning; }
+      &.in_progress { background: $color-info; }
+      &.completed { background: $color-success; }
+      &.cancelled { background: $color-text-tertiary; }
+    }
+
+    &:hover {
+      background: $color-bg-tertiary;
+      color: $color-text-primary;
+    }
+
+    &.active {
+      background: rgba($color-accent, 0.15);
+      color: $color-accent;
+      font-weight: 500;
+    }
+  }
+}
+
 // 结果标签
+.result-badge-wrapper {
+  position: relative;
+}
+
 .result-badge {
   display: inline-flex;
   align-items: center;
@@ -458,11 +621,24 @@ onUnmounted(() => {
   font-size: 0.875rem;
   font-weight: 500;
   margin-left: $spacing-sm;
+  cursor: pointer;
+  transition: all 0.2s;
 
   .result-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
+  }
+
+  .dropdown-icon {
+    font-size: 0.625rem;
+    margin-left: 4px;
+    opacity: 0.6;
+  }
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   }
 
   &.passed {
@@ -481,6 +657,69 @@ onUnmounted(() => {
     background: rgba($color-text-tertiary, 0.15);
     color: $color-text-tertiary;
     .result-dot { background: $color-text-tertiary; }
+  }
+
+  &.add-result {
+    background: rgba($color-accent, 0.1);
+    color: $color-accent;
+    border: 1px dashed rgba($color-accent, 0.3);
+    font-weight: 400;
+
+    &:hover {
+      background: rgba($color-accent, 0.15);
+      border-color: rgba($color-accent, 0.5);
+    }
+  }
+}
+
+.result-dropdown {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: $spacing-xs;
+  background: $color-bg-elevated;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: $radius-md;
+  padding: $spacing-xs;
+  min-width: 140px;
+  z-index: 100;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+
+  .result-option {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    width: 100%;
+    padding: $spacing-sm $spacing-md;
+    text-align: left;
+    background: transparent;
+    border: none;
+    color: $color-text-secondary;
+    border-radius: $radius-sm;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+
+    .result-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+
+      &.passed { background: $color-success; }
+      &.failed { background: $color-error; }
+      &.pending { background: $color-text-tertiary; }
+    }
+
+    &:hover {
+      background: $color-bg-tertiary;
+      color: $color-text-primary;
+    }
+
+    &.active {
+      background: rgba($color-accent, 0.15);
+      color: $color-accent;
+      font-weight: 500;
+    }
   }
 }
 
@@ -616,9 +855,17 @@ onUnmounted(() => {
   cursor: pointer;
   transition: all 0.2s;
 
+  svg {
+    color: $color-accent;
+  }
+
   &:hover {
     background: rgba($color-accent, 0.15);
     border-color: rgba($color-accent, 0.3);
+
+    svg {
+      color: $color-accent-light;
+    }
   }
 }
 
@@ -628,17 +875,24 @@ onUnmounted(() => {
   justify-content: center;
   width: 36px;
   height: 36px;
-  background: rgba($color-accent, 0.1);
-  border: 1px solid rgba($color-accent, 0.2);
-  color: $color-accent;
+  background: transparent;
+  border: none;
+  color: $color-text-secondary;
   cursor: pointer;
   border-radius: $radius-md;
   transition: all 0.2s;
   font-size: 1rem;
 
+  svg {
+    color: $color-text-secondary;
+  }
+
   &:hover {
-    background: rgba($color-accent, 0.15);
-    border-color: rgba($color-accent, 0.3);
+    color: $color-text-primary;
+
+    svg {
+      color: $color-text-primary;
+    }
   }
 }
 

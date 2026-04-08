@@ -12,6 +12,8 @@
       @edit="showEditDialog = true"
       @delete="handleDelete"
       @toggle-position="showPositionDetail = !showPositionDetail"
+      @status-change="handleStatusChange"
+      @result-change="handleResultChange"
     >
       <template #company-research>
         <CompanyResearchContent v-if="parsedCompanyResearch" :data="parsedCompanyResearch" />
@@ -800,6 +802,33 @@ function handleReviewSaved(note: ReviewNoteVO) {
 
 function handleInterviewUpdated() {
   loadDetail()
+}
+
+async function handleStatusChange(status: string) {
+  if (!interview.value) return
+  try {
+    await updateInterview(interview.value.id, { status })
+    interview.value.status = status as any
+    toast.success('状态已更新')
+  } catch (error) {
+    console.error('更新状态失败:', error)
+    toast.error('更新失败，请稍后重试')
+  }
+}
+
+async function handleResultChange(result: string) {
+  if (!interview.value) return
+  try {
+    await updateInterview(interview.value.id, { overallResult: result })
+    interview.value.overallResult = result as any
+    if (result !== 'pending') {
+      interview.value.status = 'completed'
+    }
+    toast.success('结果已更新')
+  } catch (error) {
+    console.error('更新结果失败:', error)
+    toast.error('更新失败，请稍后重试')
+  }
 }
 
 // AI 聊天状态
