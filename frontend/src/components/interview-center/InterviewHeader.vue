@@ -100,7 +100,6 @@
           </button>
           <div v-if="showMoreMenu" class="dropdown">
             <button @click="handleEdit">编辑面试</button>
-            <button @click="handleEditResume">关联简历</button>
             <button class="danger" @click="handleDelete">删除面试</button>
           </div>
         </div>
@@ -193,7 +192,6 @@ const emit = defineEmits<{
   'start-mock': []
   edit: []
   delete: []
-  'edit-resume': []
   'toggle-position': []
 }>()
 
@@ -308,12 +306,6 @@ function closeMoreMenu(event: MouseEvent) {
 function handleEdit() {
   showMoreMenu.value = false
   emit('edit')
-}
-
-// 处理关联简历
-function handleEditResume() {
-  showMoreMenu.value = false
-  emit('edit-resume')
 }
 
 // 处理删除
@@ -504,6 +496,7 @@ onUnmounted(() => {
   align-items: center;
   gap: $spacing-sm;
   padding: $spacing-sm $spacing-md;
+  min-height: 56px;
   background: $color-bg-tertiary;
   border-radius: $radius-md;
 
@@ -635,17 +628,17 @@ onUnmounted(() => {
   justify-content: center;
   width: 36px;
   height: 36px;
-  background: transparent;
-  border: 1px solid $color-bg-elevated;
-  color: $color-text-secondary;
+  background: rgba($color-accent, 0.1);
+  border: 1px solid rgba($color-accent, 0.2);
+  color: $color-accent;
   cursor: pointer;
   border-radius: $radius-md;
   transition: all 0.2s;
+  font-size: 1rem;
 
   &:hover {
-    color: $color-text-primary;
-    background: $color-bg-tertiary;
-    border-color: rgba(255, 255, 255, 0.1);
+    background: rgba($color-accent, 0.15);
+    border-color: rgba($color-accent, 0.3);
   }
 }
 
@@ -790,6 +783,8 @@ onUnmounted(() => {
 .position-tab-content {
   .tab-panel {
     animation: fadeIn 0.2s ease-in;
+    max-height: 400px;
+    overflow-y: auto;
   }
 
   .jd-content {
@@ -797,8 +792,6 @@ onUnmounted(() => {
     line-height: 1.6;
     font-size: 0.875rem;
     color: $color-text-secondary;
-    max-height: 400px;
-    overflow-y: auto;
   }
 
   .empty-state {
