@@ -438,6 +438,15 @@ onUnmounted(() => {
     display: flex;
     align-items: center;
     gap: $spacing-md;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    flex-shrink: 0;
   }
 
   .back-btn {
@@ -876,7 +885,7 @@ onUnmounted(() => {
   width: 36px;
   height: 36px;
   background: transparent;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: $color-text-secondary;
   cursor: pointer;
   border-radius: $radius-md;
@@ -888,7 +897,9 @@ onUnmounted(() => {
   }
 
   &:hover {
+    background: $color-bg-tertiary;
     color: $color-text-primary;
+    border-color: rgba(255, 255, 255, 0.2);
 
     svg {
       color: $color-text-primary;
