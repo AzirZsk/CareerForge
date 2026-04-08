@@ -26,10 +26,9 @@
           :class="{ active: isActive(item.key) }"
           @click="store.setActiveNav(item.key)"
         >
-          <span
-            class="nav-icon"
-            v-html="item.icon"
-          />
+          <span class="nav-icon">
+            <font-awesome-icon :icon="item.icon" />
+          </span>
           <span class="nav-label">{{ item.label }}</span>
           <span
             v-if="item.badge"
@@ -115,20 +114,20 @@ const navItems: NavItem[] = [
     key: 'home',
     label: '工作台',
     path: '/',
-    icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>'
+    icon: 'fa-solid fa-table-cells'
   },
   {
     key: 'resume',
     label: '简历管理',
     path: '/resume',
-    icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>'
+    icon: 'fa-solid fa-file-lines'
   },
   {
     key: 'interview-center',
     label: '面试中心',
     path: '/interview-center',
     badge: 'NEW',
-    icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>'
+    icon: 'fa-solid fa-comments'
   }
 ]
 
