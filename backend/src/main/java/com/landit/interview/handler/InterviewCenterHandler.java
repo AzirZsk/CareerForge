@@ -194,6 +194,8 @@ public class InterviewCenterHandler {
         }
         if (request.getOverallResult() != null) {
             interview.setOverallResult(request.getOverallResult());
+            // 手动设置面试结果后，自动将状态修改为已完成
+            interview.setStatus("completed");
         }
         if (request.getInterviewType() != null) {
             interview.setInterviewType(request.getInterviewType());

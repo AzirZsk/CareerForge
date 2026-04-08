@@ -198,27 +198,6 @@ CREATE TABLE IF NOT EXISTS t_conversation (
     deleted INTEGER DEFAULT 0               -- 逻辑删除标记
 );
 
--- ----------------------------------------------------------------------------
--- 职位推荐表
--- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS t_job (
-    id VARCHAR(64) PRIMARY KEY,              -- 主键ID（雪花ID字符串）
-    company VARCHAR(100),                   -- 公司名称
-    company_logo VARCHAR(500),              -- 公司Logo URL
-    position VARCHAR(100),                  -- 职位名称
-    salary VARCHAR(50),                     -- 薪资范围
-    location VARCHAR(100),                  -- 工作地点
-    experience VARCHAR(50),                 -- 经验要求
-    education VARCHAR(50),                  -- 学历要求
-    tags TEXT,                              -- 技能标签（JSON数组）
-    match_score INTEGER DEFAULT 0,          -- 匹配度评分（0-100）
-    published_at DATETIME,                  -- 发布时间
-    description TEXT,                       -- 职位描述
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 更新时间
-    deleted INTEGER DEFAULT 0               -- 逻辑删除标记
-);
-
 -- ============================================================================
 -- 索引
 -- ============================================================================

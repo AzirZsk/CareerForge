@@ -21,8 +21,6 @@ tags:
     description: 复盘管理
   - name: statistics
     description: 数据统计
-  - name: jobs
-    description: 职位推荐
 
 paths:
   # ==================== 用户模块 ====================
@@ -576,34 +574,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_Statistics'
-
-  # ==================== 职位推荐模块 ====================
-  /api/jobs/recommendations:
-    get:
-      tags:
-        - jobs
-      summary: 获取推荐职位
-      operationId: getJobRecommendations
-      parameters:
-        - name: page
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 1
-        - name: size
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 10
-      responses:
-        '200':
-          description: 成功
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiResponse_JobListPage'
 
 components:
   schemas:
@@ -1171,38 +1141,6 @@ components:
           items:
             $ref: '#/components/schemas/RecentActivity'
 
-    # ==================== 职位相关 ====================
-    Job:
-      type: object
-      properties:
-        id:
-          type: string
-        company:
-          type: string
-        companyLogo:
-          type: string
-          nullable: true
-        position:
-          type: string
-        salary:
-          type: string
-        location:
-          type: string
-        experience:
-          type: string
-        education:
-          type: string
-        tags:
-          type: array
-          items:
-            type: string
-        matchScore:
-          type: integer
-        publishedAt:
-          type: string
-        description:
-          type: string
-
     # ==================== 分页相关 ====================
     PageResponse:
       type: object
@@ -1466,26 +1404,6 @@ components:
           type: string
         data:
           $ref: '#/components/schemas/Statistics'
-        timestamp:
-          type: integer
-          format: int64
-
-    ApiResponse_JobListPage:
-      type: object
-      properties:
-        code:
-          type: integer
-        message:
-          type: string
-        data:
-          allOf:
-            - $ref: '#/components/schemas/PageResponse'
-            - type: object
-              properties:
-                list:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/Job'
         timestamp:
           type: integer
           format: int64

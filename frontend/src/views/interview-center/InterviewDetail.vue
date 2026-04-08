@@ -1,32 +1,15 @@
 <template>
   <div class="interview-detail-page" v-if="!loading && interview">
-    <header class="page-header">
-      <div class="header-left">
-        <button class="back-btn" @click="goBack">
-          <font-awesome-icon icon="fa-solid fa-arrow-left" />
-        </button>
-        <div class="header-title">
-          <span class="company-name">{{ interview.companyName }}</span>
-          <span class="separator">/</span>
-          <span class="position-name">{{ interview.position }}</span>
-          <span v-if="interview.roundType" class="round-badge">{{ getRoundLabel(interview) }}</span>
-        </div>
-      </div>
-      <div class="header-actions">
-        <button
-          class="btn btn-mock-interview"
-          :disabled="!canStartMockInterview"
-          :title="mockInterviewHint"
-          @click="startMockInterview"
-        >
-          <font-awesome-icon icon="fa-solid fa-microphone" /> 模拟面试
-        </button>
-        <button class="btn btn-secondary" @click="showEditDialog = true">编辑</button>
-        <button class="btn btn-danger" @click="handleDelete" title="删除面试">
-          <font-awesome-icon icon="fa-solid fa-trash" />
-        </button>
-      </div>
-    </header>
+    <!-- 新头部组件 -->
+    <InterviewHeader
+      :interview="interview"
+      @back="goBack"
+      @edit="showEditDialog = true"
+      @delete="handleDelete"
+      @start-mock="startMockInterview"
+      @update-status="handleStatusChange"
+      @update-result="handleResultChange"
+    />
 
     <div class="detail-content">
       <!-- 弹窗组件 -->
@@ -88,79 +71,8 @@
         @cancel="handleCancel"
       />
 
-      <!-- 面试信息卡片 -->
-      <section class="interview-info-card">
-        <!-- 面试时间单独一行 -->
-        <div class="info-row">
-          <span class="info-item">
-            <font-awesome-icon icon="fa-solid fa-calendar" class="info-icon" />
-            <span class="info-label">面试时间：</span>
-            <span class="info-value">{{ formatDateTime(interview.interviewDate) }}</span>
-          </span>
-        </div>
-        <!-- 面试类型和相关信息 -->
-        <div class="info-row">
-          <span class="info-item">
-            <font-awesome-icon icon="fa-solid fa-laptop" class="info-icon" />
-            <span class="info-label">面试类型：</span>
-            <span class="info-value" v-if="interview.interviewType">{{ getInterviewTypeLabel(interview.interviewType) }}</span>
-            <span class="info-value" v-else>未设置</span>
-          </span>
-          <template v-if="interview.interviewType === 'onsite' && interview.location">
-            <span class="info-item">
-              <font-awesome-icon icon="fa-solid fa-location-dot" class="info-icon" />
-              <span class="info-label">地点：</span>
-              <span class="info-value">{{ interview.location }}</span>
-            </span>
-          </template>
-          <template v-if="interview.interviewType === 'online' && interview.onlineLink">
-            <span class="info-item">
-              <font-awesome-icon icon="fa-solid fa-link" class="info-icon" />
-              <span class="info-label">会议链接：</span>
-              <a :href="interview.onlineLink" target="_blank" class="link-value">{{ interview.onlineLink }}</a>
-              <button class="copy-btn" @click="copyToClipboard(interview.onlineLink)">复制</button>
-            </span>
-          </template>
-          <template v-if="interview.interviewType === 'online' && interview.meetingPassword">
-            <span class="info-item">
-              <font-awesome-icon icon="fa-solid fa-key" class="info-icon" />
-              <span class="info-label">会议密码：</span>
-              <span class="info-value">{{ interview.meetingPassword }}</span>
-              <button class="copy-btn" @click="copyToClipboard(interview.meetingPassword)">复制</button>
-            </span>
-          </template>
-        </div>
-        <div class="info-row">
-          <span class="info-item">
-            <font-awesome-icon icon="fa-solid fa-chart-bar" class="info-icon" />
-            <span class="info-label">状态：</span>
-            <select
-              class="status-select"
-              :class="interview.status"
-              :value="interview.status"
-              @change="handleStatusChange(($event.target as HTMLSelectElement).value)"
-            >
-              <option v-for="(label, key) in statusOptions" :key="key" :value="key">
-                {{ label }}
-              </option>
-            </select>
-          </span>
-          <span class="info-item">
-            <font-awesome-icon icon="fa-solid fa-bullseye" class="info-icon" />
-            <span class="info-label">最终结果：</span>
-            <select
-              class="result-select"
-              :value="interview.overallResult || ''"
-              @change="handleResultChange(($event.target as HTMLSelectElement).value)"
-            >
-              <option value="">未设置</option>
-              <option v-for="(label, key) in resultOptions" :key="key" :value="key">
-                {{ label }}
-              </option>
-            </select>
-          </span>
-        </div>
-
+      <!-- 职位详情区域（整合到头部后移除旧的 interview-info-card） -->
+      <section class="position-detail-card" v-if="interview.jdContent || interview.resumeId || interview.notes">
         <!-- 关联简历 -->
         <div class="info-row" v-if="interview.resumeId">
           <span class="info-item">
@@ -185,10 +97,7 @@
         </div>
 
         <!-- 职位信息折叠区域 -->
-        <div
-          class="position-detail-toggle"
-          v-if="interview.jdContent"
-        >
+        <div class="position-detail-toggle" v-if="interview.jdContent">
           <button class="toggle-btn" @click="showPositionDetail = !showPositionDetail">
             <font-awesome-icon
               icon="fa-solid fa-chevron-down"
@@ -440,14 +349,9 @@ import {
 } from '@/api/interview-center'
 import { createSession } from '@/api/interview-voice'
 import {
-  INTERVIEW_STATUS_LABELS,
-  INTERVIEW_RESULT_LABELS,
-  ROUND_TYPE_LABELS,
-  INTERVIEW_TYPE_LABELS,
   type InterviewDetail,
   type InterviewStatus,
   type InterviewResult,
-  type InterviewType,
   type PreparationVO,
   type AdviceItem,
   type CompanyResearchResult,
@@ -468,6 +372,8 @@ import PreparationGroup from '@/components/interview-center/PreparationGroup.vue
 import AudioUploadArea from '@/components/interview-center/AudioUploadArea.vue'
 import AIAnalysisCard from '@/components/interview-center/AIAnalysisCard.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
+// 头部组件
+import InterviewHeader from '@/components/interview-center/InterviewHeader.vue'
 // 职位详情展示组件
 import CompanyResearchContent from '@/components/interview-center/preparation/CompanyResearchContent.vue'
 import JDAnalysisContent from '@/components/interview-center/preparation/JDAnalysisContent.vue'
@@ -610,9 +516,6 @@ const sortedGroupTypes = computed(() => {
   })
 })
 
-const statusOptions = INTERVIEW_STATUS_LABELS
-const resultOptions = INTERVIEW_RESULT_LABELS
-
 // 是否可以开始模拟面试（必须关联职位）
 const canStartMockInterview = computed(() => {
   return !!interview.value?.jobPositionId
@@ -655,36 +558,6 @@ const aiAnalysisEntryHint = computed(() => {
 
 function goBack() {
   router.back()
-}
-
-function getRoundTypeLabel(type: string): string {
-  return ROUND_TYPE_LABELS[type as keyof typeof ROUND_TYPE_LABELS] || type
-}
-
-// 获取轮次标签（支持自定义轮次名称）
-function getRoundLabel(interviewData: InterviewDetail): string {
-  // 如果是自定义轮次且有自定义名称，显示自定义名称
-  if (interviewData.roundType === 'custom' && interviewData.roundName) {
-    return interviewData.roundName
-  }
-  // 否则使用默认标签
-  return getRoundTypeLabel(interviewData.roundType!)
-}
-
-function getInterviewTypeLabel(type: InterviewType): string {
-  return INTERVIEW_TYPE_LABELS[type] || type
-}
-
-function formatDateTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleString('zh-CN')
-}
-
-function copyToClipboard(text: string) {
-  navigator.clipboard.writeText(text).then(() => {
-    toast.success('已复制到剪贴板')
-  }).catch(() => {
-    toast.error('复制失败，请手动复制')
-  })
 }
 
 async function togglePreparation(preparationId: string) {
@@ -753,12 +626,11 @@ async function handleStatusChange(newStatus: string) {
   }
 }
 
-async function handleResultChange(newResult: string) {
+async function handleResultChange(newResult: InterviewResult | undefined) {
   if (!interview.value) return
   try {
-    const result = newResult ? (newResult as InterviewResult) : undefined
-    await updateInterview(interview.value.id, { overallResult: result })
-    interview.value.overallResult = result
+    await updateInterview(interview.value.id, { overallResult: newResult })
+    interview.value.overallResult = newResult
   } catch (error) {
     console.error('更新面试结果失败:', error)
     toast.error('更新结果失败，请稍后重试')
