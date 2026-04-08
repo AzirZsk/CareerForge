@@ -10,6 +10,8 @@ import com.landit.interview.voice.service.VoiceServiceFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
@@ -26,14 +28,27 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class QuestionPreGenerateServiceImpl implements QuestionPreGenerateService {
 
-    private final InterviewVoiceGatewayImpl voiceGateway;
     private final ChatClient.Builder chatClientBuilder;
     private final VoiceServiceFactory voiceServiceFactory;
     private final AIPromptProperties aiPromptProperties;
     private final VoiceProperties voiceProperties;
+
+    @Autowired
+    @Lazy
+    private InterviewVoiceGatewayImpl voiceGateway;
+
+    public QuestionPreGenerateServiceImpl(
+            ChatClient.Builder chatClientBuilder,
+            VoiceServiceFactory voiceServiceFactory,
+            AIPromptProperties aiPromptProperties,
+            VoiceProperties voiceProperties) {
+        this.chatClientBuilder = chatClientBuilder;
+        this.voiceServiceFactory = voiceServiceFactory;
+        this.aiPromptProperties = aiPromptProperties;
+        this.voiceProperties = voiceProperties;
+    }
 
     /**
      * 预生成问题缓存：sessionId -> questionIndex -> PreGeneratedQuestion
