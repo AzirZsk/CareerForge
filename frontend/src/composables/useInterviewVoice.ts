@@ -16,6 +16,7 @@ import type {
   StateData,
   ErrorData,
   TranscriptData,
+  ReadyData,
   ConversationMessage
 } from '@/types/interview-voice'
 
@@ -99,6 +100,12 @@ export function useInterviewVoice(sessionId: string) {
 
   /** 是否面试进行中 */
   const isInterviewing = computed(() => sessionState.value === 'interviewing')
+
+  /** 是否准备中（预生成进行中） */
+  const isPreparing = computed(() => sessionState.value === 'preparing')
+
+  /** 是否准备就绪（预生成完成，等待用户确认开始） */
+  const isReady = computed(() => sessionState.value === 'ready')
 
   /** 是否冻结状态 */
   const isFrozen = computed(() => sessionState.value === 'frozen')
@@ -215,6 +222,9 @@ export function useInterviewVoice(sessionId: string) {
         case 'error':
           handleErrorMessage(msg.data as ErrorData)
           break
+        case 'ready':
+          handleReadyMessage(msg.data as ReadyData)
+          break
       }
     } catch (e) {
       console.error('[useInterviewVoice] 解析消息失败:', e)
@@ -293,6 +303,27 @@ export function useInterviewVoice(sessionId: string) {
     if (data.state === 'interviewing' && !recorder.isRecording.value) {
       recorder.startRecording()
     }
+  }
+
+  /**
+   * 处理准备就绪消息（预生成完成）
+   */
+  function handleReadyMessage(data: ReadyData): void {
+    console.log('[useInterviewVoice] 预生成完成:', data.message)
+    sessionState.value = 'ready'
+  }
+
+  /**
+   * 开始面试（用户确认）
+   */
+  function startInterview(): void {
+    if (sessionState.value !== 'ready') {
+      console.warn('[useInterviewVoice] 当前状态不允许开始面试:', sessionState.value)
+      return
+    }
+
+    // 发送开始控制消息
+    sendControlMessage('start')
   }
 
   /**
@@ -474,6 +505,8 @@ export function useInterviewVoice(sessionId: string) {
 
     // 计算属性
     isInterviewing,
+    isPreparing,
+    isReady,
     isFrozen,
     isCompleted,
     assistRemaining,
@@ -487,6 +520,7 @@ export function useInterviewVoice(sessionId: string) {
     playbackState: audioPlayer.playbackState,
     // 方法
     init,
+    startInterview,
     startRecording,
     stopRecording,
     freeze,

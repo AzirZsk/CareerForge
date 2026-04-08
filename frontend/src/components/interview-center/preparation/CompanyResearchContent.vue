@@ -50,14 +50,6 @@
         <li v-for="(item, index) in data.recentNews" :key="index">{{ item }}</li>
       </ul>
     </div>
-
-    <!-- 准备建议 -->
-    <div v-if="data.preparationTips?.length" class="research-section tips">
-      <h5 class="section-title">准备建议</h5>
-      <ul class="section-list tips-list">
-        <li v-for="(item, index) in data.preparationTips" :key="index">{{ item }}</li>
-      </ul>
-    </div>
   </div>
 </template>
 
@@ -139,22 +131,5 @@ defineProps<{
   background: rgba(212, 168, 83, 0.15);
   color: $color-accent;
   border-radius: $radius-sm;
-}
-
-.tips {
-  background: rgba(52, 211, 153, 0.05);
-  padding: $spacing-sm;
-  border-radius: $radius-md;
-  border: 1px solid rgba(52, 211, 153, 0.1);
-}
-
-.tips-list {
-  li {
-    color: $color-success;
-
-    &::before {
-      background: $color-success;
-    }
-  }
 }
 </style>

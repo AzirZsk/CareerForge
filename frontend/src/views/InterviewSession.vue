@@ -1,11 +1,12 @@
 <!--=====================================================
   LandIt 面试进行中页面
   支持语音模式（语音作答/全程对话）
+  新增三态 UI：准备中 → 准备就绪 → 面试中
   @author Azir
 =====================================================-->
 
 <template>
-  <!-- 倒计时遮罩层 -->
+  <!-- 倒计时遮罩层（仅在面试开始时显示） -->
   <div v-if="showCountdown" class="countdown-overlay">
     <div class="countdown-content">
       <div class="countdown-title">面试即将开始</div>
@@ -15,7 +16,69 @@
   </div>
 
   <div class="interview-session-page">
-    <div class="session-container">
+    <!-- ========================================
+      状态一：准备中（预生成进行中）
+    ======================================== -->
+    <div v-if="isPreparing" class="preparing-container">
+      <div class="preparing-content">
+        <div class="preparing-icon">
+          <div class="spinner"></div>
+        </div>
+        <h2 class="preparing-title">准备中...</h2>
+        <p class="preparing-desc">正在生成面试问题</p>
+
+        <div class="interview-info-card">
+          <div class="info-item">
+            <span class="info-icon">📋</span>
+            <span class="info-text">{{ interviewTitle }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-icon">👔</span>
+            <span class="info-text">面试官风格：{{ interviewerStyleLabel }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-icon">⏱️</span>
+            <span class="info-text">预计时长：15-20 分钟</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================
+      状态二：准备就绪（预生成完成，等待用户确认）
+    ======================================== -->
+    <div v-else-if="isReady" class="ready-container">
+      <div class="ready-content">
+        <div class="ready-icon">✅</div>
+        <h2 class="ready-title">准备就绪</h2>
+        <p class="ready-desc">面试问题已生成</p>
+
+        <div class="interview-info-card">
+          <div class="info-item">
+            <span class="info-icon">📋</span>
+            <span class="info-text">{{ interviewTitle }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-icon">👔</span>
+            <span class="info-text">面试官风格：{{ interviewerStyleLabel }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-icon">⏱️</span>
+            <span class="info-text">预计时长：15-20 分钟</span>
+          </div>
+        </div>
+
+        <button class="start-interview-btn" @click="handleStartInterview">
+          <span class="btn-icon">🎙️</span>
+          <span class="btn-text">开始面试</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ========================================
+      状态三：面试中（现有面试 UI）
+    ======================================== -->
+    <div v-else-if="isInterviewStarted" class="session-container">
       <!-- 顶部状态栏 -->
       <header
         class="session-header animate-in"
@@ -262,7 +325,25 @@ const isAIResponding = computed(() => voiceInterview.isPlaying.value)
 
 // 面试是否已开始（非 idle 状态时隐藏语音模式切换）
 const isInterviewStarted = computed(() => {
-  return voiceInterview.sessionState.value !== 'idle'
+  return voiceInterview.sessionState.value === 'interviewing' ||
+         voiceInterview.sessionState.value === 'frozen' ||
+         voiceInterview.sessionState.value === 'completed'
+})
+
+// 准备中（预生成进行中）
+const isPreparing = computed(() => voiceInterview.sessionState.value === 'preparing')
+
+// 准备就绪（预生成完成，等待用户确认）
+const isReady = computed(() => voiceInterview.sessionState.value === 'ready')
+
+// 面试官风格标签
+const interviewerStyleLabel = computed(() => {
+  const styleMap: Record<string, string> = {
+    'professional': '专业严肃',
+    'friendly': '亲和引导',
+    'challenging': '压力挑战'
+  }
+  return styleMap['professional'] || '专业严肃'
 })
 
 // ============================================================================
@@ -305,16 +386,9 @@ const sessionBadgeText = computed(() => {
 // ============================================================================
 
 onMounted(() => {
-  // 开始倒计时
-  const timer = setInterval(() => {
-    countdown.value--
-    if (countdown.value <= 0) {
-      clearInterval(timer)
-      showCountdown.value = false
-      // 倒计时结束后初始化语音面试
-      voiceInterview.init()
-    }
-  }, 1000)
+  // 直接初始化语音面试（WebSocket 连接后会自动进入 preparing 状态）
+  // 后端预生成完成后会推送 ready 事件，前端显示"准备就绪"状态
+  voiceInterview.init()
 })
 
 onUnmounted(() => {
@@ -364,6 +438,25 @@ function handleResumeInterview() {
   voiceInterview.resumeInterview()
   assistantContent.value = ''
   assistantAudioChunks.value = []
+}
+
+/**
+ * 开始面试（用户确认）
+ */
+function handleStartInterview() {
+  // 开始倒计时
+  showCountdown.value = true
+  countdown.value = 3
+
+  const timer = setInterval(() => {
+    countdown.value--
+    if (countdown.value <= 0) {
+      clearInterval(timer)
+      showCountdown.value = false
+      // 倒计时结束后发送开始控制消息
+      voiceInterview.startInterview()
+    }
+  }, 1000)
 }
 
 // ============================================================================
@@ -861,5 +954,117 @@ function goToQuestion(index: number): void {
 @keyframes blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
+}
+
+// ============================================================================
+// 准备中状态样式
+// ============================================================================
+
+.preparing-container,
+.ready-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: $spacing-2xl;
+}
+
+.preparing-content,
+.ready-content {
+  text-align: center;
+  max-width: 480px;
+}
+
+.preparing-icon {
+  margin-bottom: $spacing-xl;
+  .spinner {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto;
+    border: 3px solid rgba(212, 168, 83, 0.2);
+    border-top-color: $color-accent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.preparing-title,
+.ready-title {
+  font-family: $font-display;
+  font-size: $text-2xl;
+  font-weight: $weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-sm;
+}
+
+.preparing-desc,
+.ready-desc {
+  font-size: $text-base;
+  color: $color-text-secondary;
+  margin-bottom: $spacing-2xl;
+}
+
+.ready-icon {
+  font-size: 64px;
+  margin-bottom: $spacing-lg;
+}
+
+// 面试信息卡片
+.interview-info-card {
+  background: $color-bg-secondary;
+  border-radius: $radius-lg;
+  padding: $spacing-xl;
+  margin-bottom: $spacing-2xl;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-sm 0;
+  &:not(:last-child) {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+}
+
+.info-icon {
+  font-size: $text-lg;
+}
+
+.info-text {
+  font-size: $text-sm;
+  color: $color-text-secondary;
+}
+
+// 开始面试按钮
+.start-interview-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-lg $spacing-2xl;
+  background: $gradient-gold;
+  color: $color-bg-deep;
+  font-size: $text-lg;
+  font-weight: $weight-semibold;
+  border: none;
+  border-radius: $radius-lg;
+  cursor: pointer;
+  transition: all $transition-fast;
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(212, 168, 83, 0.3);
+  }
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.btn-icon {
+  font-size: $text-xl;
 }
 </style>

@@ -12,7 +12,7 @@
 export type VoiceMode = 'half_voice' | 'full_voice'
 
 /** 会话状态 */
-export type SessionState = 'idle' | 'interviewing' | 'frozen' | 'completed'
+export type SessionState = 'idle' | 'preparing' | 'ready' | 'interviewing' | 'frozen' | 'completed'
 
 /** 求助类型 */
 export type AssistType = 'give_hints' | 'explain_concept' | 'polish_answer' | 'free_question'
@@ -148,8 +148,8 @@ export interface TranscriptData {
 
 /** WebSocket 消息 */
 export interface WSMessage {
-  type: 'transcript' | 'audio' | 'state' | 'error'
-  data: TranscriptData | AudioData | StateData | ErrorData
+  type: 'transcript' | 'audio' | 'state' | 'error' | 'ready'
+  data: TranscriptData | AudioData | StateData | ErrorData | ReadyData
 }
 
 /** 音频数据 */
@@ -181,6 +181,14 @@ export interface ErrorData {
   /** 错误码 */
   code: string
   /** 错误信息 */
+  message: string
+}
+
+/** 准备就绪数据（预生成完成通知） */
+export interface ReadyData {
+  /** 就绪状态 */
+  state: 'ready'
+  /** 提示消息 */
   message: string
 }
 

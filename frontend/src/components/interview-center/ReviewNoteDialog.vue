@@ -81,7 +81,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
-  saved: []
+  saved: [note: ReviewNoteVO]
 }>()
 
 const submitting = ref(false)
@@ -129,8 +129,8 @@ async function handleSubmit() {
 
   submitting.value = true
   try {
-    await saveReviewNote(props.interviewId, form)
-    emit('saved')
+    const savedNote = await saveReviewNote(props.interviewId, form)
+    emit('saved', savedNote)
     emit('close')
   } catch (error) {
     console.error('保存复盘笔记失败:', error)

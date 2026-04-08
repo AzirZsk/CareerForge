@@ -313,7 +313,6 @@ export interface CompanyResearchResult {
   techStack: string[]
   interviewCharacteristics: string[]
   recentNews: string[]
-  preparationTips: string[]
 }
 
 // JD分析结果

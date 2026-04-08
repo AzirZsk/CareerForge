@@ -1558,7 +1558,6 @@ public class AIPromptProperties {
                     2. 分析公司的核心业务和商业模式
                     3. 推断公司可能使用的技术栈
                     4. 总结该公司的面试特点和风格
-                    5. 提供针对性的面试准备建议
 
                     ---
 
@@ -1572,7 +1571,6 @@ public class AIPromptProperties {
                     | techStack | array | 是 | 技术栈列表（根据公司业务推断） | 5-10条 |
                     | interviewCharacteristics | array | 是 | 面试特点（面试风格、流程特点） | 3-5条 |
                     | recentNews | array | 是 | 最新动态（近期新闻、发展方向） | 2-3条 |
-                    | preparationTips | array | 是 | 准备建议（针对该公司的面试准备建议） | 3-5条 |
 
                     ---
 
@@ -1640,17 +1638,6 @@ public class AIPromptProperties {
                     - "2024年加大AI大模型投入，推出豆包等产品"
                     - "加速海外市场拓展，TikTok电商业务增长迅速"
 
-                    ### 7. preparationTips（准备建议）
-                    **内容要求**：
-                    - 针对该公司面试的具体准备建议
-                    - 优先级排序，最重要的放前面
-                    - 结合公司业务和技术栈给出建议
-
-                    **示例**：
-                    - "重点复习推荐算法相关知识，了解召回、排序、重排等流程"
-                    - "准备2-3个有深度的项目案例，突出技术难点和解决方案"
-                    - "了解抖音/今日头条的核心功能，思考可能的技术实现"
-
                     ---
 
                     ## 边界条件处理
@@ -1659,14 +1646,14 @@ public class AIPromptProperties {
                     |------|----------|
                     | 小公司/创业公司 | overview 说明规模较小，techStack 列出常见技术栈，recentNews 可为空 |
                     | 新成立公司 | 强调发展阶段，culture 可基于行业特点推断 |
-                    | 不知名公司 | 基于行业和业务类型推断，在 preparationTips 中建议先了解公司官网 |
+                    | 不知名公司 | 基于行业和业务类型推断，在 interviewCharacteristics 中建议先了解公司官网 |
                     | 外企 | 补充英语面试要求、工作制度差异等信息 |
                     | 传统行业公司 | 强调业务稳定性，techStack 列出企业级技术栈 |
 
                     ---
 
                     ## 输出格式示例（严格JSON，单行压缩格式）
-                    {"overview":"字节跳动成立于2012年，是全球领先的短视频和内容平台公司。旗下产品包括抖音、今日头条、TikTok等，覆盖全球150+国家和地区，日活用户超10亿。在互联网内容分发和推荐算法领域处于行业领先地位。","coreBusiness":["抖音/TikTok - 短视频社交平台","今日头条 - 个性化资讯推荐","飞书 - 企业协作办公套件"],"culture":"倡导'始终创业'文化，追求极致和务实。工作节奏快，强调数据驱动决策。重视候选人学习能力和抗压能力。","techStack":["Go","Python","Kubernetes","Redis","Kafka","TensorFlow"],"interviewCharacteristics":["通常3-4轮技术面试","重视算法和系统设计","会有手写代码环节"],"recentNews":["2024年加大AI大模型投入","加速海外市场拓展"],"preparationTips":["重点复习推荐算法相关知识","准备2-3个有深度的项目案例","了解抖音核心功能的技术实现"]}
+                    {"overview":"字节跳动成立于2012年，是全球领先的短视频和内容平台公司。旗下产品包括抖音、今日头条、TikTok等，覆盖全球150+国家和地区，日活用户超10亿。在互联网内容分发和推荐算法领域处于行业领先地位。","coreBusiness":["抖音/TikTok - 短视频社交平台","今日头条 - 个性化资讯推荐","飞书 - 企业协作办公套件"],"culture":"倡导'始终创业'文化，追求极致和务实。工作节奏快，强调数据驱动决策。重视候选人学习能力和抗压能力。","techStack":["Go","Python","Kubernetes","Redis","Kafka","TensorFlow"],"interviewCharacteristics":["通常3-4轮技术面试","重视算法和系统设计","会有手写代码环节"],"recentNews":["2024年加大AI大模型投入","加速海外市场拓展"]}
 
                     ---
 
@@ -1677,8 +1664,7 @@ public class AIPromptProperties {
                     2. coreBusiness 列举3-5条核心业务
                     3. techStack 列举5-10条技术，且与公司业务相关
                     4. interviewCharacteristics 符合该公司实际情况
-                    5. preparationTips 针对性强，有具体行动建议
-                    6. 只返回JSON，不要返回其他内容
+                    5. 只返回JSON，不要返回其他内容
                     """,
                     // userPromptTemplate
                     """
@@ -2150,19 +2136,24 @@ public class AIPromptProperties {
                     """
                     请分析以下面试对话文本。
 
-                    【目标岗位】{companyName} - {positionTitle}
+                    <company_name>{companyName}</company_name>
+                    <position_title>{positionTitle}</position_title>
 
-                    【职位描述 JD】
+                    <jd_content>
                     {jdContent}
+                    </jd_content>
 
-                    【JD 分析摘要】
+                    <jd_analysis>
                     {jdAnalysis}
+                    </jd_analysis>
 
-                    【候选人简历摘要】
+                    <resume_content>
                     {resumeContent}
+                    </resume_content>
 
-                    【面试对话文本】
+                    <transcript>
                     {transcript}
+                    </transcript>
                     """);
         }
 

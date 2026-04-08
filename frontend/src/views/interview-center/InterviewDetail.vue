@@ -184,17 +184,17 @@
           </span>
         </div>
 
-        <!-- 职位详情折叠区域 -->
+        <!-- 职位信息折叠区域 -->
         <div
           class="position-detail-toggle"
-          v-if="interview.jdContent || parsedCompanyResearch || parsedJdAnalysis"
+          v-if="interview.jdContent"
         >
           <button class="toggle-btn" @click="showPositionDetail = !showPositionDetail">
             <font-awesome-icon
               icon="fa-solid fa-chevron-down"
               :class="{ rotated: showPositionDetail }"
             />
-            <span>{{ showPositionDetail ? '收起职位详情' : '展开职位详情' }}</span>
+            <span>{{ showPositionDetail ? '收起职位信息' : '展开职位信息' }}</span>
           </button>
         </div>
 
@@ -209,7 +209,6 @@
               <font-awesome-icon icon="fa-solid fa-clipboard-list" /> 职位描述
             </button>
             <button
-              v-if="parsedCompanyResearch"
               class="position-tab-btn"
               :class="{ active: activePositionTab === 'research' }"
               @click="activePositionTab = 'research'"
@@ -217,7 +216,6 @@
               <font-awesome-icon icon="fa-solid fa-building" /> 公司调研
             </button>
             <button
-              v-if="parsedJdAnalysis"
               class="position-tab-btn"
               :class="{ active: activePositionTab === 'analysis' }"
               @click="activePositionTab = 'analysis'"
@@ -457,7 +455,8 @@ import {
   type PreparationVO,
   type AdviceItem,
   type CompanyResearchResult,
-  type JDAnalysisResult
+  type JDAnalysisResult,
+  type ReviewNoteVO
 } from '@/types/interview-center'
 import { useNotificationStore } from '@/stores/notification'
 // 弹窗组件
@@ -1038,8 +1037,11 @@ function handlePreparationAdded() {
   loadDetail()
 }
 
-function handleReviewSaved() {
-  loadDetail()
+function handleReviewSaved(note: ReviewNoteVO) {
+  // 直接更新本地状态，避免重新加载整个页面
+  if (interview.value) {
+    interview.value.reviewNote = note
+  }
 }
 
 function handleInterviewUpdated() {

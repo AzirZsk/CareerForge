@@ -56,10 +56,4 @@ public class CompanyResearchResult {
     @SchemaField(value = "最新动态列表（近期新闻、发展方向）")
     private List<String> recentNews;
 
-    /**
-     * 准备建议
-     */
-    @SchemaField(value = "准备建议列表（针对该公司的面试准备建议）")
-    private List<String> preparationTips;
-
 }
