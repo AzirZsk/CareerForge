@@ -115,14 +115,6 @@
       <div v-else class="actions-spacer"></div>
       <div class="actions-group">
         <button
-          class="btn btn-position"
-          v-if="jdContent"
-          @click="$emit('toggle-position')"
-        >
-          <font-awesome-icon icon="fa-solid fa-clipboard-list" />
-          {{ showPosition ? '收起职位' : '职位信息' }}
-        </button>
-        <button
           class="btn btn-mock"
           :disabled="!canStartMockInterview"
           :title="mockInterviewHint"
@@ -130,6 +122,14 @@
         >
           <font-awesome-icon icon="fa-solid fa-microphone" />
           开始模拟面试
+        </button>
+        <button
+          class="btn btn-position"
+          v-if="jdContent"
+          @click="$emit('toggle-position')"
+        >
+          <font-awesome-icon icon="fa-solid fa-clipboard-list" />
+          {{ showPosition ? '收起职位' : '职位信息' }}
         </button>
         <div class="more-menu" ref="moreMenuRef">
           <button class="btn btn-icon" @click="toggleMoreMenu">
@@ -921,25 +921,26 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: $spacing-xs;
-  background: rgba($color-accent, 0.1);
-  color: $color-accent;
+  background: transparent;
+  color: $color-text-secondary;
   font-weight: 500;
   padding: $spacing-sm $spacing-md;
   border-radius: $radius-md;
-  border: 1px solid rgba($color-accent, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   cursor: pointer;
   transition: all 0.2s;
 
   svg {
-    color: $color-accent;
+    color: $color-text-secondary;
   }
 
   &:hover {
-    background: rgba($color-accent, 0.15);
-    border-color: rgba($color-accent, 0.3);
+    background: $color-bg-tertiary;
+    color: $color-text-primary;
+    border-color: rgba(255, 255, 255, 0.2);
 
     svg {
-      color: $color-accent-light;
+      color: $color-text-primary;
     }
   }
 }
