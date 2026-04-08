@@ -1,15 +1,17 @@
 <template>
   <div class="interview-detail-page" v-if="!loading && interview">
-    <!-- 新头部组件 -->
+    <!-- 头部组件 -->
     <InterviewHeader
       :interview="interview"
       :can-start-mock-interview="canStartMockInterview"
       :mock-interview-hint="mockInterviewHint"
+      :show-position="showPositionDetail"
       @back="goBack"
       @start-mock="startMockInterview"
       @edit="showEditDialog = true"
       @delete="handleDelete"
       @edit-resume="showEditDialog = true"
+      @toggle-position="showPositionDetail = !showPositionDetail"
     />
 
     <div class="detail-content">
@@ -924,9 +926,9 @@ function handleApplyTranscriptEvent(event: Event) {
 // 职位信息区域
 .position-detail-section {
   background: $color-bg-secondary;
-  border-radius: $radius-lg;
-  padding: $spacing-lg;
-  margin-bottom: $spacing-xl;
+  border-radius: $radius-md;
+  padding: $spacing-md;
+  margin-bottom: $spacing-lg;
 }
 
 // 职位详情折叠
@@ -943,9 +945,9 @@ function handleApplyTranscriptEvent(event: Event) {
   border: none;
   color: $color-text-secondary;
   cursor: pointer;
-  font-size: 0.875rem;
-  padding: $spacing-sm;
-  border-radius: $radius-md;
+  font-size: 0.8125rem;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $radius-sm;
   transition: all 0.2s;
 
   &:hover {
@@ -954,8 +956,8 @@ function handleApplyTranscriptEvent(event: Event) {
   }
 
   svg {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
     transition: transform 0.2s;
 
     &.rotated {
@@ -965,32 +967,32 @@ function handleApplyTranscriptEvent(event: Event) {
 }
 
 .position-detail-content {
-  margin-top: $spacing-md;
-  padding: $spacing-md;
+  margin-top: $spacing-sm;
+  padding: $spacing-sm;
   background: $color-bg-tertiary;
-  border-radius: $radius-md;
+  border-radius: $radius-sm;
 }
 
 // 职位详情 Tab 样式
 .position-tabs {
   display: flex;
   gap: $spacing-xs;
-  margin-bottom: $spacing-md;
+  margin-bottom: $spacing-sm;
   border-bottom: 1px solid $color-bg-elevated;
-  padding-bottom: $spacing-sm;
+  padding-bottom: $spacing-xs;
 }
 
 .position-tab-btn {
   display: flex;
   align-items: center;
   gap: $spacing-xs;
-  padding: $spacing-xs $spacing-md;
+  padding: $spacing-xs $spacing-sm;
   background: transparent;
   border: none;
   color: $color-text-tertiary;
-  font-size: $text-sm;
+  font-size: 0.8125rem;
   cursor: pointer;
-  border-radius: $radius-sm $radius-sm 0 0;
+  border-radius: $radius-xs $radius-xs 0 0;
   transition: all 0.2s;
   position: relative;
 
@@ -1016,7 +1018,7 @@ function handleApplyTranscriptEvent(event: Event) {
 }
 
 .position-tab-content {
-  min-height: 150px;
+  min-height: 120px;
 }
 
 .tab-panel {
@@ -1035,9 +1037,9 @@ function handleApplyTranscriptEvent(event: Event) {
 }
 
 .jd-content {
-  font-size: $text-sm;
+  font-size: 0.8125rem;
   color: $color-text-secondary;
-  line-height: 1.8;
+  line-height: 1.6;
   white-space: pre-wrap;
 }
 

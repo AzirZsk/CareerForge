@@ -1,6 +1,6 @@
 <template>
   <header class="interview-header">
-    <!-- 第一行：标题 + 状态标签 -->
+    <!-- 第一行：标题 + 状态标签 + 结果标签 -->
     <div class="header-row title-row">
       <div class="header-left">
         <button class="back-btn" @click="$emit('back')">
@@ -18,61 +18,73 @@
           <span class="status-dot"></span>
           {{ statusLabel }}
         </span>
+        <span v-if="resultLabel" class="result-badge" :class="resultClass">
+          <span class="result-dot"></span>
+          {{ resultLabel }}
+        </span>
       </div>
     </div>
 
-    <!-- 第二行：四个信息块 -->
+    <!-- 第二行：五个信息块 -->
     <div class="header-row info-row">
       <div class="info-block">
-        <span class="info-icon">📅</span>
+        <font-awesome-icon icon="fa-solid fa-calendar" class="info-icon" />
         <div class="info-content">
           <span class="info-label">时间</span>
           <span class="info-value">{{ formattedDate }}</span>
         </div>
       </div>
       <div class="info-block">
-        <span class="info-icon">💻</span>
+        <font-awesome-icon icon="fa-solid fa-laptop" class="info-icon" />
         <div class="info-content">
           <span class="info-label">类型</span>
           <span class="info-value">{{ interviewTypeLabel }}</span>
         </div>
       </div>
       <div class="info-block">
-        <span class="info-icon">🎯</span>
+        <font-awesome-icon icon="fa-solid fa-bullseye" class="info-icon" />
         <div class="info-content">
           <span class="info-label">轮次</span>
           <span class="info-value">{{ roundLabel }}</span>
         </div>
       </div>
       <div class="info-block" :class="timeUrgency.class">
-        <span class="info-icon">⏱️</span>
+        <font-awesome-icon icon="fa-solid fa-stopwatch" class="info-icon" />
         <div class="info-content">
           <span class="info-label">倒计时</span>
           <span class="info-value">{{ timeUrgency.text }}</span>
         </div>
       </div>
+      <div class="info-block resume-block" v-if="interview.resumeId">
+        <font-awesome-icon icon="fa-solid fa-file-alt" class="info-icon" />
+        <div class="info-content">
+          <span class="info-label">简历</span>
+          <router-link :to="`/resume/${interview.resumeId}`" class="info-value resume-link">
+            {{ interview.resumeName || '查看简历' }}
+          </router-link>
+        </div>
+      </div>
     </div>
 
-    <!-- 第三行：关联简历 -->
-    <div class="header-row resume-row" v-if="interview.resumeId">
-      <span class="resume-icon">📄</span>
-      <span class="resume-label">关联简历：</span>
-      <router-link :to="`/resume/${interview.resumeId}`" class="resume-link">
-        {{ interview.resumeName || '查看简历' }}
-      </router-link>
-    </div>
-
-    <!-- 第四行：会议链接（仅线上面试） -->
+    <!-- 第三行：会议链接（仅线上面试） -->
     <MeetingLinkBar
       v-if="interview.interviewType === 'online'"
       :link="interview.onlineLink"
       :password="interview.meetingPassword"
     />
 
-    <!-- 第五行：操作按钮 -->
+    <!-- 第四行：操作按钮 -->
     <div class="header-row actions-row">
       <div class="actions-spacer"></div>
       <div class="actions-group">
+        <button
+          class="btn btn-position"
+          v-if="interview.jdContent"
+          @click="$emit('toggle-position')"
+        >
+          <font-awesome-icon icon="fa-solid fa-clipboard-list" />
+          {{ showPosition ? '收起职位' : '职位信息' }}
+        </button>
         <button
           class="btn btn-mock"
           :disabled="!canStartMockInterview"
@@ -102,6 +114,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import MeetingLinkBar from './MeetingLinkBar.vue'
 import {
   INTERVIEW_STATUS_LABELS,
+  INTERVIEW_RESULT_LABELS,
   ROUND_TYPE_LABELS,
   INTERVIEW_TYPE_LABELS,
   type InterviewDetail
@@ -111,6 +124,7 @@ const props = defineProps<{
   interview: InterviewDetail
   canStartMockInterview: boolean
   mockInterviewHint: string
+  showPosition?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -119,6 +133,7 @@ const emit = defineEmits<{
   edit: []
   delete: []
   'edit-resume': []
+  'toggle-position': []
 }>()
 
 const showMoreMenu = ref(false)
@@ -132,6 +147,17 @@ const statusLabel = computed(() => {
 // 状态样式类
 const statusClass = computed(() => {
   return props.interview.status
+})
+
+// 结果标签
+const resultLabel = computed(() => {
+  if (!props.interview.overallResult) return ''
+  return INTERVIEW_RESULT_LABELS[props.interview.overallResult] || ''
+})
+
+// 结果样式类
+const resultClass = computed(() => {
+  return props.interview.overallResult || ''
 })
 
 // 轮次标签
@@ -368,6 +394,42 @@ onUnmounted(() => {
   }
 }
 
+// 结果标签
+.result-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: 6px 12px;
+  border-radius: $radius-full;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-left: $spacing-sm;
+
+  .result-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  &.passed {
+    background: rgba($color-success, 0.15);
+    color: $color-success;
+    .result-dot { background: $color-success; }
+  }
+
+  &.failed {
+    background: rgba($color-error, 0.15);
+    color: $color-error;
+    .result-dot { background: $color-error; }
+  }
+
+  &.pending {
+    background: rgba($color-text-tertiary, 0.15);
+    color: $color-text-tertiary;
+    .result-dot { background: $color-text-tertiary; }
+  }
+}
+
 // 第二行：信息块
 .info-row {
   display: flex;
@@ -385,6 +447,7 @@ onUnmounted(() => {
 
   .info-icon {
     font-size: 1.25rem;
+    color: $color-text-secondary;
   }
 
   .info-content {
@@ -427,6 +490,17 @@ onUnmounted(() => {
       text-decoration: line-through;
     }
   }
+
+  &.resume-block {
+    .info-value {
+      color: $color-accent;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
 }
 
 @keyframes pulse {
@@ -434,37 +508,7 @@ onUnmounted(() => {
   50% { opacity: 0.7; }
 }
 
-// 第三行：关联简历
-.resume-row {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  padding: $spacing-sm $spacing-md;
-  background: $color-bg-tertiary;
-  border-radius: $radius-md;
-
-  .resume-icon {
-    font-size: 1rem;
-  }
-
-  .resume-label {
-    font-size: 0.875rem;
-    color: $color-text-tertiary;
-  }
-
-  .resume-link {
-    color: $color-accent;
-    text-decoration: none;
-    font-size: 0.875rem;
-    font-weight: 500;
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-}
-
-// 第五行：操作按钮
+// 响应式
 .actions-row {
   .actions-spacer {
     flex: 1;
@@ -501,6 +545,25 @@ onUnmounted(() => {
     background: $color-bg-tertiary;
     color: $color-text-tertiary;
     box-shadow: none;
+  }
+}
+
+.btn-position {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  background: rgba($color-accent, 0.1);
+  color: $color-accent;
+  font-weight: 500;
+  padding: $spacing-sm $spacing-md;
+  border-radius: $radius-md;
+  border: 1px solid rgba($color-accent, 0.2);
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: rgba($color-accent, 0.15);
+    border-color: rgba($color-accent, 0.3);
   }
 }
 
