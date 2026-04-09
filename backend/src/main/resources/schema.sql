@@ -156,6 +156,7 @@ CREATE TABLE IF NOT EXISTS t_interview_session (
     assist_limit INT DEFAULT 5,             -- 求助次数上限
     freeze_at DATETIME,                     -- 冻结时间点（求助时的面试暂停时间）
     interviewer_style VARCHAR(20) DEFAULT 'professional', -- 面试官风格（professional/friendly/challenging）
+    pre_generated_questions TEXT,              -- 预生成问题列表（JSON格式）
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 更新时间
     deleted INTEGER DEFAULT 0               -- 逻辑删除标记
@@ -342,6 +343,8 @@ CREATE TABLE IF NOT EXISTS t_interview_ai_analysis (
     id VARCHAR(64) PRIMARY KEY,              -- 主键ID（雪花ID字符串）
     interview_id VARCHAR(64) NOT NULL,       -- 关联的面试ID
     advice_list TEXT,                        -- AI 建议列表（JSON格式: List<AdviceItem>）
+    transcript_analysis TEXT,                -- 对话分析结果（JSON格式: TranscriptAnalysisResult）
+    interview_analysis TEXT,                 -- 面试分析结果（JSON格式: InterviewAnalysisResult）
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 更新时间
     deleted INTEGER DEFAULT 0                -- 逻辑删除标记（0-未删除 1-已删除）

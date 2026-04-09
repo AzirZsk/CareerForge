@@ -12,6 +12,8 @@ import com.landit.interview.voice.handler.AssistantAgentHandler;
 import com.landit.interview.voice.handler.InterviewerAgentHandler;
 import com.landit.interview.voice.service.QuestionPreGenerateService;
 import com.landit.interview.voice.service.RecordingService;
+import com.landit.interview.voice.service.TTSService;
+import com.landit.interview.voice.service.VoiceServiceFactory;
 import com.landit.interview.voice.service.VoiceSessionManager;
 import com.landit.jobposition.entity.JobPosition;
 import com.landit.jobposition.mapper.JobPositionMapper;
@@ -45,6 +47,7 @@ public class InterviewVoiceGatewayImpl implements InterviewVoiceGateway {
     private final QuestionPreGenerateService questionPreGenerateService;
     private final RecordingService recordingService;
     private final VoiceSessionManager voiceSessionManager;
+    private final VoiceServiceFactory voiceServiceFactory;
     private final InterviewMapper interviewMapper;
     private final InterviewSessionMapper interviewSessionMapper;
     private final JobPositionMapper jobPositionMapper;
@@ -113,6 +116,7 @@ public class InterviewVoiceGatewayImpl implements InterviewVoiceGateway {
         state.setAssistRemaining(session.getAssistLimit());
         state.setAssistLimit(session.getAssistLimit());
         state.setInterviewerStyle(session.getInterviewerStyle());
+        state.setVoiceMode(session.getVoiceMode());
         sessionStates.put(sessionId, state);
 
         log.info("[VoiceGateway] Session created, sessionId={}, interviewId={}, position={}",
@@ -128,8 +132,8 @@ public class InterviewVoiceGatewayImpl implements InterviewVoiceGateway {
                 .build();
 
         try {
-            questionPreGenerateService.preGenerateFirstQuestion(sessionId, preGenContext).join();
-            log.info("[VoiceGateway] 预生成完成, sessionId={}", sessionId);
+            int generatedCount = questionPreGenerateService.preGenerateAllQuestions(sessionId, preGenContext);
+            log.info("[VoiceGateway] 预生成完成, sessionId={}, count={}", sessionId, generatedCount);
         } catch (Exception ex) {
             log.error("[VoiceGateway] 预生成失败，将降级到实时生成, sessionId={}", sessionId, ex);
             // 预生成失败不阻断，面试开始时降级到实时生成
@@ -391,8 +395,14 @@ public class InterviewVoiceGatewayImpl implements InterviewVoiceGateway {
             PreGeneratedQuestion question = cachedQuestion.get();
             questionPreGenerateService.markQuestionUsed(sessionId, 0);
 
-            // 零延迟推送预生成的开场白
+            // 零延迟推送预生成的开场白文本
             sendCachedQuestion(sessionId, question);
+
+            // 全语音模式下，实时合成音频并推送
+            if ("full_voice".equals(state.getVoiceMode())) {
+                synthesizeAndSendAudio(sessionId, question.getText());
+            }
+
             log.info("[VoiceGateway] 使用预生成开场白（零延迟）, sessionId={}", sessionId);
 
         } else {
@@ -409,23 +419,56 @@ public class InterviewVoiceGatewayImpl implements InterviewVoiceGateway {
 
     /**
      * 推送缓存的问题（零延迟）
+     * 只推送文本，音频由 handleStartAction 根据 voiceMode 决定是否实时合成
      */
     private void sendCachedQuestion(String sessionId, PreGeneratedQuestion question) {
-        // 推送文本
         sendResponse(sessionId, VoiceResponse.transcript(VoiceResponse.TranscriptData.builder()
                 .text(question.getText())
                 .isFinal(true)
                 .role("interviewer")
                 .build()));
+    }
 
-        // 推送音频（如果有）
-        if (question.getAudioData() != null && question.getAudioData().length > 0) {
-            String audioBase64 = Base64.getEncoder().encodeToString(question.getAudioData());
-            sendResponse(sessionId, VoiceResponse.audio(VoiceResponse.AudioData.builder()
-                    .audio(audioBase64)
-                    .format(question.getAudioFormat())
-                    .sampleRate(question.getSampleRate())
-                    .build()));
+    /**
+     * 实时合成音频并推送（用于 full_voice 模式）
+     */
+    private void synthesizeAndSendAudio(String sessionId, String text) {
+        try {
+            TTSService ttsService = voiceServiceFactory.getTTSService();
+            TTSConfig ttsConfig = TTSConfig.builder()
+                    .model("cosyvoice-v1")
+                    .voice("zhichu-v1")
+                    .format("wav")
+                    .sampleRate(16000)
+                    .speechRate(1.0)
+                    .volume(0.8)
+                    .pitch(0.0)
+                    .build();
+
+            // 同步合成音频
+            byte[] audioData = ttsService.streamSynthesize(text, ttsConfig)
+                    .collectList()
+                    .block()
+                    .stream()
+                    .reduce((a, b) -> {
+                        byte[] result = new byte[a.length + b.length];
+                        System.arraycopy(a, 0, result, 0, a.length);
+                        System.arraycopy(b, 0, result, a.length, b.length);
+                        return result;
+                    })
+                    .orElse(new byte[0]);
+
+            if (audioData.length > 0) {
+                String audioBase64 = Base64.getEncoder().encodeToString(audioData);
+                sendResponse(sessionId, VoiceResponse.audio(VoiceResponse.AudioData.builder()
+                        .audio(audioBase64)
+                        .format("wav")
+                        .sampleRate(16000)
+                        .build()));
+                log.debug("[VoiceGateway] TTS 音频推送完成, sessionId={}, audioSize={}", sessionId, audioData.length);
+            }
+        } catch (Exception e) {
+            log.error("[VoiceGateway] TTS 合成失败, sessionId={}", sessionId, e);
         }
     }
 
@@ -458,6 +501,8 @@ public class InterviewVoiceGatewayImpl implements InterviewVoiceGateway {
         private String resumeContent;
         // 面试官风格
         private String interviewerStyle = "professional";
+        // 语音模式（half_voice/full_voice）
+        private String voiceMode = "half_voice";
         // 会话状态
         private boolean active = false;
         private boolean frozen = false;

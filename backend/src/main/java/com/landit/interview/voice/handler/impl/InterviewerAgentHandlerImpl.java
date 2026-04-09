@@ -145,31 +145,16 @@ public class InterviewerAgentHandlerImpl implements InterviewerAgentHandler {
 
     /**
      * 从缓存构建响应（零延迟）
+     * 预生成只包含文本，音频由 Gateway 根据 voiceMode 决定是否实时合成
      */
     private Flux<VoiceResponse> buildResponseFromCache(PreGeneratedQuestion question) {
-        // 文本响应
-        Flux<VoiceResponse> textFlux = Flux.just(VoiceResponse.transcript(
+        return Flux.just(VoiceResponse.transcript(
                 VoiceResponse.TranscriptData.builder()
                         .text(question.getText())
                         .isFinal(true)
                         .role("interviewer")
                         .build()
         ));
-
-        // 音频响应（如果有）
-        if (question.getAudioData() != null && question.getAudioData().length > 0) {
-            String audioBase64 = Base64.getEncoder().encodeToString(question.getAudioData());
-            Flux<VoiceResponse> audioFlux = Flux.just(VoiceResponse.audio(
-                    VoiceResponse.AudioData.builder()
-                            .audio(audioBase64)
-                            .format(question.getAudioFormat())
-                            .sampleRate(question.getSampleRate())
-                            .build()
-            ));
-            return textFlux.concatWith(audioFlux);
-        }
-
-        return textFlux;
     }
 
     /**
@@ -517,6 +502,28 @@ public class InterviewerAgentHandlerImpl implements InterviewerAgentHandler {
         } catch (Exception e) {
             log.error("[InterviewerAgent] Failed to save interviewer recording, sessionId={}", sessionId, e);
         }
+    }
+
+    @Override
+    public Flux<VoiceResponse> generateFollowUpQuestion(
+            String sessionId,
+            String lastQuestion,
+            String candidateAnswer,
+            String conversationHistory) {
+        log.info("[InterviewerAgent] 生成追问, sessionId={}", sessionId);
+
+        // 调用预生成服务生成追问
+        String followUp = questionPreGenerateService.generateFollowUpQuestion(
+                sessionId, lastQuestion, candidateAnswer, conversationHistory);
+
+        // 构建响应（仅文本，不合成音频，追问应该简短）
+        return Flux.just(VoiceResponse.transcript(
+                VoiceResponse.TranscriptData.builder()
+                        .text(followUp)
+                        .isFinal(true)
+                        .role("interviewer")
+                        .build()
+        ));
     }
 
     /**

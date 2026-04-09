@@ -59,4 +59,10 @@ public class InterviewSession extends BaseEntity {
      */
     private String interviewerStyle;
 
+    /**
+     * 预生成问题列表（JSON格式）
+     * 结构：[{"questionIndex":0,"text":"问题内容","used":false},...]
+     */
+    private String preGeneratedQuestions;
+
 }

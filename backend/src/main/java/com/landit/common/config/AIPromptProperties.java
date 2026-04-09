@@ -2868,6 +2868,15 @@ public class AIPromptProperties {
          * - {jdRequirements} - JD 核心要求
          */
         private String replyPromptTemplate;
+
+        /**
+         * 生成追问的用户提示词模板
+         * 占位符:
+         * - {lastQuestion} - 上一个问题
+         * - {candidateAnswer} - 候选人回答
+         * - {conversationHistory} - 对话摘要
+         */
+        private String followUpPromptTemplate;
     }
 
 }

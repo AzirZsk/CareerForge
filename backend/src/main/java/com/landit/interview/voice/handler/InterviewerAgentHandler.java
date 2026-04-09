@@ -36,4 +36,20 @@ public interface InterviewerAgentHandler {
      * @return 响应流（问题文本 + 音频）
      */
     Flux<VoiceResponse> generateNextQuestion(String sessionId);
+
+    /**
+     * 生成追问（可选）
+     * 当面试官需要对候选人回答进行深入挖掘时调用
+     *
+     * @param sessionId          会话 ID
+     * @param lastQuestion       上一个问题
+     * @param candidateAnswer    候选人回答
+     * @param conversationHistory 最近对话摘要
+     * @return 响应流（追问文本 + 音频）
+     */
+    Flux<VoiceResponse> generateFollowUpQuestion(
+            String sessionId,
+            String lastQuestion,
+            String candidateAnswer,
+            String conversationHistory);
 }
