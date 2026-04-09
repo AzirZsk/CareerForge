@@ -54,6 +54,10 @@ public class VoiceWebSocketHandler implements WebSocketHandler {
         }
     }
 
+    /**
+     * 处理文本消息（JSON 格式）
+     * 解析消息类型后直接路由到 Gateway 对应的处理方法，避免泛型擦除导致的重复判断
+     */
     private void handleTextMessage(WebSocketSession session, TextMessage message, String sessionId) {
         log.debug("[VoiceWS] Received text message, sessionId={}, length={}", sessionId, message.getPayload().length());
         try {
@@ -69,21 +73,21 @@ public class VoiceWebSocketHandler implements WebSocketHandler {
                 return;
             }
 
-            // 根据消息类型选择对应的泛型类型进行反序列化
+            // 根据消息类型反序列化并直接路由到 Gateway 的具体方法（避免重复判断）
             switch (messageType) {
                 case AUDIO:
                     VoiceRequest<VoiceRequest.AudioData> audioRequest = objectMapper.treeToValue(
                             jsonNode,
                             new TypeReference<VoiceRequest<VoiceRequest.AudioData>>() {}
                     );
-                    voiceGateway.handleRequest(sessionId, session, audioRequest);
+                    voiceGateway.handleAudioRequest(sessionId, audioRequest);
                     break;
                 case CONTROL:
                     VoiceRequest<VoiceRequest.ControlData> controlRequest = objectMapper.treeToValue(
                             jsonNode,
                             new TypeReference<VoiceRequest<VoiceRequest.ControlData>>() {}
                     );
-                    voiceGateway.handleRequest(sessionId, session, controlRequest);
+                    voiceGateway.handleControlRequest(sessionId, controlRequest);
                     break;
                 default:
                     log.warn("[VoiceWS] Unknown message type: {}", messageType);

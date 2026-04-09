@@ -87,7 +87,8 @@ public class VoiceResponse {
         private Boolean isFinal;
 
         /**
-         * 角色：interviewer, candidate
+         * 角色：interviewer, candidate, assistant
+         * @see com.landit.interview.voice.enums.TranscriptRole
          */
         private String role;
 

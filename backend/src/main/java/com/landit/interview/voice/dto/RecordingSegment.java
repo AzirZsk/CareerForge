@@ -25,6 +25,7 @@ public class RecordingSegment {
 
     /**
      * 角色：interviewer, candidate, assistant
+     * @see com.landit.interview.voice.enums.TranscriptRole
      */
     private String role;
 

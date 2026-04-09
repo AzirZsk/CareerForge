@@ -6,7 +6,10 @@ import com.landit.interview.voice.handler.AssistantAgentHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Flux;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 流式求助服务
@@ -26,47 +29,93 @@ public class StreamAssistService {
     private static final int DEFAULT_ASSIST_LIMIT = 5;
 
     /**
-     * 流式求助
+     * 流式求助（使用 SseEmitter）
      *
      * @param sessionId      会话 ID
-     * @param assistType      求助类型
-     * @param question        自由提问内容
-     * @param candidateDraft  候选人草稿
-     * @return SSE 事件流
+     * @param assistType     求助类型
+     * @param question       自由提问内容
+     * @param candidateDraft 候选人草稿
+     * @param emitter        SSE 发射器
      */
-    public Flux<AssistSSEEvent> streamAssist(
+    public void streamAssist(
             String sessionId,
             String assistType,
             String question,
-            String candidateDraft) {
+            String candidateDraft,
+            SseEmitter emitter) {
 
         log.info("[StreamAssist] Processing assist request, sessionId={}, type={}", sessionId, assistType);
 
         // 检查是否可以求助
         if (!canAssist(sessionId)) {
             log.warn("[StreamAssist] Assist limit exceeded, sessionId={}", sessionId);
-            return Flux.just(AssistSSEEvent.error(
+            sendEvent(emitter, AssistSSEEvent.error(
                     AssistSSEEvent.ErrorEventData.builder()
                             .code("ASSIST_LIMIT_EXCEEDED")
                             .message("求助次数已用完")
                             .build()
             ));
+            emitter.complete();
+            return;
         }
 
         // 冻结面试
         voiceGateway.freezeInterview(sessionId);
 
-        // 调用助手处理器
-        return assistantAgentHandler.handleAssist(sessionId, assistType, question, candidateDraft)
-                .doOnComplete(() -> {
-                    log.info("[StreamAssist] Assist completed, sessionId={}", sessionId);
-                    // 注意：不在这里恢复面试，让用户手动点击返回
-                })
-                .doOnError(error -> {
-                    log.error("[StreamAssist] Assist error, sessionId={}", sessionId, error);
-                    // 出错时自动恢复面试
-                    voiceGateway.resumeInterview(sessionId);
-                });
+        // 异步执行求助逻辑
+        CompletableFuture.runAsync(() -> {
+            try {
+                // 调用助手处理器获取 Flux
+                assistantAgentHandler.handleAssist(sessionId, assistType, question, candidateDraft)
+                        .subscribe(
+                                event -> {
+                                    // 发送每个事件
+                                    sendEvent(emitter, event);
+                                },
+                                error -> {
+                                    // 出错处理
+                                    log.error("[StreamAssist] Assist error, sessionId={}", sessionId, error);
+                                    voiceGateway.resumeInterview(sessionId);
+                                    sendEvent(emitter, AssistSSEEvent.error(
+                                            AssistSSEEvent.ErrorEventData.builder()
+                                                    .code("ASSIST_ERROR")
+                                                    .message(error.getMessage())
+                                                    .build()
+                                    ));
+                                    emitter.complete();
+                                },
+                                () -> {
+                                    // 完成处理
+                                    log.info("[StreamAssist] Assist completed, sessionId={}", sessionId);
+                                    emitter.complete();
+                                }
+                        );
+            } catch (Exception e) {
+                log.error("[StreamAssist] Unexpected error, sessionId={}", sessionId, e);
+                voiceGateway.resumeInterview(sessionId);
+                sendEvent(emitter, AssistSSEEvent.error(
+                        AssistSSEEvent.ErrorEventData.builder()
+                                .code("ASSIST_ERROR")
+                                .message(e.getMessage())
+                                .build()
+                ));
+                emitter.complete();
+            }
+        });
+    }
+
+    /**
+     * 发送 SSE 事件
+     */
+    private void sendEvent(SseEmitter emitter, AssistSSEEvent event) {
+        try {
+            emitter.send(SseEmitter.event()
+                    .name(event.getType())
+                    .data(event));
+        } catch (IOException e) {
+            log.error("[StreamAssist] Failed to send event", e);
+            emitter.completeWithError(e);
+        }
     }
 
     /**

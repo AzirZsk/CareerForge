@@ -59,6 +59,7 @@ public class RecordingInfo {
 
         /**
          * 角色
+         * @see com.landit.interview.voice.enums.TranscriptRole
          */
         private String role;
 
@@ -98,6 +99,7 @@ public class RecordingInfo {
     public static class TranscriptEntry {
         /**
          * 角色
+         * @see com.landit.interview.voice.enums.TranscriptRole
          */
         private String role;
 

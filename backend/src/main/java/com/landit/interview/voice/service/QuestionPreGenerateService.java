@@ -303,19 +303,6 @@ public class QuestionPreGenerateService {
     }
 
     /**
-     * 格式化简历摘要
-     */
-    private String formatResumeSummary(String resumeContent) {
-        if (resumeContent == null || resumeContent.isBlank()) {
-            return "暂无简历信息";
-        }
-        if (resumeContent.length() > 1500) {
-            return resumeContent.substring(0, 1500) + "\n...(内容过长已截断)";
-        }
-        return resumeContent;
-    }
-
-    /**
      * 构建追问提示词
      */
     private String buildFollowUpPrompt(
@@ -350,7 +337,7 @@ public class QuestionPreGenerateService {
 
     /**
      * 构建批量预生成问题的提示词
-     * JD 内容完整输入不截断，简历内容复用现有 formatResumeSummary 方法
+     * JD 和简历内容都完整输入不截断
      *
      * @param template 提示词模板
      * @param context  预生成上下文
@@ -358,14 +345,15 @@ public class QuestionPreGenerateService {
      * @author Azir
      */
     private String buildBatchPreGeneratePrompt(String template, PreGenerateContext context) {
-        // JD 完整输入，不截断
+        // JD 和简历都完整输入，不截断
         String jdContent = context.getJdContent() != null ? context.getJdContent() : "暂无 JD 信息";
+        String resumeContent = context.getResumeContent() != null ? context.getResumeContent() : "暂无简历信息";
 
         return template
                 .replace("{position}", context.getPosition())
                 .replace("{totalQuestions}", String.valueOf(context.getTotalQuestions()))
                 .replace("{jdContent}", jdContent)
-                .replace("{resumeSummary}", formatResumeSummary(context.getResumeContent()))
+                .replace("{resumeSummary}", resumeContent)
                 .replace("{jdAnalysis}", context.getJdAnalysis() != null ? context.getJdAnalysis() : "暂无")
                 .replace("{companyResearch}", context.getCompanyResearch() != null ? context.getCompanyResearch() : "暂无");
     }

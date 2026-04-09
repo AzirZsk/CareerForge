@@ -3,23 +3,19 @@ package com.landit.interview.voice.gateway;
 import com.landit.common.exception.BusinessException;
 import com.landit.interview.entity.Interview;
 import com.landit.interview.entity.InterviewSession;
-import com.landit.interview.mapper.InterviewMapper;
-import com.landit.interview.mapper.InterviewSessionMapper;
+import com.landit.interview.service.InterviewService;
+import com.landit.interview.service.InterviewSessionService;
 import com.landit.interview.voice.dto.*;
 import com.landit.interview.voice.enums.ControlAction;
 import com.landit.interview.voice.enums.InterviewPhaseEnum;
 import com.landit.interview.voice.enums.MessageType;
-import com.landit.interview.voice.handler.AssistantAgentHandler;
 import com.landit.interview.voice.handler.InterviewerAgentHandler;
 import com.landit.interview.voice.service.QuestionPreGenerateService;
-import com.landit.interview.voice.service.RecordingService;
-import com.landit.interview.voice.service.TTSService;
-import com.landit.interview.voice.service.VoiceServiceFactory;
 import com.landit.interview.voice.service.VoiceSessionManager;
 import com.landit.jobposition.entity.JobPosition;
-import com.landit.jobposition.mapper.JobPositionMapper;
+import com.landit.jobposition.service.JobPositionService;
 import com.landit.resume.entity.Resume;
-import com.landit.resume.mapper.ResumeMapper;
+import com.landit.resume.service.ResumeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -27,7 +23,6 @@ import org.springframework.web.socket.WebSocketSession;
 
 import java.util.Base64;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -44,15 +39,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public class InterviewVoiceGateway {
 
     private final InterviewerAgentHandler interviewerAgentHandler;
-    private final AssistantAgentHandler assistantAgentHandler;
-    private final RecordingService recordingService;
     private final VoiceSessionManager voiceSessionManager;
-    private final VoiceServiceFactory voiceServiceFactory;
     private final QuestionPreGenerateService questionPreGenerateService;
-    private final InterviewMapper interviewMapper;
-    private final InterviewSessionMapper interviewSessionMapper;
-    private final JobPositionMapper jobPositionMapper;
-    private final ResumeMapper resumeMapper;
+    private final InterviewService interviewService;
+    private final InterviewSessionService interviewSessionService;
+    private final JobPositionService jobPositionService;
+    private final ResumeService resumeService;
 
     // 会话状态：sessionId -> SessionState
     private final Map<String, SessionState> sessionStates = new ConcurrentHashMap<>();
@@ -60,37 +52,99 @@ public class InterviewVoiceGateway {
     // WebSocket 会话：sessionId -> WebSocketSession
     private final Map<String, WebSocketSession> wsSessions = new ConcurrentHashMap<>();
 
+    /**
+     * 创建语音面试会话
+     * 验证面试数据 -> 创建会话记录 -> 初始化内存状态 -> 预生成问题
+     *
+     * @param request 会话创建请求
+     * @return 会话创建结果
+     */
     public VoiceSessionCreateVO createSession(VoiceSessionCreateRequest request) {
-        // 1. 查询关联的真实面试
-        Interview interview = interviewMapper.selectById(request.getInterviewId());
+        // 验证并加载面试相关数据
+        Interview interview = validateAndGetInterview(request.getInterviewId());
+        JobPosition jobPosition = validateAndGetJobPosition(interview);
+        String resumeContent = loadResumeContent(interview.getResumeId());
+
+        // 生成会话ID并创建数据库记录
+        String sessionId = generateSessionId();
+        InterviewSession session = createSessionRecord(sessionId, request, interview, jobPosition);
+        log.info("[VoiceGateway] Session created, sessionId={}, interviewId={}, position={}",
+                sessionId, request.getInterviewId(), jobPosition.getTitle());
+
+        // 初始化内存状态（包含JD和简历上下文）
+        initSessionState(sessionId, request, jobPosition, resumeContent, session);
+
+        // 预生成问题（失败不影响会话创建，运行时降级到实时生成）
+        preGenerateQuestions(sessionId, jobPosition, resumeContent, session);
+
+        // 返回创建结果
+        return buildCreateResponse(sessionId, request, jobPosition, session);
+    }
+
+    /**
+     * 验证并获取面试记录
+     *
+     * @param interviewId 面试ID
+     * @return 面试实体
+     */
+    private Interview validateAndGetInterview(String interviewId) {
+        Interview interview = interviewService.getById(interviewId);
         if (interview == null) {
             throw new BusinessException("面试记录不存在");
         }
+        return interview;
+    }
 
-        // 2. 检查是否关联职位
+    /**
+     * 验证并获取职位信息
+     *
+     * @param interview 面试实体
+     * @return 职位实体
+     */
+    private JobPosition validateAndGetJobPosition(Interview interview) {
         if (interview.getJobPositionId() == null || interview.getJobPositionId().isEmpty()) {
             throw new BusinessException("请先关联职位后再开始模拟面试");
         }
-
-        // 3. 获取职位信息（JD）
-        JobPosition jobPosition = jobPositionMapper.selectById(interview.getJobPositionId());
+        JobPosition jobPosition = jobPositionService.getById(interview.getJobPositionId());
         if (jobPosition == null) {
             throw new BusinessException("关联的职位不存在");
         }
+        return jobPosition;
+    }
 
-        // 4. 获取简历内容（如果有）
-        String resumeContent = null;
-        if (interview.getResumeId() != null && !interview.getResumeId().isEmpty()) {
-            Resume resume = resumeMapper.selectById(interview.getResumeId());
-            if (resume != null) {
-                resumeContent = resume.getMarkdownContent();
-            }
+    /**
+     * 加载简历内容
+     *
+     * @param resumeId 简历ID
+     * @return 简历Markdown内容，不存在则返回null
+     */
+    private String loadResumeContent(String resumeId) {
+        if (resumeId == null || resumeId.isEmpty()) {
+            return null;
         }
+        Resume resume = resumeService.getById(resumeId);
+        return resume != null ? resume.getMarkdownContent() : null;
+    }
 
-        // 5. 生成会话 ID
-        String sessionId = UUID.randomUUID().toString().replace("-", "");
+    /**
+     * 生成会话ID
+     *
+     * @return 会话ID
+     */
+    private String generateSessionId() {
+        return UUID.randomUUID().toString().replace("-", "");
+    }
 
-        // 6. 创建数据库记录
+    /**
+     * 创建会话数据库记录
+     *
+     * @param sessionId 会话ID
+     * @param request 创建请求
+     * @param interview 面试实体
+     * @param jobPosition 职位实体
+     * @return 会话实体
+     */
+    private InterviewSession createSessionRecord(String sessionId, VoiceSessionCreateRequest request, Interview interview, JobPosition jobPosition) {
         InterviewSession session = new InterviewSession();
         session.setId(sessionId);
         session.setInterviewId(request.getInterviewId());
@@ -104,9 +158,20 @@ public class InterviewVoiceGateway {
         session.setAssistCount(0);
         session.setAssistLimit(request.getAssistLimit() != null ? request.getAssistLimit() : 5);
         session.setInterviewerStyle(request.getInterviewerStyle() != null ? request.getInterviewerStyle() : "professional");
-        interviewSessionMapper.insert(session);
+        interviewSessionService.save(session);
+        return session;
+    }
 
-        // 7. 初始化内存状态（包含 JD 和简历上下文）
+    /**
+     * 初始化内存状态
+     *
+     * @param sessionId 会话ID
+     * @param request 创建请求
+     * @param jobPosition 职位实体
+     * @param resumeContent 简历内容
+     * @param session 会话实体
+     */
+    private void initSessionState(String sessionId, VoiceSessionCreateRequest request, JobPosition jobPosition, String resumeContent, InterviewSession session) {
         SessionState state = new SessionState();
         state.setInterviewId(request.getInterviewId());
         state.setPosition(jobPosition.getTitle());
@@ -118,11 +183,18 @@ public class InterviewVoiceGateway {
         state.setInterviewerStyle(session.getInterviewerStyle());
         state.setVoiceMode(session.getVoiceMode());
         sessionStates.put(sessionId, state);
+    }
 
-        log.info("[VoiceGateway] Session created, sessionId={}, interviewId={}, position={}",
-                sessionId, request.getInterviewId(), jobPosition.getTitle());
-
-        // 8. 同步预生成问题（用户需等待 5-10 秒）
+    /**
+     * 预生成面试问题
+     * 失败不影响会话创建，运行时降级到实时生成
+     *
+     * @param sessionId 会话ID
+     * @param jobPosition 职位实体
+     * @param resumeContent 简历内容
+     * @param session 会话实体
+     */
+    private void preGenerateQuestions(String sessionId, JobPosition jobPosition, String resumeContent, InterviewSession session) {
         try {
             PreGenerateContext context = PreGenerateContext.builder()
                     .position(jobPosition.getTitle())
@@ -136,10 +208,19 @@ public class InterviewVoiceGateway {
             log.info("[VoiceGateway] 预生成完成, sessionId={}, count={}", sessionId, count);
         } catch (Exception e) {
             log.error("[VoiceGateway] 预生成失败, sessionId={}, 降级到实时生成", sessionId, e);
-            // 预生成失败不影响会话创建，运行时会降级到实时生成
         }
+    }
 
-        // 9. 返回创建结果
+    /**
+     * 构建创建结果响应
+     *
+     * @param sessionId 会话ID
+     * @param request 创建请求
+     * @param jobPosition 职位实体
+     * @param session 会话实体
+     * @return 创建结果VO
+     */
+    private VoiceSessionCreateVO buildCreateResponse(String sessionId, VoiceSessionCreateRequest request, JobPosition jobPosition, InterviewSession session) {
         return VoiceSessionCreateVO.builder()
                 .sessionId(sessionId)
                 .interviewId(request.getInterviewId())
@@ -150,14 +231,32 @@ public class InterviewVoiceGateway {
                 .build();
     }
 
+    /**
+     * 注册 WebSocket 会话
+     * 建立 sessionId 与 WebSocketSession 的映射关系，初始化会话状态
+     *
+     * @param sessionId 会话ID
+     * @param wsSession WebSocket会话对象
+     */
     public void registerSession(String sessionId, WebSocketSession wsSession) {
+        // 建立 WebSocket 会话映射
         wsSessions.put(sessionId, wsSession);
+        // 初始化会话状态（如果不存在）
         sessionStates.putIfAbsent(sessionId, new SessionState());
         log.info("[VoiceGateway] Session registered, sessionId={}", sessionId);
     }
 
+    /**
+     * 注销 WebSocket 会话
+     * 移除会话映射并标记会话为非活跃状态
+     *
+     * @param sessionId 会话ID
+     * @param wsSession WebSocket会话对象
+     */
     public void unregisterSession(String sessionId, WebSocketSession wsSession) {
+        // 移除 WebSocket 会话映射
         wsSessions.remove(sessionId);
+        // 标记会话为非活跃状态
         SessionState state = sessionStates.get(sessionId);
         if (state != null) {
             state.setActive(false);
@@ -165,42 +264,28 @@ public class InterviewVoiceGateway {
         log.info("[VoiceGateway] Session unregistered, sessionId={}", sessionId);
     }
 
-    public void handleRequest(String sessionId, WebSocketSession wsSession, VoiceRequest<?> request) {
-        SessionState state = sessionStates.get(sessionId);
-        if (state == null) {
-            log.warn("[VoiceGateway] Session not found, sessionId={}", sessionId);
-            return;
-        }
-
-        String typeStr = request.getType();
-        MessageType messageType = MessageType.fromCode(typeStr);
-        log.debug("[VoiceGateway] Handling request, sessionId={}, type={}", sessionId, typeStr);
-
-        switch (messageType) {
-            case AUDIO:
-                handleAudioRequest(sessionId, (VoiceRequest<VoiceRequest.AudioData>) request);
-                break;
-            case CONTROL:
-                handleControlRequest(sessionId, (VoiceRequest<VoiceRequest.ControlData>) request);
-                break;
-            default:
-                log.warn("[VoiceGateway] Unknown request type: {}", typeStr);
-        }
-    }
-
+    /**
+     * 处理候选人音频数据
+     * 验证会话状态后转发给面试官 Agent 处理
+     *
+     * @param sessionId 会话ID
+     * @param wsSession WebSocket会话对象
+     * @param audioData 音频数据（PCM格式）
+     */
     public void handleAudioData(String sessionId, WebSocketSession wsSession, byte[] audioData) {
         SessionState state = sessionStates.get(sessionId);
+        // 验证会话存在且活跃
         if (state == null || !state.isActive()) {
             return;
         }
 
-        // 如果会话已冻结，忽略音频
+        // 如果会话已冻结，忽略音频数据
         if (state.isFrozen()) {
             log.debug("[VoiceGateway] Session frozen, ignoring audio, sessionId={}", sessionId);
             return;
         }
 
-        // 转发给面试官 Agent 处理
+        // 转发给面试官 Agent 处理（ASR识别 -> AI生成回复 -> TTS合成）
         interviewerAgentHandler.handleCandidateAudio(sessionId, audioData)
                 .subscribe(
                         response -> sendResponse(sessionId, response),
@@ -209,22 +294,38 @@ public class InterviewVoiceGateway {
                 );
     }
 
+    /**
+     * 处理会话错误
+     * 记录错误日志并标记会话为非活跃状态
+     *
+     * @param sessionId 会话ID
+     * @param wsSession WebSocket会话对象
+     * @param error 错误对象
+     */
     public void handleSessionError(String sessionId, WebSocketSession wsSession, Throwable error) {
         log.error("[VoiceGateway] Session error, sessionId={}", sessionId, error);
+        // 标记会话为非活跃状态
         SessionState state = sessionStates.get(sessionId);
         if (state != null) {
             state.setActive(false);
         }
     }
 
+    /**
+     * 冻结面试
+     * 暂停面试进程，忽略后续音频输入，但仍允许求助操作
+     *
+     * @param sessionId 会话ID
+     */
     public void freezeInterview(String sessionId) {
         SessionState state = sessionStates.get(sessionId);
         if (state != null) {
+            // 标记会话为冻结状态
             state.setFrozen(true);
             state.setFreezeTime(System.currentTimeMillis());
             log.info("[VoiceGateway] Interview frozen, sessionId={}", sessionId);
 
-            // 通知客户端
+            // 通知客户端状态变更
             sendResponse(sessionId, VoiceResponse.state(VoiceResponse.StateData.builder()
                     .state(InterviewSessionState.FROZEN.getCode())
                     .currentQuestion(state.getCurrentQuestion())
@@ -235,13 +336,20 @@ public class InterviewVoiceGateway {
         }
     }
 
+    /**
+     * 恢复面试
+     * 解除冻结状态，恢复音频处理
+     *
+     * @param sessionId 会话ID
+     */
     public void resumeInterview(String sessionId) {
         SessionState state = sessionStates.get(sessionId);
         if (state != null) {
+            // 解除冻结状态
             state.setFrozen(false);
             log.info("[VoiceGateway] Interview resumed, sessionId={}", sessionId);
 
-            // 通知客户端
+            // 通知客户端状态变更
             sendResponse(sessionId, VoiceResponse.state(VoiceResponse.StateData.builder()
                     .state(InterviewSessionState.INTERVIEWING.getCode())
                     .currentQuestion(state.getCurrentQuestion())
@@ -252,14 +360,21 @@ public class InterviewVoiceGateway {
         }
     }
 
+    /**
+     * 结束面试
+     * 标记会话为已完成状态，停止处理所有音频和控制请求
+     *
+     * @param sessionId 会话ID
+     */
     public void endInterview(String sessionId) {
         SessionState state = sessionStates.get(sessionId);
         if (state != null) {
+            // 标记会话为非活跃和已完成状态
             state.setActive(false);
             state.setCompleted(true);
             log.info("[VoiceGateway] Interview ended, sessionId={}", sessionId);
 
-            // 通知客户端
+            // 通知客户端状态变更
             sendResponse(sessionId, VoiceResponse.state(VoiceResponse.StateData.builder()
                     .state(InterviewSessionState.COMPLETED.getCode())
                     .currentQuestion(state.getCurrentQuestion())
@@ -270,14 +385,23 @@ public class InterviewVoiceGateway {
         }
     }
 
+    /**
+     * 获取会话状态
+     * 返回当前会话的完整状态信息（状态码、当前题号、求助次数等）
+     *
+     * @param sessionId 会话ID
+     * @return 会话状态数据
+     */
     public VoiceResponse.StateData getSessionState(String sessionId) {
         SessionState state = sessionStates.get(sessionId);
+        // 会话不存在
         if (state == null) {
             return VoiceResponse.StateData.builder()
                     .state(InterviewSessionState.NOT_FOUND.getCode())
                     .build();
         }
 
+        // 返回当前会话状态
         return VoiceResponse.StateData.builder()
                 .state(state.getStateCode())
                 .currentQuestion(state.getCurrentQuestion())
@@ -287,30 +411,51 @@ public class InterviewVoiceGateway {
                 .build();
     }
 
+    /**
+     * 发送响应消息到指定会话
+     * 通过 WebSocket 向客户端推送响应
+     *
+     * @param sessionId 会话ID
+     * @param response 响应对象
+     */
     public void sendResponse(String sessionId, VoiceResponse response) {
         WebSocketSession wsSession = wsSessions.get(sessionId);
+        // 验证会话存在且连接正常
         if (wsSession != null && wsSession.isOpen()) {
             voiceSessionManager.sendResponse(wsSession, response);
         }
     }
 
+    /**
+     * 广播响应消息到所有会话
+     * 向所有活跃的 WebSocket 连接推送消息
+     *
+     * @param response 响应对象
+     */
     public void broadcastResponse(VoiceResponse response) {
         voiceSessionManager.broadcastAll(response);
     }
 
     /**
      * 处理音频请求
+     * 解析 Base64 编码的音频数据并转发给音频处理器
+     *
+     * @param sessionId 会话ID
+     * @param request 音频请求对象（包含 Base64 编码的音频数据、格式、采样率）
      */
-    private void handleAudioRequest(String sessionId, VoiceRequest<VoiceRequest.AudioData> request) {
+    public void handleAudioRequest(String sessionId, VoiceRequest<VoiceRequest.AudioData> request) {
         try {
             VoiceRequest.AudioData audioData = request.getData();
             String audioBase64 = audioData.getAudio();
+            // 获取音频格式，默认为 PCM
             String format = audioData.getFormat() != null ? audioData.getFormat() : "pcm";
+            // 获取采样率，默认为 16kHz
             Integer sampleRate = audioData.getSampleRate() != null ? audioData.getSampleRate() : 16000;
 
+            // 解码 Base64 音频数据
             byte[] audioDataBytes = Base64.getDecoder().decode(audioBase64);
 
-            // 转发给音频处理器
+            // 转发给音频处理器进行 ASR 识别
             handleAudioData(sessionId, wsSessions.get(sessionId), audioDataBytes);
 
         } catch (Exception e) {
@@ -320,11 +465,16 @@ public class InterviewVoiceGateway {
 
     /**
      * 处理控制请求
+     * 路由不同的控制动作（START/STOP/END/FREEZE/RESUME）到对应的处理方法
+     *
+     * @param sessionId 会话ID
+     * @param request 控制请求对象（包含动作类型和参数）
      */
-    private void handleControlRequest(String sessionId, VoiceRequest<VoiceRequest.ControlData> request) {
+    public void handleControlRequest(String sessionId, VoiceRequest<VoiceRequest.ControlData> request) {
         try {
             VoiceRequest.ControlData controlData = request.getData();
             String actionCode = controlData.getAction();
+            // 解析控制动作枚举
             ControlAction action = ControlAction.fromCode(actionCode);
 
             if (action == null) {
@@ -332,6 +482,7 @@ public class InterviewVoiceGateway {
                 return;
             }
 
+            // 路由到对应的处理方法
             switch (action) {
                 case START:
                     handleStartAction(sessionId, controlData);
@@ -358,6 +509,10 @@ public class InterviewVoiceGateway {
 
     /**
      * 处理开始动作
+     * 初始化会话状态，请求候选人进行自我介绍
+     *
+     * @param sessionId 会话ID
+     * @param controlData 控制数据（可能包含扩展参数）
      */
     private void handleStartAction(String sessionId, VoiceRequest.ControlData controlData) {
         SessionState state = sessionStates.computeIfAbsent(sessionId, k -> new SessionState());
@@ -368,7 +523,7 @@ public class InterviewVoiceGateway {
         state.setStartTime(System.currentTimeMillis());
         state.setPhase(InterviewPhaseEnum.WAITING_SELF_INTRODUCTION);
 
-        // 处理扩展参数（如果有）
+        // 处理扩展参数（题目总数、求助次数限制）
         Object params = controlData.getParams();
         if (params instanceof Map) {
             @SuppressWarnings("unchecked")
@@ -392,7 +547,7 @@ public class InterviewVoiceGateway {
                 .elapsedTime(0)
                 .build()));
 
-        // 请求自我介绍
+        // 请求候选人自我介绍
         interviewerAgentHandler.requestSelfIntroduction(sessionId)
                 .subscribe(
                         response -> sendResponse(sessionId, response),
@@ -402,7 +557,10 @@ public class InterviewVoiceGateway {
     }
 
     /**
-     * 处理停止动作（暂停录音）
+     * 处理停止动作
+     * 暂停录音，会话保持活跃状态
+     *
+     * @param sessionId 会话ID
      */
     private void handleStopAction(String sessionId) {
         SessionState state = sessionStates.get(sessionId);
@@ -413,6 +571,10 @@ public class InterviewVoiceGateway {
 
     /**
      * 获取会话状态对象（供内部使用）
+     * 用于其他组件访问当前会话的内存状态
+     *
+     * @param sessionId 会话ID
+     * @return 会话状态对象，不存在则返回 null
      */
     public SessionState getInternalState(String sessionId) {
         return sessionStates.get(sessionId);

@@ -6,6 +6,7 @@ import com.landit.common.exception.BusinessException;
 import com.landit.interview.voice.dto.*;
 import com.landit.interview.voice.dto.SessionState;
 import com.landit.interview.voice.enums.InterviewPhaseEnum;
+import com.landit.interview.voice.enums.TranscriptRole;
 import com.landit.interview.voice.gateway.InterviewVoiceGateway;
 import com.landit.interview.voice.service.ASRService;
 import com.landit.interview.voice.service.QuestionPreGenerateService;
@@ -91,7 +92,7 @@ public class InterviewerAgentHandler {
                             VoiceResponse.TranscriptData.builder()
                                     .text(asrResult.getText())
                                     .isFinal(asrResult.getIsFinal())
-                                    .role("candidate")
+                                    .role(TranscriptRole.CANDIDATE.getValue())
                                     .confidence(asrResult.getConfidence())
                                     .build()
                     ));
@@ -173,22 +174,6 @@ public class InterviewerAgentHandler {
         }
     }
 
-    /**
-     * 处理候选人文本输入（非语音模式）
-     *
-     * @param sessionId 会话 ID
-     * @param text      文本内容
-     * @return 响应流（AI 回复 + 音频）
-     */
-    public Flux<VoiceResponse> handleCandidateText(String sessionId, String text) {
-        log.debug("[InterviewerAgent] 处理候选人文本输入, sessionId={}, text={}", sessionId, text);
-
-        ConversationContext context = contexts.computeIfAbsent(sessionId, k -> new ConversationContext());
-        context.addCandidateMessage(text);
-
-        // 根据阶段处理
-        return handleCandidateTranscriptByPhase(sessionId, text);
-    }
 
     /**
      * 请求自我介绍
@@ -229,7 +214,7 @@ public class InterviewerAgentHandler {
                             VoiceResponse.TranscriptData.builder()
                                     .text(ttsChunk.getText())
                                     .isFinal(ttsChunk.getIsFinal())
-                                    .role("interviewer")
+                                    .role(TranscriptRole.INTERVIEWER.getValue())
                                     .build()
                     ));
 
@@ -294,7 +279,7 @@ public class InterviewerAgentHandler {
                                 VoiceResponse.TranscriptData.builder()
                                         .text(ttsChunk.getText())
                                         .isFinal(ttsChunk.getIsFinal())
-                                        .role("interviewer")
+                                        .role(TranscriptRole.INTERVIEWER.getValue())
                                         .build()
                         ));
 
@@ -370,7 +355,7 @@ public class InterviewerAgentHandler {
                             VoiceResponse.TranscriptData.builder()
                                     .text(ttsChunk.getText())
                                     .isFinal(ttsChunk.getIsFinal())
-                                    .role("interviewer")
+                                    .role(TranscriptRole.INTERVIEWER.getValue())
                                     .build()
                     ));
 
@@ -434,7 +419,7 @@ public class InterviewerAgentHandler {
                                 VoiceResponse.TranscriptData.builder()
                                         .text(ttsChunk.getText())
                                         .isFinal(ttsChunk.getIsFinal())
-                                        .role("interviewer")
+                                        .role(TranscriptRole.INTERVIEWER.getValue())
                                         .build()
                         ));
 
@@ -530,32 +515,6 @@ public class InterviewerAgentHandler {
     }
 
     /**
-     * 构建包含 JD 和简历的用户提示词
-     */
-    private String buildContextualUserPrompt(ConversationContext context, String basePrompt) {
-        if (context == null) {
-            return basePrompt;
-        }
-
-        StringBuilder prompt = new StringBuilder();
-
-        // 添加 JD 内容
-        if (context.getJdContent() != null && !context.getJdContent().isEmpty()) {
-            prompt.append("## 职位 JD\n").append(context.getJdContent()).append("\n\n");
-        }
-
-        // 添加简历内容
-        if (context.getResumeContent() != null && !context.getResumeContent().isEmpty()) {
-            prompt.append("## 候选人简历\n").append(context.getResumeContent()).append("\n\n");
-        }
-
-        // 添加基础提示
-        prompt.append(basePrompt);
-
-        return prompt.toString();
-    }
-
-    /**
      * 格式化 JD 核心要求（提取关键技能和职责）
      */
     private String formatJDRequirements(String jdContent) {
@@ -648,7 +607,7 @@ public class InterviewerAgentHandler {
 
             RecordingSegment segment = RecordingSegment.builder()
                     .index(segmentIndex)
-                    .role("candidate")
+                    .role(TranscriptRole.CANDIDATE.getValue())
                     .content(text)
                     .audioData(audioData)
                     .durationMs(durationMs)
@@ -664,143 +623,6 @@ public class InterviewerAgentHandler {
         }
     }
 
-    /**
-     * 保存面试官录音片段
-     */
-    private void saveInterviewerRecording(String sessionId, ConversationContext context, String text, byte[] audioData) {
-        try {
-            if (audioData == null || audioData.length == 0) {
-                log.debug("[InterviewerAgent] No interviewer audio to save, sessionId={}", sessionId);
-                return;
-            }
-
-            int segmentIndex = context.getNextSegmentIndex();
-            LocalDateTime now = LocalDateTime.now();
-            LocalDateTime startTime = context.getSegmentStartTime();
-            if (startTime == null) {
-                startTime = now.minusSeconds(5);
-            }
-
-            // 估算时长
-            int durationMs = (int) ((audioData.length / 32000.0) * 1000);
-
-            RecordingSegment segment = RecordingSegment.builder()
-                    .index(segmentIndex)
-                    .role("interviewer")
-                    .content(text)
-                    .audioData(audioData)
-                    .durationMs(durationMs)
-                    .startTime(startTime)
-                    .endTime(now)
-                    .build();
-
-            recordingService.saveSegment(sessionId, segment);
-            log.info("[InterviewerAgent] Saved interviewer recording, sessionId={}, index={}, duration={}ms",
-                    sessionId, segmentIndex, durationMs);
-
-            // 记录面试官消息到上下文
-            context.addInterviewerMessage(text);
-        } catch (Exception e) {
-            log.error("[InterviewerAgent] Failed to save interviewer recording, sessionId={}", sessionId, e);
-        }
-    }
-
-    /**
-     * 生成追问（可选）
-     * 当面试官需要对候选人回答进行深入挖掘时调用
-     *
-     * @param sessionId          会话 ID
-     * @param lastQuestion       上一个问题
-     * @param candidateAnswer    候选人回答
-     * @param conversationHistory 最近对话摘要
-     * @return 响应流（追问文本 + 音频）
-     */
-    public Flux<VoiceResponse> generateFollowUpQuestion(
-            String sessionId,
-            String lastQuestion,
-            String candidateAnswer,
-            String conversationHistory) {
-        log.info("[InterviewerAgent] 生成追问, sessionId={}", sessionId);
-
-        // 调用预生成服务生成追问
-        String followUp = questionPreGenerateService.generateFollowUpQuestion(
-                sessionId, lastQuestion, candidateAnswer, conversationHistory);
-
-        // 构建响应（仅文本，不合成音频，追问应该简短）
-        return Flux.just(VoiceResponse.transcript(
-                VoiceResponse.TranscriptData.builder()
-                        .text(followUp)
-                        .isFinal(true)
-                        .role("interviewer")
-                        .build()
-        ));
-    }
-
-    /**
-     * 对话上下文
-     */
-    @lombok.Data
-    private static class ConversationContext {
-        // 面试上下文（从真实面试加载）
-        private String position = "Java 开发工程师";
-        private String jdContent;
-        private String resumeContent;
-        // 面试开始时间（用于计算已面试时长）
-        private LocalDateTime interviewStartTime = LocalDateTime.now();
-        // 对话历史
-        private StringBuilder conversationHistory = new StringBuilder();
-        private AtomicInteger segmentIndex = new AtomicInteger(0);
-        private ByteArrayOutputStream candidateAudioBuffer = new ByteArrayOutputStream();
-        private LocalDateTime segmentStartTime;
-
-        public void addCandidateMessage(String message) {
-            conversationHistory.append("候选人：").append(message).append("\n");
-        }
-
-        public void addInterviewerMessage(String message) {
-            conversationHistory.append("面试官：").append(message).append("\n");
-        }
-
-        public String getConversationSummary() {
-            if (conversationHistory.length() > 2000) {
-                return conversationHistory.substring(conversationHistory.length() - 2000);
-            }
-            return conversationHistory.toString();
-        }
-
-        /**
-         * 获取已面试时长（秒）
-         */
-        public long getElapsedSeconds() {
-            return Duration.between(interviewStartTime, LocalDateTime.now()).getSeconds();
-        }
-
-        public int getNextSegmentIndex() {
-            return segmentIndex.getAndIncrement();
-        }
-
-        public void appendCandidateAudio(byte[] audio) {
-            try {
-                candidateAudioBuffer.write(audio);
-            } catch (Exception e) {
-                log.error("Failed to append candidate audio", e);
-            }
-        }
-
-        public byte[] getCandidateAudioAndReset() {
-            byte[] audio = candidateAudioBuffer.toByteArray();
-            candidateAudioBuffer.reset();
-            return audio;
-        }
-
-        public void startSegment() {
-            segmentStartTime = LocalDateTime.now();
-        }
-
-        public LocalDateTime getSegmentStartTime() {
-            return segmentStartTime;
-        }
-    }
 
     /**
      * 结束面试
@@ -838,7 +660,7 @@ public class InterviewerAgentHandler {
                             VoiceResponse.TranscriptData.builder()
                                     .text(ttsChunk.getText())
                                     .isFinal(ttsChunk.getIsFinal())
-                                    .role("interviewer")
+                                    .role(TranscriptRole.INTERVIEWER.getValue())
                                     .build()
                     ));
 

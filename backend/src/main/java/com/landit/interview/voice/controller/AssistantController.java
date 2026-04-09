@@ -1,7 +1,6 @@
 package com.landit.interview.voice.controller;
 
 import com.landit.common.response.ApiResponse;
-import com.landit.interview.voice.dto.AssistSSEEvent;
 import com.landit.interview.voice.dto.VoiceSessionCreateRequest;
 import com.landit.interview.voice.dto.VoiceSessionCreateVO;
 import com.landit.interview.voice.gateway.InterviewVoiceGateway;
@@ -10,9 +9,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
-import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Flux;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
  * AI 助手控制器
@@ -28,6 +26,9 @@ public class AssistantController {
 
     private final StreamAssistService streamAssistService;
     private final InterviewVoiceGateway voiceGateway;
+
+    // SSE 超时时间（10分钟）
+    private static final long SSE_TIMEOUT = 600000L;
 
     /**
      * 创建语音面试会话
@@ -51,10 +52,10 @@ public class AssistantController {
      * @param type           求助类型：GIVE_HINTS, EXPLAIN_CONCEPT, POLISH_ANSWER, FREE_QUESTION
      * @param question       自由提问内容（FREE_QUESTION 时必填）
      * @param candidateDraft 候选人草稿（POLISH_ANSWER 时使用）
-     * @return SSE 事件流
+     * @return SSE 发射器
      */
     @GetMapping(value = "/{sessionId}/assist/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<ServerSentEvent<AssistSSEEvent>> streamAssist(
+    public SseEmitter streamAssist(
             @PathVariable String sessionId,
             @RequestParam String type,
             @RequestParam(required = false) String question,
@@ -63,24 +64,24 @@ public class AssistantController {
         log.info("[Assistant] Stream assist request, sessionId={}, type={}, hasQuestion={}",
                 sessionId, type, question != null && !question.isEmpty());
 
-        return streamAssistService.streamAssist(sessionId, type, question, candidateDraft)
-                .map(event -> ServerSentEvent.<AssistSSEEvent>builder()
-                        .event(event.getType())
-                        .data(event)
-                        .build())
-                .doOnSubscribe(s -> log.info("[Assistant] SSE stream started, sessionId={}", sessionId))
-                .doOnComplete(() -> log.info("[Assistant] SSE stream completed, sessionId={}", sessionId))
-                .doOnError(e -> log.error("[Assistant] SSE stream error, sessionId={}", sessionId, e))
-                .onErrorResume(e -> {
-                    log.error("[Assistant] Returning error event, sessionId={}", sessionId, e);
-                    return Flux.just(ServerSentEvent.<AssistSSEEvent>builder()
-                            .event("error")
-                            .data(AssistSSEEvent.error(AssistSSEEvent.ErrorEventData.builder()
-                                    .code("ASSIST_ERROR")
-                                    .message(e.getMessage())
-                                    .build()))
-                            .build());
-                });
+        // 创建 SSE 发射器
+        SseEmitter emitter = new SseEmitter(SSE_TIMEOUT);
+
+        // 设置超时和错误处理
+        emitter.onTimeout(() -> {
+            log.warn("[Assistant] SSE timeout, sessionId={}", sessionId);
+            emitter.complete();
+        });
+
+        emitter.onError(e -> {
+            log.error("[Assistant] SSE error, sessionId={}", sessionId, e);
+            emitter.completeWithError(e);
+        });
+
+        // 调用 Service 处理流式求助
+        streamAssistService.streamAssist(sessionId, type, question, candidateDraft, emitter);
+
+        return emitter;
     }
 
     /**
