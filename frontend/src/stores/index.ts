@@ -5,14 +5,6 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import {
-  currentUser,
-  resumeDetail,
-  interviewHistory,
-  interviewQuestions,
-  interviewDetail,
-  jobRecommendations
-} from '@/mock/data'
 import * as userApi from '@/api/user'
 import * as resumeApi from '@/api/resume'
 import * as statisticsApi from '@/api/statistics'
@@ -37,21 +29,29 @@ import type {
 
 export const useAppStore = defineStore('app', () => {
   // 用户状态
-  const user = ref<User>(currentUser)
+  const user = ref<User>({ id: '', name: '', gender: null, avatar: null, createdAt: '' })
   const isLoggedIn = ref<boolean>(true)
   const isInitialized = ref<boolean>(false)
 
   // 简历相关
   const resumeList = ref<Resume[]>([])
-  const currentResume = ref<ResumeDetail>(resumeDetail)
+  const currentResume = ref<ResumeDetail>({
+    id: '', name: '', targetPosition: '', sections: [],
+    overallScore: 0, contentScore: 0, structureScore: 0,
+    matchingScore: 0, competitivenessScore: 0, analyzed: false
+  })
   const suggestions = ref<ResumeSuggestion[]>([])
   const suggestionsByResume = ref<ResumeSuggestionsGroup[]>([])
   const primaryResume = ref<PrimaryResumeVO | null>(null)
 
   // 面试相关
-  const interviews = ref<Interview[]>(interviewHistory)
-  const questions = ref<InterviewQuestions>(interviewQuestions)
-  const currentInterview = ref<InterviewDetail>(interviewDetail)
+  const interviews = ref<Interview[]>([])
+  const questions = ref<InterviewQuestions>({ technical: [], behavioral: [] })
+  const currentInterview = ref<InterviewDetail>({
+    id: '', type: 'technical', position: '', company: '',
+    date: '', duration: 0, score: 0, conversation: [],
+    analysis: { strengths: [], weaknesses: [], overallFeedback: '' }
+  })
 
   // 统计数据
   const stats = ref<Statistics>({
@@ -66,7 +66,7 @@ export const useAppStore = defineStore('app', () => {
   })
 
   // 职位推荐
-  const jobs = ref<Job[]>(jobRecommendations)
+  const jobs = ref<Job[]>([])
 
   // 当前活跃的导航
   const activeNav = ref<string>('home')

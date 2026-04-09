@@ -150,6 +150,8 @@
 </template>
 
 <script setup lang="ts">
+import { watch } from 'vue'
+import { useScrollLock } from '@vueuse/core'
 import type { SectionChange } from '@/types/ai-chat'
 
 interface Props {
@@ -164,8 +166,14 @@ interface Emits {
   (e: 'cancel'): void
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+
+// 弹窗可见时锁定背景滚动
+const isBodyScrollLocked = useScrollLock(document.body)
+watch(() => props.visible, (val) => {
+  isBodyScrollLocked.value = val
+})
 
 function getTypeLabel(type: string): string {
   const labels: Record<string, string> = {

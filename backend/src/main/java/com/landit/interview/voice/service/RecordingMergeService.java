@@ -56,7 +56,7 @@ public class RecordingMergeService {
      * @return 合并后的录音信息
      */
     public Mono<RecordingInfo> mergeRecordings(String sessionId) {
-        log.info("[RecordingMerge] Starting merge, sessionId={}", sessionId);
+        log.info("[RecordingMerge] 开始合并, sessionId={}", sessionId);
         return Mono.fromCallable(() -> doMergeRecordings(sessionId))
                 .subscribeOn(Schedulers.boundedElastic());
     }
@@ -114,7 +114,7 @@ public class RecordingMergeService {
                 .orderByAsc(InterviewRecording::getSegmentIndex);
         List<InterviewRecording> segments = recordingMapper.selectList(wrapper);
         if (segments.isEmpty()) {
-            log.warn("[RecordingMerge] No segments found, sessionId={}", sessionId);
+            log.warn("[RecordingMerge] 未找到片段, sessionId={}", sessionId);
             return RecordingInfo.builder()
                     .sessionId(sessionId)
                     .totalDurationMs(0)
@@ -137,7 +137,7 @@ public class RecordingMergeService {
             // 保存或更新索引记录
             saveOrUpdateIndex(sessionId, totalDurationMs, mergedPath.toString(), transcript);
             mergeProgressMap.put(sessionId, 100);
-            log.info("[RecordingMerge] Merge completed, sessionId={}, duration={}ms, path={}",
+            log.info("[RecordingMerge] 合并完成, sessionId={}, duration={}ms, path={}",
                     sessionId, totalDurationMs, mergedPath);
             return RecordingInfo.builder()
                     .sessionId(sessionId)
@@ -147,7 +147,7 @@ public class RecordingMergeService {
                     .transcript(transcript)
                     .build();
         } catch (IOException e) {
-            log.error("[RecordingMerge] Failed to merge recordings, sessionId={}", sessionId, e);
+            log.error("[RecordingMerge] 合并录音失败, sessionId={}", sessionId, e);
             throw new RuntimeException("合并录音失败", e);
         }
     }
@@ -202,7 +202,7 @@ public class RecordingMergeService {
         }
         Path mergedPath = sessionDir.resolve("merged.wav");
         Files.write(mergedPath, audioData);
-        log.info("[RecordingMerge] Saved merged audio, path={}, size={}", mergedPath, audioData.length);
+        log.info("[RecordingMerge] 合并音频已保存, path={}, size={}", mergedPath, audioData.length);
         return mergedPath;
     }
 
@@ -256,7 +256,7 @@ public class RecordingMergeService {
                 indexMapper.insert(index);
             }
         } catch (JsonProcessingException e) {
-            log.error("[RecordingMerge] Failed to serialize transcript", e);
+            log.error("[RecordingMerge] 序列化转录记录失败", e);
         }
     }
 

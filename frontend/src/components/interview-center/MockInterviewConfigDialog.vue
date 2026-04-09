@@ -74,6 +74,32 @@
               </button>
             </div>
           </div>
+
+          <div class="form-group">
+            <label class="form-label">面试问题</label>
+            <div class="mode-switch">
+              <button
+                type="button"
+                :class="['mode-btn', { active: config.regenerateQuestions }]"
+                @click="config.regenerateQuestions = true"
+              >
+                重新生成
+              </button>
+              <button
+                type="button"
+                :class="['mode-btn', { active: !config.regenerateQuestions }]"
+                @click="config.regenerateQuestions = false"
+              >
+                复用上次
+              </button>
+            </div>
+            <p class="form-hint">
+              {{ config.regenerateQuestions
+                ? '基于简历和 JD 重新生成全新的面试问题'
+                : '复用同一面试上次生成的问题（更快）'
+              }}
+            </p>
+          </div>
         </form>
 
         <footer class="dialog-footer">
@@ -100,6 +126,7 @@ export interface MockInterviewConfig {
   assistLimit: number
   voiceMode: string
   interviewerStyle: string
+  regenerateQuestions: boolean
 }
 
 const emit = defineEmits<{
@@ -113,7 +140,8 @@ const config = reactive<MockInterviewConfig>({
   totalQuestions: 10,
   assistLimit: 5,
   voiceMode: 'half_voice',
-  interviewerStyle: 'professional'
+  interviewerStyle: 'professional',
+  regenerateQuestions: false
 })
 
 const interviewerStyles = [

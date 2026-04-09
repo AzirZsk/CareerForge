@@ -348,6 +348,7 @@ const pendingMockConfig = ref<{
   assistLimit: number
   voiceMode: string
   interviewerStyle: string
+  regenerateQuestions: boolean
 } | null>(null)
 
 // 工作流状态
@@ -721,6 +722,7 @@ async function handleMockConfigSubmit(config: {
   assistLimit: number
   voiceMode: string
   interviewerStyle: string
+  regenerateQuestions: boolean
 }) {
   if (!interview.value) return
 
@@ -806,9 +808,19 @@ async function createSessionAndNavigate() {
       totalQuestions: config.totalQuestions,
       assistLimit: config.assistLimit,
       voiceMode: config.voiceMode,
-      interviewerStyle: config.interviewerStyle
+      interviewerStyle: config.interviewerStyle,
+      regenerateQuestions: config.regenerateQuestions
     })
-    router.push(`/interview-center/${interview.value.id}/mock/${response.sessionId}`)
+    router.push({
+      path: `/interview-center/${interview.value.id}/mock/${response.sessionId}`,
+      query: {
+        position: response.position,
+        interviewerStyle: config.interviewerStyle,
+        totalQuestions: String(response.totalQuestions),
+        assistLimit: String(response.assistLimit),
+        voiceMode: response.voiceMode
+      }
+    })
   } catch (error) {
     console.error('创建模拟面试失败:', error)
     toast.error('创建模拟面试失败，请稍后重试')

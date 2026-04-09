@@ -32,6 +32,7 @@ public interface ResumeConvertor {
     @Mapping(target = "matchingScore", source = "matchingScore")
     @Mapping(target = "competitivenessScore", source = "competitivenessScore")
     @Mapping(target = "analyzed", constant = "false")
+    @Mapping(target = "sections", ignore = true)
     ResumeDetailVO toDetailVO(Resume resume);
 
     /**

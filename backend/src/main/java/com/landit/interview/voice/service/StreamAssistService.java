@@ -44,11 +44,11 @@ public class StreamAssistService {
             String candidateDraft,
             SseEmitter emitter) {
 
-        log.info("[StreamAssist] Processing assist request, sessionId={}, type={}", sessionId, assistType);
+        log.info("[StreamAssist] 处理求助请求, sessionId={}, type={}", sessionId, assistType);
 
         // 检查是否可以求助
         if (!canAssist(sessionId)) {
-            log.warn("[StreamAssist] Assist limit exceeded, sessionId={}", sessionId);
+            log.warn("[StreamAssist] 求助次数已用尽, sessionId={}", sessionId);
             sendEvent(emitter, AssistSSEEvent.error(
                     AssistSSEEvent.ErrorEventData.builder()
                             .code("ASSIST_LIMIT_EXCEEDED")
@@ -74,7 +74,7 @@ public class StreamAssistService {
                                 },
                                 error -> {
                                     // 出错处理
-                                    log.error("[StreamAssist] Assist error, sessionId={}", sessionId, error);
+                                    log.error("[StreamAssist] 求助出错, sessionId={}", sessionId, error);
                                     voiceGateway.resumeInterview(sessionId);
                                     sendEvent(emitter, AssistSSEEvent.error(
                                             AssistSSEEvent.ErrorEventData.builder()
@@ -86,12 +86,12 @@ public class StreamAssistService {
                                 },
                                 () -> {
                                     // 完成处理
-                                    log.info("[StreamAssist] Assist completed, sessionId={}", sessionId);
+                                    log.info("[StreamAssist] 求助完成, sessionId={}", sessionId);
                                     emitter.complete();
                                 }
                         );
             } catch (Exception e) {
-                log.error("[StreamAssist] Unexpected error, sessionId={}", sessionId, e);
+                log.error("[StreamAssist] 意外错误, sessionId={}", sessionId, e);
                 voiceGateway.resumeInterview(sessionId);
                 sendEvent(emitter, AssistSSEEvent.error(
                         AssistSSEEvent.ErrorEventData.builder()
@@ -113,7 +113,7 @@ public class StreamAssistService {
                     .name(event.getType())
                     .data(event));
         } catch (IOException e) {
-            log.error("[StreamAssist] Failed to send event", e);
+            log.error("[StreamAssist] 发送事件失败", e);
             emitter.completeWithError(e);
         }
     }

@@ -67,13 +67,13 @@ public class AliyunASRService implements ASRService {
                     if (!emitter.isCancelled()) {
                         emitter.next(asrResult);
                     }
-                    log.trace("[AliyunASR] Recognition event: isFinal={}, text={}, taskId={}",
+                    log.trace("[AliyunASR] 识别事件: isFinal={}, text={}, taskId={}",
                             asrResult.getIsFinal(), asrResult.getText(), taskId);
                 }
 
                 @Override
                 public void onComplete() {
-                    log.info("[AliyunASR] Recognition completed, taskId={}", taskId);
+                    log.info("[AliyunASR] 识别完成, taskId={}", taskId);
                     if (!emitter.isCancelled()) {
                         emitter.complete();
                     }
@@ -82,7 +82,7 @@ public class AliyunASRService implements ASRService {
 
                 @Override
                 public void onError(Exception e) {
-                    log.error("[AliyunASR] Recognition error, taskId={}", taskId, e);
+                    log.error("[AliyunASR] 识别错误, taskId={}", taskId, e);
                     if (!emitter.isCancelled()) {
                         emitter.error(e);
                     }
@@ -92,24 +92,24 @@ public class AliyunASRService implements ASRService {
 
             try {
                 recognizer.call(param, callback);
-                log.info("[AliyunASR] Recognition started, taskId={}, model={}", taskId, asrConfig.getModel());
+                log.info("[AliyunASR] 识别开始, taskId={}, model={}", taskId, asrConfig.getModel());
 
                 // 订阅音频流，将每帧音频发送到识别器
                 audioStream.subscribe(
                     audioData -> recognizer.sendAudioFrame(ByteBuffer.wrap(audioData)),
                     error -> {
-                        log.error("[AliyunASR] Audio stream error, taskId={}", taskId, error);
+                        log.error("[AliyunASR] 音频流错误, taskId={}", taskId, error);
                         if (!emitter.isCancelled()) {
                             emitter.error(error);
                         }
                     },
                     () -> {
-                        log.info("[AliyunASR] Audio stream completed, stopping recognition, taskId={}", taskId);
+                        log.info("[AliyunASR] 音频流结束，停止识别, taskId={}", taskId);
                         recognizer.stop();
                     }
                 );
             } catch (Exception e) {
-                log.error("[AliyunASR] Failed to start recognition, taskId={}", taskId, e);
+                log.error("[AliyunASR] 启动识别失败, taskId={}", taskId, e);
                 if (!emitter.isCancelled()) {
                     emitter.error(e);
                 }
@@ -161,9 +161,9 @@ public class AliyunASRService implements ASRService {
     private void closeRecognizer(Recognition recognizer, String taskId) {
         try {
             recognizer.getDuplexApi().close(1000, "bye");
-            log.debug("[AliyunASR] Recognizer closed, taskId={}", taskId);
+            log.debug("[AliyunASR] 识别器已关闭, taskId={}", taskId);
         } catch (Exception e) {
-            log.warn("[AliyunASR] Failed to close recognizer, taskId={}", taskId, e);
+            log.warn("[AliyunASR] 关闭识别器失败, taskId={}", taskId, e);
         }
     }
 }

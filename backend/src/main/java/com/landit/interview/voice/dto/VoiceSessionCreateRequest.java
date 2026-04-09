@@ -38,4 +38,10 @@ public class VoiceSessionCreateRequest {
      */
     private String interviewerStyle = "professional";
 
+    /**
+     * 是否重新生成面试问题（默认 true）
+     * 如果为 false，尝试复用同一 interviewId 下已有会话的预生成问题
+     */
+    private Boolean regenerateQuestions = false;
+
 }

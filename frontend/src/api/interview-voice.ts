@@ -20,6 +20,7 @@ export interface CreateSessionRequest {
   assistLimit?: number
   voiceMode?: string
   interviewerStyle?: string
+  regenerateQuestions?: boolean
 }
 
 /** 创建语音面试会话响应 */
@@ -30,6 +31,7 @@ export interface CreateSessionResponse {
   voiceMode: string
   totalQuestions: number
   assistLimit: number
+  questionsReused?: boolean
 }
 
 /**

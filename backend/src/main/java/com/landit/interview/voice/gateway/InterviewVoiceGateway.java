@@ -23,7 +23,7 @@ import org.springframework.web.socket.WebSocketSession;
 
 import java.util.Base64;
 import java.util.Map;
-import java.util.UUID;
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -68,14 +68,19 @@ public class InterviewVoiceGateway {
         // 生成会话ID并创建数据库记录
         String sessionId = generateSessionId();
         InterviewSession session = createSessionRecord(sessionId, request, interview, jobPosition);
-        log.info("[VoiceGateway] Session created, sessionId={}, interviewId={}, position={}",
+        log.info("[VoiceGateway] 会话已创建, sessionId={}, interviewId={}, position={}",
                 sessionId, request.getInterviewId(), jobPosition.getTitle());
 
         // 初始化内存状态（包含JD和简历上下文）
         initSessionState(sessionId, request, jobPosition, resumeContent, session);
 
-        // 预生成问题（失败不影响会话创建，运行时降级到实时生成）
-        preGenerateQuestions(sessionId, jobPosition, resumeContent, session);
+        // 决定问题生成策略：重新生成 or 复用历史
+        boolean regenerate = request.getRegenerateQuestions() == null || request.getRegenerateQuestions();
+        if (regenerate) {
+            preGenerateQuestions(sessionId, jobPosition, resumeContent, session);
+        } else {
+            reuseOrGenerateQuestions(sessionId, jobPosition, resumeContent, session, request.getInterviewId());
+        }
 
         // 返回创建结果
         return buildCreateResponse(sessionId, request, jobPosition, session);
@@ -132,7 +137,7 @@ public class InterviewVoiceGateway {
      * @return 会话ID
      */
     private String generateSessionId() {
-        return UUID.randomUUID().toString().replace("-", "");
+        return IdWorker.getIdStr();
     }
 
     /**
@@ -212,6 +217,40 @@ public class InterviewVoiceGateway {
     }
 
     /**
+     * 尝试复用历史会话的预生成问题，失败则降级到重新生成
+     *
+     * @param sessionId     新会话ID
+     * @param jobPosition   职位实体
+     * @param resumeContent 简历内容
+     * @param session       新会话实体
+     * @param interviewId   关联的面试ID
+     */
+    private void reuseOrGenerateQuestions(String sessionId, JobPosition jobPosition, String resumeContent, InterviewSession session, String interviewId) {
+        try {
+            InterviewSession latestSession = interviewSessionService.getLatestSessionWithQuestions(interviewId);
+            if (latestSession != null) {
+                int result = questionPreGenerateService.copyPreGeneratedQuestions(
+                        sessionId,
+                        latestSession.getPreGeneratedQuestions(),
+                        session.getTotalQuestions()
+                );
+                if (result > 0) {
+                    log.info("[VoiceGateway] 复用历史问题成功, sessionId={}, sourceSessionId={}, count={}",
+                            sessionId, latestSession.getId(), result);
+                    return;
+                }
+                log.warn("[VoiceGateway] 历史问题数量不匹配, 期望={}, 降级到重新生成", session.getTotalQuestions());
+            } else {
+                log.info("[VoiceGateway] 无历史问题可复用, interviewId={}, 降级到重新生成", interviewId);
+            }
+        } catch (Exception e) {
+            log.warn("[VoiceGateway] 复用历史问题异常, 降级到重新生成", e);
+        }
+        // 降级：重新调用 LLM 生成
+        preGenerateQuestions(sessionId, jobPosition, resumeContent, session);
+    }
+
+    /**
      * 构建创建结果响应
      *
      * @param sessionId 会话ID
@@ -243,7 +282,7 @@ public class InterviewVoiceGateway {
         wsSessions.put(sessionId, wsSession);
         // 初始化会话状态（如果不存在）
         sessionStates.putIfAbsent(sessionId, new SessionState());
-        log.info("[VoiceGateway] Session registered, sessionId={}", sessionId);
+        log.info("[VoiceGateway] 会话已注册, sessionId={}", sessionId);
     }
 
     /**
@@ -261,7 +300,7 @@ public class InterviewVoiceGateway {
         if (state != null) {
             state.setActive(false);
         }
-        log.info("[VoiceGateway] Session unregistered, sessionId={}", sessionId);
+        log.info("[VoiceGateway] 会话已注销, sessionId={}", sessionId);
     }
 
     /**
@@ -281,7 +320,7 @@ public class InterviewVoiceGateway {
 
         // 如果会话已冻结，忽略音频数据
         if (state.isFrozen()) {
-            log.debug("[VoiceGateway] Session frozen, ignoring audio, sessionId={}", sessionId);
+            log.debug("[VoiceGateway] 会话已冻结，忽略音频, sessionId={}", sessionId);
             return;
         }
 
@@ -289,8 +328,8 @@ public class InterviewVoiceGateway {
         interviewerAgentHandler.handleCandidateAudio(sessionId, audioData)
                 .subscribe(
                         response -> sendResponse(sessionId, response),
-                        error -> log.error("[VoiceGateway] Error handling audio, sessionId={}", sessionId, error),
-                        () -> log.debug("[VoiceGateway] Audio processing completed, sessionId={}", sessionId)
+                        error -> log.error("[VoiceGateway] 处理音频出错, sessionId={}", sessionId, error),
+                        () -> log.debug("[VoiceGateway] 音频处理完成, sessionId={}", sessionId)
                 );
     }
 
@@ -303,7 +342,7 @@ public class InterviewVoiceGateway {
      * @param error 错误对象
      */
     public void handleSessionError(String sessionId, WebSocketSession wsSession, Throwable error) {
-        log.error("[VoiceGateway] Session error, sessionId={}", sessionId, error);
+        log.error("[VoiceGateway] 会话错误, sessionId={}", sessionId, error);
         // 标记会话为非活跃状态
         SessionState state = sessionStates.get(sessionId);
         if (state != null) {
@@ -323,7 +362,7 @@ public class InterviewVoiceGateway {
             // 标记会话为冻结状态
             state.setFrozen(true);
             state.setFreezeTime(System.currentTimeMillis());
-            log.info("[VoiceGateway] Interview frozen, sessionId={}", sessionId);
+            log.info("[VoiceGateway] 面试已冻结, sessionId={}", sessionId);
 
             // 通知客户端状态变更
             sendResponse(sessionId, VoiceResponse.state(VoiceResponse.StateData.builder()
@@ -347,7 +386,7 @@ public class InterviewVoiceGateway {
         if (state != null) {
             // 解除冻结状态
             state.setFrozen(false);
-            log.info("[VoiceGateway] Interview resumed, sessionId={}", sessionId);
+            log.info("[VoiceGateway] 面试已恢复, sessionId={}", sessionId);
 
             // 通知客户端状态变更
             sendResponse(sessionId, VoiceResponse.state(VoiceResponse.StateData.builder()
@@ -372,7 +411,7 @@ public class InterviewVoiceGateway {
             // 标记会话为非活跃和已完成状态
             state.setActive(false);
             state.setCompleted(true);
-            log.info("[VoiceGateway] Interview ended, sessionId={}", sessionId);
+            log.info("[VoiceGateway] 面试已结束, sessionId={}", sessionId);
 
             // 通知客户端状态变更
             sendResponse(sessionId, VoiceResponse.state(VoiceResponse.StateData.builder()
@@ -459,7 +498,7 @@ public class InterviewVoiceGateway {
             handleAudioData(sessionId, wsSessions.get(sessionId), audioDataBytes);
 
         } catch (Exception e) {
-            log.error("[VoiceGateway] Failed to handle audio request, sessionId={}", sessionId, e);
+            log.error("[VoiceGateway] 处理音频请求失败, sessionId={}", sessionId, e);
         }
     }
 
@@ -478,7 +517,7 @@ public class InterviewVoiceGateway {
             ControlAction action = ControlAction.fromCode(actionCode);
 
             if (action == null) {
-                log.warn("[VoiceGateway] Unknown control action: {}", actionCode);
+                log.warn("[VoiceGateway] 未知控制操作: {}", actionCode);
                 return;
             }
 
@@ -500,10 +539,10 @@ public class InterviewVoiceGateway {
                     resumeInterview(sessionId);
                     break;
                 default:
-                    log.warn("[VoiceGateway] Unhandled control action: {}", action);
+                    log.warn("[VoiceGateway] 未处理的控制操作: {}", action);
             }
         } catch (Exception e) {
-            log.error("[VoiceGateway] Failed to handle control request, sessionId={}", sessionId, e);
+            log.error("[VoiceGateway] 处理控制请求失败, sessionId={}", sessionId, e);
         }
     }
 
@@ -536,7 +575,7 @@ public class InterviewVoiceGateway {
             }
         }
 
-        log.info("[VoiceGateway] Interview started, sessionId={}", sessionId);
+        log.info("[VoiceGateway] 面试开始, sessionId={}", sessionId);
 
         // 通知客户端面试开始
         sendResponse(sessionId, VoiceResponse.state(VoiceResponse.StateData.builder()
@@ -565,7 +604,7 @@ public class InterviewVoiceGateway {
     private void handleStopAction(String sessionId) {
         SessionState state = sessionStates.get(sessionId);
         if (state != null) {
-            log.info("[VoiceGateway] Recording stopped, sessionId={}", sessionId);
+            log.info("[VoiceGateway] 录音停止, sessionId={}", sessionId);
         }
     }
 

@@ -39,7 +39,7 @@ public class AssistantController {
      */
     @PostMapping
     public ApiResponse<VoiceSessionCreateVO> createSession(@Valid @RequestBody VoiceSessionCreateRequest request) {
-        log.info("[VoiceSession] Create session request, interviewId={}", request.getInterviewId());
+        log.info("[VoiceSession] 创建会话请求, interviewId={}", request.getInterviewId());
         VoiceSessionCreateVO vo = voiceGateway.createSession(request);
         return ApiResponse.success(vo);
     }
@@ -61,7 +61,7 @@ public class AssistantController {
             @RequestParam(required = false) String question,
             @RequestParam(required = false) String candidateDraft) {
 
-        log.info("[Assistant] Stream assist request, sessionId={}, type={}, hasQuestion={}",
+        log.info("[Assistant] 流式求助请求, sessionId={}, type={}, hasQuestion={}",
                 sessionId, type, question != null && !question.isEmpty());
 
         // 创建 SSE 发射器
@@ -69,12 +69,12 @@ public class AssistantController {
 
         // 设置超时和错误处理
         emitter.onTimeout(() -> {
-            log.warn("[Assistant] SSE timeout, sessionId={}", sessionId);
+            log.warn("[Assistant] SSE超时, sessionId={}", sessionId);
             emitter.complete();
         });
 
         emitter.onError(e -> {
-            log.error("[Assistant] SSE error, sessionId={}", sessionId, e);
+            log.error("[Assistant] SSE错误, sessionId={}", sessionId, e);
             emitter.completeWithError(e);
         });
 

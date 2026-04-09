@@ -44,11 +44,11 @@ public class RecordingController {
      */
     @GetMapping("/{sessionId}")
     public Mono<ApiResponse<RecordingInfo>> getRecordingInfo(@PathVariable String sessionId) {
-        log.info("[Recording] Get recording info, sessionId={}", sessionId);
+        log.info("[Recording] 获取录音信息, sessionId={}", sessionId);
         return recordingMergeService.mergeRecordings(sessionId)
                 .map(ApiResponse::success)
                 .onErrorResume(e -> {
-                    log.error("[Recording] Failed to get recording info, sessionId={}", sessionId, e);
+                    log.error("[Recording] 获取录音信息失败, sessionId={}", sessionId, e);
                     return Mono.just(ApiResponse.serverError("获取录音信息失败: " + e.getMessage()));
                 });
     }
@@ -62,13 +62,13 @@ public class RecordingController {
      */
     @GetMapping(value = "/{sessionId}/audio", produces = "audio/wav")
     public ResponseEntity<Flux<byte[]>> streamAudio(@PathVariable String sessionId) {
-        log.info("[Recording] Stream merged audio, sessionId={}", sessionId);
+        log.info("[Recording] 流式传输合并音频, sessionId={}", sessionId);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType("audio/wav"));
         headers.set("Content-Disposition", String.format("attachment; filename=\"%s.wav\"", sessionId));
         Flux<byte[]> audioFlux = recordingMergeService.streamMergedAudio(sessionId)
                 .onErrorResume(e -> {
-                    log.error("[Recording] Failed to stream audio, sessionId={}", sessionId, e);
+                    log.error("[Recording] 流式传输音频失败, sessionId={}", sessionId, e);
                     return Flux.empty();
                 });
         return new ResponseEntity<>(audioFlux, headers, HttpStatus.OK);
@@ -86,15 +86,15 @@ public class RecordingController {
     public ResponseEntity<byte[]> getSegmentAudio(
             @PathVariable String sessionId,
             @PathVariable Integer segmentIndex) {
-        log.info("[Recording] Get segment audio, sessionId={}, index={}", sessionId, segmentIndex);
+        log.info("[Recording] 获取片段音频, sessionId={}, index={}", sessionId, segmentIndex);
         String recordingPath = recordingService.getRecordingPath(sessionId);
         if (recordingPath == null) {
-            log.warn("[Recording] Recording not found, sessionId={}", sessionId);
+            log.warn("[Recording] 录音未找到, sessionId={}", sessionId);
             return ResponseEntity.notFound().build();
         }
         Path segmentPath = Paths.get(recordingPath, String.format("segment_%04d.pcm", segmentIndex));
         if (!Files.exists(segmentPath)) {
-            log.warn("[Recording] Segment not found, path={}", segmentPath);
+            log.warn("[Recording] 片段未找到, path={}", segmentPath);
             return ResponseEntity.notFound().build();
         }
         try {
@@ -105,7 +105,7 @@ public class RecordingController {
             headers.setContentLength(wavData.length);
             return new ResponseEntity<>(wavData, headers, HttpStatus.OK);
         } catch (IOException e) {
-            log.error("[Recording] Failed to read segment, path={}", segmentPath, e);
+            log.error("[Recording] 读取片段失败, path={}", segmentPath, e);
             return ResponseEntity.internalServerError().build();
         }
     }

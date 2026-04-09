@@ -1,5 +1,6 @@
 package com.landit.interview.voice.dto;
 
+import static com.landit.interview.voice.enums.ResponseTypeEnum.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,7 +18,7 @@ import lombok.NoArgsConstructor;
 public class VoiceResponse {
 
     /**
-     * 消息类型：transcript, audio, state, error, pong, ready
+     * 消息类型
      */
     private String type;
 
@@ -30,42 +31,42 @@ public class VoiceResponse {
      * 创建转录响应
      */
     public static VoiceResponse transcript(TranscriptData data) {
-        return VoiceResponse.builder().type("transcript").data(data).build();
+        return VoiceResponse.builder().type(TRANSCRIPT.getCode()).data(data).build();
     }
 
     /**
      * 创建音频响应
      */
     public static VoiceResponse audio(AudioData data) {
-        return VoiceResponse.builder().type("audio").data(data).build();
+        return VoiceResponse.builder().type(AUDIO.getCode()).data(data).build();
     }
 
     /**
      * 创建状态响应
      */
     public static VoiceResponse state(StateData data) {
-        return VoiceResponse.builder().type("state").data(data).build();
+        return VoiceResponse.builder().type(STATE.getCode()).data(data).build();
     }
 
     /**
      * 创建错误响应
      */
     public static VoiceResponse error(ErrorData data) {
-        return VoiceResponse.builder().type("error").data(data).build();
+        return VoiceResponse.builder().type(ERROR.getCode()).data(data).build();
     }
 
     /**
      * 创建心跳响应
      */
     public static VoiceResponse pong() {
-        return VoiceResponse.builder().type("pong").build();
+        return VoiceResponse.builder().type(PONG.getCode()).build();
     }
 
     /**
      * 创建准备就绪响应（预生成完成）
      */
     public static VoiceResponse ready(ReadyData data) {
-        return VoiceResponse.builder().type("ready").data(data).build();
+        return VoiceResponse.builder().type(READY.getCode()).data(data).build();
     }
 
     /**

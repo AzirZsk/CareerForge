@@ -169,8 +169,9 @@
             <div
               v-for="(activity, index) in store.stats.recentActivity"
               :key="index"
-              class="activity-item"
+              class="activity-item clickable"
               :style="{ '--index': index }"
+              @click="goToActivity(activity)"
             >
               <div
                 class="activity-icon"
@@ -203,7 +204,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAppStore } from '@/stores'
 import { useRouter } from 'vue-router'
-import type { WeeklyProgress } from '@/types'
+import type { WeeklyProgress, RecentActivity } from '@/types'
 
 interface ChartTab {
   key: string
@@ -244,6 +245,23 @@ function goToInterviewCenter(): void {
 function goToMockInterview(): void {
   router.push('/interview')
   store.setActiveNav('interview')
+}
+
+// 点击最近动态跳转到对应详情页
+function goToActivity(activity: RecentActivity): void {
+  if (!activity.relatedId) return
+  switch (activity.type) {
+    case 'resume':
+      router.push(`/resume/${activity.relatedId}`)
+      store.setActiveNav('resume')
+      break
+    case 'interview':
+    case 'practice':
+    case 'review':
+      router.push(`/interview-center/${activity.relatedId}`)
+      store.setActiveNav('interview-center')
+      break
+  }
 }
 
 // 获取动态图标
@@ -661,6 +679,15 @@ function getBarValue(item: WeeklyProgress): string | number {
   }
   &:hover {
     background: rgba(255, 255, 255, 0.02);
+  }
+  &.clickable {
+    cursor: pointer;
+    &:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    &:active {
+      background: rgba(255, 255, 255, 0.08);
+    }
   }
 }
 

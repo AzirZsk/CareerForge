@@ -31,7 +31,7 @@ public class VoiceWebSocketHandler implements WebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         String sessionId = getSessionId(session);
-        log.info("[VoiceWS] Connection established, sessionId={}, wsSessionId={}", sessionId, session.getId());
+        log.info("[VoiceWS] 连接建立, sessionId={}, wsSessionId={}", sessionId, session.getId());
 
         // 设置文本消息大小限制为 1MB（默认 64KB 太小，ASR 返回的文本可能很大）
         session.setTextMessageSizeLimit(1024 * 1024);
@@ -40,9 +40,10 @@ public class VoiceWebSocketHandler implements WebSocketHandler {
         sessionManager.registerSession(session.getId(), session);
         voiceGateway.registerSession(sessionId, session);
 
-        // 发送连接成功消息
-        sessionManager.sendResponse(session, VoiceResponse.state(VoiceResponse.StateData.builder()
-                .state("connected")
+        // 预生成在 createSession 时已同步完成，直接通知前端准备就绪
+        sessionManager.sendResponse(session, VoiceResponse.ready(VoiceResponse.ReadyData.builder()
+                .state("ready")
+                .message("面试问题已生成，准备就绪")
                 .build()));
     }
 
@@ -59,7 +60,7 @@ public class VoiceWebSocketHandler implements WebSocketHandler {
      * 解析消息类型后直接路由到 Gateway 对应的处理方法，避免泛型擦除导致的重复判断
      */
     private void handleTextMessage(WebSocketSession session, TextMessage message, String sessionId) {
-        log.debug("[VoiceWS] Received text message, sessionId={}, length={}", sessionId, message.getPayload().length());
+        log.debug("[VoiceWS] 收到文本消息, sessionId={}, length={}", sessionId, message.getPayload().length());
         try {
             String payload = message.getPayload();
 
@@ -90,11 +91,11 @@ public class VoiceWebSocketHandler implements WebSocketHandler {
                     voiceGateway.handleControlRequest(sessionId, controlRequest);
                     break;
                 default:
-                    log.warn("[VoiceWS] Unknown message type: {}", messageType);
+                    log.warn("[VoiceWS] 未知消息类型: {}", messageType);
                     sessionManager.sendError(session, "UNKNOWN_TYPE", "Unknown message type: " + messageType);
             }
         } catch (Exception e) {
-            log.error("[VoiceWS] Failed to handle text message, sessionId={}", sessionId, e);
+            log.error("[VoiceWS] 处理文本消息失败, sessionId={}", sessionId, e);
             sessionManager.sendError(session, "PARSE_ERROR", "Failed to parse message: " + e.getMessage());
         }
     }
@@ -102,14 +103,14 @@ public class VoiceWebSocketHandler implements WebSocketHandler {
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
         String sessionId = getSessionId(session);
-        log.error("[VoiceWS] Transport error, sessionId={}", sessionId, exception);
+        log.error("[VoiceWS] 传输错误, sessionId={}", sessionId, exception);
         voiceGateway.handleSessionError(sessionId, session, exception);
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         String sessionId = getSessionId(session);
-        log.info("[VoiceWS] Connection closed, sessionId={}, status={}", sessionId, status);
+        log.info("[VoiceWS] 连接关闭, sessionId={}, status={}", sessionId, status);
 
         sessionManager.unregisterSession(session.getId());
         voiceGateway.unregisterSession(sessionId, session);

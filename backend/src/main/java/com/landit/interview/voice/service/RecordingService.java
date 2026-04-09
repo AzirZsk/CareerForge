@@ -38,7 +38,7 @@ public class RecordingService extends ServiceImpl<InterviewRecordingMapper, Inte
      * 保存录音片段
      */
     public void saveSegment(String sessionId, RecordingSegment segment) {
-        log.debug("[Recording] Saving segment, sessionId={}, index={}", sessionId, segment.getIndex());
+        log.debug("[Recording] 保存片段, sessionId={}, index={}", sessionId, segment.getIndex());
         InterviewRecording recording = convertToEntity(sessionId, segment);
         if (segment.getAudioData() != null && segment.getAudioData().length > 0) {
             String audioPath = saveAudioFile(sessionId, segment.getIndex(), segment.getAudioData());
@@ -51,7 +51,7 @@ public class RecordingService extends ServiceImpl<InterviewRecordingMapper, Inte
      * 保存录音片段（实体）
      */
     public void saveRecording(InterviewRecording recording) {
-        log.debug("[Recording] Saving recording, sessionId={}, index={}",
+        log.debug("[Recording] 保存录音, sessionId={}, index={}",
                 recording.getSessionId(), recording.getSegmentIndex());
         this.save(recording);
     }
@@ -60,7 +60,7 @@ public class RecordingService extends ServiceImpl<InterviewRecordingMapper, Inte
      * 获取录音片段列表
      */
     public List<InterviewRecording> getSegments(String sessionId) {
-        log.debug("[Recording] Getting segments, sessionId={}", sessionId);
+        log.debug("[Recording] 获取片段列表, sessionId={}", sessionId);
         LambdaQueryWrapper<InterviewRecording> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(InterviewRecording::getSessionId, sessionId)
                 .orderByAsc(InterviewRecording::getSegmentIndex);
@@ -71,7 +71,7 @@ public class RecordingService extends ServiceImpl<InterviewRecordingMapper, Inte
      * 获取录音回放信息
      */
     public RecordingInfo getRecordingInfo(String sessionId) {
-        log.debug("[Recording] Getting recording info, sessionId={}", sessionId);
+        log.debug("[Recording] 获取录音信息, sessionId={}", sessionId);
         List<InterviewRecording> recordings = getSegments(sessionId);
         if (recordings.isEmpty()) {
             return RecordingInfo.builder()
@@ -118,7 +118,7 @@ public class RecordingService extends ServiceImpl<InterviewRecordingMapper, Inte
      * 删除会话的所有录音
      */
     public void deleteRecordings(String sessionId) {
-        log.info("[Recording] Deleting recordings, sessionId={}", sessionId);
+        log.info("[Recording] 删除录音, sessionId={}", sessionId);
         LambdaQueryWrapper<InterviewRecording> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(InterviewRecording::getSessionId, sessionId);
         this.remove(wrapper);
@@ -126,9 +126,9 @@ public class RecordingService extends ServiceImpl<InterviewRecordingMapper, Inte
         if (Files.exists(sessionPath)) {
             try {
                 deleteDirectory(sessionPath.toFile());
-                log.info("[Recording] Deleted recording files, path={}", sessionPath);
+                log.info("[Recording] 已删除录音文件, path={}", sessionPath);
             } catch (IOException e) {
-                log.error("[Recording] Failed to delete recording files, path={}", sessionPath, e);
+                log.error("[Recording] 删除录音文件失败, path={}", sessionPath, e);
             }
         }
     }
@@ -145,10 +145,10 @@ public class RecordingService extends ServiceImpl<InterviewRecordingMapper, Inte
             String fileName = String.format("segment_%04d.pcm", segmentIndex);
             Path filePath = sessionDir.resolve(fileName);
             Files.write(filePath, audioData);
-            log.debug("[Recording] Saved audio file, path={}, size={}", filePath, audioData.length);
+            log.debug("[Recording] 音频文件已保存, path={}, size={}", filePath, audioData.length);
             return filePath.toString();
         } catch (IOException e) {
-            log.error("[Recording] Failed to save audio file, sessionId={}, index={}", sessionId, segmentIndex, e);
+            log.error("[Recording] 保存音频文件失败, sessionId={}, index={}", sessionId, segmentIndex, e);
             return null;
         }
     }

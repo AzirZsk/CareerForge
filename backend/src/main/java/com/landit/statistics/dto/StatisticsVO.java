@@ -89,6 +89,11 @@ public class StatisticsVO {
 
         private Integer score;
 
+        /**
+         * 关联实体ID，用于前端跳转详情页
+         */
+        private String relatedId;
+
     }
 
 }

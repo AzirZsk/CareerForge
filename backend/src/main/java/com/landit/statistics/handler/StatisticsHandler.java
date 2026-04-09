@@ -129,9 +129,10 @@ public class StatisticsHandler {
 
     /**
      * 构建最近活动（综合面试、简历、复盘、准备事项）
+     * 使用内部记录类携带原始时间戳，排序后再格式化，避免中文字符串排序不准的问题
      */
     private List<StatisticsVO.RecentActivityVO> buildRecentActivity() {
-        List<StatisticsVO.RecentActivityVO> activities = new ArrayList<>();
+        List<ActivityEntry> entries = new ArrayList<>();
         LocalDateTime now = LocalDateTime.now();
 
         // 获取最近的面试记录
@@ -145,13 +146,10 @@ public class StatisticsHandler {
             String content = "real".equals(interview.getSource())
                     ? "完成面试"
                     : "完成模拟面试";
-
-            activities.add(StatisticsVO.RecentActivityVO.builder()
-                    .type(type)
-                    .content(content)
-                    .time(formatTimeAgo(interview.getCreatedAt(), now))
-                    .score(interview.getScore())
-                    .build());
+            entries.add(new ActivityEntry(
+                    type, content, interview.getScore(),
+                    interview.getId().toString(), interview.getCreatedAt()
+            ));
         }
 
         // 获取最近的简历修改
@@ -161,12 +159,12 @@ public class StatisticsHandler {
         List<Resume> recentResumes = resumeService.list(resumeWrapper);
 
         for (Resume resume : recentResumes) {
-            activities.add(StatisticsVO.RecentActivityVO.builder()
-                    .type("resume")
-                    .content("简历「" + (resume.getName() != null ? resume.getName() : "未命名") + "」更新")
-                    .time(formatTimeAgo(resume.getUpdatedAt(), now))
-                    .score(resume.getOverallScore())
-                    .build());
+            entries.add(new ActivityEntry(
+                    "resume",
+                    "简历「" + (resume.getName() != null ? resume.getName() : "未命名") + "」更新",
+                    resume.getOverallScore(),
+                    resume.getId().toString(), resume.getUpdatedAt()
+            ));
         }
 
         // 获取最近的复盘笔记
@@ -176,11 +174,10 @@ public class StatisticsHandler {
         List<InterviewReviewNote> recentReviews = interviewReviewNoteService.list(reviewWrapper);
 
         for (InterviewReviewNote review : recentReviews) {
-            activities.add(StatisticsVO.RecentActivityVO.builder()
-                    .type("review")
-                    .content("完成面试复盘")
-                    .time(formatTimeAgo(review.getCreatedAt(), now))
-                    .build());
+            entries.add(new ActivityEntry(
+                    "review", "完成面试复盘", null,
+                    review.getInterviewId(), review.getCreatedAt()
+            ));
         }
 
         // 获取最近完成的准备事项
@@ -191,19 +188,33 @@ public class StatisticsHandler {
         List<InterviewPreparation> recentPreps = interviewPreparationService.list(prepWrapper);
 
         for (InterviewPreparation prep : recentPreps) {
-            activities.add(StatisticsVO.RecentActivityVO.builder()
-                    .type("practice")
-                    .content("完成准备事项：" + prep.getTitle())
-                    .time(formatTimeAgo(prep.getUpdatedAt(), now))
-                    .build());
+            entries.add(new ActivityEntry(
+                    "practice", "完成准备事项：" + prep.getTitle(), null,
+                    prep.getInterviewId(), prep.getUpdatedAt()
+            ));
         }
 
-        // 按时间排序（最新的在前）
-        return activities.stream()
-                .sorted(Comparator.comparing(StatisticsVO.RecentActivityVO::getTime))
+        // 按原始时间倒序排序，取前6条，再格式化时间
+        return entries.stream()
+                .sorted(Comparator.comparing(ActivityEntry::time).reversed())
                 .limit(6)
+                .map(e -> StatisticsVO.RecentActivityVO.builder()
+                        .type(e.type())
+                        .content(e.content())
+                        .time(formatTimeAgo(e.time(), now))
+                        .score(e.score())
+                        .relatedId(e.relatedId())
+                        .build())
                 .collect(Collectors.toList());
     }
+
+    /**
+     * 内部记录类，携带原始时间戳用于准确排序
+     */
+    private record ActivityEntry(
+            String type, String content, Integer score,
+            String relatedId, LocalDateTime time
+    ) {}
 
     /**
      * 格式化时间为"xx前"格式

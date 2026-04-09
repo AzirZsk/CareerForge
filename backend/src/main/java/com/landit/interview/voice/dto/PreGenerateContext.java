@@ -47,8 +47,4 @@ public class PreGenerateContext {
      */
     private String jdAnalysis;
 
-    /**
-     * 公司调研内容（可选）
-     */
-    private String companyResearch;
 }

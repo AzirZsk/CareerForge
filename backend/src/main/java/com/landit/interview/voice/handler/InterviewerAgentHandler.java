@@ -43,7 +43,7 @@ public class InterviewerAgentHandler {
 
     private final VoiceServiceFactory voiceServiceFactory;
     private final VoiceProperties voiceProperties;
-    private final ChatClient.Builder chatClientBuilder;
+    private final ChatClient chatClient;
     private final RecordingService recordingService;
     private final AIPromptProperties aiPromptProperties;
     private final QuestionPreGenerateService questionPreGenerateService;
@@ -63,7 +63,7 @@ public class InterviewerAgentHandler {
      * @return 响应流（转录 + AI 回复 + 音频）
      */
     public Flux<VoiceResponse> handleCandidateAudio(String sessionId, byte[] audioData) {
-        log.debug("[InterviewerAgent] Handling candidate audio, sessionId={}, size={}", sessionId, audioData.length);
+        log.debug("[InterviewerAgent] 处理候选人音频, sessionId={}, size={}", sessionId, audioData.length);
 
         // 获取 ASR 服务
         ASRService asrService = voiceServiceFactory.getASRService();
@@ -111,7 +111,7 @@ public class InterviewerAgentHandler {
                     return transcriptFlux;
                 })
                 .onErrorResume(e -> {
-                    log.error("[InterviewerAgent] Error handling audio, sessionId={}", sessionId, e);
+                    log.error("[InterviewerAgent] 处理音频出错, sessionId={}", sessionId, e);
                     return Flux.just(VoiceResponse.error(VoiceResponse.ErrorData.builder()
                             .code("ASR_ERROR")
                             .message("语音识别失败: " + e.getMessage())
@@ -506,7 +506,7 @@ public class InterviewerAgentHandler {
      * 调用 LLM 流式生成
      */
     private Flux<String> callLLMStream(String systemPrompt, String userPrompt) {
-        return chatClientBuilder.build()
+        return chatClient
                 .prompt()
                 .system(systemPrompt)
                 .user(userPrompt)
@@ -591,7 +591,7 @@ public class InterviewerAgentHandler {
         try {
             byte[] audioData = context.getCandidateAudioAndReset();
             if (audioData == null || audioData.length == 0) {
-                log.debug("[InterviewerAgent] No candidate audio to save, sessionId={}", sessionId);
+                log.debug("[InterviewerAgent] 无候选人录音需要保存, sessionId={}", sessionId);
                 return;
             }
 
@@ -616,10 +616,10 @@ public class InterviewerAgentHandler {
                     .build();
 
             recordingService.saveSegment(sessionId, segment);
-            log.info("[InterviewerAgent] Saved candidate recording, sessionId={}, index={}, duration={}ms",
+            log.info("[InterviewerAgent] 保存候选人录音, sessionId={}, index={}, duration={}ms",
                     sessionId, segmentIndex, durationMs);
         } catch (Exception e) {
-            log.error("[InterviewerAgent] Failed to save candidate recording, sessionId={}", sessionId, e);
+            log.error("[InterviewerAgent] 保存候选人录音失败, sessionId={}", sessionId, e);
         }
     }
 

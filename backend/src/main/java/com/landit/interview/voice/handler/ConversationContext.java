@@ -108,7 +108,7 @@ public class ConversationContext {
         try {
             candidateAudioBuffer.write(audio);
         } catch (Exception e) {
-            log.error("Failed to append candidate audio", e);
+            log.error("追加候选人音频失败", e);
         }
     }
 

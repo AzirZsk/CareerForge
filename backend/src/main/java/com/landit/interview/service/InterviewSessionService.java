@@ -1,5 +1,6 @@
 package com.landit.interview.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.landit.interview.entity.InterviewSession;
 import com.landit.interview.mapper.InterviewSessionMapper;
@@ -33,5 +34,21 @@ public class InterviewSessionService extends ServiceImpl<InterviewSessionMapper,
         } else {
             log.warn("[InterviewSessionService] 会话不存在, sessionId={}", sessionId);
         }
+    }
+
+    /**
+     * 获取同一面试下最近的、带有预生成问题的会话
+     *
+     * @param interviewId 面试ID
+     * @return 最近的会话（带预生成问题），不存在则返回 null
+     */
+    public InterviewSession getLatestSessionWithQuestions(String interviewId) {
+        LambdaQueryWrapper<InterviewSession> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(InterviewSession::getInterviewId, interviewId)
+                .isNotNull(InterviewSession::getPreGeneratedQuestions)
+                .ne(InterviewSession::getPreGeneratedQuestions, "")
+                .orderByDesc(InterviewSession::getCreatedAt)
+                .last("LIMIT 1");
+        return getOne(wrapper, false);
     }
 }

@@ -33,7 +33,7 @@ public class VoiceSessionManager {
      */
     public void registerSession(String wsSessionId, WebSocketSession session) {
         sessions.put(wsSessionId, session);
-        log.debug("[VoiceSessionManager] Session registered, wsSessionId={}", wsSessionId);
+        log.debug("[VoiceSessionManager] 会话已注册, wsSessionId={}", wsSessionId);
     }
 
     /**
@@ -43,7 +43,7 @@ public class VoiceSessionManager {
      */
     public void unregisterSession(String wsSessionId) {
         sessions.remove(wsSessionId);
-        log.debug("[VoiceSessionManager] Session unregistered, wsSessionId={}", wsSessionId);
+        log.debug("[VoiceSessionManager] 会话已注销, wsSessionId={}", wsSessionId);
     }
 
     /**
@@ -64,14 +64,14 @@ public class VoiceSessionManager {
      */
     public void sendResponse(WebSocketSession session, VoiceResponse response) {
         if (session == null || !session.isOpen()) {
-            log.warn("[VoiceSessionManager] Session is null or closed, cannot send response");
+            log.warn("[VoiceSessionManager] 会话为空或已关闭，无法发送响应");
             return;
         }
         try {
             String json = objectMapper.writeValueAsString(response);
             session.sendMessage(new TextMessage(json));
         } catch (IOException e) {
-            log.error("[VoiceSessionManager] Failed to send response", e);
+            log.error("[VoiceSessionManager] 发送响应失败", e);
         }
     }
 

@@ -61,7 +61,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
+import { useScrollLock } from '@vueuse/core'
 import type { SectionType } from '@/types'
 
 // 模块类型配置 - Font Awesome 图标类名
@@ -89,6 +90,12 @@ const emit = defineEmits<{
   'update:visible': [value: boolean]
   'select': [type: SectionType]
 }>()
+
+// 弹窗可见时锁定背景滚动
+const isBodyScrollLocked = useScrollLock(document.body)
+watch(() => props.visible, (val) => {
+  isBodyScrollLocked.value = val
+})
 
 // 计算可添加的类型（过滤已存在的类型）
 const availableTypes = computed(() => {

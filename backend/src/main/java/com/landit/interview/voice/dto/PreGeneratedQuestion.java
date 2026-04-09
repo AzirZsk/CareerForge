@@ -30,5 +30,6 @@ public class PreGeneratedQuestion {
     /**
      * 是否已使用
      */
+    @Builder.Default
     private boolean used = false;
 }

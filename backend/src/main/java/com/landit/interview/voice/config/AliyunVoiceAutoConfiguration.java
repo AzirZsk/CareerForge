@@ -43,7 +43,7 @@ public class AliyunVoiceAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(ASRService.class)
     public ASRService aliyunASRService(VoiceProperties voiceProperties) {
-        log.info("[AliyunVoiceAutoConfiguration] Initializing Aliyun ASR service with Fun-ASR SDK");
+        log.info("[AliyunVoiceAutoConfiguration] 正在初始化阿里云ASR服务（Fun-ASR SDK）");
         return new AliyunASRService(voiceProperties);
     }
 
@@ -53,7 +53,7 @@ public class AliyunVoiceAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(TTSService.class)
     public TTSService aliyunTTSService(VoiceProperties voiceProperties, ObjectMapper objectMapper) {
-        log.info("[AliyunVoiceAutoConfiguration] Initializing Aliyun TTS service");
+        log.info("[AliyunVoiceAutoConfiguration] 正在初始化阿里云TTS服务");
         return new AliyunTTSService(voiceProperties, objectMapper);
     }
 }

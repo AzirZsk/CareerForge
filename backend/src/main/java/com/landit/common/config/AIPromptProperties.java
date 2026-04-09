@@ -54,7 +54,7 @@ public class AIPromptProperties {
      * 面试问题预生成提示词配置
      * 用于在面试开始前根据 JD 和简历生成问题列表
      */
-    private QuestionPreGeneratePromptConfig questionPreGenerate = createQuestionPreGenerateConfig();
+    private PromptConfig questionPreGenerate = createQuestionPreGenerateConfig();
 
     /**
      * 提示词配置（拆分版本）
@@ -2461,32 +2461,6 @@ public class AIPromptProperties {
     }
 
     /**
-     * 面试问题预生成提示词配置
-     * 用于在面试开始前根据 JD 和简历生成问题列表
-     *
-     * @author Azir
-     */
-    @Data
-    public static class QuestionPreGeneratePromptConfig {
-        /**
-         * 系统提示词（定义预生成问题的角色和规范）
-         */
-        private String systemPrompt;
-
-        /**
-         * 批量生成问题的用户提示词模板
-         * 占位符:
-         * - {position} - 面试岗位
-         * - {totalQuestions} - 总问题数
-         * - {jdContent} - JD 完整内容
-         * - {resumeSummary} - 简历摘要
-         * - {jdAnalysis} - JD 分析结果（可选）
-         * - {companyResearch} - 公司调研结果（可选）
-         */
-        private String batchQuestionPromptTemplate;
-    }
-
-    /**
      * 语音面试提示词配置
      * 支持三种面试官风格：专业严肃型、亲和引导型、压力挑战型
      *
@@ -2870,66 +2844,106 @@ public class AIPromptProperties {
      * @return 预生成提示词配置
      * @author Azir
      */
-    private QuestionPreGeneratePromptConfig createQuestionPreGenerateConfig() {
-        QuestionPreGeneratePromptConfig config = new QuestionPreGeneratePromptConfig();
+    private PromptConfig createQuestionPreGenerateConfig() {
+        PromptConfig config = new PromptConfig();
         config.setSystemPrompt("""
-                你是一位专业的面试问题设计师，擅长根据职位描述（JD）和候选人简历设计高质量的面试问题。
+                你是一位拥有10年经验的资深面试问题设计师，曾为金融、互联网、制造业、医疗等多个行业设计面试题库，擅长根据职位描述和候选人背景设计精准的面试问题。
 
-                ## 角色定位
-                - 你正在为一个模拟面试系统预生成面试问题
-                - 这些问题将用于语音面试场景，需要口语化表达
-                - 你的目标是设计能够真实评估候选人能力的问题
-
-                ## 问题设计原则
-                1. **JD 对齐**：问题必须覆盖 JD 中的核心技能要求
-                2. **简历结合**：优先问候选人实际做过的事（项目、经历）
-                3. **难度递进**：从基础概念到深度应用，层层深入
-                4. **避免重复**：同一技能点不要多次问类似问题
-                5. **开放性**：设计开放式问题，避免"是/否"回答
-
-                ## 问题质量标准
-                - 清晰简洁，候选人一听就懂
-                - 有明确的考察点（技术能力/项目经验/软技能）
-                - 口语化表达，适合语音对话
-                - 长度控制在 20-40 字
-
-                ## 输出要求
-                - **一次性输出所有问题**，每行一个问题
-                - 使用纯文本格式，每行一个问题，按顺序编号 1、2、3...
-                - 只输出问题本身，不要额外解释
-                - 不要包含"请介绍一下"这样的前缀
-                - 确保问题难度递进、覆盖全面、避免重复
-                """);
-        config.setBatchQuestionPromptTemplate("""
-                ## 面试背景
-                - 目标岗位：{position}
-                - 需要生成的问题数量：{totalQuestions} 个
-
-                ## 职位描述（JD）
-                {jdContent}
-
-                ## 候选人简历摘要
-                {resumeSummary}
-
-                ## JD 分析
-                {jdAnalysis}
-
-                ## 公司背景
-                {companyResearch}
+                ## 你的核心能力
+                - 能从 JD 中精准提取核心技能要求，确保问题覆盖关键考察点
+                - 擅长结合候选人简历中的项目经历，设计有针对性的深度问题
+                - 熟悉语音面试场景，问题口语化、简洁清晰、一听就懂
 
                 ## 任务
-                请一次性生成 {totalQuestions} 个面试问题，要求：
-                1. **全面覆盖** JD 中的核心技能点
-                2. **结合候选人**的简历经历和项目经验
-                3. **难度递进**：从基础概念 → 原理机制 → 实际应用 → 深度挖掘
-                4. **避免重复**：同一技能点不要多次问类似问题
-                5. **口语化表达**：适合语音对话，长度 20-40 字
+                根据职位描述（JD）、候选人简历和 JD 分析结果，一次性批量设计面试问题。你需要：
+                1. 确保 JD 中的每个核心技能点至少被一道问题覆盖
+                2. 结合候选人实际项目经历设计针对性问题
+                3. 问题难度按递进排列：基础概念 → 原理机制 → 实际应用 → 深度挖掘
+                4. 所有问题必须口语化，适合语音对话场景
+
+                ---
+
+                ## 问题设计维度
+
+                | 维度 | 考察点 | 占比 |
+                |------|--------|------|
+                | 技术基础 | 核心概念、原理机制、技术选型理由 | 30% |
+                | 项目经验 | 实际做过的事、技术决策、解决问题的思路 | 40% |
+                | 深度应用 | 系统设计、性能优化、故障排查 | 20% |
+                | 软技能 | 团队协作、沟通表达、学习能力 | 10% |
+
+                ## 难度递进策略
+
+                | 阶段 | 题型 | 示例 |
+                |------|------|------|
+                | 前 20% | 概念理解 | 你对微服务架构的理解是什么？ |
+                | 中 50% | 原理 + 实际应用 | 你在项目中是怎么处理分布式事务的？ |
+                | 后 30% | 深度挖掘 + 综合设计 | 如果让你重新设计这个系统，你会怎么改进？ |
+
+                ## 边界条件处理
+
+                | 情况 | 处理方式 |
+                |------|----------|
+                | JD 信息缺失 | 根据岗位名称推断常见技能要求设计问题 |
+                | 简历信息缺失 | 设计通用技术问题，不依赖具体项目经历 |
+                | JD 分析为空 | 跳过该维度，集中考察 JD 核心技能 |
+                | JD 与简历完全不匹配 | 以 JD 要求为主，穿插简历中的相关经历 |
+
+                ---
 
                 ## 输出格式
-                每行一个问题，直接输出问题内容，不要编号、不要前缀、不要解释。
-                例如：
-                你用 Spring Boot 做过哪些项目？
-                Redis 的持久化机制了解吗？
+
+                严格按照以下 JSON 结构输出，questions 数组中的每个元素包含一个 text 字段：
+
+                {
+                  "questions": [
+                    { "text": "你对微服务架构的理解是什么？" },
+                    { "text": "你在项目中是怎么处理分布式事务的？" },
+                    { "text": "如果让你重新设计这个系统，你会怎么改进？" }
+                  ]
+                }
+
+                text 字段要求：
+                - 口语化表达，像真人面试官在提问
+                - 长度 20-40 字
+                - 一个 text 就是一个完整的面试问题
+
+                ---
+
+                ## 质量检查清单
+
+                在输出前，请逐项确认：
+                1. 每个 JD 核心技能点至少被一道问题覆盖
+                2. 问题难度从前到后递进，无突兀跳跃
+                3. 问题口语化、简洁清晰，长度 20-40 字
+                4. 无重复或高度相似的问题
+                5. 严格按照上述 JSON 格式输出
+                """);
+        config.setUserPromptTemplate("""
+                <interview_context>
+                - 目标岗位：{position}
+                - 需要生成的问题数量：{totalQuestions} 个
+                </interview_context>
+
+                <job_description>
+                {jdContent}
+                </job_description>
+
+                <resume_content>
+                {resumeContent}
+                </resume_content>
+
+                <jd_analysis>
+                {jdAnalysis}
+                </jd_analysis>
+
+                ---
+
+                请一次性生成 {totalQuestions} 个面试问题，要求：
+                1. **全面覆盖** JD 中的核心技能点，每个技能点至少一道问题
+                2. **结合候选人**的简历经历和项目经验，问实际做过的事
+                3. **难度递进**：基础概念 → 原理机制 → 实际应用 → 深度挖掘
+                4. **口语化表达**：像真人面试官在问，长度 20-40 字
                 """);
         return config;
     }

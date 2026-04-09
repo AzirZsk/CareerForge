@@ -63,7 +63,7 @@ public class AliyunTTSService extends AliyunVoiceBaseService implements TTSServi
             try {
                 // 构建 WebSocket URL
                 String wsUrl = buildTTSWebSocketUrl(config, taskId);
-                log.info("[AliyunTTS] Connecting to WebSocket for text length={}, taskId={}",
+                log.info("[AliyunTTS] 正在连接WebSocket, textLength={}, taskId={}",
                         text.length(), taskId);
                 log.debug("[AliyunTTS] WebSocket URL: {}", wsUrl.replaceAll("api-key=([^&]+)", "api-key=***"));
 
@@ -72,13 +72,13 @@ public class AliyunTTSService extends AliyunVoiceBaseService implements TTSServi
                         .uri(wsUrl)
                         .handle((inbound, outbound) -> {
                             connected.set(true);
-                            log.info("[AliyunTTS] WebSocket connected, taskId={}", taskId);
+                            log.info("[AliyunTTS] WebSocket已连接, taskId={}", taskId);
 
                             // 发送 TTS 请求
                             String request = buildTTSRequest(text, config, taskId);
                             Mono<Void> sendRequest = outbound.sendString(Mono.just(request))
                                     .then()
-                                    .doOnSuccess(v -> log.debug("[AliyunTTS] Sent TTS request, taskId={}", taskId));
+                                    .doOnSuccess(v -> log.debug("[AliyunTTS] 已发送TTS请求, taskId={}", taskId));
 
                             // 处理接收到的消息
                             Mono<Void> receiveMessages = inbound.receive()
@@ -90,13 +90,13 @@ public class AliyunTTSService extends AliyunVoiceBaseService implements TTSServi
                             return sendRequest.then(receiveMessages);
                         })
                         .doOnError(error -> {
-                            log.error("[AliyunTTS] WebSocket error, taskId={}", taskId, error);
+                            log.error("[AliyunTTS] WebSocket错误, taskId={}", taskId, error);
                             if (!emitter.isCancelled()) {
                                 emitter.error(error);
                             }
                         })
                         .doOnTerminate(() -> {
-                            log.info("[AliyunTTS] WebSocket terminated, total chunks={}, taskId={}",
+                            log.info("[AliyunTTS] WebSocket结束, totalChunks={}, taskId={}",
                                     audioChunkCount.get(), taskId);
                             if (!emitter.isCancelled()) {
                                 emitter.complete();
@@ -105,7 +105,7 @@ public class AliyunTTSService extends AliyunVoiceBaseService implements TTSServi
                         .subscribe();
 
             } catch (Exception e) {
-                log.error("[AliyunTTS] Failed to start synthesis, taskId={}", taskId, e);
+                log.error("[AliyunTTS] 启动合成失败, taskId={}", taskId, e);
                 if (!emitter.isCancelled()) {
                     emitter.error(e);
                 }
@@ -116,7 +116,7 @@ public class AliyunTTSService extends AliyunVoiceBaseService implements TTSServi
                 reactor.netty.Connection conn = connectionRef.get();
                 if (conn != null && !conn.isDisposed()) {
                     conn.dispose();
-                    log.info("[AliyunTTS] WebSocket disposed, taskId={}", taskId);
+                    log.info("[AliyunTTS] WebSocket已释放, taskId={}", taskId);
                 }
             });
         }, FluxSink.OverflowStrategy.BUFFER);
@@ -189,7 +189,7 @@ public class AliyunTTSService extends AliyunVoiceBaseService implements TTSServi
 
             return objectMapper.writeValueAsString(request);
         } catch (Exception e) {
-            log.error("[AliyunTTS] Failed to build TTS request", e);
+            log.error("[AliyunTTS] 构建TTS请求失败", e);
             throw new RuntimeException("Failed to build TTS request", e);
         }
     }
@@ -203,7 +203,7 @@ public class AliyunTTSService extends AliyunVoiceBaseService implements TTSServi
             JsonNode json = objectMapper.readTree(payload);
             String event = json.path("event").asText();
 
-            log.trace("[AliyunTTS] Received event: {}, taskId={}", event, taskId);
+            log.trace("[AliyunTTS] 收到事件: {}, taskId={}", event, taskId);
 
             switch (event) {
                 case "result":
@@ -213,7 +213,7 @@ public class AliyunTTSService extends AliyunVoiceBaseService implements TTSServi
                         if (!audioBase64.isEmpty()) {
                             byte[] audioData = Base64.getDecoder().decode(audioBase64);
                             audioChunkCount.incrementAndGet();
-                            log.trace("[AliyunTTS] Received audio chunk, size={} bytes, taskId={}",
+                            log.trace("[AliyunTTS] 收到音频块, size={}字节, taskId={}",
                                     audioData.length, taskId);
                             if (!emitter.isCancelled()) {
                                 emitter.next(audioData);
@@ -223,24 +223,24 @@ public class AliyunTTSService extends AliyunVoiceBaseService implements TTSServi
                     break;
 
                 case "completed":
-                    log.info("[AliyunTTS] Synthesis completed, total chunks={}, taskId={}",
+                    log.info("[AliyunTTS] 合成完成, totalChunks={}, taskId={}",
                             audioChunkCount.get(), taskId);
                     break;
 
                 case "error":
                     String errorCode = json.path("error_code").asText();
                     String errorMessage = json.path("error_message").asText();
-                    log.error("[AliyunTTS] Synthesis error: {} - {}, taskId={}", errorCode, errorMessage, taskId);
+                    log.error("[AliyunTTS] 合成错误: {} - {}, taskId={}", errorCode, errorMessage, taskId);
                     if (!emitter.isCancelled()) {
                         emitter.error(new RuntimeException("TTS error: " + errorCode + " - " + errorMessage));
                     }
                     break;
 
                 default:
-                    log.trace("[AliyunTTS] Unknown event: {}, taskId={}", event, taskId);
+                    log.trace("[AliyunTTS] 未知事件: {}, taskId={}", event, taskId);
             }
         } catch (Exception e) {
-            log.error("[AliyunTTS] Failed to parse message, taskId={}", taskId, e);
+            log.error("[AliyunTTS] 解析消息失败, taskId={}", taskId, e);
         }
     }
 

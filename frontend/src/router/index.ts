@@ -65,7 +65,7 @@ const routes: RouteRecordRaw[] = [
         path: ':id/mock/:sessionId',
         name: 'MockInterviewSession',
         component: () => import('@/views/InterviewSession.vue'),
-        meta: { title: '面试进行中' }
+        meta: { title: '面试进行中', hideAIChat: true }
       },
       {
         path: 'mock/:sessionId/recording',

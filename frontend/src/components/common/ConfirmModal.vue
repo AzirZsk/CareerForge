@@ -73,7 +73,10 @@
 </template>
 
 <script setup lang="ts">
-withDefaults(defineProps<{
+import { watch } from 'vue'
+import { useScrollLock } from '@vueuse/core'
+
+const props = withDefaults(defineProps<{
   visible: boolean
   title?: string
   message: string
@@ -93,6 +96,12 @@ const emit = defineEmits<{
   'confirm': []
   'cancel': []
 }>()
+
+// 弹窗可见时锁定背景滚动
+const isBodyScrollLocked = useScrollLock(document.body)
+watch(() => props.visible, (val) => {
+  isBodyScrollLocked.value = val
+})
 
 function handleConfirm(): void {
   emit('confirm')

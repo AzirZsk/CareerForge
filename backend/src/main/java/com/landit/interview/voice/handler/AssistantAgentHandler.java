@@ -30,7 +30,7 @@ public class AssistantAgentHandler {
 
     private final VoiceServiceFactory voiceServiceFactory;
     private final VoiceProperties voiceProperties;
-    private final ChatClient.Builder chatClientBuilder;
+    private final ChatClient chatClient;
 
     @Autowired
     @Lazy
@@ -54,7 +54,7 @@ public class AssistantAgentHandler {
             String userQuestion,
             String candidateDraft) {
 
-        log.info("[AssistantAgent] Handling assist, sessionId={}, type={}", sessionId, assistType);
+        log.info("[AssistantAgent] 处理求助请求, sessionId={}, type={}", sessionId, assistType);
 
         // 获取上下文
         AssistContext context = contexts.computeIfAbsent(sessionId, k -> new AssistContext());
@@ -72,7 +72,7 @@ public class AssistantAgentHandler {
         StringBuilder textBuffer = new StringBuilder();
 
         // 调用 LLM 流式生成
-        return chatClientBuilder.build()
+        return chatClient
                 .prompt()
                 .system(systemPrompt)
                 .user(userPrompt)
@@ -105,7 +105,7 @@ public class AssistantAgentHandler {
                                                 .build()
                                 ))
                                 .onErrorResume(e -> {
-                                    log.error("[AssistantAgent] TTS error", e);
+                                    log.error("[AssistantAgent] TTS错误", e);
                                     return Flux.empty();
                                 });
 
@@ -136,7 +136,7 @@ public class AssistantAgentHandler {
                                 .build())
                 ))
                 .onErrorResume(e -> {
-                    log.error("[AssistantAgent] Error handling assist", e);
+                    log.error("[AssistantAgent] 处理求助出错", e);
                     return Flux.just(AssistSSEEvent.error(
                             AssistSSEEvent.ErrorEventData.builder()
                                     .code("ASSIST_ERROR")

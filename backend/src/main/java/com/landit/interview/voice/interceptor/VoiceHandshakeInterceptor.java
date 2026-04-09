@@ -25,15 +25,15 @@ public class VoiceHandshakeInterceptor implements HandshakeInterceptor {
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
                                    WebSocketHandler wsHandler, Map<String, Object> attributes) {
         String path = request.getURI().getPath();
-        log.info("[VoiceHandshake] Handshake request, path={}", path);
+        log.info("[VoiceHandshake] 握手请求, path={}", path);
         // 从路径提取 sessionId: /landit/ws/interview/voice/{sessionId}
         String sessionId = extractSessionId(path);
         if (sessionId != null && !sessionId.isEmpty()) {
             attributes.put("sessionId", sessionId);
-            log.info("[VoiceHandshake] Extracted sessionId={}", sessionId);
+            log.info("[VoiceHandshake] 提取sessionId={}", sessionId);
             return true;
         }
-        log.warn("[VoiceHandshake] Failed to extract sessionId from path={}", path);
+        log.warn("[VoiceHandshake] 无法从路径提取sessionId, path={}", path);
         return false;
     }
 
@@ -41,7 +41,7 @@ public class VoiceHandshakeInterceptor implements HandshakeInterceptor {
     public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response,
                                WebSocketHandler wsHandler, Exception exception) {
         if (exception != null) {
-            log.error("[VoiceHandshake] Handshake failed", exception);
+            log.error("[VoiceHandshake] 握手失败", exception);
         }
     }
 

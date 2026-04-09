@@ -40,7 +40,7 @@ public class VoiceServiceFactory {
         this.ttsServices = ttsServiceList.stream()
                 .collect(Collectors.toMap(TTSService::getProvider, Function.identity()));
 
-        log.info("[VoiceServiceFactory] Initialized with providers - ASR: {}, TTS: {}",
+        log.info("[VoiceServiceFactory] 初始化完成 - ASR: {}, TTS: {}",
                 asrServices.keySet(), ttsServices.keySet());
     }
 
@@ -123,7 +123,7 @@ public class VoiceServiceFactory {
             ASRService service = asrServices.get(voiceProperties.getProvider());
             return service != null && service.isAvailable();
         } catch (Exception e) {
-            log.warn("[VoiceServiceFactory] Failed to check ASR availability", e);
+            log.warn("[VoiceServiceFactory] 检查ASR可用性失败", e);
             return false;
         }
     }
@@ -138,7 +138,7 @@ public class VoiceServiceFactory {
             TTSService service = ttsServices.get(voiceProperties.getProvider());
             return service != null && service.isAvailable();
         } catch (Exception e) {
-            log.warn("[VoiceServiceFactory] Failed to check TTS availability", e);
+            log.warn("[VoiceServiceFactory] 检查TTS可用性失败", e);
             return false;
         }
     }

@@ -365,6 +365,7 @@ export interface RecentActivity {
   content: string
   time: string
   score: number | null
+  relatedId: string
 }
 
 // 统计概览

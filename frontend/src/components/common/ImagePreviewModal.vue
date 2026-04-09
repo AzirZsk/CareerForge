@@ -191,6 +191,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useScrollLock } from '@vueuse/core'
 
 interface Props {
   visible: boolean
@@ -202,6 +203,12 @@ const emit = defineEmits<{
   'update:visible': [value: boolean]
   'close': []
 }>()
+
+// 弹窗可见时锁定背景滚动
+const isBodyScrollLocked = useScrollLock(document.body)
+watch(() => props.visible, (val) => {
+  isBodyScrollLocked.value = val
+})
 
 // 缩放状态
 const scale = ref(1)

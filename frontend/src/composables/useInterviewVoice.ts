@@ -292,6 +292,12 @@ export function useInterviewVoice(sessionId: string) {
    * 处理状态消息
    */
   function handleStateMessage(data: StateData): void {
+    // 防御性处理：将 "connected" 视为 "ready"（兼容旧版本后端）
+    if ((data.state as string) === 'connected') {
+      sessionState.value = 'ready'
+      return
+    }
+
     sessionState.value = data.state
     currentQuestion.value = data.currentQuestion
     totalQuestions.value = data.totalQuestions

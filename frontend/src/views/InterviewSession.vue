@@ -17,60 +17,43 @@
 
   <div class="interview-session-page">
     <!-- ========================================
-      状态一：准备中（预生成进行中）
+      状态一/二：准备中 → 准备就绪
     ======================================== -->
-    <div v-if="isPreparing" class="preparing-container">
-      <div class="preparing-content">
-        <div class="preparing-icon">
+    <div v-if="isPreparing || isReady" class="ready-container">
+      <div class="ready-content">
+        <!-- 状态图标 -->
+        <div v-if="isPreparing" class="ready-status-icon preparing">
           <div class="spinner"></div>
         </div>
-        <h2 class="preparing-title">准备中...</h2>
-        <p class="preparing-desc">正在生成面试问题</p>
-
-        <div class="interview-info-card">
-          <div class="info-item">
-            <span class="info-icon">📋</span>
-            <span class="info-text">{{ interviewTitle }}</span>
-          </div>
-          <div class="info-item">
-            <span class="info-icon">👔</span>
-            <span class="info-text">面试官风格：{{ interviewerStyleLabel }}</span>
-          </div>
-          <div class="info-item">
-            <span class="info-icon">⏱️</span>
-            <span class="info-text">预计时长：15-20 分钟</span>
-          </div>
+        <div v-else class="ready-status-icon ready">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
         </div>
-      </div>
-    </div>
 
-    <!-- ========================================
-      状态二：准备就绪（预生成完成，等待用户确认）
-    ======================================== -->
-    <div v-else-if="isReady" class="ready-container">
-      <div class="ready-content">
-        <div class="ready-icon">✅</div>
-        <h2 class="ready-title">准备就绪</h2>
-        <p class="ready-desc">面试问题已生成</p>
+        <!-- 标题与描述 -->
+        <h2 class="ready-title">{{ isPreparing ? '准备中...' : '准备就绪' }}</h2>
+        <p class="ready-desc">{{ isPreparing ? '正在生成面试问题' : '面试问题已生成，准备开始' }}</p>
 
-        <div class="interview-info-card">
-          <div class="info-item">
-            <span class="info-icon">📋</span>
-            <span class="info-text">{{ interviewTitle }}</span>
+        <!-- 信息卡片三列 -->
+        <div class="info-cards">
+          <div class="info-card">
+            <span class="info-card-label">职位</span>
+            <span class="info-card-value">{{ interviewTitle }}</span>
           </div>
-          <div class="info-item">
-            <span class="info-icon">👔</span>
-            <span class="info-text">面试官风格：{{ interviewerStyleLabel }}</span>
+          <div class="info-card">
+            <span class="info-card-label">面试风格</span>
+            <span class="info-card-value">{{ interviewerStyleLabel }}</span>
           </div>
-          <div class="info-item">
-            <span class="info-icon">⏱️</span>
-            <span class="info-text">预计时长：15-20 分钟</span>
+          <div class="info-card">
+            <span class="info-card-label">预计时长</span>
+            <span class="info-card-value">{{ estimatedDuration }}</span>
           </div>
         </div>
 
-        <button class="start-interview-btn" @click="handleStartInterview">
-          <span class="btn-icon">🎙️</span>
-          <span class="btn-text">开始面试</span>
+        <!-- 开始按钮 -->
+        <button v-if="isReady" class="start-interview-btn" @click="handleStartInterview">
+          开始面试
         </button>
       </div>
     </div>
@@ -343,7 +326,8 @@ const interviewerStyleLabel = computed(() => {
     'friendly': '亲和引导',
     'challenging': '压力挑战'
   }
-  return styleMap['professional'] || '专业严肃'
+  const style = (route.query.interviewerStyle as string) || 'professional'
+  return styleMap[style] || '专业严肃'
 })
 
 // ============================================================================
@@ -365,8 +349,15 @@ const messagesContainer = ref<HTMLElement | null>(null)
 const showCountdown = ref(false)
 const countdown = ref(3)
 
-// 面试标题
-const interviewTitle = computed(() => '技术面试 - 高级前端工程师')
+// 面试标题（从路由参数读取真实职位名）
+const interviewTitle = computed(() => (route.query.position as string) || '模拟面试')
+
+// 预计时长（基于问题数动态计算，每题约 2 分钟）
+const estimatedDuration = computed(() => {
+  const total = Number(route.query.totalQuestions) || 10
+  const mins = Math.ceil(total * 2)
+  return `${mins - 2}-${mins} 分钟`
+})
 
 // 会话徽章
 const sessionBadgeClass = computed(() => {
@@ -543,9 +534,10 @@ function goToQuestion(index: number): void {
 }
 
 .interview-session-page {
-  height: 100vh;
+  height: calc(100vh - 80px);
   display: flex;
   background: $color-bg-deep;
+  overflow: hidden;
 }
 
 .session-container {
@@ -957,42 +949,50 @@ function goToQuestion(index: number): void {
 }
 
 // ============================================================================
-// 准备中状态样式
+// 准备中 / 准备就绪状态样式
 // ============================================================================
 
-.preparing-container,
 .ready-container {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
   padding: $spacing-2xl;
 }
 
-.preparing-content,
 .ready-content {
   text-align: center;
-  max-width: 480px;
+  max-width: 600px;
+  width: 100%;
 }
 
-.preparing-icon {
-  margin-bottom: $spacing-xl;
-  .spinner {
-    width: 64px;
-    height: 64px;
-    margin: 0 auto;
-    border: 3px solid rgba(212, 168, 83, 0.2);
-    border-top-color: $color-accent;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+// 状态图标
+.ready-status-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto $spacing-xl;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &.preparing {
+    .spinner {
+      width: 64px;
+      height: 64px;
+      border: 3px solid rgba(212, 168, 83, 0.2);
+      border-top-color: $color-accent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+  }
+
+  &.ready {
+    background: rgba(52, 211, 153, 0.15);
+    color: $color-success;
   }
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.preparing-title,
 .ready-title {
   font-family: $font-display;
   font-size: $text-2xl;
@@ -1001,58 +1001,59 @@ function goToQuestion(index: number): void {
   margin-bottom: $spacing-sm;
 }
 
-.preparing-desc,
 .ready-desc {
   font-size: $text-base;
   color: $color-text-secondary;
   margin-bottom: $spacing-2xl;
 }
 
-.ready-icon {
-  font-size: 64px;
-  margin-bottom: $spacing-lg;
+// 信息卡片三列
+.info-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: $spacing-md;
+  margin-bottom: $spacing-2xl;
 }
 
-// 面试信息卡片
-.interview-info-card {
+.info-card {
   background: $color-bg-secondary;
   border-radius: $radius-lg;
-  padding: $spacing-xl;
-  margin-bottom: $spacing-2xl;
+  padding: $spacing-lg $spacing-md;
   border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.info-item {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: $spacing-md;
-  padding: $spacing-sm 0;
-  &:not(:last-child) {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  }
+  gap: $spacing-sm;
 }
 
-.info-icon {
-  font-size: $text-lg;
+.info-card-label {
+  font-size: $text-xs;
+  color: $color-accent;
+  font-weight: $weight-medium;
+  letter-spacing: 0.05em;
 }
 
-.info-text {
+.info-card-value {
   font-size: $text-sm;
-  color: $color-text-secondary;
+  color: $color-text-primary;
+  font-weight: $weight-medium;
+  text-align: center;
+  line-height: $leading-relaxed;
 }
 
 // 开始面试按钮
 .start-interview-btn {
   display: inline-flex;
   align-items: center;
-  gap: $spacing-md;
-  padding: $spacing-lg $spacing-2xl;
+  justify-content: center;
+  gap: $spacing-sm;
+  padding: $spacing-md $spacing-2xl;
   background: $gradient-gold;
   color: $color-bg-deep;
-  font-size: $text-lg;
+  font-size: $text-base;
   font-weight: $weight-semibold;
   border: none;
-  border-radius: $radius-lg;
+  border-radius: $radius-md;
   cursor: pointer;
   transition: all $transition-fast;
   &:hover {
@@ -1062,9 +1063,5 @@ function goToQuestion(index: number): void {
   &:active {
     transform: translateY(0);
   }
-}
-
-.btn-icon {
-  font-size: $text-xl;
 }
 </style>
