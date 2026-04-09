@@ -1,12 +1,16 @@
 package com.landit.interview.voice.service;
 
-import com.alibaba.fastjson2.JSON;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.landit.common.config.AIPromptProperties;
 import com.landit.interview.entity.InterviewSession;
 import com.landit.interview.service.InterviewSessionService;
 import com.landit.interview.voice.dto.PreGenerateContext;
 import com.landit.interview.voice.dto.PreGeneratedQuestion;
-import com.landit.interview.voice.gateway.impl.InterviewVoiceGatewayImpl;
+import com.landit.interview.voice.dto.SessionState;
+import com.landit.interview.voice.gateway.InterviewVoiceGateway;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,24 +35,17 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class QuestionPreGenerateService {
 
     private final ChatClient.Builder chatClientBuilder;
     private final AIPromptProperties aiPromptProperties;
     private final InterviewSessionService interviewSessionService;
+    private final ObjectMapper objectMapper;
 
     @Autowired
     @Lazy
-    private InterviewVoiceGatewayImpl voiceGateway;
-
-    public QuestionPreGenerateService(
-            ChatClient.Builder chatClientBuilder,
-            AIPromptProperties aiPromptProperties,
-            InterviewSessionService interviewSessionService) {
-        this.chatClientBuilder = chatClientBuilder;
-        this.aiPromptProperties = aiPromptProperties;
-        this.interviewSessionService = interviewSessionService;
-    }
+    private InterviewVoiceGateway voiceGateway;
 
     /**
      * 预生成问题缓存：sessionId -> questionIndex -> PreGeneratedQuestion
@@ -68,42 +65,48 @@ public class QuestionPreGenerateService {
         int totalQuestions = context.getTotalQuestions();
         log.info("[PreGenerate] 开始预生成所有问题, sessionId={}, total={}", sessionId, totalQuestions);
 
+        // 获取预生成提示词配置
+        AIPromptProperties.QuestionPreGeneratePromptConfig preGenerateConfig = aiPromptProperties.getQuestionPreGenerate();
+        String systemPrompt = preGenerateConfig.getSystemPrompt();
+
+        // 构建批量生成提示词
+        String userPrompt = buildBatchPreGeneratePrompt(preGenerateConfig.getBatchQuestionPromptTemplate(), context);
+
+        // 一次性调用 LLM 生成所有问题
+        String response;
+        try {
+            response = generateQuestionText(systemPrompt, userPrompt);
+            log.info("[PreGenerate] LLM 返回结果, sessionId={}, response={}", sessionId, response);
+        } catch (Exception e) {
+            log.error("[PreGenerate] 批量生成问题失败, sessionId={}", sessionId, e);
+            throw new RuntimeException("批量生成问题失败: " + e.getMessage(), e);
+        }
+
+        // 解析返回的问题列表
+        List<String> questionTexts = parseQuestionList(response);
+        if (questionTexts.size() != totalQuestions) {
+            log.warn("[PreGenerate] 生成的问题数量不匹配, 期望={}, 实际={}", totalQuestions, questionTexts.size());
+        }
+
+        // 转换为 PreGeneratedQuestion 列表
         List<PreGeneratedQuestion> questions = new ArrayList<>();
-
-        // 获取面试官风格配置
-        AIPromptProperties.InterviewerStyleConfig styleConfig = aiPromptProperties.getVoice().getByStyle(context.getInterviewerStyle());
-        String systemPrompt = styleConfig.getSystemPrompt();
-
-        // 循环生成所有问题
-        for (int i = 0; i < totalQuestions; i++) {
-            // 构建提示词
-            String userPrompt = styleConfig.getQuestionPromptTemplate()
-                    .replace("{position}", context.getPosition())
-                    .replace("{questionNumber}", String.valueOf(i + 1))
-                    .replace("{totalQuestions}", String.valueOf(totalQuestions))
-                    .replace("{elapsedSeconds}", "0")
-                    .replace("{jdRequirements}", formatJDRequirements(context.getJdContent()))
-                    .replace("{resumeSummary}", formatResumeSummary(context.getResumeContent()))
-                    .replace("{askedQuestions}", "暂无已提问的问题")
-                    .replace("{conversationSummary}", "");
-
-            // 调用 LLM 生成问题文本
-            try {
-                String questionText = generateQuestionText(systemPrompt, userPrompt);
-                questions.add(PreGeneratedQuestion.builder()
-                        .questionIndex(i)
-                        .text(questionText)
-                        .used(false)
-                        .build());
-                log.debug("[PreGenerate] 生成问题 {}/{}, text={}", i + 1, totalQuestions, questionText);
-            } catch (Exception e) {
-                log.error("[PreGenerate] 生成问题失败, index={}", i, e);
-                throw new RuntimeException("预生成问题失败: " + e.getMessage(), e);
-            }
+        for (int i = 0; i < questionTexts.size(); i++) {
+            questions.add(PreGeneratedQuestion.builder()
+                    .questionIndex(i)
+                    .text(questionTexts.get(i).trim())
+                    .used(false)
+                    .build());
+            log.debug("[PreGenerate] 问题 {}, text={}", i + 1, questionTexts.get(i));
         }
 
         // 序列化为 JSON 并保存到 session 表
-        String json = JSON.toJSONString(questions);
+        String json;
+        try {
+            json = objectMapper.writeValueAsString(questions);
+        } catch (JsonProcessingException e) {
+            log.error("[PreGenerate] 序列化问题失败", e);
+            throw new RuntimeException("序列化问题失败: " + e.getMessage(), e);
+        }
         interviewSessionService.updatePreGeneratedQuestions(sessionId, json);
         log.info("[PreGenerate] 已保存到数据库, sessionId={}, count={}", sessionId, questions.size());
 
@@ -137,7 +140,7 @@ public class QuestionPreGenerateService {
         log.info("[PreGenerate] 生成追问, sessionId={}", sessionId);
 
         // 获取会话状态以获取面试官风格
-        InterviewVoiceGatewayImpl.SessionState state = voiceGateway.getInternalState(sessionId);
+        SessionState state = voiceGateway.getInternalState(sessionId);
         if (state == null) {
             log.warn("[PreGenerate] 会话不存在, sessionId={}", sessionId);
             return "不好意思，我们换个话题吧。";
@@ -189,9 +192,9 @@ public class QuestionPreGenerateService {
         InterviewSession session = interviewSessionService.getById(sessionId);
         if (session != null && session.getPreGeneratedQuestions() != null) {
             try {
-                List<PreGeneratedQuestion> questions = JSON.parseArray(
+                List<PreGeneratedQuestion> questions = objectMapper.readValue(
                         session.getPreGeneratedQuestions(),
-                        PreGeneratedQuestion.class
+                        new TypeReference<List<PreGeneratedQuestion>>() {}
                 );
 
                 // 加载到内存缓存
@@ -238,9 +241,9 @@ public class QuestionPreGenerateService {
         InterviewSession session = interviewSessionService.getById(sessionId);
         if (session != null && session.getPreGeneratedQuestions() != null) {
             try {
-                List<PreGeneratedQuestion> questions = JSON.parseArray(
+                List<PreGeneratedQuestion> questions = objectMapper.readValue(
                         session.getPreGeneratedQuestions(),
-                        PreGeneratedQuestion.class
+                        new TypeReference<List<PreGeneratedQuestion>>() {}
                 );
 
                 questions.stream()
@@ -248,7 +251,7 @@ public class QuestionPreGenerateService {
                         .findFirst()
                         .ifPresent(q -> q.setUsed(true));
 
-                String json = JSON.toJSONString(questions);
+                String json = objectMapper.writeValueAsString(questions);
                 interviewSessionService.updatePreGeneratedQuestions(sessionId, json);
                 log.debug("[PreGenerate] 已同步到数据库, sessionId={}, index={}", sessionId, questionIndex);
             } catch (Exception e) {
@@ -345,5 +348,49 @@ public class QuestionPreGenerateService {
                 .replace("{lastQuestion}", lastQuestion != null ? lastQuestion : "")
                 .replace("{candidateAnswer}", candidateAnswer != null ? candidateAnswer : "")
                 .replace("{conversationHistory}", conversationHistory != null ? conversationHistory : "暂无对话历史");
+    }
+
+    /**
+     * 构建批量预生成问题的提示词
+     * JD 内容完整输入不截断，简历内容复用现有 formatResumeSummary 方法
+     *
+     * @param template 提示词模板
+     * @param context  预生成上下文
+     * @return 替换占位符后的提示词
+     * @author Azir
+     */
+    private String buildBatchPreGeneratePrompt(String template, PreGenerateContext context) {
+        // JD 完整输入，不截断
+        String jdContent = context.getJdContent() != null ? context.getJdContent() : "暂无 JD 信息";
+
+        return template
+                .replace("{position}", context.getPosition())
+                .replace("{totalQuestions}", String.valueOf(context.getTotalQuestions()))
+                .replace("{jdContent}", jdContent)
+                .replace("{resumeSummary}", formatResumeSummary(context.getResumeContent()))
+                .replace("{jdAnalysis}", context.getJdAnalysis() != null ? context.getJdAnalysis() : "暂无")
+                .replace("{companyResearch}", context.getCompanyResearch() != null ? context.getCompanyResearch() : "暂无");
+    }
+
+    /**
+     * 解析 LLM 返回的问题列表
+     * 每行一个问题，过滤空行和无效内容
+     *
+     * @param response LLM 返回的原始文本
+     * @return 解析后的问题列表
+     * @author Azir
+     */
+    private List<String> parseQuestionList(String response) {
+        if (response == null || response.isBlank()) {
+            return List.of();
+        }
+
+        return response.lines()
+                .map(String::trim)
+                .filter(line -> !line.isEmpty())
+                .filter(line -> !line.matches("^\\d+[.、].*"))  // 过滤掉数字编号行
+                .map(line -> line.replaceAll("^\\d+[.、]\\s*", ""))  // 移除行首的编号
+                .filter(line -> !line.isEmpty())
+                .toList();
     }
 }

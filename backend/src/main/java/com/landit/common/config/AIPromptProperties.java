@@ -51,6 +51,12 @@ public class AIPromptProperties {
     private VoiceInterviewPrompt voice = new VoiceInterviewPrompt();
 
     /**
+     * 面试问题预生成提示词配置
+     * 用于在面试开始前根据 JD 和简历生成问题列表
+     */
+    private QuestionPreGeneratePromptConfig questionPreGenerate = createQuestionPreGenerateConfig();
+
+    /**
      * 提示词配置（拆分版本）
      * 用于前缀缓存优化，将提示词拆分为固定部分和动态部分
      *
@@ -2455,6 +2461,32 @@ public class AIPromptProperties {
     }
 
     /**
+     * 面试问题预生成提示词配置
+     * 用于在面试开始前根据 JD 和简历生成问题列表
+     *
+     * @author Azir
+     */
+    @Data
+    public static class QuestionPreGeneratePromptConfig {
+        /**
+         * 系统提示词（定义预生成问题的角色和规范）
+         */
+        private String systemPrompt;
+
+        /**
+         * 批量生成问题的用户提示词模板
+         * 占位符:
+         * - {position} - 面试岗位
+         * - {totalQuestions} - 总问题数
+         * - {jdContent} - JD 完整内容
+         * - {resumeSummary} - 简历摘要
+         * - {jdAnalysis} - JD 分析结果（可选）
+         * - {companyResearch} - 公司调研结果（可选）
+         */
+        private String batchQuestionPromptTemplate;
+    }
+
+    /**
      * 语音面试提示词配置
      * 支持三种面试官风格：专业严肃型、亲和引导型、压力挑战型
      *
@@ -2830,6 +2862,76 @@ public class AIPromptProperties {
                 default -> professional;
             };
         }
+    }
+
+    /**
+     * 创建面试问题预生成提示词配置
+     *
+     * @return 预生成提示词配置
+     * @author Azir
+     */
+    private QuestionPreGeneratePromptConfig createQuestionPreGenerateConfig() {
+        QuestionPreGeneratePromptConfig config = new QuestionPreGeneratePromptConfig();
+        config.setSystemPrompt("""
+                你是一位专业的面试问题设计师，擅长根据职位描述（JD）和候选人简历设计高质量的面试问题。
+
+                ## 角色定位
+                - 你正在为一个模拟面试系统预生成面试问题
+                - 这些问题将用于语音面试场景，需要口语化表达
+                - 你的目标是设计能够真实评估候选人能力的问题
+
+                ## 问题设计原则
+                1. **JD 对齐**：问题必须覆盖 JD 中的核心技能要求
+                2. **简历结合**：优先问候选人实际做过的事（项目、经历）
+                3. **难度递进**：从基础概念到深度应用，层层深入
+                4. **避免重复**：同一技能点不要多次问类似问题
+                5. **开放性**：设计开放式问题，避免"是/否"回答
+
+                ## 问题质量标准
+                - 清晰简洁，候选人一听就懂
+                - 有明确的考察点（技术能力/项目经验/软技能）
+                - 口语化表达，适合语音对话
+                - 长度控制在 20-40 字
+
+                ## 输出要求
+                - **一次性输出所有问题**，每行一个问题
+                - 使用纯文本格式，每行一个问题，按顺序编号 1、2、3...
+                - 只输出问题本身，不要额外解释
+                - 不要包含"请介绍一下"这样的前缀
+                - 确保问题难度递进、覆盖全面、避免重复
+                """);
+        config.setBatchQuestionPromptTemplate("""
+                ## 面试背景
+                - 目标岗位：{position}
+                - 需要生成的问题数量：{totalQuestions} 个
+
+                ## 职位描述（JD）
+                {jdContent}
+
+                ## 候选人简历摘要
+                {resumeSummary}
+
+                ## JD 分析
+                {jdAnalysis}
+
+                ## 公司背景
+                {companyResearch}
+
+                ## 任务
+                请一次性生成 {totalQuestions} 个面试问题，要求：
+                1. **全面覆盖** JD 中的核心技能点
+                2. **结合候选人**的简历经历和项目经验
+                3. **难度递进**：从基础概念 → 原理机制 → 实际应用 → 深度挖掘
+                4. **避免重复**：同一技能点不要多次问类似问题
+                5. **口语化表达**：适合语音对话，长度 20-40 字
+
+                ## 输出格式
+                每行一个问题，直接输出问题内容，不要编号、不要前缀、不要解释。
+                例如：
+                你用 Spring Boot 做过哪些项目？
+                Redis 的持久化机制了解吗？
+                """);
+        return config;
     }
 
     /**
