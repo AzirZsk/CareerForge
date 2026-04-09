@@ -20,4 +20,14 @@ public class InterviewAIAnalysis extends BaseEntity {
 
     private String adviceList;
 
+    /**
+     * 对话分析结果（JSON格式: TranscriptAnalysisResult）
+     */
+    private String transcriptAnalysis;
+
+    /**
+     * 面试分析结果（JSON格式: InterviewAnalysisResult）
+     */
+    private String interviewAnalysis;
+
 }

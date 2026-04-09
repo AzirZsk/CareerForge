@@ -131,6 +131,8 @@ export interface AIAnalysisVO {
   id: string
   interviewId: string
   adviceList: AdviceItem[]
+  transcriptAnalysis?: TranscriptAnalysisResult
+  interviewAnalysis?: InterviewAnalysisResult
   createdAt: string
   updatedAt: string
 }

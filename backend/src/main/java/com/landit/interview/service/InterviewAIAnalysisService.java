@@ -7,6 +7,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.landit.interview.entity.InterviewAIAnalysis;
 import com.landit.interview.graph.review.dto.AdviceItem;
+import com.landit.interview.graph.review.dto.InterviewAnalysisResult;
+import com.landit.interview.graph.review.dto.TranscriptAnalysisResult;
 import com.landit.interview.mapper.InterviewAIAnalysisMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,7 +43,7 @@ public class InterviewAIAnalysisService extends ServiceImpl<InterviewAIAnalysisM
      * 保存 AI 分析结果（覆盖旧结果）
      */
     @Transactional(rollbackFor = Exception.class)
-    public InterviewAIAnalysis saveAnalysis(String interviewId, List<AdviceItem> adviceList) {
+    public InterviewAIAnalysis saveAnalysis(String interviewId, List<AdviceItem> adviceList, String transcriptAnalysisJson, String interviewAnalysisJson) {
         // 先删除旧记录
         deleteByInterviewId(interviewId);
 
@@ -54,6 +56,8 @@ public class InterviewAIAnalysisService extends ServiceImpl<InterviewAIAnalysisM
             log.error("序列化 AI 分析结果失败", e);
             analysis.setAdviceList("[]");
         }
+        analysis.setTranscriptAnalysis(transcriptAnalysisJson);
+        analysis.setInterviewAnalysis(interviewAnalysisJson);
 
         this.save(analysis);
         log.info("保存 AI 分析结果成功: interviewId={}", interviewId);
@@ -84,6 +88,36 @@ public class InterviewAIAnalysisService extends ServiceImpl<InterviewAIAnalysisM
         wrapper.eq(InterviewAIAnalysis::getInterviewId, interviewId);
         this.remove(wrapper);
         log.info("删除 AI 分析结果: interviewId={}", interviewId);
+    }
+
+    /**
+     * 解析对话分析结果
+     */
+    public TranscriptAnalysisResult parseTranscriptAnalysis(InterviewAIAnalysis analysis) {
+        if (analysis == null || analysis.getTranscriptAnalysis() == null || analysis.getTranscriptAnalysis().isBlank()) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(analysis.getTranscriptAnalysis(), TranscriptAnalysisResult.class);
+        } catch (JsonProcessingException e) {
+            log.error("解析对话分析结果失败", e);
+            return null;
+        }
+    }
+
+    /**
+     * 解析面试分析结果
+     */
+    public InterviewAnalysisResult parseInterviewAnalysis(InterviewAIAnalysis analysis) {
+        if (analysis == null || analysis.getInterviewAnalysis() == null || analysis.getInterviewAnalysis().isBlank()) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(analysis.getInterviewAnalysis(), InterviewAnalysisResult.class);
+        } catch (JsonProcessingException e) {
+            log.error("解析面试分析结果失败", e);
+            return null;
+        }
     }
 
 }

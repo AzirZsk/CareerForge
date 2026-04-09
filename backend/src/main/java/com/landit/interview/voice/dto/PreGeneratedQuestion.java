@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 
 /**
  * 预生成问题
- * 缓存预生成的面试问题，用于零延迟推送
+ * 缓存预生成的面试问题文本，供模拟面试零延迟推送
  *
  * @author Azir
  */
@@ -26,21 +26,6 @@ public class PreGeneratedQuestion {
      * 问题文本
      */
     private String text;
-
-    /**
-     * TTS 音频数据（可选，全语音模式用）
-     */
-    private byte[] audioData;
-
-    /**
-     * 音频格式
-     */
-    private String audioFormat;
-
-    /**
-     * 采样率
-     */
-    private Integer sampleRate;
 
     /**
      * 是否已使用

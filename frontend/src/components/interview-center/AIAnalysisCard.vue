@@ -28,6 +28,32 @@
 
     <!-- 卡片内容（可折叠） -->
     <div v-if="isExpanded" class="card-content">
+      <!-- 面试表现分析（来自持久化结果） -->
+      <div v-if="interviewAnalysis" class="analysis-section">
+        <div class="section-header-inline" @click="toggleInterviewAnalysis">
+          <span class="section-title">面试表现分析</span>
+          <font-awesome-icon icon="fa-solid fa-chevron-down" :class="{ rotated: showInterviewAnalysis }" />
+        </div>
+        <Transition name="expand">
+          <div v-if="showInterviewAnalysis" class="section-content">
+            <InterviewAnalysisContent :data="interviewAnalysis" />
+          </div>
+        </Transition>
+      </div>
+
+      <!-- 对话分析详情（来自持久化结果） -->
+      <div v-if="transcriptAnalysis" class="analysis-section">
+        <div class="section-header-inline" @click="toggleTranscriptAnalysis">
+          <span class="section-title">对话分析详情</span>
+          <font-awesome-icon icon="fa-solid fa-chevron-down" :class="{ rotated: showTranscriptAnalysis }" />
+        </div>
+        <Transition name="expand">
+          <div v-if="showTranscriptAnalysis" class="section-content">
+            <TranscriptAnalysisContent :data="transcriptAnalysis" />
+          </div>
+        </Transition>
+      </div>
+
       <!-- AI 建议列表 -->
       <div v-if="adviceList.length > 0" class="advice-list">
         <div v-for="(advice, index) in adviceList" :key="index" class="advice-item">
@@ -62,7 +88,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import type { AIAnalysisVO, AdviceItem } from '@/types/interview-center'
+import TranscriptAnalysisContent from './review/TranscriptAnalysisContent.vue'
+import InterviewAnalysisContent from './review/InterviewAnalysisContent.vue'
+import type { AIAnalysisVO, AdviceItem, TranscriptAnalysisResult, InterviewAnalysisResult } from '@/types/interview-center'
 
 const props = defineProps<{
   /** AI 分析记录（包含 adviceList 字段） */
@@ -94,6 +122,25 @@ const generatedTime = computed(() => {
   return props.aiAnalysisNote?.createdAt
 })
 
+// 对话分析结果
+const transcriptAnalysis = computed<TranscriptAnalysisResult | undefined>(() => {
+  return props.aiAnalysisNote?.transcriptAnalysis
+})
+
+// 面试分析结果
+const interviewAnalysis = computed<InterviewAnalysisResult | undefined>(() => {
+  return props.aiAnalysisNote?.interviewAnalysis
+})
+
+// 是否有扩展分析数据
+const hasExtendedAnalysis = computed(() => {
+  return transcriptAnalysis.value || interviewAnalysis.value
+})
+
+// 折叠状态
+const showInterviewAnalysis = ref(false)
+const showTranscriptAnalysis = ref(false)
+
 // 格式化时间
 function formatTime(dateStr: string): string {
   if (!dateStr) return ''
@@ -119,6 +166,16 @@ function getPriorityLabel(priority: string): string {
 // 切换展开/折叠
 function toggleExpand() {
   isExpanded.value = !isExpanded.value
+}
+
+// 切换面试分析展开/折叠
+function toggleInterviewAnalysis() {
+  showInterviewAnalysis.value = !showInterviewAnalysis.value
+}
+
+// 切换对话分析展开/折叠
+function toggleTranscriptAnalysis() {
+  showTranscriptAnalysis.value = !showTranscriptAnalysis.value
 }
 
 // 重新分析
@@ -235,6 +292,60 @@ onMounted(() => {
 .card-content {
   padding: 0 $spacing-md $spacing-md;
   border-top: 1px solid $color-border;
+}
+
+.analysis-section {
+  margin-top: $spacing-md;
+
+  &:first-child {
+    margin-top: $spacing-sm;
+  }
+}
+
+.section-header-inline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $spacing-sm;
+  background: $color-bg-secondary;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+
+  &:hover {
+    background: $color-bg-elevated;
+  }
+}
+
+.section-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: $color-text-primary;
+}
+
+.section-content {
+  padding: $spacing-sm;
+  margin-top: $spacing-xs;
+}
+
+// 展开/折叠动画
+.expand-enter-active,
+.expand-leave-active {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.expand-enter-from,
+.expand-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+
+.expand-enter-to,
+.expand-leave-from {
+  max-height: 1000px;
+  opacity: 1;
 }
 
 .advice-list {
