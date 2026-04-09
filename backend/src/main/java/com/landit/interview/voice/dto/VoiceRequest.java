@@ -12,30 +12,30 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class VoiceRequest {
+public class VoiceRequest<T> {
 
     /**
-     * 消息类型：audio, control
+     * 消息类型：audio, control, ping
      */
     private String type;
 
     /**
-     * 消息数据
+     * 消息数据（泛型）
      */
-    private Object data;
+    private T data;
 
     /**
      * 创建音频请求
      */
-    public static VoiceRequest audio(AudioData audioData) {
-        return new VoiceRequest("audio", audioData);
+    public static VoiceRequest<AudioData> audio(AudioData audioData) {
+        return new VoiceRequest<>("audio", audioData);
     }
 
     /**
      * 创建控制请求
      */
-    public static VoiceRequest control(ControlData controlData) {
-        return new VoiceRequest("control", controlData);
+    public static VoiceRequest<ControlData> control(ControlData controlData) {
+        return new VoiceRequest<>("control", controlData);
     }
 
     /**

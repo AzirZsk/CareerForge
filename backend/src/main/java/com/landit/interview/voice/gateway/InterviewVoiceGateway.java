@@ -7,6 +7,8 @@ import com.landit.interview.mapper.InterviewMapper;
 import com.landit.interview.mapper.InterviewSessionMapper;
 import com.landit.interview.voice.dto.*;
 import com.landit.interview.voice.enums.ControlAction;
+import com.landit.interview.voice.enums.InterviewPhaseEnum;
+import com.landit.interview.voice.enums.MessageType;
 import com.landit.interview.voice.handler.AssistantAgentHandler;
 import com.landit.interview.voice.handler.InterviewerAgentHandler;
 import com.landit.interview.voice.service.QuestionPreGenerateService;
@@ -43,10 +45,10 @@ public class InterviewVoiceGateway {
 
     private final InterviewerAgentHandler interviewerAgentHandler;
     private final AssistantAgentHandler assistantAgentHandler;
-    private final QuestionPreGenerateService questionPreGenerateService;
     private final RecordingService recordingService;
     private final VoiceSessionManager voiceSessionManager;
     private final VoiceServiceFactory voiceServiceFactory;
+    private final QuestionPreGenerateService questionPreGenerateService;
     private final InterviewMapper interviewMapper;
     private final InterviewSessionMapper interviewSessionMapper;
     private final JobPositionMapper jobPositionMapper;
@@ -120,21 +122,21 @@ public class InterviewVoiceGateway {
         log.info("[VoiceGateway] Session created, sessionId={}, interviewId={}, position={}",
                 sessionId, request.getInterviewId(), jobPosition.getTitle());
 
-        // 8. 同步预生成开场白 + 第一个问题（阻塞等待完成后再返回响应）
-        PreGenerateContext preGenContext = PreGenerateContext.builder()
-                .position(jobPosition.getTitle())
-                .jdContent(jobPosition.getJdContent())
-                .resumeContent(resumeContent)
-                .interviewerStyle(session.getInterviewerStyle())
-                .totalQuestions(session.getTotalQuestions())
-                .build();
-
+        // 8. 同步预生成问题（用户需等待 5-10 秒）
         try {
-            int generatedCount = questionPreGenerateService.preGenerateAllQuestions(sessionId, preGenContext);
-            log.info("[VoiceGateway] 预生成完成, sessionId={}, count={}", sessionId, generatedCount);
-        } catch (Exception ex) {
-            log.error("[VoiceGateway] 预生成失败，将降级到实时生成, sessionId={}", sessionId, ex);
-            // 预生成失败不阻断，面试开始时降级到实时生成
+            PreGenerateContext context = PreGenerateContext.builder()
+                    .position(jobPosition.getTitle())
+                    .jdContent(jobPosition.getJdContent())
+                    .resumeContent(resumeContent)
+                    .totalQuestions(session.getTotalQuestions())
+                    .interviewerStyle(session.getInterviewerStyle())
+                    .build();
+
+            int count = questionPreGenerateService.preGenerateAllQuestions(sessionId, context);
+            log.info("[VoiceGateway] 预生成完成, sessionId={}, count={}", sessionId, count);
+        } catch (Exception e) {
+            log.error("[VoiceGateway] 预生成失败, sessionId={}, 降级到实时生成", sessionId, e);
+            // 预生成失败不影响会话创建，运行时会降级到实时生成
         }
 
         // 9. 返回创建结果
@@ -163,25 +165,26 @@ public class InterviewVoiceGateway {
         log.info("[VoiceGateway] Session unregistered, sessionId={}", sessionId);
     }
 
-    public void handleRequest(String sessionId, WebSocketSession wsSession, VoiceRequest request) {
+    public void handleRequest(String sessionId, WebSocketSession wsSession, VoiceRequest<?> request) {
         SessionState state = sessionStates.get(sessionId);
         if (state == null) {
             log.warn("[VoiceGateway] Session not found, sessionId={}", sessionId);
             return;
         }
 
-        String type = request.getType();
-        log.debug("[VoiceGateway] Handling request, sessionId={}, type={}", sessionId, type);
+        String typeStr = request.getType();
+        MessageType messageType = MessageType.fromCode(typeStr);
+        log.debug("[VoiceGateway] Handling request, sessionId={}, type={}", sessionId, typeStr);
 
-        switch (type) {
-            case "audio":
-                handleAudioRequest(sessionId, request);
+        switch (messageType) {
+            case AUDIO:
+                handleAudioRequest(sessionId, (VoiceRequest<VoiceRequest.AudioData>) request);
                 break;
-            case "control":
-                handleControlRequest(sessionId, request);
+            case CONTROL:
+                handleControlRequest(sessionId, (VoiceRequest<VoiceRequest.ControlData>) request);
                 break;
             default:
-                log.warn("[VoiceGateway] Unknown request type: {}", type);
+                log.warn("[VoiceGateway] Unknown request type: {}", typeStr);
         }
     }
 
@@ -298,17 +301,17 @@ public class InterviewVoiceGateway {
     /**
      * 处理音频请求
      */
-    private void handleAudioRequest(String sessionId, VoiceRequest request) {
+    private void handleAudioRequest(String sessionId, VoiceRequest<VoiceRequest.AudioData> request) {
         try {
-            Map<String, Object> data = (Map<String, Object>) request.getData();
-            String audioBase64 = (String) data.get("audio");
-            String format = (String) data.getOrDefault("format", "pcm");
-            Integer sampleRate = (Integer) data.getOrDefault("sampleRate", 16000);
+            VoiceRequest.AudioData audioData = request.getData();
+            String audioBase64 = audioData.getAudio();
+            String format = audioData.getFormat() != null ? audioData.getFormat() : "pcm";
+            Integer sampleRate = audioData.getSampleRate() != null ? audioData.getSampleRate() : 16000;
 
-            byte[] audioData = Base64.getDecoder().decode(audioBase64);
+            byte[] audioDataBytes = Base64.getDecoder().decode(audioBase64);
 
             // 转发给音频处理器
-            handleAudioData(sessionId, wsSessions.get(sessionId), audioData);
+            handleAudioData(sessionId, wsSessions.get(sessionId), audioDataBytes);
 
         } catch (Exception e) {
             log.error("[VoiceGateway] Failed to handle audio request, sessionId={}", sessionId, e);
@@ -318,10 +321,10 @@ public class InterviewVoiceGateway {
     /**
      * 处理控制请求
      */
-    private void handleControlRequest(String sessionId, VoiceRequest request) {
+    private void handleControlRequest(String sessionId, VoiceRequest<VoiceRequest.ControlData> request) {
         try {
-            Map<String, Object> data = (Map<String, Object>) request.getData();
-            String actionCode = (String) data.get("action");
+            VoiceRequest.ControlData controlData = request.getData();
+            String actionCode = controlData.getAction();
             ControlAction action = ControlAction.fromCode(actionCode);
 
             if (action == null) {
@@ -331,7 +334,7 @@ public class InterviewVoiceGateway {
 
             switch (action) {
                 case START:
-                    handleStartAction(sessionId, data);
+                    handleStartAction(sessionId, controlData);
                     break;
                 case STOP:
                     handleStopAction(sessionId);
@@ -356,17 +359,26 @@ public class InterviewVoiceGateway {
     /**
      * 处理开始动作
      */
-    private void handleStartAction(String sessionId, Map<String, Object> data) {
+    private void handleStartAction(String sessionId, VoiceRequest.ControlData controlData) {
         SessionState state = sessionStates.computeIfAbsent(sessionId, k -> new SessionState());
+
+        // 设置初始状态
         state.setActive(true);
         state.setFrozen(false);
         state.setStartTime(System.currentTimeMillis());
+        state.setPhase(InterviewPhaseEnum.WAITING_SELF_INTRODUCTION);
 
-        if (data.containsKey("totalQuestions")) {
-            state.setTotalQuestions((Integer) data.get("totalQuestions"));
-        }
-        if (data.containsKey("assistLimit")) {
-            state.setAssistRemaining((Integer) data.get("assistLimit"));
+        // 处理扩展参数（如果有）
+        Object params = controlData.getParams();
+        if (params instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> paramMap = (Map<String, Object>) params;
+            if (paramMap.containsKey("totalQuestions")) {
+                state.setTotalQuestions((Integer) paramMap.get("totalQuestions"));
+            }
+            if (paramMap.containsKey("assistLimit")) {
+                state.setAssistRemaining((Integer) paramMap.get("assistLimit"));
+            }
         }
 
         log.info("[VoiceGateway] Interview started, sessionId={}", sessionId);
@@ -380,89 +392,13 @@ public class InterviewVoiceGateway {
                 .elapsedTime(0)
                 .build()));
 
-        // 优先使用缓存的预生成问题（零延迟）
-        Optional<PreGeneratedQuestion> cachedQuestion = questionPreGenerateService
-                .getCachedQuestion(sessionId, 0);
-
-        if (cachedQuestion.isPresent()) {
-            PreGeneratedQuestion question = cachedQuestion.get();
-            questionPreGenerateService.markQuestionUsed(sessionId, 0);
-
-            // 零延迟推送预生成的开场白文本
-            sendCachedQuestion(sessionId, question);
-
-            // 全语音模式下，实时合成音频并推送
-            if ("full_voice".equals(state.getVoiceMode())) {
-                synthesizeAndSendAudio(sessionId, question.getText());
-            }
-
-            log.info("[VoiceGateway] 使用预生成开场白（零延迟）, sessionId={}", sessionId);
-
-        } else {
-            // 降级：实时生成
-            log.warn("[VoiceGateway] 预生成未完成，降级到实时生成, sessionId={}", sessionId);
-            interviewerAgentHandler.generateNextQuestion(sessionId)
-                    .subscribe(
-                            response -> sendResponse(sessionId, response),
-                            error -> log.error("[VoiceGateway] 面试官生成开场白失败, sessionId={}", sessionId, error),
-                            () -> log.debug("[VoiceGateway] 面试官开场白发送完成, sessionId={}", sessionId)
-                    );
-        }
-    }
-
-    /**
-     * 推送缓存的问题（零延迟）
-     * 只推送文本，音频由 handleStartAction 根据 voiceMode 决定是否实时合成
-     */
-    private void sendCachedQuestion(String sessionId, PreGeneratedQuestion question) {
-        sendResponse(sessionId, VoiceResponse.transcript(VoiceResponse.TranscriptData.builder()
-                .text(question.getText())
-                .isFinal(true)
-                .role("interviewer")
-                .build()));
-    }
-
-    /**
-     * 实时合成音频并推送（用于 full_voice 模式）
-     */
-    private void synthesizeAndSendAudio(String sessionId, String text) {
-        try {
-            TTSService ttsService = voiceServiceFactory.getTTSService();
-            TTSConfig ttsConfig = TTSConfig.builder()
-                    .model("cosyvoice-v1")
-                    .voice("zhichu-v1")
-                    .format("wav")
-                    .sampleRate(16000)
-                    .speechRate(1.0)
-                    .volume(0.8)
-                    .pitch(0.0)
-                    .build();
-
-            // 同步合成音频
-            byte[] audioData = ttsService.streamSynthesize(text, ttsConfig)
-                    .collectList()
-                    .block()
-                    .stream()
-                    .reduce((a, b) -> {
-                        byte[] result = new byte[a.length + b.length];
-                        System.arraycopy(a, 0, result, 0, a.length);
-                        System.arraycopy(b, 0, result, a.length, b.length);
-                        return result;
-                    })
-                    .orElse(new byte[0]);
-
-            if (audioData.length > 0) {
-                String audioBase64 = Base64.getEncoder().encodeToString(audioData);
-                sendResponse(sessionId, VoiceResponse.audio(VoiceResponse.AudioData.builder()
-                        .audio(audioBase64)
-                        .format("wav")
-                        .sampleRate(16000)
-                        .build()));
-                log.debug("[VoiceGateway] TTS 音频推送完成, sessionId={}, audioSize={}", sessionId, audioData.length);
-            }
-        } catch (Exception e) {
-            log.error("[VoiceGateway] TTS 合成失败, sessionId={}", sessionId, e);
-        }
+        // 请求自我介绍
+        interviewerAgentHandler.requestSelfIntroduction(sessionId)
+                .subscribe(
+                        response -> sendResponse(sessionId, response),
+                        error -> log.error("[VoiceGateway] 请求自我介绍失败, sessionId={}", sessionId, error),
+                        () -> log.debug("[VoiceGateway] 自我介绍请求完成, sessionId={}", sessionId)
+                );
     }
 
     /**

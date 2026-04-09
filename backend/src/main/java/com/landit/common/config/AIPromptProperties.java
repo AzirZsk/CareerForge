@@ -2979,6 +2979,12 @@ public class AIPromptProperties {
          * - {conversationHistory} - 对话摘要
          */
         private String followUpPromptTemplate;
+
+        /**
+         * 请求自我介绍的提示词模板
+         * 用于面试开始时请求候选人做自我介绍
+         */
+        private String selfIntroductionPromptTemplate = "请先做个自我介绍吧，说说你的技术背景和项目经验。";
     }
 
 }

@@ -20,9 +20,10 @@
       <p class="hint">请输入面试过程中的问题、回答、面试官反馈等内容，或上传面试录音自动转录</p>
 
       <!-- 音频上传区域 -->
+      <!-- 音频上传区域 -->
       <div
         class="upload-zone"
-        :class="{ 'drag-over': isDragOver, 'uploading': isUploading }"
+        :class="{ 'drag-over': isDragOver, 'uploading': isUploading, 'task-running': hasRunningTask }"
         @click="triggerFileSelect"
         @drop.prevent="handleDrop"
         @dragover.prevent="isDragOver = true"
@@ -36,16 +37,25 @@
           @change="handleFileSelect"
         />
 
-        <!-- 空闲状态 -->
-        <div v-if="!isUploading" class="upload-prompt">
-          <p>拖拽音频文件到此处，或点击上传</p>
-          <span class="format-hint">（wav/mp3/m4a 等，最大 50MB）</span>
+        <!-- 任务进行中状态 -->
+        <div v-if="hasRunningTask" class="upload-status task-status">
+          <font-awesome-icon icon="fa-solid fa-spinner" class="upload-icon spinning" />
+          <div class="task-info">
+            <span class="task-message">转录任务进行中...</span>
+            <span class="task-hint">请在消息中心查看进度</span>
+          </div>
         </div>
 
         <!-- 上传中状态 -->
-        <div v-else class="upload-status">
+        <div v-else-if="isUploading" class="upload-status">
           <font-awesome-icon icon="fa-solid fa-hourglass-half" class="upload-icon spinning" />
           <span>正在上传...</span>
+        </div>
+
+        <!-- 空闲状态 -->
+        <div v-else class="upload-prompt">
+          <p>拖拽音频文件到此处，或点击上传</p>
+          <span class="format-hint">（wav/mp3/m4a 等，最大 50MB）</span>
         </div>
       </div>
 
@@ -74,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useNotificationStore } from '@/stores/notification'
 import { useToast } from '@/composables/useToast'
 
@@ -101,6 +111,15 @@ const localText = ref('')
 const isUploading = ref(false)
 const isEditing = ref(false)
 
+// 检查是否有进行中的任务
+const hasRunningTask = computed(() => {
+  return notificationStore.tasks.some(
+    t => t.taskType === 'audio_transcribe'
+      && t.businessId === props.interviewId
+      && (t.status === 'pending' || t.status === 'running')
+  )
+})
+
 // 是否有转译文本
 const hasTranscript = computed(() => {
   return !!props.modelValue?.trim()
@@ -115,6 +134,22 @@ const displayText = computed(() => {
 const charCount = computed(() => {
   return displayText.value.length || 0
 })
+
+// 监听任务完成事件
+function handleTaskCompleted(event: CustomEvent) {
+  const { task } = event.detail
+  if (task?.taskType === 'audio_transcribe' && task?.businessId === props.interviewId && task?.result) {
+    try {
+      const result = JSON.parse(task.result)
+      if (result.transcriptText) {
+        emit('update:modelValue', result.transcriptText)
+        toast.success('转录完成')
+      }
+    } catch (e) {
+      console.error('[AudioUploadArea] 解析转录结果失败:', e)
+    }
+  }
+}
 
 /**
  * 开始编辑模式
@@ -166,7 +201,12 @@ function getFileExtension(filename: string): string {
 }
 
 function triggerFileSelect() {
-  if (isUploading.value) return
+  if (isUploading.value || hasRunningTask.value) {
+    if (hasRunningTask.value) {
+      toast.info('转录任务进行中，请稍候')
+    }
+    return
+  }
   fileInput.value?.click()
 }
 
@@ -181,6 +221,10 @@ function handleFileSelect(event: Event) {
 }
 
 function handleDrop(event: DragEvent) {
+  if (hasRunningTask.value) {
+    toast.info('转录任务进行中，请稍候')
+    return
+  }
   isDragOver.value = false
   const file = event.dataTransfer?.files[0]
   if (file && file.type.startsWith('audio/')) {
@@ -220,6 +264,16 @@ function handleTextInput(event: Event) {
   // 不再实时同步到父组件，避免触发自动保存
   // 用户需要点击"保存"按钮才会同步
 }
+
+// 组件挂载时监听任务完成事件
+onMounted(() => {
+  window.addEventListener('apply-transcript', handleTaskCompleted as EventListener)
+})
+
+// 组件卸载时清理监听
+onUnmounted(() => {
+  window.removeEventListener('apply-transcript', handleTaskCompleted as EventListener)
+})
 </script>
 
 <style scoped lang="scss">
@@ -329,6 +383,12 @@ function handleTextInput(event: Event) {
   &.uploading {
     cursor: not-allowed;
   }
+
+  &.task-running {
+    cursor: not-allowed;
+    border-color: $color-accent;
+    background: rgba($color-accent, 0.05);
+  }
 }
 
 .hidden-input {
@@ -368,6 +428,29 @@ function handleTextInput(event: Event) {
   span {
     color: $color-text-secondary;
     font-size: 0.8125rem;
+  }
+
+  &.task-status {
+    flex-direction: column;
+    gap: $spacing-xs;
+
+    .task-info {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+
+      .task-message {
+        color: $color-accent;
+        font-size: 0.8125rem;
+        font-weight: 500;
+      }
+
+      .task-hint {
+        color: $color-text-tertiary;
+        font-size: 0.6875rem;
+      }
+    }
   }
 }
 

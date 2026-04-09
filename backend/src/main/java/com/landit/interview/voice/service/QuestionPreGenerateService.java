@@ -28,8 +28,7 @@ import java.util.stream.Collectors;
 
 /**
  * 面试问题预生成服务
- * 在面试开始前一次性生成所有问题，保存到数据库
- * 面试过程中也可以生成追问（基于已有问题）
+ * 负责在会话创建时预生成所有面试问题，缓存到内存和数据库
  *
  * @author Azir
  */
@@ -55,7 +54,6 @@ public class QuestionPreGenerateService {
 
     /**
      * 一次性预生成所有问题（同步）
-     * 在创建会话时调用，阻塞等待所有问题生成完成
      *
      * @param sessionId 会话ID
      * @param context   预生成上下文

@@ -132,11 +132,6 @@ const interviewAnalysis = computed<InterviewAnalysisResult | undefined>(() => {
   return props.aiAnalysisNote?.interviewAnalysis
 })
 
-// 是否有扩展分析数据
-const hasExtendedAnalysis = computed(() => {
-  return transcriptAnalysis.value || interviewAnalysis.value
-})
-
 // 折叠状态
 const showInterviewAnalysis = ref(false)
 const showTranscriptAnalysis = ref(false)

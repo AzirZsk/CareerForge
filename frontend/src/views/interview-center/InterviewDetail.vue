@@ -90,8 +90,8 @@
             <div class="session-loading-spinner">
               <div class="spinner-ring"></div>
             </div>
-            <h3 class="session-loading-title">正在生成面试问题...</h3>
-            <p class="session-loading-desc">AI 正在根据职位 JD 生成面试问题，预计 1~2 分钟，请耐心等待</p>
+            <h3 class="session-loading-title">正在准备面试...</h3>
+            <p class="session-loading-desc">请稍候，正在初始化面试环境</p>
           </div>
         </div>
       </Teleport>

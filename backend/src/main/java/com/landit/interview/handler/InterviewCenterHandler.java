@@ -20,8 +20,6 @@ import com.landit.interview.service.InterviewCenterService;
 import com.landit.interview.service.InterviewPreparationService;
 import com.landit.interview.service.InterviewReviewNoteService;
 import com.landit.interview.service.InterviewAIAnalysisService;
-import com.landit.interview.voice.dto.FileASRResult;
-import com.landit.interview.voice.service.FileASRService;
 import com.landit.jobposition.entity.JobPosition;
 import com.landit.jobposition.service.JobPositionService;
 import com.landit.resume.dto.ResumeDetailVO;
@@ -35,7 +33,6 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.scheduler.Schedulers;
 
@@ -75,7 +72,6 @@ public class InterviewCenterHandler {
     private final InterviewPreparationGraphService preparationGraphService;
     private final ReviewAnalysisGraphService reviewGraphService;
     private final ResumeService resumeService;
-    private final FileASRService fileASRService;
     private final ObjectMapper objectMapper;
 
     /**
@@ -332,57 +328,6 @@ public class InterviewCenterHandler {
                             emitter.complete();
                         }
                 );
-        return emitter;
-    }
-
-    /**
-     * 流式转录音频文件
-     * 用于复盘场景，上传面试录音自动转文字
-     *
-     * @param id       面试ID
-     * @param file     音频文件
-     * @param response HTTP响应
-     * @return SSE事件发射器
-     */
-    public SseEmitter transcribeAudio(String id, MultipartFile file, HttpServletResponse response) {
-        log.info("开始SSE流式音频转录: interviewId={}, filename={}, size={}",
-                id, file.getOriginalFilename(), file.getSize());
-        // 验证面试存在
-        getInterviewDetail(id);
-        configureSseResponse(response);
-        SseEmitter emitter = new SseEmitter(SSE_TIMEOUT);
-
-        fileASRService.transcribe(file)
-                .subscribeOn(Schedulers.boundedElastic())
-                .subscribe(
-                        result -> {
-                            try {
-                                emitter.send(SseEmitter.event()
-                                        .name("transcribe")
-                                        .data(objectMapper.writeValueAsString(result)));
-                                log.debug("[SSE] 发送转录事件: status={}, progress={}",
-                                        result.getStatus(), result.getProgress());
-                            } catch (IOException e) {
-                                log.error("[SSE] 发送转录事件失败", e);
-                            }
-                        },
-                        error -> {
-                            log.error("[SSE] 音频转录失败", error);
-                            try {
-                                emitter.send(SseEmitter.event()
-                                        .name("transcribe")
-                                        .data(objectMapper.writeValueAsString(
-                                                FileASRResult.failed(error.getMessage()))));
-                            } catch (IOException ignored) {
-                            }
-                            emitter.completeWithError(error);
-                        },
-                        () -> {
-                            log.info("[SSE] 音频转录完成: interviewId={}", id);
-                            emitter.complete();
-                        }
-                );
-
         return emitter;
     }
 
