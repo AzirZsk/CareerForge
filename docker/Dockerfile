@@ -76,8 +76,8 @@ COPY docker/nginx.conf /etc/nginx/http.d/default.conf
 COPY docker/supervisord.conf /etc/supervisord.conf
 
 # 创建数据目录并设置权限
-RUN mkdir -p /app/data /var/log/supervisor && \
-    chown -R app:app /app /usr/share/nginx/html /var/log/supervisor && \
+RUN mkdir -p /app/data /var/log/supervisor /var/log/nginx /var/run && \
+    chown -R app:app /app /usr/share/nginx/html /var/log/supervisor /var/log/nginx /var/run && \
     # 修改 Nginx 运行用户为 app
     sed -i 's/user nginx;/user app;/g' /etc/nginx/nginx.conf && \
     # 修改 Nginx pid 文件权限
