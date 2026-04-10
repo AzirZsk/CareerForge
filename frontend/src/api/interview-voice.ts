@@ -3,11 +3,9 @@
 // @author Azir
 // =====================================================
 
+import request from '@/utils/request'
 import type { ApiResponse } from '@/types'
 import type { RecordingInfo } from '@/types/interview-voice'
-
-// API 基础路径
-const API_BASE = '/landit'
 
 // ============================================================================
 // 创建会话 API

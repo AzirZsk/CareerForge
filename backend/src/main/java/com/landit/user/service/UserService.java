@@ -1,7 +1,9 @@
 package com.landit.user.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.landit.common.exception.BusinessException;
+import com.landit.common.util.SecurityUtils;
 import com.landit.user.dto.UserCreateRequest;
 import com.landit.user.dto.UserStatusResponse;
 import com.landit.user.dto.UserInitResponse;
@@ -26,9 +28,9 @@ public class UserService extends ServiceImpl<UserMapper, User> {
      * 获取用户状态
      */
     public UserStatusResponse getUserStatus() {
-        User user = getById(CommonConstants.SINGLE_USER_ID);
+        User user = getById(SecurityUtils.getCurrentUserId());
         // 用户不存在或未初始化
-        if (user == null || user.getName() == null || user.getName().isEmpty()) {
+        if (!isUserProfileComplete(user)) {
             return UserStatusResponse.notExists();
         }
         // 用户存在，返回用户信息
@@ -41,7 +43,17 @@ public class UserService extends ServiceImpl<UserMapper, User> {
      * @return true 如果用户已初始化
      */
     public boolean isUserInitialized() {
-        User user = getById(CommonConstants.SINGLE_USER_ID);
+        User user = getById(SecurityUtils.getCurrentUserId());
+        return isUserProfileComplete(user);
+    }
+
+    /**
+     * 检查用户资料是否完整
+     *
+     * @param user 用户对象
+     * @return true 如果用户资料完整
+     */
+    private boolean isUserProfileComplete(User user) {
         return user != null && user.getName() != null && !user.getName().isEmpty();
     }
 
@@ -56,7 +68,7 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         }
         // 创建用户
         User user = new User();
-        user.setId(CommonConstants.SINGLE_USER_ID);
+        user.setId(SecurityUtils.getCurrentUserId());
         user.setName(request.getName());
         user.setGender(request.getGender());
         save(user);
@@ -71,14 +83,14 @@ public class UserService extends ServiceImpl<UserMapper, User> {
      * 获取当前用户信息
      */
     public User getUserProfile() {
-        return getById(CommonConstants.SINGLE_USER_ID);
+        return getById(SecurityUtils.getCurrentUserId());
     }
 
     /**
      * 更新用户信息
      */
     public User updateUserProfile(UserUpdateRequest request) {
-        User user = getById(CommonConstants.SINGLE_USER_ID);
+        User user = getById(SecurityUtils.getCurrentUserId());
         if (user == null) {
             throw BusinessException.notFound("用户不存在");
         }
@@ -94,12 +106,39 @@ public class UserService extends ServiceImpl<UserMapper, User> {
      * @param avatarUrl 头像URL
      */
     public void updateUserAvatar(String avatarUrl) {
-        User user = getById(CommonConstants.SINGLE_USER_ID);
+        User user = getById(SecurityUtils.getCurrentUserId());
         if (user == null) {
             throw BusinessException.notFound("用户不存在");
         }
         user.setAvatar(avatarUrl);
         updateById(user);
+    }
+
+    // ========== 以下是认证相关方法 ==========
+
+    /**
+     * 检查邮箱是否已存在
+     *
+     * @param email 邮箱
+     * @return true 如果邮箱已存在
+     */
+    public boolean existsByEmail(String email) {
+        return count(new LambdaQueryWrapper<User>()
+                .eq(User::getEmail, email)) > 0;
+    }
+
+    /**
+     * 根据账号查找用户（支持邮箱或手机号登录）
+     *
+     * @param account 账号（邮箱或手机号）
+     * @return 用户对象，不存在则返回 null
+     */
+    public User findByAccount(String account) {
+        return getOne(new LambdaQueryWrapper<User>()
+                .eq(User::getEmail, account)
+                .or()
+                .eq(User::getPhone, account)
+                .last("LIMIT 1"));
     }
 
 }

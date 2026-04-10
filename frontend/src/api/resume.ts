@@ -3,79 +3,61 @@
 // @author Azir
 // =====================================================
 
+import request from '@/utils/request'
 import type { ApiResponse, PrimaryResumeVO, ResumeDetail, ResumeListItem, CreateResumeRequest, ResumeSuggestion, ResumeSuggestionsGroup } from '@/types'
 import type { DeriveResumeRequest, SaveTailoredResumeRequest } from '@/types/resume-tailor'
-
-// API 基础路径
-const API_BASE = '/landit'
 
 /**
  * 获取所有简历列表
  * @param status 简历状态筛选（可选，"optimized"/"draft"）
  */
 export async function getResumes(status?: string): Promise<ResumeListItem[]> {
-  const params = status ? `?status=${status}` : ''
-  const response = await fetch(`${API_BASE}/resumes${params}`)
-  const result: ApiResponse<ResumeListItem[]> = await response.json()
-  if (result.code !== 200) {
-    throw new Error(result.message || '获取简历列表失败')
-  }
-  return result.data
+  return request({
+    url: '/resumes',
+    method: 'get',
+    params: status ? { status } : undefined
+  })
 }
 
 /**
  * 创建空白简历
  */
 export async function createResume(data: CreateResumeRequest): Promise<ResumeDetail> {
-  const response = await fetch(`${API_BASE}/resumes`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
+  return request({
+    url: '/resumes',
+    method: 'post',
+    data
   })
-  const result: ApiResponse<ResumeDetail> = await response.json()
-  if (result.code !== 200) {
-    throw new Error(result.message || '创建简历失败')
-  }
-  return result.data
 }
 
 /**
  * 删除简历
  */
 export async function deleteResume(id: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/resumes/${id}`, {
-    method: 'DELETE'
+  return request({
+    url: `/resumes/${id}`,
+    method: 'delete'
   })
-  const result: ApiResponse<void> = await response.json()
-  if (result.code !== 200) {
-    throw new Error(result.message || '删除简历失败')
-  }
 }
 
 /**
  * 设置主简历
  */
 export async function setPrimaryResume(id: string): Promise<PrimaryResumeVO> {
-  const response = await fetch(`${API_BASE}/resumes/${id}/primary`, {
-    method: 'PUT'
+  return request({
+    url: `/resumes/${id}/primary`,
+    method: 'put'
   })
-  const result: ApiResponse<PrimaryResumeVO> = await response.json()
-  if (result.code !== 200) {
-    throw new Error(result.message || '设置主简历失败')
-  }
-  return result.data
 }
 
 /**
  * 获取主简历信息
  */
 export async function getPrimaryResume(): Promise<PrimaryResumeVO | null> {
-  const response = await fetch(`${API_BASE}/resumes/primary`)
-  const result: ApiResponse<PrimaryResumeVO | null> = await response.json()
-  if (result.code !== 200) {
-    throw new Error(result.message || '获取主简历失败')
-  }
-  return result.data
+  return request({
+    url: '/resumes/primary',
+    method: 'get'
+  })
 }
 
 /**
@@ -83,12 +65,10 @@ export async function getPrimaryResume(): Promise<PrimaryResumeVO | null> {
  * @param id 简历ID
  */
 export async function getResumeDetail(id: string): Promise<ResumeDetail> {
-  const response = await fetch(`${API_BASE}/resumes/${id}`)
-  const result: ApiResponse<ResumeDetail> = await response.json()
-  if (result.code !== 200) {
-    throw new Error(result.message || '获取简历详情失败')
-  }
-  return result.data
+  return request({
+    url: `/resumes/${id}`,
+    method: 'get'
+  })
 }
 
 /**
@@ -100,15 +80,12 @@ export async function updateResume(
   id: string,
   data: { name: string; targetPosition?: string }
 ): Promise<ResumeDetail> {
-  const response = await fetch(`${API_BASE}/resumes/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
+  return request({
+    url: `/resumes/${id}`,
+    method: 'put',
+    data
   })
-  const result: ApiResponse<ResumeDetail> = await response.json()
-  if (result.code !== 200) {
-    throw new Error(result.message || '更新简历失败')
-  }
+}
   return result.data
 }
 
@@ -123,16 +100,11 @@ export async function updateSection(
   sectionId: string,
   content: Record<string, unknown> | Record<string, unknown>[]
 ): Promise<ResumeDetail> {
-  const response = await fetch(`${API_BASE}/resumes/${resumeId}/sections/${sectionId}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ content: JSON.stringify(content) })
+  return request({
+    url: `/resumes/${resumeId}/sections/${sectionId}`,
+    method: 'put',
+    data: { content: JSON.stringify(content) }
   })
-  const result: ApiResponse<ResumeDetail> = await response.json()
-  if (result.code !== 200) {
-    throw new Error(result.message || '更新模块失败')
-  }
-  return result.data
 }
 
 /**
@@ -144,19 +116,14 @@ export async function createSection(
   resumeId: string,
   data: { type: string; title: string; content: Record<string, unknown> | Record<string, unknown>[] }
 ): Promise<ResumeDetail> {
-  const response = await fetch(`${API_BASE}/resumes/${resumeId}/sections`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
+  return request({
+    url: `/resumes/${resumeId}/sections`,
+    method: 'post',
+    data: {
       ...data,
       content: JSON.stringify(data.content)
-    })
+    }
   })
-  const result: ApiResponse<ResumeDetail> = await response.json()
-  if (result.code !== 200) {
-    throw new Error(result.message || '新增模块失败')
-  }
-  return result.data
 }
 
 /**
@@ -168,14 +135,10 @@ export async function deleteSection(
   resumeId: string,
   sectionId: string
 ): Promise<ResumeDetail> {
-  const response = await fetch(`${API_BASE}/resumes/${resumeId}/sections/${sectionId}`, {
-    method: 'DELETE'
+  return request({
+    url: `/resumes/${resumeId}/sections/${sectionId}`,
+    method: 'delete'
   })
-  const result: ApiResponse<ResumeDetail> = await response.json()
-  if (result.code !== 200) {
-    throw new Error(result.message || '删除模块失败')
-  }
-  return result.data
 }
 
 /**
@@ -191,16 +154,11 @@ export async function createSectionItem(
 ): Promise<ResumeDetail> {
   // 从 content 中获取标题字段作为模块标题
   const title = (content.name || content.school || content.company || '新条目') as string
-  const response = await fetch(`${API_BASE}/resumes/${resumeId}/sections`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type, title, content })
+  return request({
+    url: `/resumes/${resumeId}/sections`,
+    method: 'post',
+    data: { type, title, content }
   })
-  const result: ApiResponse<ResumeDetail> = await response.json()
-  if (result.code !== 200) {
-    throw new Error(result.message || '新增条目失败')
-  }
-  return result.data
 }
 
 /**
@@ -212,16 +170,11 @@ export async function deriveResume(
   sourceResumeId: string,
   data: DeriveResumeRequest
 ): Promise<ResumeDetail> {
-  const response = await fetch(`${API_BASE}/resumes/${sourceResumeId}/derive`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
+  return request({
+    url: `/resumes/${sourceResumeId}/derive`,
+    method: 'post',
+    data
   })
-  const result: ApiResponse<ResumeDetail> = await response.json()
-  if (result.code !== 200) {
-    throw new Error(result.message || '派生简历失败')
-  }
-  return result.data
 }
 
 /**
@@ -262,16 +215,11 @@ export async function applyOptimizeChanges(
   resumeId: string,
   data: { beforeSection: SectionDataItem[]; afterSection: SectionDataItem[] }
 ): Promise<ResumeDetail> {
-  const response = await fetch(`${API_BASE}/resumes/${resumeId}/optimize/apply`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
+  return request({
+    url: `/resumes/${resumeId}/optimize/apply`,
+    method: 'post',
+    data
   })
-  const result: ApiResponse<ResumeDetail> = await response.json()
-  if (result.code !== 200) {
-    throw new Error(result.message || '应用变更失败')
-  }
-  return result.data
 }
 
 /**
@@ -283,13 +231,10 @@ export async function deleteSuggestion(
   resumeId: string,
   suggestionId: string
 ): Promise<void> {
-  const response = await fetch(`${API_BASE}/resumes/${resumeId}/suggestions/${suggestionId}`, {
-    method: 'DELETE'
+  return request({
+    url: `/resumes/${resumeId}/suggestions/${suggestionId}`,
+    method: 'delete'
   })
-  const result: ApiResponse<void> = await response.json()
-  if (result.code !== 200) {
-    throw new Error(result.message || '删除建议失败')
-  }
 }
 
 /**
@@ -297,24 +242,20 @@ export async function deleteSuggestion(
  * @param resumeId 简历ID
  */
 export async function getSuggestions(resumeId: string): Promise<ResumeSuggestion[]> {
-  const response = await fetch(`${API_BASE}/suggestions/resume/${resumeId}`)
-  const result: ApiResponse<ResumeSuggestion[]> = await response.json()
-  if (result.code !== 200) {
-    throw new Error(result.message || '获取建议列表失败')
-  }
-  return result.data
+  return request({
+    url: `/suggestions/resume/${resumeId}`,
+    method: 'get'
+  })
 }
 
 /**
  * 获取所有简历的优化建议（按简历分组）
  */
 export async function getAllSuggestions(): Promise<ResumeSuggestionsGroup[]> {
-  const response = await fetch(`${API_BASE}/suggestions/all`)
-  const result: ApiResponse<ResumeSuggestionsGroup[]> = await response.json()
-  if (result.code !== 200) {
-    throw new Error(result.message || '获取建议失败')
-  }
-  return result.data
+  return request({
+    url: '/suggestions/all',
+    method: 'get'
+  })
 }
 
 /**
@@ -327,14 +268,9 @@ export async function saveTailoredResume(
   sourceResumeId: string,
   data: SaveTailoredResumeRequest
 ): Promise<ResumeDetail> {
-  const response = await fetch(`${API_BASE}/resumes/${sourceResumeId}/tailor/save`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
+  return request({
+    url: `/resumes/${sourceResumeId}/tailor/save`,
+    method: 'post',
+    data
   })
-  const result: ApiResponse<ResumeDetail> = await response.json()
-  if (result.code !== 200) {
-    throw new Error(result.message || '保存定制简历失败')
-  }
-  return result.data
 }

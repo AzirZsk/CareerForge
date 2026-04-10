@@ -90,6 +90,13 @@ const routes: RouteRecordRaw[] = [
     name: 'Profile',
     component: () => import('@/views/Profile.vue'),
     meta: { title: '个人中心' }
+  },
+  // ==================== 认证相关 ====================
+  {
+    path: '/login',
+    name: 'Login',
+    component: () => import('@/views/Login.vue'),
+    meta: { title: '登录', public: true }
   }
 ]
 
@@ -104,28 +111,30 @@ const router = createRouter({
   }
 })
 
-router.beforeEach(async (to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) => {
+router.beforeEach((to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) => {
   const meta = to.meta as { title?: string; public?: boolean }
   document.title = `${meta.title ?? 'LandIt'} - LandIt智能求职助手`
 
   const store = useAppStore()
 
-  // 检查用户是否已初始化
-  if (!store.isInitialized) {
-    const status = await store.checkUserExists()
-    // 用户不存在 → 跳转 onboarding
-    if (!status.exists && to.name !== 'Onboarding') {
-      return next({ name: 'Onboarding' })
-    }
-    // 用户已存在 → 访问 onboarding 时跳转首页
-    if (status.exists && to.name === 'Onboarding') {
-      return next({ name: 'Home' })
-    }
+  // 初始化认证状态（从 localStorage 恢复）
+  if (!store.isLoggedIn) {
+    store.initAuthState()
   }
 
-  // 未初始化用户跳转到引导页
-  if (!store.isLoggedIn && to.name !== 'Onboarding' && !meta.public) {
-    return next({ name: 'Onboarding' })
+  // 公开页面直接放行
+  if (meta.public) {
+    return next()
+  }
+
+  // 未登录用户跳转到登录页
+  if (!store.isLoggedIn && to.name !== 'Login') {
+    return next({ name: 'Login' })
+  }
+
+  // 已登录用户访问登录页时跳转首页
+  if (store.isLoggedIn && to.name === 'Login') {
+    return next({ name: 'Home' })
   }
 
   next()

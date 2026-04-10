@@ -2,6 +2,7 @@ package com.landit.task.controller;
 
 import com.landit.common.constant.CommonConstants;
 import com.landit.common.response.ApiResponse;
+import com.landit.common.util.SecurityUtils;
 import com.landit.task.dto.CreateTaskResponse;
 import com.landit.task.dto.TaskVO;
 import com.landit.task.entity.AsyncTask;
@@ -46,7 +47,7 @@ public class TaskController {
             @Parameter(description = "音频文件") @RequestParam("file") MultipartFile file) {
         log.info("[TaskController] 创建音频转录任务: interviewId={}, filename={}",
                 interviewId, file.getOriginalFilename());
-        String userId = CommonConstants.SINGLE_USER_ID;
+        String userId = SecurityUtils.getCurrentUserId();
         AsyncTask task = audioTranscribeTaskService.createTranscribeTask(userId, interviewId, file);
         return ApiResponse.success(CreateTaskResponse.builder()
                 .taskId(task.getId())
@@ -62,7 +63,7 @@ public class TaskController {
     public ApiResponse<Map<String, Object>> listTasks(
             @Parameter(description = "任务类型") @RequestParam(required = false) String type,
             @Parameter(description = "任务状态") @RequestParam(required = false) String status) {
-        String userId = CommonConstants.SINGLE_USER_ID;
+        String userId = SecurityUtils.getCurrentUserId();
         TaskStatus taskStatus = status != null ? TaskStatus.fromCode(status) : null;
         List<AsyncTask> tasks = asyncTaskService.listByUser(userId, taskStatus);
         List<TaskVO> voList = asyncTaskService.toVOList(tasks);
@@ -108,7 +109,7 @@ public class TaskController {
     @Operation(summary = "清理已完成的任务")
     @DeleteMapping("/completed")
     public ApiResponse<Void> clearCompletedTasks() {
-        String userId = CommonConstants.SINGLE_USER_ID;
+        String userId = SecurityUtils.getCurrentUserId();
         int count = asyncTaskService.clearCompletedTasks(userId);
         log.info("[TaskController] 清理已完成任务: userId={}, count={}", userId, count);
         return ApiResponse.success(null);
