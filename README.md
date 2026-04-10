@@ -289,7 +289,99 @@ START → 快速诊断 → 生成建议 → 内容优化 → END
 
 ## 部署说明
 
-### 生产环境配置
+### Docker 部署（推荐）
+
+项目采用**单镜像双服务**架构，使用 Supervisor 同时运行 Nginx（前端）和 Spring Boot（后端）。
+
+```
+┌──────────────────────────────────────────────────┐
+│              Docker 容器 (landit)                 │
+│                                                  │
+│  ┌──────────────┐         ┌──────────────┐        │
+│  │    Nginx     │         │ Spring Boot  │        │
+│  │  Port: 80    │◄──────►│ Port: 8080   │        │
+│  │              │127.0.0.1             │        │
+│  │  静态文件     │         │  API 服务    │        │
+│  │  反向代理     │         │  WebSocket  │        │
+│  └──────────────┘         └──────────────┘        │
+│                                                  │
+│  数据卷：/app/data (SQLite 数据库)               │
+└──────────────────────────────────────────────────┘
+```
+
+#### 环境变量配置
+
+**必需项（3 个）：**
+
+| 变量名 | 说明 | 示例值 |
+|--------|------|--------|
+| `OPENAI_API_KEY` | OpenAI API Key | `sk-proj-xxx...` |
+| `ALIYUN_ACCESS_KEY_ID` | 阿里云 Access Key ID | `LTAI5t...` |
+| `ALIYUN_ACCESS_KEY_SECRET` | 阿里云 Access Key Secret | `your-secret-key` |
+
+**可选项（4 个）：**
+
+| 变量名 | 说明 | 默认值 |
+|--------|------|------|
+| `OPENAI_BASE_URL` | OpenAI API 基础 URL | `https://api.openai.com` |
+| `AI_MODEL` | AI 模型选择 | `gpt-4o` |
+| `ALIYUN_VOICE_APP_KEY` | 阿里云语音 App Key | - |
+| `JAVA_OPTS` | JVM 参数 | `-Xmx512m -Xms256m` |
+
+#### 快速开始
+
+```bash
+# 1. 配置环境变量
+cp .env.example .env
+vim .env  # 填入上述必需的环境变量
+
+# 2. 启动服务
+docker-compose up -d
+
+# 3. 查看日志
+docker-compose logs -f
+
+# 4. 访问应用
+# 前端：http://localhost
+# Swagger：http://localhost/landit/swagger-ui.html
+```
+
+#### 常用命令
+
+```bash
+# 查看服务状态
+docker-compose ps
+
+# 查看进程状态
+docker-compose exec landit supervisorctl status
+
+# 查看后端日志
+docker-compose exec landit tail -f /var/log/supervisor/backend.out.log
+
+# 重启服务
+docker-compose restart
+
+# 停止服务
+docker-compose down
+
+# 重新构建（代码变更后）
+docker-compose build --no-cache && docker-compose up -d
+```
+
+#### 故障排查
+
+| 问题 | 排查方法 |
+|------|---------|
+| 服务无法启动 | `docker-compose logs -f` 查看日志 |
+| 前端 404 | 检查 Nginx 配置 `cat /etc/nginx/http.d/default.conf` |
+| 后端 API 500 | 查看后端日志 `cat /var/log/supervisor/backend.out.log` |
+| WebSocket 连接失败 | 检查 Nginx WebSocket 配置 |
+
+> 💡 详细部署文档请参阅 [DOCKER.md](DOCKER.md)
+
+---
+
+### 传统部署
 
 #### 后端
 

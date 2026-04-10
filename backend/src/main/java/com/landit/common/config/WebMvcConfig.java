@@ -9,6 +9,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 /**
  * Web MVC 配置类
  * 注册 JWT 拦截器并配置放行路径
+ * 静态资源由 Nginx 直接 serve，Spring Boot 只处理 API 请求
  *
  * @author Azir
  */

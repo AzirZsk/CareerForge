@@ -1,0 +1,38 @@
+# =====================================================
+# 项目根目录 Dockerignore
+# @author Azir
+# =====================================================
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# 文档
+*.md
+!README.md
+docs/
+
+# 环境配置
+.env
+.env.local
+
+# Docker
+docker-compose.yml
+
+# 数据与日志
+backend/data/
+backend/logs/
+backend/target/
+frontend/dist/
+frontend/node_modules/
+
+# 测试
+.github/
+coverage/

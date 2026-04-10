@@ -1,0 +1,39 @@
+# =====================================================
+# LandIt Docker Compose 配置
+# 单镜像双服务：Nginx（前端） + Spring Boot（后端）
+# @author Azir
+# =====================================================
+
+services:
+  landit:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: landit
+    restart: unless-stopped
+    ports:
+      - "80:80"          # Nginx（前端）
+      # - "8080:8080"   # 后端端口（可选，内部通信，不建议暴露）
+    environment:
+      # ==================== AI 服务配置 ====================
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com}
+      - AI_MODEL=${AI_MODEL:-gpt-4o}
+      # ==================== 阿里云语音服务 ====================
+      - ALIYUN_ACCESS_KEY_ID=${ALIYUN_ACCESS_KEY_ID}
+      - ALIYUN_ACCESS_KEY_SECRET=${ALIYUN_ACCESS_KEY_SECRET}
+      - ALIYUN_VOICE_APP_KEY=${ALIYUN_VOICE_APP_KEY}
+      # ==================== JVM 参数 ====================
+      - JAVA_OPTS=-Xmx512m -Xms256m
+    volumes:
+      # 持久化数据库文件
+      - ./backend/data:/app/data
+      # 查看日志（可选）
+      # - ./logs:/var/log/nginx
+      # - ./logs:/var/log/supervisor
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 60s
