@@ -76,15 +76,16 @@ COPY docker/nginx.conf /etc/nginx/http.d/default.conf
 COPY docker/supervisord.conf /etc/supervisord.conf
 
 # 创建数据目录并设置权限
-RUN mkdir -p /app/data /var/log/supervisor /var/log/nginx /var/run && \
-    chown -R app:app /app /usr/share/nginx/html /var/log/supervisor /var/log/nginx /var/run && \
-    # 修改 Nginx 运行用户为 app
-    sed -i 's/user nginx;/user app;/g' /etc/nginx/nginx.conf && \
-    # 修改 Nginx pid 文件权限
-    sed -i 's/\/run\/nginx.pid/\/var\/run\/nginx.pid/g' /etc/nginx/nginx.conf
+RUN mkdir -p /app/data /var/log/supervisor /var/log/nginx /tmp && \
+    chown -R app:app /app /usr/share/nginx/html /var/log/supervisor /var/log/nginx && \
+    # Nginx 保持 root 用户运行（需要绑定 80 端口）
+    # 只修改 pid 文件路径到 /tmp
+    sed -i 's/\/run\/nginx.pid/\/tmp\/nginx.pid/g' /etc/nginx/nginx.conf && \
+    # 修改 nginx.conf 中的用户为 root（特权端口需要）
+    sed -i 's/user nginx;/user root;/g' /etc/nginx/nginx.conf
 
-# 切换到非 root 用户
-USER app
+# 不切换用户！supervisord 和 nginx 需要 root 权限
+# backend 进程会在 supervisord.conf 中配置为以 app 用户运行
 
 # 暴露端口
 EXPOSE 80 8080
