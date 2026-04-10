@@ -4,9 +4,7 @@
 // =====================================================
 
 import type { ApiResponse, Statistics } from '@/types'
-
-// API 基础路径
-const API_BASE = '/landit'
+import { API_BASE } from './config'
 
 /**
  * 获取统计数据

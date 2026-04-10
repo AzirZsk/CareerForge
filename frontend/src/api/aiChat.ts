@@ -4,8 +4,7 @@
 // =====================================================
 
 import type { ActionStatusType, ChatEvent, ContentSegment, SectionChange } from '@/types/ai-chat'
-
-const API_BASE = '/landit'
+import { API_BASE } from './config'
 
 /**
  * 聊天历史消息类型

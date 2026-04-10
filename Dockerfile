@@ -12,7 +12,8 @@ WORKDIR /frontend
 # 复制依赖配置
 COPY frontend/package.json frontend/package-lock.json* ./
 # 安装所有依赖（构建需要 devDependencies）
-RUN npm ci && npm cache clean --force
+# 使用淘宝 npm 镜像加速
+RUN npm ci --registry=https://registry.npmmirror.com && npm cache clean --force
 
 # 复制源码并构建
 COPY frontend/ ./
@@ -22,6 +23,22 @@ RUN npm run build
 FROM maven:3.9.9-eclipse-temurin-17-alpine AS backend-builder
 
 WORKDIR /build
+
+# 配置 Maven 使用阿里云镜像加速
+RUN mkdir -p /root/.m2 && \
+    echo '<?xml version="1.0" encoding="UTF-8"?>' > /root/.m2/settings.xml && \
+    echo '<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"' >> /root/.m2/settings.xml && \
+    echo '    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"' >> /root/.m2/settings.xml && \
+    echo '    xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">' >> /root/.m2/settings.xml && \
+    echo '  <mirrors>' >> /root/.m2/settings.xml && \
+    echo '    <mirror>' >> /root/.m2/settings.xml && \
+    echo '      <id>aliyunmaven</id>' >> /root/.m2/settings.xml && \
+    echo '      <mirrorOf>*</mirrorOf>' >> /root/.m2/settings.xml && \
+    echo '      <name>阿里云公共仓库</name>' >> /root/.m2/settings.xml && \
+    echo '      <url>https://maven.aliyun.com/repository/public</url>' >> /root/.m2/settings.xml && \
+    echo '    </mirror>' >> /root/.m2/settings.xml && \
+    echo '  </mirrors>' >> /root/.m2/settings.xml && \
+    echo '</settings>' >> /root/.m2/settings.xml
 
 # 复制 pom.xml 并下载依赖
 COPY backend/pom.xml ./
@@ -35,7 +52,9 @@ RUN mvn clean package -DskipTests -B
 FROM eclipse-temurin:17-jre-alpine
 
 # 安装 Nginx 和其他依赖
-RUN apk add --no-cache nginx sqlite-libs tzdata supervisor && \
+# 使用阿里云 Alpine 镜像源加速
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
+    apk add --no-cache nginx sqlite-libs tzdata supervisor && \
     cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
     echo "Asia/Shanghai" > /etc/timezone
 

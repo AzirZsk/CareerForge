@@ -4,8 +4,9 @@
 // =====================================================
 
 import request from '@/utils/request'
-import type { ApiResponse, PrimaryResumeVO, ResumeDetail, ResumeListItem, CreateResumeRequest, ResumeSuggestion, ResumeSuggestionsGroup } from '@/types'
+import type { PrimaryResumeVO, ResumeDetail, ResumeListItem, CreateResumeRequest, ResumeSuggestion, ResumeSuggestionsGroup } from '@/types'
 import type { DeriveResumeRequest, SaveTailoredResumeRequest } from '@/types/resume-tailor'
+import { API_BASE } from './config'
 
 /**
  * 获取所有简历列表
@@ -85,8 +86,6 @@ export async function updateResume(
     method: 'put',
     data
   })
-}
-  return result.data
 }
 
 /**

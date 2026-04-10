@@ -4,7 +4,7 @@
 // =====================================================
 
 import request from '@/utils/request'
-import type { ApiResponse, UserStatusResponse, UserInitResponse } from '@/types'
+import type { UserStatusResponse, UserInitResponse } from '@/types'
 
 /**
  * 获取用户状态

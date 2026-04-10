@@ -11,8 +11,7 @@ import type {
   TaskStatus
 } from '@/types/notification'
 import type { ApiResponse } from '@/types'
-
-const API_BASE = '/landit'
+import { API_BASE } from './config'
 
 /**
  * 创建音频转录任务

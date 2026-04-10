@@ -36,7 +36,7 @@ import type {
   ResumeListItem,
   CreateResumeRequest
 } from '@/types'
-import type { LoginRequest, RegisterRequest } from '@/types/auth'
+import type { RegisterRequest } from '@/types/auth'
 
 export const useAppStore = defineStore('app', () => {
   // 用户状态

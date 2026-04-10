@@ -1,6 +1,6 @@
 package com.landit.common.util;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * Web 相关工具类

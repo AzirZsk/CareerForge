@@ -15,8 +15,7 @@ import type {
   SaveReviewNoteRequest
 } from '@/types/interview-center'
 import type { ApiResponse } from '@/types'
-
-const API_BASE = '/landit'
+import { API_BASE } from './config'
 
 // ==================== 面试管理 API ====================
 

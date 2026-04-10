@@ -3,9 +3,9 @@
 // @author Azir
 // =====================================================
 
-import request from '@/utils/request'
 import type { ApiResponse } from '@/types'
 import type { RecordingInfo } from '@/types/interview-voice'
+import { API_BASE } from './config'
 
 // ============================================================================
 // 创建会话 API

@@ -133,7 +133,7 @@ import type { LoginRequest, RegisterRequest } from '@/types/auth'
 
 const router = useRouter()
 const store = useAppStore()
-const { showSuccess, showError } = useToast()
+const toast = useToast()
 
 // 表单模式
 const isLoginMode = ref(true)
@@ -234,7 +234,7 @@ async function handleRegister() {
 
     // 提示用户登录
     errorMessage.value = ''
-    showSuccess('注册成功！请使用您的邮箱和密码登录')
+    toast.success('注册成功！请使用您的邮箱和密码登录')
   } catch (error: any) {
     errorMessage.value = error.response?.data?.message || '注册失败，请稍后重试'
   } finally {

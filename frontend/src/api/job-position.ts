@@ -11,8 +11,7 @@ import type {
   InterviewBrief
 } from '@/types/job-position'
 import type { ApiResponse } from '@/types'
-
-const API_BASE = '/landit'
+import { API_BASE } from './config'
 
 /**
  * 通用请求处理函数
