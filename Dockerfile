@@ -11,7 +11,8 @@ WORKDIR /frontend
 
 # 复制依赖配置
 COPY frontend/package.json frontend/package-lock.json* ./
-RUN npm ci --only=production && npm cache clean --force
+# 安装所有依赖（构建需要 devDependencies）
+RUN npm ci && npm cache clean --force
 
 # 复制源码并构建
 COPY frontend/ ./
