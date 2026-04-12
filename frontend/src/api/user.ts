@@ -3,22 +3,18 @@
 // @author Azir
 // =====================================================
 
-import type { ApiResponse, UserStatusResponse, UserInitResponse } from '@/types'
-
-// API 基础路径（始终使用相对路径，开发环境通过 Vite 代理转发）
-const API_BASE = '/landit'
+import request from '@/utils/request'
+import type { UserStatusResponse, UserInitResponse } from '@/types'
 
 /**
  * 获取用户状态
  * 检查系统是否已初始化用户
  */
 export async function getUserStatus(): Promise<UserStatusResponse> {
-  const response = await fetch(`${API_BASE}/user/status`)
-  const result: ApiResponse<UserStatusResponse> = await response.json()
-  if (result.code !== 200) {
-    throw new Error(result.message || '获取用户状态失败')
-  }
-  return result.data
+  return request({
+    url: '/user/status',
+    method: 'get'
+  })
 }
 
 /**
@@ -29,13 +25,51 @@ export async function getUserStatus(): Promise<UserStatusResponse> {
 export async function initUser(file: File): Promise<UserInitResponse> {
   const formData = new FormData()
   formData.append('file', file)
-  const response = await fetch(`${API_BASE}/user/init`, {
-    method: 'POST',
-    body: formData
+  return request({
+    url: '/user/init',
+    method: 'post',
+    data: formData,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
   })
-  const result: ApiResponse<UserInitResponse> = await response.json()
-  if (result.code !== 200) {
-    throw new Error(result.message || '初始化用户失败')
-  }
-  return result.data
+}
+
+/**
+ * 获取当前用户信息
+ */
+export async function getUserProfile(): Promise<UserStatusResponse> {
+  return request({
+    url: '/user/profile',
+    method: 'get'
+  })
+}
+
+/**
+ * 更新用户信息
+ * @param data 用户信息
+ */
+export async function updateUserProfile(data: { name: string; gender?: string }): Promise<void> {
+  return request({
+    url: '/user/profile',
+    method: 'put',
+    data
+  })
+}
+
+/**
+ * 上传头像
+ * @param file 头像文件
+ */
+export async function uploadAvatar(file: File): Promise<{ avatarUrl: string }> {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/user/avatar',
+    method: 'post',
+    data: formData,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
 }

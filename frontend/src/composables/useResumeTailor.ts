@@ -13,8 +13,7 @@ import type {
   TailorResumeResponse
 } from '@/types/resume-tailor'
 import { TAILOR_STAGE_CONFIG } from '@/types/resume-tailor'
-
-const API_BASE = '/landit'
+import { API_BASE } from '@/api/config'
 
 /** 内部节点 ID 类型（包含工作流控制节点） */
 type InternalNodeId = TailorStage | '__START__' | '__END__'

@@ -1,0 +1,49 @@
+# =====================================================
+# Backend Dockerignore
+# 排除不必要的文件以加速构建
+# @author Azir
+# =====================================================
+
+# Maven
+target/
+!target/*.jar
+*.class
+*.jar
+*.war
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.DS_Store
+
+# 日志
+logs/
+*.log
+
+# 数据库
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# 测试
+src/test/
+.github/
+
+# 文档
+docs/
+*.md
+!CLAUDE.md
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml

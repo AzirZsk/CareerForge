@@ -8,6 +8,7 @@ import com.landit.common.enums.ResumeType;
 import com.landit.common.enums.SectionType;
 import com.landit.common.exception.BusinessException;
 import com.landit.common.util.JsonParseHelper;
+import com.landit.common.util.SecurityUtils;
 import com.landit.resume.convertor.ResumeConvertor;
 import com.landit.resume.dto.CreateResumeRequest;
 import com.landit.resume.dto.DeriveResumeRequest;
@@ -56,7 +57,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
      */
     public Resume getPrimaryResume() {
         LambdaQueryWrapper<Resume> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Resume::getUserId, CommonConstants.SINGLE_USER_ID)
+        wrapper.eq(Resume::getUserId, SecurityUtils.getCurrentUserId())
                 .eq(Resume::getIsPrimary, true);
         return getOne(wrapper);
     }
@@ -486,7 +487,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
      */
     public List<Resume> getAllResumes(String status) {
         LambdaQueryWrapper<Resume> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Resume::getUserId, CommonConstants.SINGLE_USER_ID);
+        wrapper.eq(Resume::getUserId, SecurityUtils.getCurrentUserId());
         if (status != null && !status.isBlank()) {
             wrapper.eq(Resume::getStatus, status);
         }
@@ -504,7 +505,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
      */
     public Resume createBlankResume(String name, String targetPosition) {
         Resume resume = new Resume();
-        resume.setUserId(CommonConstants.SINGLE_USER_ID);
+        resume.setUserId(SecurityUtils.getCurrentUserId());
         resume.setName(name != null && !name.isBlank() ? name : "新简历");
         resume.setTargetPosition(targetPosition != null ? targetPosition : "");
         resume.setResumeType(ResumeType.PRIMARY.getValue());

@@ -8,6 +8,8 @@ import { ref, computed } from 'vue'
 import * as userApi from '@/api/user'
 import * as resumeApi from '@/api/resume'
 import * as statisticsApi from '@/api/statistics'
+import * as authApi from '@/api/auth'
+import { updateToken } from '@/utils/request'
 import type {
   User,
   Resume,
@@ -26,11 +28,13 @@ import type {
   ResumeListItem,
   CreateResumeRequest
 } from '@/types'
+import type { RegisterRequest } from '@/types/auth'
 
 export const useAppStore = defineStore('app', () => {
   // 用户状态
   const user = ref<User>({ id: '', name: '', gender: null, avatar: null, createdAt: '' })
-  const isLoggedIn = ref<boolean>(true)
+  const token = ref<string | null>(null)
+  const isLoggedIn = ref<boolean>(false)
   const isInitialized = ref<boolean>(false)
 
   // 简历相关
@@ -442,9 +446,73 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
+  // ========== 以下是认证相关方法 ==========
+
+  /**
+   * 初始化认证状态
+   * 从 localStorage 恢复登录状态
+   */
+  function initAuthState(): void {
+    const savedToken = localStorage.getItem('token')
+    if (savedToken) {
+      token.value = savedToken
+      isLoggedIn.value = true
+      // 同步到 request.ts 的缓存
+      updateToken(savedToken)
+      // TODO: 可以在这里调用 getUserProfile 获取最新用户信息
+    }
+  }
+
+  /**
+   * 用户登录
+   */
+  async function login(account: string, password: string): Promise<void> {
+    try {
+      const response = await authApi.login({ account, password })
+      // 保存 Token 和用户信息
+      token.value = response.token
+      updateToken(response.token)
+      user.value = response.user
+      isLoggedIn.value = true
+    } catch (error) {
+      console.error('登录失败', error)
+      throw error
+    }
+  }
+
+  /**
+   * 用户注册
+   */
+  async function register(data: RegisterRequest): Promise<void> {
+    try {
+      await authApi.register(data)
+      // 注册成功，需要用户登录
+    } catch (error) {
+      console.error('注册失败', error)
+      throw error
+    }
+  }
+
+  /**
+   * 用户登出
+   */
+  async function logout(): Promise<void> {
+    try {
+      await authApi.logout()
+    } catch (error) {
+      console.error('登出失败', error)
+    } finally {
+      // 清除本地状态
+      token.value = null
+      isLoggedIn.value = false
+      updateToken(null)
+    }
+  }
+
   return {
     // 状态
     user,
+    token,
     isLoggedIn,
     isInitialized,
     resumeList,
@@ -485,6 +553,11 @@ export const useAppStore = defineStore('app', () => {
     fetchSuggestions,
     fetchAllSuggestions,
     updateResumeBasicInfo,
-    fetchStatistics
+    fetchStatistics,
+    // 认证方法
+    initAuthState,
+    login,
+    register,
+    logout
   }
 })

@@ -8,6 +8,7 @@
 
 | 日期 | 版本 | 变更内容 |
 |------|------|----------|
+| 2026-04-10 | 2.5.0 | **新增多用户登录注册系统**：新增 Login.vue 视图、auth.ts API/Types、路由守卫更新；删除 useAudioTranscribe composable；更新文件统计 |
 | 2026-04-07 | 2.4.0 | **清理老版本复盘模块**：删除 Review.vue/ReviewDetail.vue 视图、currentReview 状态、interviewReview Mock 数据；复盘功能通过面试中心详情页实现 |
 | 2026-04-02 | 2.3.0 | **新增 useStreamAssist composable**：SSE 流式求助功能；更新 Composables 数量（17->18）；更新文件统计 |
 | 2026-04-02 | 2.2.0 | **新增 AI 语音面试前端**：6 个语音组件 + 2 个录音回放组件 + 3 个 Composables（useInterviewVoice/useStreamingAudio/useAudioRecorder）+ API（interview-voice.ts）+ Types（interview-voice.ts）+ Utils（recording-helpers.ts）；新增面试中心组件（7 个）+ Composables（2 个）+ API/Types； 更新文件统计 |
@@ -24,6 +25,7 @@
 ## 模块职责
 
 前端应用模块负责提供用户界面，包括：
+- 用户登录注册（多用户系统）
 - 首页数据展示
 - 简历管理与编辑
 - 简历优化进度展示（SSE 实时）
@@ -68,6 +70,7 @@ VITE_API_TARGET=http://localhost:8080
 ### API 模块
 | 模块 | 文件 | 描述 |
 |------|------|------|
+| **auth** | `api/auth.ts` | **用户登录注册、登出** |
 | user | `api/user.ts` | 用户状态、初始化、信息管理 |
 | resume | `api/resume.ts` | 简历 CRUD、模块操作 |
 | aiChat | `api/aiChat.ts` | AI 聊天流式对话、历史管理、修改应用 |
@@ -78,7 +81,8 @@ VITE_API_TARGET=http://localhost:8080
 ### 页面路由
 | 路径 | 组件 | 标题 | 描述 | 权限 |
 |------|------|------|------|------|
-| `/onboarding` | Onboarding.vue | 欢迎 | 用户引导页 | 公开 |
+| `/login` | Login.vue | 登录/注册 | 用户登录注册页 | 公开 |
+| `/onboarding` | Onboarding.vue | 欢迎 | 用户引导页 | 登录 |
 | `/` | Home.vue | 首页 | 数据概览与快捷入口 | 登录 |
 | `/resume` | Resume.vue | 简历管理 | 简历列表 | 登录 |
 | `/resume/:id` | ResumeDetail.vue | 简历详情 | 简历编辑与优化 | 登录 |
@@ -91,9 +95,8 @@ VITE_API_TARGET=http://localhost:8080
 | `/profile` | Profile.vue | 个人中心 | 用户信息设置 | 登录 |
 
 ### 路由守卫
-- 检查用户是否已初始化
-- 未初始化用户跳转到 `/onboarding`
-- 非公开页面需要登录状态
+- 未登录用户访问需要登录的页面时跳转到 `/login`
+- 登录后未初始化用户跳转到 `/onboarding`
 
 ---
 
@@ -159,6 +162,7 @@ export default defineConfig(({ mode }) => {
 | 文件 | 描述 |
 |------|------|
 | `types/index.ts` | 通用业务类型定义 |
+| `types/auth.ts` | 认证类型定义（RegisterRequest、LoginRequest、LoginResponse 等） |
 | `types/ai-chat.ts` | AI 聊天类型定义（ChatMessage、SectionChange、AIChatState 等） |
 | `types/resume-optimize.ts` | 简历优化工作流类型定义 |
 | `types/resume-tailor.ts` | 简历定制工作流类型定义 |
@@ -260,6 +264,11 @@ averageInterviewScore: number        // 平均面试分
 // 用户相关
 checkUserExists(): Promise<UserStatusResponse>
 initUser(file: File): Promise<void>
+
+// 认证相关（使用 auth.ts API）
+login(account: string, password: string): Promise<LoginResponse>
+register(email: string, password: string, name: string): Promise<RegisterResponse>
+logout(): Promise<void>
 
 // 简历相关
 fetchPrimaryResume(): Promise<void>

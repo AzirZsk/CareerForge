@@ -4,6 +4,19 @@
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
+-- 数据库迁移脚本（从单用户模式升级到多用户认证）
+-- 执行此脚本可为现有数据库添加认证相关字段
+-- ----------------------------------------------------------------------------
+-- 如需在现有数据库上执行迁移，请手动执行以下 ALTER TABLE 语句：
+-- ALTER TABLE t_user ADD COLUMN email VARCHAR(100) UNIQUE;
+-- ALTER TABLE t_user ADD COLUMN phone VARCHAR(20) UNIQUE;
+-- ALTER TABLE t_user ADD COLUMN password VARCHAR(255);
+-- ALTER TABLE t_user ADD COLUMN status VARCHAR(20) DEFAULT 'ACTIVE';
+-- ALTER TABLE t_user ADD COLUMN last_login_at DATETIME;
+-- ALTER TABLE t_user ADD COLUMN register_ip VARCHAR(50);
+-- ----------------------------------------------------------------------------
+
+-- ----------------------------------------------------------------------------
 -- 用户表
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS t_user (
@@ -11,6 +24,13 @@ CREATE TABLE IF NOT EXISTS t_user (
     name VARCHAR(100),                      -- 用户姓名
     gender VARCHAR(10),                     -- 性别（MALE-男 FEMALE-女）
     avatar VARCHAR(500),                    -- 头像URL
+    -- 认证相关字段
+    email VARCHAR(100) UNIQUE,              -- 邮箱（登录账号，UNIQUE）
+    phone VARCHAR(20) UNIQUE,               -- 手机号（可选登录方式，UNIQUE）
+    password VARCHAR(255),                  -- 密码（BCrypt 加密）
+    status VARCHAR(20) DEFAULT 'ACTIVE',     -- 账号状态（ACTIVE-正常 FROZEN-冻结 DELETED-已删除）
+    last_login_at DATETIME,                 -- 最后登录时间
+    register_ip VARCHAR(50),                -- 注册IP
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 更新时间
     deleted INTEGER DEFAULT 0               -- 逻辑删除标记（0-未删除 1-已删除）

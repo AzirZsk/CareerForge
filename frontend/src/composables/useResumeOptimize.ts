@@ -17,8 +17,7 @@ type InternalNodeId = OptimizeStage | '__START__' | '__END__'
 import { STAGE_CONFIG } from '@/types/resume-optimize'
 import { applyOptimizeChanges } from '@/api/resume'
 import type { SectionDataItem } from '@/api/resume'
-
-const API_BASE = '/landit'
+import { API_BASE } from '@/api/config'
 
 export function useResumeOptimize() {
   // 状态
