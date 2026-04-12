@@ -11,13 +11,14 @@ import type {
   InterviewBrief
 } from '@/types/job-position'
 import type { ApiResponse } from '@/types'
+import { authFetch } from '@/utils/request'
 import { API_BASE } from './config'
 
 /**
  * 通用请求处理函数
  */
 async function request<T>(url: string, options?: RequestInit, errorMsg?: string): Promise<T> {
-  const response = await fetch(url, options)
+  const response = await authFetch(url, options)
   const result: ApiResponse<T> = await response.json()
   if (result.code !== 200) {
     throw new Error(result.message || errorMsg || '请求失败')

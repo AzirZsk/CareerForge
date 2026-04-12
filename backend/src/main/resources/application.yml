@@ -47,8 +47,8 @@ springdoc:
 # JWT 配置
 landit:
   jwt:
-    # JWT 密钥（生产环境必须配置环境变量）
-    secret: ${JWT_SECRET:}
+    # JWT 密钥（生产环境必须配置环境变量，开发环境使用默认值）
+    secret: ${JWT_SECRET:landit-dev-secret-key-for-jwt-token-generation-2026}
     # Token 过期时间（毫秒），默认 2 小时
     expire: 7200000
 

@@ -11,7 +11,7 @@ const routes: RouteRecordRaw[] = [
     path: '/onboarding',
     name: 'Onboarding',
     component: () => import('@/views/Onboarding.vue'),
-    meta: { title: '欢迎', public: true }
+    meta: { title: '欢迎' }
   },
   {
     path: '/',
@@ -134,6 +134,16 @@ router.beforeEach((to: RouteLocationNormalized, _from: RouteLocationNormalized, 
 
   // 已登录用户访问登录页时跳转首页
   if (store.isLoggedIn && to.name === 'Login') {
+    return next({ name: 'Home' })
+  }
+
+  // 已登录但未初始化的用户，必须先去上传简历
+  if (store.isLoggedIn && !store.isInitialized && to.name !== 'Onboarding') {
+    return next({ name: 'Onboarding' })
+  }
+
+  // 已初始化的用户访问 onboarding 页面时重定向到首页
+  if (store.isLoggedIn && store.isInitialized && to.name === 'Onboarding') {
     return next({ name: 'Home' })
   }
 

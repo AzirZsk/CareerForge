@@ -15,6 +15,7 @@ import type {
   SaveReviewNoteRequest
 } from '@/types/interview-center'
 import type { ApiResponse } from '@/types'
+import { authFetch } from '@/utils/request'
 import { API_BASE } from './config'
 
 // ==================== 面试管理 API ====================
@@ -23,7 +24,7 @@ import { API_BASE } from './config'
  * 创建真实面试
  */
 export async function createInterview(data: CreateInterviewRequest): Promise<InterviewDetail> {
-  const response = await fetch(`${API_BASE}/interview-center`, {
+  const response = await authFetch(`${API_BASE}/interview-center`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
@@ -50,7 +51,7 @@ export async function getInterviewList(params?: {
   if (params?.page) query.set('page', String(params.page))
   if (params?.size) query.set('size', String(params.size))
 
-  const response = await fetch(`${API_BASE}/interview-center?${query.toString()}`)
+  const response = await authFetch(`${API_BASE}/interview-center?${query.toString()}`)
   const result: ApiResponse<{ list: InterviewListItem[]; total: number }> = await response.json()
   if (result.code !== 200) {
     throw new Error(result.message || '获取面试列表失败')
@@ -62,7 +63,7 @@ export async function getInterviewList(params?: {
  * 获取面试详情
  */
 export async function getInterviewDetail(id: string): Promise<InterviewDetail> {
-  const response = await fetch(`${API_BASE}/interview-center/${id}`)
+  const response = await authFetch(`${API_BASE}/interview-center/${id}`)
   const result: ApiResponse<InterviewDetail> = await response.json()
   if (result.code !== 200) {
     throw new Error(result.message || '获取面试详情失败')
@@ -74,7 +75,7 @@ export async function getInterviewDetail(id: string): Promise<InterviewDetail> {
  * 更新面试基本信息
  */
 export async function updateInterview(id: string, data: UpdateInterviewRequest): Promise<InterviewDetail> {
-  const response = await fetch(`${API_BASE}/interview-center/${id}`, {
+  const response = await authFetch(`${API_BASE}/interview-center/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
@@ -90,7 +91,7 @@ export async function updateInterview(id: string, data: UpdateInterviewRequest):
  * 删除面试
  */
 export async function deleteInterview(id: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/interview-center/${id}`, {
+  const response = await authFetch(`${API_BASE}/interview-center/${id}`, {
     method: 'DELETE'
   })
   const result: ApiResponse<void> = await response.json()
@@ -105,7 +106,7 @@ export async function deleteInterview(id: string): Promise<void> {
  * 获取准备清单
  */
 export async function getPreparations(interviewId: string): Promise<PreparationVO[]> {
-  const response = await fetch(`${API_BASE}/interview-center/${interviewId}/preparations`)
+  const response = await authFetch(`${API_BASE}/interview-center/${interviewId}/preparations`)
   const result: ApiResponse<PreparationVO[]> = await response.json()
   if (result.code !== 200) {
     throw new Error(result.message || '获取准备清单失败')
@@ -117,7 +118,7 @@ export async function getPreparations(interviewId: string): Promise<PreparationV
  * 添加准备事项
  */
 export async function addPreparation(interviewId: string, data: AddPreparationRequest): Promise<PreparationVO> {
-  const response = await fetch(`${API_BASE}/interview-center/${interviewId}/preparations`, {
+  const response = await authFetch(`${API_BASE}/interview-center/${interviewId}/preparations`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
@@ -136,7 +137,7 @@ export async function batchAddPreparations(
   interviewId: string,
   items: Array<{ title: string; content: string; itemType?: string; priority?: string }>
 ): Promise<PreparationVO[]> {
-  const response = await fetch(`${API_BASE}/interview-center/${interviewId}/preparations/batch`, {
+  const response = await authFetch(`${API_BASE}/interview-center/${interviewId}/preparations/batch`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ items })
@@ -152,7 +153,7 @@ export async function batchAddPreparations(
  * 更新准备事项
  */
 export async function updatePreparation(interviewId: string, preparationId: string, data: UpdatePreparationRequest): Promise<PreparationVO> {
-  const response = await fetch(`${API_BASE}/interview-center/${interviewId}/preparations/${preparationId}`, {
+  const response = await authFetch(`${API_BASE}/interview-center/${interviewId}/preparations/${preparationId}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
@@ -168,7 +169,7 @@ export async function updatePreparation(interviewId: string, preparationId: stri
  * 切换准备事项完成状态
  */
 export async function togglePreparationComplete(interviewId: string, preparationId: string): Promise<PreparationVO> {
-  const response = await fetch(`${API_BASE}/interview-center/${interviewId}/preparations/${preparationId}/toggle`, {
+  const response = await authFetch(`${API_BASE}/interview-center/${interviewId}/preparations/${preparationId}/toggle`, {
     method: 'PATCH'
   })
   const result: ApiResponse<PreparationVO> = await response.json()
@@ -182,7 +183,7 @@ export async function togglePreparationComplete(interviewId: string, preparation
  * 删除准备事项
  */
 export async function deletePreparation(interviewId: string, preparationId: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/interview-center/${interviewId}/preparations/${preparationId}`, {
+  const response = await authFetch(`${API_BASE}/interview-center/${interviewId}/preparations/${preparationId}`, {
     method: 'DELETE'
   })
   const result: ApiResponse<void> = await response.json()
@@ -197,7 +198,7 @@ export async function deletePreparation(interviewId: string, preparationId: stri
  * 获取手动复盘笔记
  */
 export async function getReviewNote(interviewId: string): Promise<ReviewNoteVO | null> {
-  const response = await fetch(`${API_BASE}/interview-center/${interviewId}/review`)
+  const response = await authFetch(`${API_BASE}/interview-center/${interviewId}/review`)
   const result: ApiResponse<ReviewNoteVO | null> = await response.json()
   if (result.code !== 200) {
     throw new Error(result.message || '获取复盘笔记失败')
@@ -209,7 +210,7 @@ export async function getReviewNote(interviewId: string): Promise<ReviewNoteVO |
  * 保存手动复盘笔记
  */
 export async function saveReviewNote(interviewId: string, data: SaveReviewNoteRequest): Promise<ReviewNoteVO> {
-  const response = await fetch(`${API_BASE}/interview-center/${interviewId}/review`, {
+  const response = await authFetch(`${API_BASE}/interview-center/${interviewId}/review`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
@@ -253,7 +254,7 @@ export async function streamReviewAnalysis(
   onComplete: () => void
 ): Promise<void> {
   try {
-    const response = await fetch(`${API_BASE}/interview-center/${interviewId}/review-analysis/stream`, {
+    const response = await authFetch(`${API_BASE}/interview-center/${interviewId}/review-analysis/stream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ transcript })

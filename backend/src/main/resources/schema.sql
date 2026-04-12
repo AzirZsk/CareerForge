@@ -14,6 +14,8 @@
 -- ALTER TABLE t_user ADD COLUMN status VARCHAR(20) DEFAULT 'ACTIVE';
 -- ALTER TABLE t_user ADD COLUMN last_login_at DATETIME;
 -- ALTER TABLE t_user ADD COLUMN register_ip VARCHAR(50);
+-- ALTER TABLE t_user ADD COLUMN initialized INTEGER DEFAULT 0;
+-- UPDATE t_user SET initialized = 1 WHERE name IS NOT NULL AND name != '';
 -- ----------------------------------------------------------------------------
 
 -- ----------------------------------------------------------------------------
@@ -31,6 +33,7 @@ CREATE TABLE IF NOT EXISTS t_user (
     status VARCHAR(20) DEFAULT 'ACTIVE',     -- 账号状态（ACTIVE-正常 FROZEN-冻结 DELETED-已删除）
     last_login_at DATETIME,                 -- 最后登录时间
     register_ip VARCHAR(50),                -- 注册IP
+    initialized INTEGER DEFAULT 0,           -- 是否已完成简历初始化（0-未初始化 1-已初始化）
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 更新时间
     deleted INTEGER DEFAULT 0               -- 逻辑删除标记（0-未删除 1-已删除）

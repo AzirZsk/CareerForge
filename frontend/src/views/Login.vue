@@ -204,9 +204,15 @@ async function handleLogin() {
     updateToken(response.token)
     store.user = response.user
     store.isLoggedIn = true
+    store.isInitialized = response.user.initialized ?? false
+    localStorage.setItem('isInitialized', String(store.isInitialized))
 
-    // 跳转到首页
-    router.push('/')
+    // 根据初始化状态跳转：未初始化去上传简历，已初始化去首页
+    if (store.isInitialized) {
+      router.push('/')
+    } else {
+      router.push('/onboarding')
+    }
   } catch (error: any) {
     errorMessage.value = error.response?.data?.message || '登录失败，请检查账号密码'
   } finally {

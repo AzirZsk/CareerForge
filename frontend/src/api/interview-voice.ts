@@ -5,6 +5,7 @@
 
 import type { ApiResponse } from '@/types'
 import type { RecordingInfo } from '@/types/interview-voice'
+import { authFetch } from '@/utils/request'
 import { API_BASE } from './config'
 
 // ============================================================================
@@ -38,7 +39,7 @@ export interface CreateSessionResponse {
  * @param request 创建请求
  */
 export async function createSession(request: CreateSessionRequest): Promise<CreateSessionResponse> {
-  const response = await fetch(`${API_BASE}/interviews/sessions`, {
+  const response = await authFetch(`${API_BASE}/interviews/sessions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request)
@@ -59,7 +60,7 @@ export async function createSession(request: CreateSessionRequest): Promise<Crea
  * @param sessionId 面试会话 ID
  */
 export async function getRecordingInfo(sessionId: string): Promise<RecordingInfo> {
-  const response = await fetch(`${API_BASE}/recordings/${sessionId}`)
+  const response = await authFetch(`${API_BASE}/recordings/${sessionId}`)
   const result: ApiResponse<RecordingInfo> = await response.json()
   if (result.code !== 200) {
     throw new Error(result.message || '获取录音信息失败')
@@ -73,7 +74,7 @@ export async function getRecordingInfo(sessionId: string): Promise<RecordingInfo
  * @returns 音频 Blob URL
  */
 export async function getMergedAudio(sessionId: string): Promise<string> {
-  const response = await fetch(`${API_BASE}/recordings/${sessionId}/audio`)
+  const response = await authFetch(`${API_BASE}/recordings/${sessionId}/audio`)
   if (!response.ok) {
     throw new Error('获取录音音频失败')
   }
@@ -91,7 +92,7 @@ export async function getSegmentAudio(
   sessionId: string,
   segmentIndex: number
 ): Promise<string> {
-  const response = await fetch(
+  const response = await authFetch(
     `${API_BASE}/recordings/${sessionId}/segments/${segmentIndex}/audio`
   )
   if (!response.ok) {
@@ -118,7 +119,7 @@ export interface AssistRemainingResponse {
 export async function getAssistRemaining(
   sessionId: string
 ): Promise<AssistRemainingResponse> {
-  const response = await fetch(`${API_BASE}/interviews/sessions/${sessionId}/assist/remaining`)
+  const response = await authFetch(`${API_BASE}/interviews/sessions/${sessionId}/assist/remaining`)
   const result: ApiResponse<AssistRemainingResponse> = await response.json()
   if (result.code !== 200) {
     throw new Error(result.message || '获取求助次数失败')

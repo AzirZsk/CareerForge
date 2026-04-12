@@ -4,6 +4,7 @@
 // =====================================================
 
 import type { ActionStatusType, ChatEvent, ContentSegment, SectionChange } from '@/types/ai-chat'
+import { authFetch } from '@/utils/request'
 import { API_BASE } from './config'
 
 /**
@@ -66,7 +67,7 @@ export async function* streamChat(
     })
   }
 
-  const response = await fetch(`${API_BASE}/chat/stream`, {
+  const response = await authFetch(`${API_BASE}/chat/stream`, {
     method: 'POST',
     body: formData
   })
@@ -120,7 +121,7 @@ export async function* streamChat(
  * 从后端数据库加载指定会话的聊天历史
  */
 export async function getChatHistory(sessionId: string): Promise<ChatHistoryMessage[]> {
-  const response = await fetch(`${API_BASE}/chat/history/${sessionId}`)
+  const response = await authFetch(`${API_BASE}/chat/history/${sessionId}`)
   const result = await response.json()
 
   if (result.code !== 200) {
@@ -134,7 +135,7 @@ export async function getChatHistory(sessionId: string): Promise<ChatHistoryMess
  * 清空聊天历史
  */
 export async function clearChatHistory(sessionId: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/chat/history/${sessionId}`, {
+  const response = await authFetch(`${API_BASE}/chat/history/${sessionId}`, {
     method: 'DELETE'
   })
   const result = await response.json()
@@ -151,7 +152,7 @@ export async function applyChanges(
   resumeId: string,
   changes: SectionChange[]
 ): Promise<void> {
-  const response = await fetch(`${API_BASE}/chat/apply`, {
+  const response = await authFetch(`${API_BASE}/chat/apply`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ resumeId, changes })
@@ -172,7 +173,7 @@ export async function updateActionStatus(
   messageId: string,
   status: ActionStatusType
 ): Promise<void> {
-  const response = await fetch(
+  const response = await authFetch(
     `${API_BASE}/chat/messages/${messageId}/status?status=${status}`,
     { method: 'PATCH' }
   )

@@ -12,6 +12,7 @@ export interface User {
   name: string
   gender: Gender | null
   avatar: string | null
+  initialized: boolean
   createdAt: string
 }
 

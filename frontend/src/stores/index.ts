@@ -119,6 +119,7 @@ export const useAppStore = defineStore('app', () => {
           avatar: status.user.avatar
         }
         isInitialized.value = true
+        localStorage.setItem('isInitialized', 'true')
         isLoggedIn.value = true
       }
       return status
@@ -138,6 +139,7 @@ export const useAppStore = defineStore('app', () => {
         gender: result.gender
       }
       isInitialized.value = true
+      localStorage.setItem('isInitialized', 'true')
       isLoggedIn.value = true
     } catch (error) {
       console.error('初始化用户失败', error)
@@ -450,16 +452,16 @@ export const useAppStore = defineStore('app', () => {
 
   /**
    * 初始化认证状态
-   * 从 localStorage 恢复登录状态
+   * 从 localStorage 恢复登录状态和初始化状态
    */
   function initAuthState(): void {
     const savedToken = localStorage.getItem('token')
     if (savedToken) {
       token.value = savedToken
       isLoggedIn.value = true
+      isInitialized.value = localStorage.getItem('isInitialized') === 'true'
       // 同步到 request.ts 的缓存
       updateToken(savedToken)
-      // TODO: 可以在这里调用 getUserProfile 获取最新用户信息
     }
   }
 
@@ -505,6 +507,8 @@ export const useAppStore = defineStore('app', () => {
       // 清除本地状态
       token.value = null
       isLoggedIn.value = false
+      isInitialized.value = false
+      localStorage.removeItem('isInitialized')
       updateToken(null)
     }
   }

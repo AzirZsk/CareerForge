@@ -42,10 +42,21 @@ request.interceptors.request.use(
   }
 )
 
-// 响应拦截器 - 处理 401 自动跳转登录
+// 响应拦截器 - 自动解包 ApiResponse 并处理 401
 request.interceptors.response.use(
   (response: AxiosResponse) => {
-    return response.data
+    const res = response.data
+    // 后端统一 ApiResponse 格式：{ code, data, message, timestamp }
+    // 自动解包 data 字段，让调用方直接拿到业务数据
+    if (res && typeof res === 'object' && 'code' in res) {
+      if (res.code === 200) {
+        return res.data
+      }
+      // 业务错误（参数错误、权限不足等）
+      return Promise.reject(new Error(res.message || '请求失败'))
+    }
+    // 兼容非 ApiResponse 格式
+    return res
   },
   (error: AxiosError) => {
     if (error.response?.status === 401) {
@@ -59,5 +70,21 @@ request.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+
+/**
+ * 带 Token 的 fetch 封装
+ * 自动从 localStorage 读取 token 并添加 Authorization header
+ * 用于 SSE 流式请求等原生 fetch 场景
+ */
+export function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  const token = cachedToken || localStorage.getItem('token')
+  if (token) {
+    options.headers = {
+      ...options.headers,
+      Authorization: `Bearer ${token}`
+    }
+  }
+  return fetch(url, options)
+}
 
 export default request

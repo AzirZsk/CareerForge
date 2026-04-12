@@ -48,30 +48,34 @@ public class UserService extends ServiceImpl<UserMapper, User> {
     }
 
     /**
-     * 检查用户资料是否完整
+     * 检查用户资料是否完整（是否已上传简历初始化）
      *
      * @param user 用户对象
-     * @return true 如果用户资料完整
+     * @return true 如果用户已完成简历初始化
      */
     private boolean isUserProfileComplete(User user) {
-        return user != null && user.getName() != null && !user.getName().isEmpty();
+        return user != null && Boolean.TRUE.equals(user.getInitialized());
     }
 
     /**
-     * 创建用户
-     * 在 AI 解析简历获取用户信息后调用此方法创建用户
+     * 初始化用户（上传简历解析后更新用户信息）
+     * 注册后用户记录已存在，此处更新姓名并标记为已初始化
      */
     public UserInitResponse createUser(UserCreateRequest request) {
-        // 检查用户是否已存在
-        if (isUserInitialized()) {
-            throw new BusinessException("用户已存在，无法重复初始化");
+        String userId = SecurityUtils.getCurrentUserId();
+        User user = getById(userId);
+        if (user == null) {
+            throw BusinessException.notFound("用户不存在");
         }
-        // 创建用户
-        User user = new User();
-        user.setId(SecurityUtils.getCurrentUserId());
+        // 已初始化的用户不允许重复初始化
+        if (Boolean.TRUE.equals(user.getInitialized())) {
+            throw new BusinessException("用户已初始化，无法重复操作");
+        }
+        // 更新用户信息（简历解析出的姓名覆盖注册时的姓名）
         user.setName(request.getName());
         user.setGender(request.getGender());
-        save(user);
+        user.setInitialized(true);
+        updateById(user);
         return UserInitResponse.builder()
                 .id(user.getId())
                 .name(user.getName())

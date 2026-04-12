@@ -53,4 +53,9 @@ public class User extends BaseEntity {
      */
     private String registerIp;
 
+    /**
+     * 是否已完成简历初始化（上传简历解析）
+     */
+    private Boolean initialized;
+
 }
