@@ -28,10 +28,7 @@
       >
         <!-- 用户信息 -->
         <div class="dropdown-header">
-          <div class="user-info">
-            <div class="user-name">{{ store.user.name }}</div>
-            <div class="user-email">{{ store.user.id || 'User' }}</div>
-          </div>
+          <div class="user-name">{{ store.user.name }}</div>
         </div>
 
         <!-- 分隔线 -->
@@ -165,21 +162,15 @@ onUnmounted(() => {
 }
 
 .dropdown-header {
-  padding: $spacing-lg;
+  padding: $spacing-md $spacing-lg;
   background: rgba(212, 168, 83, 0.05);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .user-name {
-  font-size: $text-base;
+  font-size: $text-sm;
   font-weight: $weight-semibold;
   color: $color-text-primary;
-  margin-bottom: $spacing-xs;
-}
-
-.user-email {
-  font-size: $text-sm;
-  color: $color-text-tertiary;
 }
 
 .dropdown-divider {
@@ -188,16 +179,16 @@ onUnmounted(() => {
 }
 
 .dropdown-menu {
-  padding: $spacing-sm;
+  padding: $spacing-xs;
 }
 
 .menu-item {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: $spacing-md;
-  padding: $spacing-md $spacing-lg;
-  border-radius: $radius-md;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  border-radius: $radius-sm;
   color: $color-text-secondary;
   font-size: $text-sm;
   font-weight: $weight-medium;
