@@ -4,21 +4,6 @@
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
--- 数据库迁移脚本（从单用户模式升级到多用户认证）
--- 执行此脚本可为现有数据库添加认证相关字段
--- ----------------------------------------------------------------------------
--- 如需在现有数据库上执行迁移，请手动执行以下 ALTER TABLE 语句：
--- ALTER TABLE t_user ADD COLUMN email VARCHAR(100) UNIQUE;
--- ALTER TABLE t_user ADD COLUMN phone VARCHAR(20) UNIQUE;
--- ALTER TABLE t_user ADD COLUMN password VARCHAR(255);
--- ALTER TABLE t_user ADD COLUMN status VARCHAR(20) DEFAULT 'ACTIVE';
--- ALTER TABLE t_user ADD COLUMN last_login_at DATETIME;
--- ALTER TABLE t_user ADD COLUMN register_ip VARCHAR(50);
--- ALTER TABLE t_user ADD COLUMN initialized INTEGER DEFAULT 0;
--- UPDATE t_user SET initialized = 1 WHERE name IS NOT NULL AND name != '';
--- ----------------------------------------------------------------------------
-
--- ----------------------------------------------------------------------------
 -- 用户表
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS t_user (
@@ -103,10 +88,6 @@ CREATE TABLE IF NOT EXISTS t_resume_suggestion (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 更新时间
     deleted INTEGER DEFAULT 0               -- 逻辑删除标记
 );
-
--- 为 section_id 添加索引
--- 注意：SQLite 不支持 IF NOT EXISTS 用于 CREATE INDEX，需要使用更安全的方式
--- ALTER TABLE t_resume_suggestion ADD COLUMN section_id VARCHAR(64);
 
 -- ----------------------------------------------------------------------------
 -- 面试记录表

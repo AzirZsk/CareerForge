@@ -98,10 +98,6 @@ public class AuthService {
 
         // 更新最后登录时间
         user.setLastLoginAt(LocalDateTime.now());
-        // 兼容老用户：如果 initialized 为 null 但有姓名，自动标记为已初始化
-        if (user.getInitialized() == null && user.getName() != null && !user.getName().isEmpty()) {
-            user.setInitialized(true);
-        }
         userService.updateById(user);
 
         // 生成 Token
