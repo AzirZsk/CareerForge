@@ -75,8 +75,9 @@ request.interceptors.response.use(
  * 带 Token 的 fetch 封装
  * 自动从 localStorage 读取 token 并添加 Authorization header
  * 用于 SSE 流式请求等原生 fetch 场景
+ * 自动处理 401 未授权错误，清除本地 token 并跳转登录页
  */
-export function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
+export async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const token = cachedToken || localStorage.getItem('token')
   if (token) {
     options.headers = {
@@ -84,7 +85,18 @@ export function authFetch(url: string, options: RequestInit = {}): Promise<Respo
       Authorization: `Bearer ${token}`
     }
   }
-  return fetch(url, options)
+
+  const response = await fetch(url, options)
+
+  // 处理 401 未授权错误
+  if (response.status === 401) {
+    updateToken(null)  // 清除本地 token
+    if (window.location.pathname !== '/login') {
+      window.location.href = '/login'  // 跳转登录页
+    }
+  }
+
+  return response
 }
 
 export default request

@@ -73,6 +73,12 @@ export function useResumeOptimize() {
       params.append('targetPosition', state.targetPosition)
     }
 
+    // 获取 token（EventSource 不支持自定义 Header，只能通过 URL 参数传递）
+    const token = localStorage.getItem('token')
+    if (token) {
+      params.append('token', token)
+    }
+
     const url = `${API_BASE}/resumes/${resumeId}/optimize/stream?${params.toString()}`
 
     console.log('[SSE] 连接URL:', url)

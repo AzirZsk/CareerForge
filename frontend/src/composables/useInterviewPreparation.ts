@@ -93,7 +93,9 @@ export function useInterviewPreparation() {
     stateInstance!.isConnecting = true
     stateInstance!.message = '正在连接...'
 
-    const url = `/landit/interview-center/${interviewId}/preparation/stream`
+    // 获取 token（EventSource 不支持自定义 Header，只能通过 URL 参数传递）
+    const token = localStorage.getItem('token')
+    const url = `/landit/interview-center/${interviewId}/preparation/stream${token ? `?token=${token}` : ''}`
     eventSource = new EventSource(url)
 
     eventSource.onopen = () => {

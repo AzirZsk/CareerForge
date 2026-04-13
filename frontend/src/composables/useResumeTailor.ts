@@ -82,6 +82,12 @@ export function useResumeTailor() {
     params.append('targetPosition', targetPosition)
     params.append('jobDescription', jobDescription)
 
+    // 获取 token（EventSource 不支持自定义 Header，只能通过 URL 参数传递）
+    const token = localStorage.getItem('token')
+    if (token) {
+      params.append('token', token)
+    }
+
     const url = `${API_BASE}/resumes/${resumeId}/tailor/stream?${params.toString()}`
 
     console.log('[职位适配-SSE] 连接URL:', url)

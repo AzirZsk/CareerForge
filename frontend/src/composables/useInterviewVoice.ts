@@ -162,7 +162,9 @@ export function useInterviewVoice(sessionId: string) {
     const isDev = import.meta.env.DEV
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
     const host = isDev ? 'localhost:8080' : location.host
-    const wsUrl = `${protocol}//${host}/landit/ws/interview/voice/${sessionId}`
+    // 获取 token（WebSocket 不支持自定义 Header，只能通过 URL 参数传递）
+    const token = localStorage.getItem('token')
+    const wsUrl = `${protocol}//${host}/landit/ws/interview/voice/${sessionId}${token ? `?token=${token}` : ''}`
 
     ws = new WebSocket(wsUrl)
     ws.onopen = handleWsOpen

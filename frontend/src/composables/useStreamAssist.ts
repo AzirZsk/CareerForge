@@ -84,6 +84,11 @@ export function useStreamAssist(sessionId: string) {
         question: request.question || '',
         candidateDraft: request.candidateDraft || ''
       })
+      // 获取 token（EventSource 不支持自定义 Header，只能通过 URL 参数传递）
+      const token = localStorage.getItem('token')
+      if (token) {
+        params.append('token', token)
+      }
       const url = `/landit/interviews/sessions/${sessionId}/assist/stream?${params}`
 
       // 创建 EventSource

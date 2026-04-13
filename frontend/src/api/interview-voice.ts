@@ -3,8 +3,8 @@
 // @author Azir
 // =====================================================
 
-import type { ApiResponse } from '@/types'
 import type { RecordingInfo } from '@/types/interview-voice'
+import request from '@/utils/request'
 import { authFetch } from '@/utils/request'
 import { API_BASE } from './config'
 
@@ -36,19 +36,14 @@ export interface CreateSessionResponse {
 /**
  * 创建语音面试会话
  * 从真实面试详情页进入，关联 Interview
- * @param request 创建请求
+ * @param req 创建请求
  */
-export async function createSession(request: CreateSessionRequest): Promise<CreateSessionResponse> {
-  const response = await authFetch(`${API_BASE}/interviews/sessions`, {
+export async function createSession(req: CreateSessionRequest): Promise<CreateSessionResponse> {
+  return request({
+    url: '/interviews/sessions',
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(request)
+    data: req
   })
-  const result: ApiResponse<CreateSessionResponse> = await response.json()
-  if (result.code !== 200) {
-    throw new Error(result.message || '创建会话失败')
-  }
-  return result.data
 }
 
 // ============================================================================
@@ -60,12 +55,10 @@ export async function createSession(request: CreateSessionRequest): Promise<Crea
  * @param sessionId 面试会话 ID
  */
 export async function getRecordingInfo(sessionId: string): Promise<RecordingInfo> {
-  const response = await authFetch(`${API_BASE}/recordings/${sessionId}`)
-  const result: ApiResponse<RecordingInfo> = await response.json()
-  if (result.code !== 200) {
-    throw new Error(result.message || '获取录音信息失败')
-  }
-  return result.data
+  return request({
+    url: `/recordings/${sessionId}`,
+    method: 'GET'
+  })
 }
 
 /**
@@ -119,12 +112,10 @@ export interface AssistRemainingResponse {
 export async function getAssistRemaining(
   sessionId: string
 ): Promise<AssistRemainingResponse> {
-  const response = await authFetch(`${API_BASE}/interviews/sessions/${sessionId}/assist/remaining`)
-  const result: ApiResponse<AssistRemainingResponse> = await response.json()
-  if (result.code !== 200) {
-    throw new Error(result.message || '获取求助次数失败')
-  }
-  return result.data
+  return request({
+    url: `/interviews/sessions/${sessionId}/assist/remaining`,
+    method: 'GET'
+  })
 }
 
 // ============================================================================

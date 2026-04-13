@@ -4,6 +4,7 @@
 // =====================================================
 
 import type { ActionStatusType, ChatEvent, ContentSegment, SectionChange } from '@/types/ai-chat'
+import request from '@/utils/request'
 import { authFetch } from '@/utils/request'
 import { API_BASE } from './config'
 
@@ -121,28 +122,20 @@ export async function* streamChat(
  * 从后端数据库加载指定会话的聊天历史
  */
 export async function getChatHistory(sessionId: string): Promise<ChatHistoryMessage[]> {
-  const response = await authFetch(`${API_BASE}/chat/history/${sessionId}`)
-  const result = await response.json()
-
-  if (result.code !== 200) {
-    throw new Error(result.message || '获取历史失败')
-  }
-
-  return result.data
+  return request({
+    url: `/chat/history/${sessionId}`,
+    method: 'GET'
+  })
 }
 
 /**
  * 清空聊天历史
  */
 export async function clearChatHistory(sessionId: string): Promise<void> {
-  const response = await authFetch(`${API_BASE}/chat/history/${sessionId}`, {
+  return request({
+    url: `/chat/history/${sessionId}`,
     method: 'DELETE'
   })
-  const result = await response.json()
-
-  if (result.code !== 200) {
-    throw new Error(result.message || '清空历史失败')
-  }
 }
 
 /**
@@ -152,16 +145,11 @@ export async function applyChanges(
   resumeId: string,
   changes: SectionChange[]
 ): Promise<void> {
-  const response = await authFetch(`${API_BASE}/chat/apply`, {
+  return request({
+    url: '/chat/apply',
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ resumeId, changes })
+    data: { resumeId, changes }
   })
-
-  const result = await response.json()
-  if (result.code !== 200) {
-    throw new Error(result.message || '应用修改失败')
-  }
 }
 
 /**
@@ -173,12 +161,9 @@ export async function updateActionStatus(
   messageId: string,
   status: ActionStatusType
 ): Promise<void> {
-  const response = await authFetch(
-    `${API_BASE}/chat/messages/${messageId}/status?status=${status}`,
-    { method: 'PATCH' }
-  )
-  const result = await response.json()
-  if (result.code !== 200) {
-    throw new Error(result.message || '更新状态失败')
-  }
+  return request({
+    url: `/chat/messages/${messageId}/status`,
+    method: 'PATCH',
+    params: { status }
+  })
 }

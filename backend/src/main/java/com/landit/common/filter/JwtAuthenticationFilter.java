@@ -53,14 +53,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // 从 Header 获取 Token
         String authorizationHeader = request.getHeader("Authorization");
-        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+        String token = null;
+
+        // 优先从 Header 获取（普通HTTP请求）
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            token = authorizationHeader.substring(7);
+        } else {
+            // EventSource 和 WebSocket 不支持自定义 Header，从 URL 参数获取
+            token = request.getParameter("token");
+        }
+
+        if (token == null || token.isEmpty()) {
             sendUnauthorizedResponse(response, "未登录或登录已过期");
             return;
         }
 
         try {
-            // 提取 Token（去掉 "Bearer " 前缀）
-            String token = authorizationHeader.substring(7);
             // 验证 Token 并获取用户ID
             String userId = jwtUtil.verifyToken(token);
             // 设置用户ID到 Request Attribute，供后续业务使用
