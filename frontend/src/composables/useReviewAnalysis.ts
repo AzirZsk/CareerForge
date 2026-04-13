@@ -183,7 +183,7 @@ export function useReviewAnalysis() {
             if (Array.isArray(adviceData)) {
               parsedData = adviceData as AdviceItem[]
             }
-            // 额外写入 adviceList 供 AIAnalysisCard 使用
+            // 写入 adviceList 供后续使用
             stateInstance!.adviceList = parsedData || []
           }
         }

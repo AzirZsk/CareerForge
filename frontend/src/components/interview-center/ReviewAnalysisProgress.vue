@@ -16,6 +16,13 @@
         <h4>{{ title }}</h4>
         <p v-if="state.isRunning" class="header-subtitle">{{ state.message }}</p>
       </div>
+      <button
+        v-if="!state.isRunning && state.isCompleted"
+        class="btn btn-sm btn-reanalyze"
+        @click.stop="emit('reanalyze')"
+      >
+        重新分析
+      </button>
     </div>
 
     <!-- 进度条 -->
@@ -111,6 +118,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'toggleExpand', stage: ReviewStage): void
+  (e: 'reanalyze'): void
 }>()
 
 // 计时器 composable（用于计算各阶段耗时)
@@ -224,6 +232,23 @@ function toggleExpand(stage: ReviewStage): void {
     font-size: $text-sm;
     color: $color-text-tertiary;
     margin: $spacing-xs 0 0 0;
+  }
+}
+
+.btn-reanalyze {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid rgba($color-accent, 0.3);
+  color: $color-accent;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: rgba($color-accent, 0.15);
+    border-color: $color-accent;
   }
 }
 

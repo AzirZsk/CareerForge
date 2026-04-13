@@ -173,8 +173,8 @@
               @save="handleSaveTranscript"
             />
 
-            <!-- AI 分析入口区域 -->
-            <div class="ai-analysis-entry">
+            <!-- AI 分析入口区域（已有分析数据时隐藏，AIAnalysisCard 自带重新分析按钮） -->
+            <div class="ai-analysis-entry" v-if="!interview.aiAnalysisNote && !reviewState.isCompleted">
               <div class="entry-left">
                 <span class="entry-label">🤖 AI 分析</span>
                 <span class="entry-hint">{{ aiAnalysisEntryHint }}</span>
@@ -196,19 +196,11 @@
               </button>
             </div>
 
-            <!-- AI 分析进度（仅分析进行中时显示，完成后由 AIAnalysisCard 展示结果） -->
+            <!-- AI 分析进度/结果（复用同一套阶段列表展示） -->
             <ReviewAnalysisProgress
-              v-if="reviewState.isRunning"
+              v-if="reviewState.isRunning || reviewState.isCompleted"
               :state="reviewState"
               @toggle-expand="toggleStageExpand"
-            />
-
-            <!-- AI 分析卡片 -->
-            <AIAnalysisCard
-              v-if="interview.aiAnalysisNote || (reviewState.isCompleted && reviewState.adviceList.length > 0)"
-              :ai-analysis-note="interview.aiAnalysisNote"
-              :is-analyzing="reviewState.isRunning"
-              :default-expanded="reviewState.isCompleted && reviewState.adviceList.length > 0"
               @reanalyze="handleReanalyze"
             />
 
@@ -293,7 +285,6 @@ import InterviewHeader from '@/components/interview-center/InterviewHeader.vue'
 import PreparationProgress from '@/components/interview-center/PreparationProgress.vue'
 import PreparationGroup from '@/components/interview-center/PreparationGroup.vue'
 import AudioUploadArea from '@/components/interview-center/AudioUploadArea.vue'
-import AIAnalysisCard from '@/components/interview-center/AIAnalysisCard.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 // 职位详情展示组件
 import CompanyResearchContent from '@/components/interview-center/preparation/CompanyResearchContent.vue'
@@ -343,7 +334,7 @@ const pendingMockConfig = ref<{
 
 // 工作流状态
 const { state: preparationState, startPreparation } = useInterviewPreparation()
-const { state: reviewState, startAnalysis, resetState, toggleStageExpand } = useReviewAnalysis()
+const { state: reviewState, startAnalysis, toggleStageExpand } = useReviewAnalysis()
 
 // 麦克风权限管理
 const { checkPermission, requestPermission, releaseStream } = useMicrophonePermission()
@@ -553,10 +544,19 @@ async function loadDetail() {
     if (interview.value?.transcript) {
       sessionTranscript.value = interview.value.transcript
     }
-    // 如果后端已有持久化的 AI 分析结果，重置 reviewState 单例
-    // 避免同时显示 ReviewAnalysisProgress 和 AIAnalysisCard
+    // 如果后端已有持久化的 AI 分析结果，用持久化数据填充 reviewState
+    // 这样 ReviewAnalysisProgress 可以直接展示已完成阶段
     if (interview.value?.aiAnalysisNote) {
-      resetState()
+      const note = interview.value.aiAnalysisNote
+      const ts = Date.parse(note.createdAt)
+      reviewState.isCompleted = true
+      reviewState.progress = 100
+      reviewState.message = '复盘分析完成'
+      reviewState.stageHistory = [
+        { stage: 'analyze_transcript', message: '对话分析完成', timestamp: ts, completed: true, data: note.transcriptAnalysis || null, expanded: false },
+        { stage: 'analyze_interview', message: '面试分析完成', timestamp: ts, completed: true, data: note.interviewAnalysis || null, expanded: false },
+        { stage: 'generate_advice', message: '改进建议生成完成', timestamp: ts, completed: true, data: note.adviceList || [], expanded: false }
+      ]
     }
   } catch (error) {
     console.error('加载面试详情失败:', error)
@@ -628,11 +628,7 @@ async function handleReanalyze() {
   })
 
   if (confirmed) {
-    // 重置状态
-    reviewState.isCompleted = false
-    reviewState.adviceList = []
-    reviewState.hasError = false
-    // 重新分析
+    // startAnalysis 内部会调 resetState() 清空状态
     startAnalysis(interview.value.id, sessionTranscript.value)
   }
 }
