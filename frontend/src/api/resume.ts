@@ -1,10 +1,11 @@
 // =====================================================
-// LandIt 简历模块 API
+// CareerForge 简历模块 API
 // @author Azir
 // =====================================================
 
 import request from '@/utils/request'
-import type { PrimaryResumeVO, ResumeDetail, ResumeListItem, CreateResumeRequest, ResumeSuggestion, ResumeSuggestionsGroup } from '@/types'
+import { API_BASE } from '@/api/config'
+import type { PrimaryResumeVO, ResumeDetail, ResumeListItem, CreateResumeRequest, ResumeSuggestion, ResumeSuggestionsGroup, ApiResponse } from '@/types'
 import type { DeriveResumeRequest, SaveTailoredResumeRequest } from '@/types/resume-tailor'
 import type { ParseReferenceResponse } from '@/types/resume-rewrite'
 

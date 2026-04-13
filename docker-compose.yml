@@ -1,15 +1,15 @@
 # =====================================================
-# LandIt Docker Compose 配置
+# CareerForge Docker Compose 配置
 # 单镜像双服务：Nginx（前端） + Spring Boot（后端）
 # @author Azir
 # =====================================================
 
 services:
-  landit:
+  careerforge:
     build:
       context: .
       dockerfile: docker/Dockerfile
-    container_name: landit
+    container_name: careerforge
     restart: unless-stopped
     ports:
       - "80:80"          # Nginx（前端）
@@ -32,7 +32,7 @@ services:
       # - ./logs:/var/log/nginx
       # - ./logs:/var/log/supervisor
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:80/ && wget -q --spider http://localhost:80/landit/swagger-ui.html || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:80/ && wget -q --spider http://localhost:80/careerforge/swagger-ui.html || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

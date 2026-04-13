@@ -1,5 +1,5 @@
 // =====================================================
-// LandIt 路由配置
+// CareerForge 路由配置
 // @author Azir
 // =====================================================
 
@@ -113,7 +113,7 @@ const router = createRouter({
 
 router.beforeEach((to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) => {
   const meta = to.meta as { title?: string; public?: boolean }
-  document.title = `${meta.title ?? 'LandIt'} - LandIt智能求职助手`
+  document.title = `${meta.title ?? 'CareerForge'} - CareerForge智能求职助手`
 
   const store = useAppStore()
 

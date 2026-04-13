@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-    Logback Configuration for LandIt Backend
+    Logback Configuration for CareerForge Backend
     @author Azir
 
     Features:
@@ -14,7 +14,7 @@
     <!-- Properties                                    -->
     <!-- ============================================ -->
 
-    <property name="APP_NAME" value="landit"/>
+    <property name="APP_NAME" value="careerforge"/>
 
     <!-- 控制台日志格式（彩色、对齐） -->
     <property name="CONSOLE_PATTERN"
@@ -35,7 +35,7 @@
     <!-- ============================================ -->
 
     <!-- 项目日志 -->
-    <logger name="com.landit" level="DEBUG"/>
+    <logger name="com.careerforge" level="DEBUG"/>
 
     <!-- Spring AI 日志 - 打印请求详情 -->
     <logger name="org.springframework.ai.chat.client.advisor" level="DEBUG"/>

@@ -1,4 +1,4 @@
-# LandIt - 智能求职助手
+# CareerForge - 智能求职助手
 
 <div align="center">
 
@@ -15,7 +15,7 @@
 
 ## 项目简介
 
-LandIt 是一款面向求职者的全流程智能助手工具，通过 AI 技术帮助用户：
+CareerForge 是一款面向求职者的全流程智能助手工具，通过 AI 技术帮助用户：
 
 - 📄 **智能简历管理** - 上传解析、版本管理、AI 优化、PDF 导出
 - 💬 **AI 对话式优化** - 悬浮球交互，支持通用聊天和简历模式
@@ -23,7 +23,7 @@ LandIt 是一款面向求职者的全流程智能助手工具，通过 AI 技术
 - 📋 **面试中心** - 真实面试管理、AI 生成准备清单、AI 复盘分析
 - 👥 **多用户系统** - 注册登录、JWT 认证、用户数据隔离
 
-> **项目名称含义**：LandIt = Land the job（拿下工作）
+> **项目名称含义**：CareerForge = Land the job（拿下工作）
 
 ---
 
@@ -77,7 +77,7 @@ LandIt 是一款面向求职者的全流程智能助手工具，通过 AI 技术
 ```
 ┌─────────────────┐          HTTP/REST          ┌─────────────────┐
 │                 │  <──────────────────────>  │                 │
-│   Frontend      │       /landit/*            │    Backend      │
+│   Frontend      │       /careerforge/*            │    Backend      │
 │   Vue 3 + TS    │                             │   Spring Boot   │
 │   Vite 5        │       WebSocket            │   MyBatis-Plus  │
 │                 │  <──────────────────────>  │   SQLite        │
@@ -86,7 +86,7 @@ LandIt 是一款面向求职者的全流程智能助手工具，通过 AI 技术
         v                                              v
 ┌─────────────────┐                             ┌─────────────────┐
 │  Pinia Store    │                             │   SQLite DB     │
-│  Composables    │                             │   landit.db     │
+│  Composables    │                             │   careerforge.db     │
 └─────────────────┘                             └─────────────────┘
 ```
 
@@ -161,8 +161,8 @@ npm run dev
 ### 访问地址
 
 - 前端应用：http://localhost:5173
-- 后端 API：http://localhost:8080/landit
-- API 文档：http://localhost:8080/landit/swagger-ui.html
+- 后端 API：http://localhost:8080/careerforge
+- API 文档：http://localhost:8080/careerforge/swagger-ui.html
 
 ### 首次使用
 
@@ -295,7 +295,7 @@ START → 快速诊断 → 生成建议 → 内容优化 → END
 
 ```
 ┌──────────────────────────────────────────────────┐
-│              Docker 容器 (landit)                 │
+│              Docker 容器 (careerforge)                 │
 │                                                  │
 │  ┌──────────────┐         ┌──────────────┐        │
 │  │    Nginx     │         │ Spring Boot  │        │
@@ -343,7 +343,7 @@ docker-compose logs -f
 
 # 4. 访问应用
 # 前端：http://localhost
-# Swagger：http://localhost/landit/swagger-ui.html
+# Swagger：http://localhost/careerforge/swagger-ui.html
 ```
 
 #### 常用命令
@@ -353,10 +353,10 @@ docker-compose logs -f
 docker-compose ps
 
 # 查看进程状态
-docker-compose exec landit supervisorctl status
+docker-compose exec careerforge supervisorctl status
 
 # 查看后端日志
-docker-compose exec landit tail -f /var/log/supervisor/backend.out.log
+docker-compose exec careerforge tail -f /var/log/supervisor/backend.out.log
 
 # 重启服务
 docker-compose restart
@@ -391,7 +391,7 @@ cd backend
 mvn clean package
 
 # 运行
-java -jar target/landit-backend.jar
+java -jar target/careerforge-backend.jar
 ```
 
 **环境变量清单：**
@@ -419,7 +419,7 @@ npm run preview
 
 ### API 文档
 
-访问 `http://your-domain/landit/swagger-ui.html` 查看 API 文档。
+访问 `http://your-domain/careerforge/swagger-ui.html` 查看 API 文档。
 
 ---
 

@@ -1,5 +1,5 @@
 /**
- * LandIt 表单校验 Composable
+ * CareerForge 表单校验 Composable
  * 统一管理简历模块表单的必填字段校验逻辑
  * @author Azir
  */

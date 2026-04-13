@@ -88,7 +88,7 @@ export function useStreamAssist(sessionId: string) {
         question: request.question || '',
         candidateDraft: request.candidateDraft || ''
       })
-      const url = `/landit/interviews/sessions/${sessionId}/assist/stream?${params}`
+      const url = `/careerforge/interviews/sessions/${sessionId}/assist/stream?${params}`
 
       // 使用 authFetch 发起请求
       const response = await authFetch(url, {}, 60000) // 1分钟超时

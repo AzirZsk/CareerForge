@@ -64,8 +64,8 @@ VITE_API_TARGET=http://localhost:8080
 ---
 
 ## 对外接口
-前端通过 HTTP 请求调用后端 API,基础路径： `http://localhost:8080/landit/`
-同时通过 WebSocket 连接语音面试服务: `ws://localhost:8080/landit/ws/interview/voice/{sessionId}`
+前端通过 HTTP 请求调用后端 API,基础路径： `http://localhost:8080/careerforge/`
+同时通过 WebSocket 连接语音面试服务: `ws://localhost:8080/careerforge/ws/interview/voice/{sessionId}`
 
 ### API 模块
 | 模块 | 文件 | 描述 |
@@ -144,7 +144,7 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       proxy: {
-        '/landit': {
+        '/careerforge': {
           target: apiTarget,
           changeOrigin: true
         }

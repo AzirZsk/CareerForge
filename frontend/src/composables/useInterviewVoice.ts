@@ -164,7 +164,7 @@ export function useInterviewVoice(sessionId: string) {
     const host = isDev ? 'localhost:8080' : location.host
     // 获取 token（WebSocket 不支持自定义 Header，只能通过 URL 参数传递）
     const token = localStorage.getItem('token')
-    const wsUrl = `${protocol}//${host}/landit/ws/interview/voice/${sessionId}${token ? `?token=${token}` : ''}`
+    const wsUrl = `${protocol}//${host}/careerforge/ws/interview/voice/${sessionId}${token ? `?token=${token}` : ''}`
 
     ws = new WebSocket(wsUrl)
     ws.onopen = handleWsOpen

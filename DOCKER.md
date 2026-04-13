@@ -1,4 +1,4 @@
-# LandIt Docker 部署指南
+# CareerForge Docker 部署指南
 
 ## 架构说明
 
@@ -32,8 +32,8 @@
 | 路径 | 处理方式 |
 |------|---------|
 | `/`、`/resume`、`/interview` 等 | Nginx → 静态文件（SPA 路由） |
-| `/landit/**` | Nginx → Spring Boot（API 代理） |
-| `/landit/ws/**` | Nginx → Spring Boot（WebSocket） |
+| `/careerforge/**` | Nginx → Spring Boot（API 代理） |
+| `/careerforge/ws/**` | Nginx → Spring Boot（WebSocket） |
 
 ---
 
@@ -68,7 +68,7 @@ docker-compose ps
 
 ```
 前端：http://localhost
-Swagger：http://localhost/landit/swagger-ui.html
+Swagger：http://localhost/careerforge/swagger-ui.html
 ```
 
 ---
@@ -87,13 +87,13 @@ docker-compose build --no-cache
 docker-compose up -d
 
 # 查看后端日志
-docker-compose exec landit tail -f /var/log/supervisor/backend.out.log
+docker-compose exec careerforge tail -f /var/log/supervisor/backend.out.log
 
 # 查看前端日志
-docker-compose exec landit tail -f /var/log/supervisor/nginx.out.log
+docker-compose exec careerforge tail -f /var/log/supervisor/nginx.out.log
 
 # 进入容器
-docker-compose exec landit sh
+docker-compose exec careerforge sh
 ```
 
 ---
@@ -135,21 +135,21 @@ docker-compose logs -f
 docker-compose ps
 
 # 查看 Supervisor 进程状态
-docker-compose exec landit supervisorctl status
+docker-compose exec careerforge supervisorctl status
 ```
 
 ### 前端 404
 
 检查 Nginx 配置：
 ```bash
-docker-compose exec landit cat /etc/nginx/http.d/default.conf
+docker-compose exec careerforge cat /etc/nginx/http.d/default.conf
 ```
 
 ### 后端 API 500
 
 查看后端日志：
 ```bash
-docker-compose exec landit cat /var/log/supervisor/backend.out.log
+docker-compose exec careerforge cat /var/log/supervisor/backend.out.log
 ```
 
 ### WebSocket 连接失败

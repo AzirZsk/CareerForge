@@ -1,5 +1,5 @@
 // =====================================================
-// LandIt AI聊天 Composable
+// CareerForge AI聊天 Composable
 // @author Azir
 // =====================================================
 
@@ -426,7 +426,7 @@ export function useAIChat() {
       state.messages.push({
         id: generateId(),
         role: 'system',
-        content: '欢迎使用 LandIt 求职助手！我可以帮您解答求职相关问题，优化简历，或提供面试建议。您可以直接告诉我您想做什么。',
+        content: '欢迎使用 CareerForge 求职助手！我可以帮您解答求职相关问题，优化简历，或提供面试建议。您可以直接告诉我您想做什么。',
         timestamp: Date.now()
       })
     } catch (error) {

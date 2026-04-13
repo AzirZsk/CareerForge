@@ -1,5 +1,5 @@
 <!--=====================================================
-  LandIt 首次使用引导页面
+  CareerForge 首次使用引导页面
   @author Azir
 =====================================================-->
 
@@ -10,10 +10,10 @@
       <div class="welcome-section">
         <div class="logo">
           <span class="logo-icon">🎯</span>
-          <span class="logo-text">LandIt</span>
+          <span class="logo-text">CareerForge</span>
         </div>
         <h1 class="welcome-title">
-          欢迎使用 LandIt
+          欢迎使用 CareerForge
         </h1>
         <p class="welcome-subtitle">
           智能求职助手，助你拿下心仪的工作

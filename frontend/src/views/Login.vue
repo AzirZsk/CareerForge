@@ -4,7 +4,7 @@
       <!-- 标题区域 -->
       <div class="login-header">
         <h1 class="login-title">{{ isLoginMode ? '欢迎回来' : '创建账户' }}</h1>
-        <p class="login-subtitle">{{ isLoginMode ? '登录到 LandIt 智能求职助手' : '开启您的智能求职之旅' }}</p>
+        <p class="login-subtitle">{{ isLoginMode ? '登录到 CareerForge 智能求职助手' : '开启您的智能求职之旅' }}</p>
       </div>
 
       <!-- 标签切换 -->

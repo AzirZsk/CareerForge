@@ -97,7 +97,7 @@ export function useInterviewPreparation() {
     // 创建 AbortController
     abortController = new AbortController()
 
-    const url = `/landit/interview-center/${interviewId}/preparation/stream`
+    const url = `/careerforge/interview-center/${interviewId}/preparation/stream`
 
     try {
       // 使用 authFetch 发起请求

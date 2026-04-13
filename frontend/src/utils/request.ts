@@ -11,7 +11,7 @@ let cachedToken: string | null = null
 
 // 创建 Axios 实例
 const request = axios.create({
-  baseURL: '/landit',
+  baseURL: '/careerforge',
   timeout: 60000
 })
 

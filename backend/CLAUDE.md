@@ -43,9 +43,9 @@
 ## 入口与启动
 
 ### 主入口
-- **文件**：`src/main/java/com/landit/LanditApplication.java`
+- **文件**：`src/main/java/com/careerforge/CareerforgeApplication.java`
 - **端口**：8080
-- **上下文路径**：`/landit`
+- **上下文路径**：`/careerforge`
 
 ### 启动命令
 ```bash
@@ -70,9 +70,9 @@ export ALIYUN_ACCESS_KEY_SECRET=your_access_key_secret
 ```
 
 ### 访问地址
-- API 基础路径：`http://localhost:8080/landit/`
-- Swagger UI：`http://localhost:8080/landit/swagger-ui.html`
-- WebSocket 端点：`ws://localhost:8080/landit/ws/interview/voice/{sessionId}`
+- API 基础路径：`http://localhost:8080/careerforge/`
+- Swagger UI：`http://localhost:8080/careerforge/swagger-ui.html`
+- WebSocket 端点：`ws://localhost:8080/careerforge/ws/interview/voice/{sessionId}`
 
 ---
 
@@ -137,12 +137,12 @@ ApiResponse<T> {
 server:
   port: 8080
   servlet:
-    context-path: /landit
+    context-path: /careerforge
 
 spring:
   datasource:
     driver-class-name: org.sqlite.JDBC
-    url: jdbc:sqlite:./data/landit.db
+    url: jdbc:sqlite:./data/careerforge.db
   ai:
     openai:
       api-key: ${OPENAI_API_KEY:}
@@ -401,7 +401,7 @@ START --> CollectData --> AnalyzeInterview --> GenerateAdvice --> END
 
 AI 功能通过 `AIPromptProperties` 配置类管理提示词：
 
-**配置路径**：`landit.ai.prompt`
+**配置路径**：`careerforge.ai.prompt`
 
 **提示词类别**：
 - `resume.parse` - 简历解析提示词
@@ -481,7 +481,7 @@ public abstract class BaseEntity {
 ## 子模块详情
 
 ### common - 公共模块
-- **路径**：`src/main/java/com/landit/common/`
+- **路径**：`src/main/java/com/careerforge/common/`
 - **文件统计**：33 个 Java 文件
 - **组件**：
   - `annotation/` - @SchemaField（标记 DTO 字段的 Schema 元数据）
@@ -496,7 +496,7 @@ public abstract class BaseEntity {
   - `util/` - JsonSchemaBuilder, SchemaGenerator, ChatClientHelper, JsonParseHelper
 
 ### auth - 认证模块（新增）
-- **路径**：`src/main/java/com/landit/auth/`
+- **路径**：`src/main/java/com/careerforge/auth/`
 - **文件统计**：5 个 Java 文件
 - **控制器**：AuthController（注册、登录、登出）
 - **服务**：AuthService
@@ -508,7 +508,7 @@ public abstract class BaseEntity {
   - Token 验证与身份校验
 
 ### user - 用户模块
-- **路径**：`src/main/java/com/landit/user/`
+- **路径**：`src/main/java/com/careerforge/user/`
 - **文件统计**：11 个 Java 文件
 - **实体**：User（name, gender, avatar）
 - **API**：
@@ -520,7 +520,7 @@ public abstract class BaseEntity {
   - `POST /user/parse` - 解析简历文件为图片列表
 
 ### resume - 简历模块
-- **路径**：`src/main/java/com/landit/resume/`
+- **路径**：`src/main/java/com/careerforge/resume/`
 - **文件统计**：64 个 Java 文件（含 graph 子模块）
 - **实体**：Resume, ResumeSection, ResumeSuggestion, ResumeVersion
 - **控制器**：ResumeController, ResumeOptimizeGraphController, TailorResumeController, ResumeSuggestionController
@@ -535,14 +535,14 @@ public abstract class BaseEntity {
   - 模块级 CRUD
 
 ### resume/graph - 简历工作流
-- **路径**：`src/main/java/com/landit/resume/graph/`
+- **路径**：`src/main/java/com/careerforge/resume/graph/`
 - **文件统计**：13 个 Java 文件
 - **公共**：BaseGraphConstants（常量基类）
 - **optimize 子包**：DiagnoseResumeNode, GenerateSuggestionsNode, OptimizeSectionNode, ResumeOptimizeGraphConfig, ResumeOptimizeGraphConstants, ResumeOptimizeGraphService
 - **tailor 子包**：AnalyzeJDNode, MatchResumeNode, GenerateTailoredResumeNode, TailorResumeGraphConfig, TailorResumeGraphConstants, TailorResumeGraphService
 
 ### chat - AI 聊天模块
-- **路径**：`src/main/java/com/landit/chat/`
+- **路径**：`src/main/java/com/careerforge/chat/`
 - **文件统计**：30 个 Java 文件
 - **config/** - ChatAgentConfig（ReactAgent 创建、技能注册、工具注入）
 - **controller/** - AIChatController（SSE 流式聊天、历史管理、修改应用）
@@ -555,7 +555,7 @@ public abstract class BaseEntity {
 - **tools/** - ToolUtils, GetResumeTool, GetSectionTool, UpdateSectionTool, AddSectionTool, DeleteSectionTool, CreateResumeTool, GetResumeListTool, SelectResumeTool
 
 ### interview - 面试模块
-- **路径**：`src/main/java/com/landit/interview/`
+- **路径**：`src/main/java/com/careerforge/interview/`
 - **文件统计**：20 个 Java 文件（不含 voice 子模块）
 - **实体**：Interview, InterviewQuestion, InterviewSession, Conversation
 - **核心功能**：
@@ -565,7 +565,7 @@ public abstract class BaseEntity {
   - 题库管理
 
 ### interview/voice - AI 语音面试模块（新增）
-- **路径**：`src/main/java/com/landit/interview/voice/`
+- **路径**：`src/main/java/com/careerforge/interview/voice/`
 - **文件统计**：37 个 Java 文件
 - **config/** - AliyunVoiceAutoConfiguration（阿里云语音服务自动配置）
 - **controller/** - InterviewVoiceController（WebSocket 端点）, AssistantController（求助系统）, RecordingController（录音回放）
@@ -578,12 +578,12 @@ public abstract class BaseEntity {
 - **util/** - WavHeaderUtils（WAV 文件头工具）
 
 ### interview/graph - 面试工作流
-- **路径**：`src/main/java/com/landit/interview/graph/`
+- **路径**：`src/main/java/com/careerforge/interview/graph/`
 - **preparation 子包**：CheckCompanyNode, CompanyResearchNode, CheckJobPositionNode, JDAnalysisNode, GeneratePreparationNode, InterviewPreparationGraphConfig, InterviewPreparationGraphConstants, InterviewPreparationGraphService
 - **review 子包**：CollectInterviewDataNode, AnalyzeInterviewNode, GenerateAdviceNode, ReviewAnalysisGraphConfig, ReviewAnalysisGraphConstants, ReviewAnalysisGraphService
 
 ### company - 公司模块（新增）
-- **路径**：`src/main/java/com/landit/company/`
+- **路径**：`src/main/java/com/careerforge/company/`
 - **文件统计**：6 个 Java 文件
 - **实体**：Company（name, research, researchUpdatedAt）
 - **DTO**：CompanyVO, CompanyResearchResult
@@ -592,7 +592,7 @@ public abstract class BaseEntity {
 - **Mapper**：CompanyMapper
 
 ### jobposition - 职位模块（新增）
-- **路径**：`src/main/java/com/landit/jobposition/`
+- **路径**：`src/main/java/com/careerforge/jobposition/`
 - **文件统计**：11 个 Java 文件
 - **实体**：JobPosition（companyId, title, jdContent, jdAnalysis）
 - **DTO**：JobPositionVO, JobPositionListItemVO, JobPositionDetailVO, CreateJobPositionRequest, UpdateJobPositionRequest, JDAnalysisResult
@@ -602,7 +602,7 @@ public abstract class BaseEntity {
 - **Mapper**：JobPositionMapper
 
 ### statistics - 统计模块
-- **路径**：`src/main/java/com/landit/statistics/`
+- **路径**：`src/main/java/com/careerforge/statistics/`
 - **文件统计**：4 个 Java 文件
 - **DTO**：StatisticsVO
 - **核心功能**：
@@ -612,7 +612,7 @@ public abstract class BaseEntity {
   - 最近活动
 
 ### job - 职位推荐模块
-- **路径**：`src/main/java/com/landit/job/`
+- **路径**：`src/main/java/com/careerforge/job/`
 - **文件统计**：4 个 Java 文件
 - **实体**：Job
 - **核心功能**：
@@ -627,7 +627,7 @@ public abstract class BaseEntity {
 A: `application.yml` 中取消注释 `log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl`
 
 ### Q: 数据库文件在哪里？
-A: `backend/data/landit.db`（相对于 backend 目录）
+A: `backend/data/careerforge.db`（相对于 backend 目录）
 
 ### Q: 如何配置 AI API Key？
 A: 设置环境变量 `OPENAI_API_KEY`，或在 `application.yml` 中配置 `spring.ai.openai.api-key`
@@ -665,7 +665,7 @@ A:
 
 ### Q: 如何添加新的业务模块？
 A:
-1. 在 `com.landit` 下创建模块包
+1. 在 `com.careerforge` 下创建模块包
 2. 按分层创建 controller/service/mapper/entity/dto/handler 子包
 3. 在 `schema.sql` 中添加对应表结构
 4. 在 `openapi.yaml` 中定义 API
@@ -682,10 +682,10 @@ backend/
 │   ├── api-document.md                  # API 文档
 │   └── data-models.md                   # 数据模型文档
 ├── data/
-│   └── landit.db                        # SQLite 数据库文件
+│   └── careerforge.db                        # SQLite 数据库文件
 ├── src/main/
-│   ├── java/com/landit/
-│   │   ├── LanditApplication.java       # 应用入口
+│   ├── java/com/careerforge/
+│   │   ├── CareerforgeApplication.java       # 应用入口
 │   │   ├── common/                      # 公共模块（33 个文件）
 │   │   │   ├── annotation/              # @SchemaField 注解
 │   │   │   ├── config/                  # 配置类（AI、MyBatis、SQLite、Jackson）
@@ -754,7 +754,7 @@ backend/
 │           ├── resume-optimizer/
 │           └── resume-suggestions/
 └── src/test/                            # 测试目录（2 个测试文件）
-    └── java/com/landit/resume/util/
+    └── java/com/careerforge/resume/util/
         ├── ChangeFieldTranslatorTest.java
         └── ResumeChangeApplierTest.java
 ```

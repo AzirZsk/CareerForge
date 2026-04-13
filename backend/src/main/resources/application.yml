@@ -1,18 +1,18 @@
 server:
   port: 8080
   servlet:
-    context-path: /landit
+    context-path: /careerforge
 
 spring:
   application:
-    name: landit-backend
+    name: careerforge-backend
   servlet:
     multipart:
       max-file-size: 50MB
       max-request-size: 100MB
   datasource:
     driver-class-name: org.sqlite.JDBC
-    url: jdbc:sqlite:./data/landit.db
+    url: jdbc:sqlite:./data/careerforge.db
     # SQLite 不需要用户名密码
   # Spring AI OpenAI 配置
   ai:
@@ -45,10 +45,10 @@ springdoc:
     path: /v3/api-docs
 
 # JWT 配置
-landit:
+careerforge:
   jwt:
     # JWT 密钥（生产环境必须配置环境变量，开发环境使用默认值）
-    secret: ${JWT_SECRET:landit-dev-secret-key-for-jwt-token-generation-2026}
+    secret: ${JWT_SECRET:careerforge-dev-secret-key-for-jwt-token-generation-2026}
     # Token 过期时间（毫秒），默认 2 小时
     expire: 7200000
 
@@ -82,7 +82,7 @@ landit:
         # 本地存储路径
         storage-path: ./data/audio-uploads
         # 公网访问 URL 基础路径（根据实际部署环境修改）
-        public-url-base: ${AUDIO_PUBLIC_URL_BASE:http://localhost:8080/landit/audio-files}
+        public-url-base: ${AUDIO_PUBLIC_URL_BASE:http://localhost:8080/careerforge/audio-files}
 
 # 日志配置 - 打印 AI 请求详情
 logging:
@@ -93,4 +93,4 @@ logging:
           chat:
             client:
               advisor: debug
-    com.landit.**.mapper: info
+    com.careerforge.**.mapper: info

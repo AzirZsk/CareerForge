@@ -1,5 +1,5 @@
 // =====================================================
-// LandIt Vite 配置
+// CareerForge Vite 配置
 // @author Azir
 // =====================================================
 import { defineConfig, loadEnv } from 'vite';
@@ -26,7 +26,7 @@ export default defineConfig(function (_a) {
         },
         server: {
             proxy: {
-                '/landit': {
+                '/careerforge': {
                     target: apiTarget,
                     changeOrigin: true,
                     ws: true // 启用 WebSocket 代理
