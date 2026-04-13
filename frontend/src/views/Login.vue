@@ -203,6 +203,7 @@ async function handleLogin() {
     // 保存 Token 和用户信息
     updateToken(response.token)
     store.user = response.user
+    localStorage.setItem('user', JSON.stringify(response.user))
     store.isLoggedIn = true
     store.isInitialized = response.user.initialized ?? false
     localStorage.setItem('isInitialized', String(store.isInitialized))

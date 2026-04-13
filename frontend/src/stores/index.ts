@@ -100,6 +100,7 @@ export const useAppStore = defineStore('app', () => {
 
   function updateUserInfo(info: UserUpdateInfo): void {
     user.value = { ...user.value, ...info }
+    localStorage.setItem('user', JSON.stringify(user.value))
   }
 
   function addInterview(interview: Interview): void {
@@ -462,6 +463,15 @@ export const useAppStore = defineStore('app', () => {
       isInitialized.value = localStorage.getItem('isInitialized') === 'true'
       // 同步到 request.ts 的缓存
       updateToken(savedToken)
+      // 从 localStorage 恢复用户信息
+      const savedUser = localStorage.getItem('user')
+      if (savedUser) {
+        try {
+          user.value = JSON.parse(savedUser)
+        } catch (e) {
+          localStorage.removeItem('user')
+        }
+      }
     }
   }
 
@@ -509,6 +519,7 @@ export const useAppStore = defineStore('app', () => {
       isLoggedIn.value = false
       isInitialized.value = false
       localStorage.removeItem('isInitialized')
+      localStorage.removeItem('user')
       updateToken(null)
     }
   }
