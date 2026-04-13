@@ -135,13 +135,18 @@ export function useInterviewPreparation() {
         buffer = lines.pop() || ''
 
         for (const line of lines) {
-          if (line.trim()) {
-            try {
-              const data: GraphProgressEvent = JSON.parse(line)
+          const trimmed = line.trim()
+          if (!trimmed) continue
+          // 兼容标准 SSE 格式（event:\ndata:{...}）和 NDJSON 格式（纯 JSON）
+          if (trimmed.startsWith('event:')) continue
+          try {
+            const jsonStr = trimmed.startsWith('data:') ? trimmed.slice(5).trim() : trimmed
+            if (jsonStr) {
+              const data: GraphProgressEvent = JSON.parse(jsonStr)
               handleEvent(data)
-            } catch (e) {
-              devLog('[SSE] 解析事件失败:', e, line)
             }
+          } catch (e) {
+            devLog('[SSE] 解析事件失败:', e, trimmed)
           }
         }
       }

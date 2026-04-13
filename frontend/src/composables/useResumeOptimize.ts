@@ -116,13 +116,18 @@ export function useResumeOptimize() {
         buffer = lines.pop() || ''
 
         for (const line of lines) {
-          if (line.trim()) {
-            try {
-              const data: OptimizeProgressEvent = JSON.parse(line)
+          const trimmed = line.trim()
+          if (!trimmed) continue
+          // 兼容标准 SSE 格式（event:\ndata:{...}）和 NDJSON 格式（纯 JSON）
+          if (trimmed.startsWith('event:')) continue
+          try {
+            const jsonStr = trimmed.startsWith('data:') ? trimmed.slice(5).trim() : trimmed
+            if (jsonStr) {
+              const data: OptimizeProgressEvent = JSON.parse(jsonStr)
               handleEvent(data)
-            } catch (e) {
-              console.error('[SSE] 解析消息失败', e, line)
             }
+          } catch (e) {
+            console.error('[SSE] 解析消息失败', e, trimmed)
           }
         }
       }
