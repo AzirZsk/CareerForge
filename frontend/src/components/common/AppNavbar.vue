@@ -26,10 +26,9 @@
           :class="{ active: isActive(item.key) }"
           @click="store.setActiveNav(item.key)"
         >
-          <span
-            class="nav-icon"
-            v-html="item.icon"
-          />
+          <span class="nav-icon">
+            <font-awesome-icon :icon="item.icon" />
+          </span>
           <span class="nav-label">{{ item.label }}</span>
           <span
             v-if="item.badge"
@@ -40,86 +39,123 @@
 
       <!-- 用户区域 -->
       <div class="user-area">
-        <!-- 通知 -->
-        <button class="icon-btn notification-btn">
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
+        <!-- 通知按钮 -->
+        <button
+          class="icon-btn notification-btn"
+          :class="{ 'has-unread': notificationStore.hasUnread }"
+          @click="toggleNotification"
+        >
+          <font-awesome-icon :icon="['fa-solid', 'fa-bell']" />
+          <!-- 未读数量徽章 -->
+          <span
+            v-if="notificationStore.unreadCount > 0"
+            class="notification-badge"
           >
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-          </svg>
-          <span class="notification-dot" />
+            {{ notificationStore.unreadCount > 99 ? '99+' : notificationStore.unreadCount }}
+          </span>
+          <!-- 红点（有未读但无数量） -->
+          <span
+            v-else-if="notificationStore.hasUnread"
+            class="notification-dot"
+          />
         </button>
 
-        <!-- 用户头像 -->
-        <div
-          class="user-avatar"
-          @click="goToProfile"
-        >
-          <span class="avatar-text">{{ userInitial }}</span>
-        </div>
+        <!-- 用户头像下拉菜单 -->
+        <UserDropdown />
       </div>
     </div>
 
     <!-- 底部装饰线 -->
     <div class="navbar-glow" />
+
+    <!-- 通知下拉面板 -->
+    <NotificationDropdown
+      :is-open="showNotificationDropdown"
+      @close="closeNotification"
+      @apply-transcript="handleApplyTranscript"
+    />
   </header>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useAppStore } from '@/stores'
-import { useRouter } from 'vue-router'
+import { useNotificationStore } from '@/stores/notification'
+import { useRoute } from 'vue-router'
 import type { NavItem } from '@/types'
+import NotificationDropdown from './NotificationDropdown.vue'
+import UserDropdown from './UserDropdown.vue'
+import type { AsyncTask } from '@/types/notification'
 
 const store = useAppStore()
-const router = useRouter()
+const notificationStore = useNotificationStore()
+const route = useRoute()
+
+// 通知下拉面板状态
+const showNotificationDropdown = ref(false)
 
 const navItems: NavItem[] = [
   {
     key: 'home',
     label: '工作台',
     path: '/',
-    icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>'
+    icon: 'fa-solid fa-table-cells'
   },
   {
     key: 'resume',
     label: '简历管理',
     path: '/resume',
-    icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>'
+    icon: 'fa-solid fa-file-lines'
   },
   {
-    key: 'interview',
-    label: '面试试演',
-    path: '/interview',
+    key: 'interview-center',
+    label: '面试中心',
+    path: '/interview-center',
     badge: 'NEW',
-    icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>'
-  },
-  {
-    key: 'review',
-    label: '面试复盘',
-    path: '/review',
-    icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>'
+    icon: 'fa-solid fa-comments'
   }
 ]
 
-const userInitial = computed((): string => {
-  return store.user.name ? store.user.name.charAt(0) : 'U'
+function isActive(key: string): boolean {
+  const currentPath = route.path
+  // 首页精确匹配
+  if (key === 'home') {
+    return currentPath === '/'
+  }
+  // 其他导航项：检查路径前缀
+  const navItem = navItems.find(item => item.key === key)
+  if (navItem?.path) {
+    return currentPath.startsWith(navItem.path)
+  }
+  return false
+}
+
+// 通知相关方法
+function toggleNotification() {
+  showNotificationDropdown.value = !showNotificationDropdown.value
+}
+
+function closeNotification() {
+  showNotificationDropdown.value = false
+}
+
+function handleApplyTranscript(task: AsyncTask) {
+  // 触发全局事件，由 InterviewDetail 页面处理
+  window.dispatchEvent(new CustomEvent('apply-transcript', {
+    detail: { task }
+  }))
+}
+
+// 生命周期钩子
+onMounted(() => {
+  // 初始化通知 store
+  notificationStore.init()
 })
 
-function isActive(key: string): boolean {
-  return store.activeNav === key
-}
-
-function goToProfile(): void {
-  router.push('/profile')
-  store.setActiveNav('profile')
-}
+onUnmounted(() => {
+  // 清理通知 store
+  notificationStore.dispose()
+})
 </script>
 
 <style lang="scss" scoped>
@@ -268,27 +304,24 @@ function goToProfile(): void {
   animation: pulse 2s ease-in-out infinite;
 }
 
-.user-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: $radius-md;
-  background: $gradient-card;
-  border: 2px solid $color-accent;
+.notification-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: $color-accent;
+  color: $color-bg-deep;
+  font-size: 10px;
+  font-weight: $weight-bold;
+  border-radius: $radius-full;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: all $transition-fast;
-  &:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 20px rgba(212, 168, 83, 0.3);
-  }
 }
 
-.avatar-text {
-  font-family: $font-display;
-  font-size: $text-base;
-  font-weight: $weight-semibold;
+.notification-btn.has-unread {
   color: $color-accent;
 }
 

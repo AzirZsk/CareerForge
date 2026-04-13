@@ -69,7 +69,8 @@
 
                 <!-- 变更说明 -->
                 <div class="change-description">
-                  💡 {{ change.description }}
+                  <font-awesome-icon icon="fa-lightbulb" class="desc-icon" />
+                  {{ change.description }}
                 </div>
 
                 <!-- 修改对比 -->
@@ -149,6 +150,8 @@
 </template>
 
 <script setup lang="ts">
+import { watch } from 'vue'
+import { useScrollLock } from '@vueuse/core'
 import type { SectionChange } from '@/types/ai-chat'
 
 interface Props {
@@ -163,8 +166,14 @@ interface Emits {
   (e: 'cancel'): void
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+
+// 弹窗可见时锁定背景滚动
+const isBodyScrollLocked = useScrollLock(document.body)
+watch(() => props.visible, (val) => {
+  isBodyScrollLocked.value = val
+})
 
 function getTypeLabel(type: string): string {
   const labels: Record<string, string> = {
@@ -317,6 +326,17 @@ function handleCancel() {
   color: $color-text-secondary;
   line-height: $leading-relaxed;
   margin-bottom: $spacing-sm;
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-xs;
+
+  .desc-icon {
+    color: $color-accent;
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
 }
 
 .change-comparison {

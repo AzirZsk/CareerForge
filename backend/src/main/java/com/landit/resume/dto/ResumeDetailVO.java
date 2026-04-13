@@ -25,6 +25,26 @@ public class ResumeDetailVO {
     private String targetPosition;
 
     /**
+     * 简历状态（optimized/draft）
+     */
+    private String status;
+
+    /**
+     * 简历评分
+     */
+    private Integer score;
+
+    /**
+     * 简历完整度
+     */
+    private Integer completeness;
+
+    /**
+     * 是否为主简历
+     */
+    private Boolean isPrimary;
+
+    /**
      * 简历原文本（Markdown格式）
      */
     private String markdownContent;

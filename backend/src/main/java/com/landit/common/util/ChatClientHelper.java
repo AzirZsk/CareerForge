@@ -88,7 +88,10 @@ public final class ChatClientHelper {
         OpenAiChatOptions options = OpenAiChatOptions.builder()
                 .responseFormat(ResponseFormat.builder()
                         .type(ResponseFormat.Type.JSON_SCHEMA)
-                        .jsonSchema(schemaJson)
+                        .jsonSchema(ResponseFormat.JsonSchema.builder()
+                                .schema(schemaJson)
+                                .strict(true)
+                                .build())
                         .build())
                 .build();
 

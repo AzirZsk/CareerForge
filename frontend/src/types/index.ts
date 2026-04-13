@@ -12,6 +12,7 @@ export interface User {
   name: string
   gender: Gender | null
   avatar: string | null
+  initialized: boolean
   createdAt: string
 }
 
@@ -349,52 +350,11 @@ export interface InterviewDetail {
   analysis: InterviewAnalysis
 }
 
-// 复盘维度
-export interface ReviewDimension {
-  name: string
-  score: number
-  maxScore: number
-  feedback: string
-}
-
-// 问题分析
-export interface QuestionAnalysis {
-  question: string
-  yourAnswer: string
-  score: number
-  keyPointsCovered: string[]
-  keyPointsMissed: string[]
-  suggestion: string
-}
-
-// 改进计划项
-export interface ImprovementPlan {
-  category: string
-  items: string[]
-}
-
-// 面试复盘
-export interface InterviewReview {
-  id: string
-  interviewId: string
-  overallScore: number
-  analysis: InterviewAnalysis
-  dimensions: ReviewDimension[]
-  questionAnalysis: QuestionAnalysis[]
-  improvementPlan: ImprovementPlan[]
-}
-
 // 周进度
 export interface WeeklyProgress {
   week: string
   score: number
   interviews: number
-}
-
-// 技能雷达
-export interface SkillRadar {
-  skill: string
-  score: number
 }
 
 // 活动类型
@@ -406,21 +366,21 @@ export interface RecentActivity {
   content: string
   time: string
   score: number | null
+  relatedId: string
 }
 
 // 统计概览
 export interface StatisticsOverview {
-  totalInterviews: number
-  averageScore: number
-  improvementRate: number
-  studyHours: number
+  realInterviews: number
+  mockInterviews: number
+  resumeCount: number
+  preparationCompletionRate: number
 }
 
 // 统计数据
 export interface Statistics {
   overview: StatisticsOverview
   weeklyProgress: WeeklyProgress[]
-  skillRadar: SkillRadar[]
   recentActivity: RecentActivity[]
 }
 

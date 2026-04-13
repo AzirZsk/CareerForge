@@ -46,8 +46,8 @@ import { setToastInstance } from '@/composables/useToast'
 const route = useRoute()
 const toastRef = ref<InstanceType<typeof Toast> | null>(null)
 
-// 公开页面不显示AI悬浮球
-const showAIChat = computed(() => !(route.meta.public as boolean))
+// 公开页面和模拟面试页面不显示AI悬浮球
+const showAIChat = computed(() => !(route.meta.public as boolean) && !(route.meta.hideAIChat as boolean))
 
 onMounted(() => {
   if (toastRef.value) {

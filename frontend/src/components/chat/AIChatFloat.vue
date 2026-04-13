@@ -12,7 +12,7 @@
         v-if="!state.isWindowOpen && !state.hideFloat"
         class="float-button"
         title="AI简历助手"
-        @click="toggleWindow"
+        @click="openWindow"
       >
         <!-- AI图标 -->
         <AIIcon
@@ -35,7 +35,7 @@ import { useAIChat } from '@/composables/useAIChat'
 import AIChatWindow from './AIChatWindow.vue'
 import AIIcon from '@/components/common/AIIcon.vue'
 
-const { state, toggleWindow, closeWindow } = useAIChat()
+const { state, openWindow, closeWindow } = useAIChat()
 </script>
 
 <style lang="scss" scoped>

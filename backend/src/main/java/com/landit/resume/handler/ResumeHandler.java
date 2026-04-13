@@ -25,13 +25,11 @@ import com.landit.resume.dto.ResumeDetailVO;
 import com.landit.resume.entity.Resume;
 import com.landit.resume.entity.ResumeSection;
 import com.landit.resume.entity.ResumeSuggestion;
-import com.landit.resume.entity.ResumeVersion;
 import com.landit.resume.graph.optimize.DiagnoseResumeNode;
 import com.landit.resume.service.ResumeSectionService;
 import com.landit.resume.service.ResumeService;
 import com.landit.resume.service.ResumeSuggestionService;
 import com.landit.resume.mapper.ResumeSectionMapper;
-import com.landit.resume.mapper.ResumeVersionMapper;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,7 +60,6 @@ public class ResumeHandler {
     private final ResumeSectionService resumeSectionService;
     private final AIService aiService;
     private final FileToImageService fileToImageService;
-    private final ResumeVersionMapper resumeVersionMapper;
     private final ResumeSectionMapper resumeSectionMapper;
     private final ResumeConvertor resumeConvertor;
     private final ResumeSuggestionService resumeSuggestionService;
@@ -274,44 +271,6 @@ public class ResumeHandler {
     }
 
     /**
-     * 回滚到指定版本
-     * 涉及：创建当前版本快照 -> 恢复目标版本数据
-     *
-     * @param resumeId     简历ID
-     * @param targetVersion 目标版本号
-     * @return 回滚后的简历详情
-     */
-    @Transactional(rollbackFor = Exception.class)
-    public ResumeDetailVO rollbackToVersion(String resumeId, Integer targetVersion) {
-        // 获取当前简历
-        Resume resume = resumeService.getById(resumeId);
-        if (resume == null) {
-            throw BusinessException.notFound("简历不存在");
-        }
-
-        // 获取目标版本
-        ResumeVersion targetVersionEntity = resumeService.getVersionEntity(resumeId, targetVersion);
-        if (targetVersionEntity == null) {
-            throw BusinessException.notFound("目标版本不存在");
-        }
-
-        // 创建当前版本快照
-        createVersionSnapshot(resume, "回滚到版本 " + targetVersion, "ROLLBACK");
-
-        // 恢复目标版本数据到主表
-        resume.setName(targetVersionEntity.getName());
-        resume.setTargetPosition(targetVersionEntity.getTargetPosition());
-        resume.setStatus(targetVersionEntity.getStatus());
-        resume.setScore(targetVersionEntity.getScore());
-        resume.setCompleteness(targetVersionEntity.getCompleteness());
-        resume.setVersion(resume.getVersion() + 1);
-        resumeService.updateById(resume);
-
-        log.info("简历版本回滚成功: resumeId={}, targetVersion={}", resumeId, targetVersion);
-        return resumeService.getResumeDetail(resumeId);
-    }
-
-    /**
      * 基于主简历派生岗位定制简历
      * 涉及：验证源简历 -> 创建派生简历 -> 复制内容模块
      *
@@ -340,16 +299,6 @@ public class ResumeHandler {
 
         log.info("派生简历创建成功: sourceResumeId={}, derivedResumeId={}", sourceResumeId, derivedResume.getId());
         return derivedResume;
-    }
-
-    /**
-     * 创建版本快照
-     */
-    private void createVersionSnapshot(Resume resume, String changeSummary, String changeType) {
-        ResumeVersion version = resumeConvertor.toResumeVersion(resume);
-        version.setChangeSummary(changeSummary);
-        version.setChangeType(changeType);
-        resumeVersionMapper.insert(version);
     }
 
     /**

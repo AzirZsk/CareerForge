@@ -8,6 +8,7 @@ import com.landit.common.enums.ResumeType;
 import com.landit.common.enums.SectionType;
 import com.landit.common.exception.BusinessException;
 import com.landit.common.util.JsonParseHelper;
+import com.landit.common.util.SecurityUtils;
 import com.landit.resume.convertor.ResumeConvertor;
 import com.landit.resume.dto.CreateResumeRequest;
 import com.landit.resume.dto.DeriveResumeRequest;
@@ -15,15 +16,12 @@ import com.landit.resume.dto.DiagnoseResumeResponse;
 import com.landit.resume.dto.ResumeStructuredData;
 import com.landit.resume.dto.ResumeDetailVO;
 import com.landit.resume.dto.ResumeSuggestionVO;
-import com.landit.resume.dto.ResumeVersionVO;
 import com.landit.resume.dto.UpdateResumeRequest;
 import com.landit.resume.entity.Resume;
 import com.landit.resume.entity.ResumeSection;
 import com.landit.resume.entity.ResumeSuggestion;
-import com.landit.resume.entity.ResumeVersion;
 import com.landit.resume.mapper.ResumeMapper;
 import com.landit.resume.mapper.ResumeSectionMapper;
-import com.landit.resume.mapper.ResumeVersionMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -48,7 +46,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
 
-    private final ResumeVersionMapper resumeVersionMapper;
     private final ResumeSectionMapper resumeSectionMapper;
     private final ResumeConvertor resumeConvertor;
     private final ResumeSuggestionService resumeSuggestionService;
@@ -60,7 +57,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
      */
     public Resume getPrimaryResume() {
         LambdaQueryWrapper<Resume> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Resume::getUserId, CommonConstants.SINGLE_USER_ID)
+        wrapper.eq(Resume::getUserId, SecurityUtils.getCurrentUserId())
                 .eq(Resume::getIsPrimary, true);
         return getOne(wrapper);
     }
@@ -186,20 +183,6 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
 
 
     /**
-     * 获取版本实体
-     *
-     * @param resumeId 简历ID
-     * @param version  版本号
-     * @return 版本实体
-     */
-    public ResumeVersion getVersionEntity(String resumeId, Integer version) {
-        LambdaQueryWrapper<ResumeVersion> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ResumeVersion::getResumeId, resumeId)
-                .eq(ResumeVersion::getVersion, version);
-        return resumeVersionMapper.selectOne(wrapper);
-    }
-
-    /**
      * 获取简历内容模块列表
      *
      * @param resumeId 简历ID
@@ -208,8 +191,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
     public List<ResumeSection> getResumeSections(String resumeId) {
         LambdaQueryWrapper<ResumeSection> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ResumeSection::getResumeId, resumeId)
-                .ne(ResumeSection::getType, SectionType.RAW_TEXT.getCode())
-                .isNull(ResumeSection::getResumeVersionId);
+                .ne(ResumeSection::getType, SectionType.RAW_TEXT.getCode());
         return resumeSectionMapper.selectList(wrapper);
     }
 
@@ -259,7 +241,8 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
         resume.setMarkdownContent(data.getMarkdownContent());
         resume.setResumeType(ResumeType.PRIMARY.getValue());
         resume.setVersion(1);
-        resume.setStatus(ResumeStatus.DRAFT.getValue());  // 上传简历应为草稿状态，优化后才变为已优化
+        // 上传简历应为草稿状态，优化后才变为已优化
+        resume.setStatus(ResumeStatus.DRAFT.getValue());
         resume.setIsPrimary(true);
         resume.setCompleteness(calculateCompleteness(data));
         save(resume);
@@ -374,7 +357,6 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
     private void createSection(String resumeId, SectionType type, String title, String content) {
         ResumeSection section = new ResumeSection();
         section.setResumeId(resumeId);
-        section.setResumeVersionId(null);
         section.setType(type.getCode());
         section.setTitle(title);
         section.setContent(content);
@@ -417,7 +399,6 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
     public ResumeSection createSectionPublic(String resumeId, String type, String title, String content) {
         ResumeSection section = new ResumeSection();
         section.setResumeId(resumeId);
-        section.setResumeVersionId(null);
         section.setType(type);
         section.setTitle(title);
         section.setContent(content);
@@ -506,7 +487,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
      */
     public List<Resume> getAllResumes(String status) {
         LambdaQueryWrapper<Resume> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Resume::getUserId, CommonConstants.SINGLE_USER_ID);
+        wrapper.eq(Resume::getUserId, SecurityUtils.getCurrentUserId());
         if (status != null && !status.isBlank()) {
             wrapper.eq(Resume::getStatus, status);
         }
@@ -524,7 +505,7 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
      */
     public Resume createBlankResume(String name, String targetPosition) {
         Resume resume = new Resume();
-        resume.setUserId(CommonConstants.SINGLE_USER_ID);
+        resume.setUserId(SecurityUtils.getCurrentUserId());
         resume.setName(name != null && !name.isBlank() ? name : "新简历");
         resume.setTargetPosition(targetPosition != null ? targetPosition : "");
         resume.setResumeType(ResumeType.PRIMARY.getValue());

@@ -153,6 +153,7 @@ public class ChatMessageService extends ServiceImpl<ChatMessageMapper, ChatMessa
         vo.setContent(msg.getContent());
         vo.setCreatedAt(msg.getCreatedAt());
         vo.setActionStatus(msg.getActionStatus());
+        vo.setResumeId(msg.getResumeId());
         // 反序列化 actions
         if (msg.getActions() != null && !msg.getActions().isEmpty()) {
             try {

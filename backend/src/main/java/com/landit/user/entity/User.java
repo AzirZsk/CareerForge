@@ -21,4 +21,41 @@ public class User extends BaseEntity {
 
     private String avatar;
 
+    // 认证相关字段
+
+    /**
+     * 邮箱（登录账号）
+     */
+    private String email;
+
+    /**
+     * 手机号（可选登录方式）
+     */
+    private String phone;
+
+    /**
+     * 密码（BCrypt 加密）
+     */
+    private String password;
+
+    /**
+     * 账号状态（ACTIVE-正常 FROZEN-冻结 DELETED-已删除）
+     */
+    private String status;
+
+    /**
+     * 最后登录时间
+     */
+    private java.time.LocalDateTime lastLoginAt;
+
+    /**
+     * 注册IP
+     */
+    private String registerIp;
+
+    /**
+     * 是否已完成简历初始化（上传简历解析）
+     */
+    private Boolean initialized;
+
 }

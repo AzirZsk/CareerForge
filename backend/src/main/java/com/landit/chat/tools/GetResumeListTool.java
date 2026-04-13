@@ -63,6 +63,7 @@ public class GetResumeListTool implements BiFunction<GetResumeListTool.Request, 
      * 获取简历列表响应
      */
     @lombok.Data
+    @lombok.EqualsAndHashCode(callSuper = false)
     @lombok.Builder
     @lombok.NoArgsConstructor
     @lombok.AllArgsConstructor

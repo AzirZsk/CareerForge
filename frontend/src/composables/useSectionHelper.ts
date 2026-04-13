@@ -5,16 +5,16 @@
 
 import type { ResumeSection, ResumeSectionItem, BasicInfoContent, WorkExperience, ProjectExperience, EducationContent, Skill, CertificateContent, OpenSourceContribution, ContentItem } from '@/types'
 
-// 模块图标映射（后端大写格式）
+// 模块图标映射（后端大写格式）- Font Awesome 图标类名
 const sectionIcons: Record<string, string> = {
-  BASIC_INFO: '👤',
-  EDUCATION: '🎓',
-  WORK: '💼',
-  PROJECT: '🎯',
-  SKILLS: '⚡',
-  CERTIFICATE: '🏆',
-  OPEN_SOURCE: '🌐',
-  CUSTOM: '📋'
+  BASIC_INFO: 'fa-solid fa-user',
+  EDUCATION: 'fa-solid fa-graduation-cap',
+  WORK: 'fa-solid fa-briefcase',
+  PROJECT: 'fa-solid fa-diagram-project',
+  SKILLS: 'fa-solid fa-bolt',
+  CERTIFICATE: 'fa-solid fa-trophy',
+  OPEN_SOURCE: 'fa-solid fa-code-branch',
+  CUSTOM: 'fa-solid fa-rectangle-list'
 }
 
 // 字段标签映射（适配后端字段）
@@ -224,7 +224,7 @@ export function useSectionHelper() {
 
   // 获取模块图标
   function getSectionIcon(type: string): string {
-    return sectionIcons[type] || '📄'
+    return sectionIcons[type] || 'fa-solid fa-file-lines'
   }
 
   // 获取模块预览文本

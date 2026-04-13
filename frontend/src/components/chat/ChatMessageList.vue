@@ -25,11 +25,16 @@
         v-if="isStreaming && !hasStreamingMessage"
         class="loading-indicator"
       >
-        <span class="loading-text">正在思考</span>
-        <div class="typing-dots">
-          <span />
-          <span />
-          <span />
+        <div class="loading-avatar">
+          <AIIcon :size="20" />
+        </div>
+        <div class="loading-body">
+          <span class="loading-text">正在思考</span>
+          <div class="typing-dots">
+            <span />
+            <span />
+            <span />
+          </div>
         </div>
       </div>
     </div>
@@ -40,6 +45,7 @@
 import { ref, watch, nextTick, computed } from 'vue'
 import type { ChatMessage } from '@/types/ai-chat'
 import ChatMessageItem from './ChatMessageItem.vue'
+import AIIcon from '@/components/common/AIIcon.vue'
 
 interface Props {
   messages: ChatMessage[]
@@ -124,12 +130,32 @@ function scrollToBottom() {
 
 .loading-indicator {
   display: flex;
+  align-items: flex-start;
+  gap: $spacing-sm;
+  width: fit-content;
+}
+
+.loading-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: $radius-full;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: $color-bg-tertiary;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: $color-text-primary;
+}
+
+.loading-body {
+  display: flex;
   align-items: center;
   gap: $spacing-sm;
   padding: $spacing-md;
   background: $color-bg-tertiary;
   border-radius: $radius-md;
-  width: fit-content;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .typing-dots {

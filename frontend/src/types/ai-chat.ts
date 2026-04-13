@@ -39,6 +39,7 @@ export interface ChatMessage {
   actions?: SectionChange[]
   actionStatus?: ActionStatusType
   segments?: ContentSegment[]
+  resumeId?: string // 该消息关联的简历ID
 }
 
 /**

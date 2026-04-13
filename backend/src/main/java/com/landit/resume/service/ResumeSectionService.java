@@ -20,14 +20,13 @@ import org.springframework.stereotype.Service;
 public class ResumeSectionService extends ServiceImpl<ResumeSectionMapper, ResumeSection> {
 
     /**
-     * 删除简历的所有区块（非版本快照）
+     * 删除简历的所有区块
      *
      * @param resumeId 简历ID
      */
     public void deleteAllByResumeId(String resumeId) {
         LambdaQueryWrapper<ResumeSection> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ResumeSection::getResumeId, resumeId)
-               .isNull(ResumeSection::getResumeVersionId);
+        wrapper.eq(ResumeSection::getResumeId, resumeId);
         remove(wrapper);
         log.info("已删除简历的所有区块: resumeId={}", resumeId);
     }
@@ -44,7 +43,6 @@ public class ResumeSectionService extends ServiceImpl<ResumeSectionMapper, Resum
     public ResumeSection create(String resumeId, String type, String title, String content) {
         ResumeSection section = new ResumeSection();
         section.setResumeId(resumeId);
-        section.setResumeVersionId(null);
         section.setType(type);
         section.setTitle(title);
         section.setContent(content);
@@ -66,7 +64,6 @@ public class ResumeSectionService extends ServiceImpl<ResumeSectionMapper, Resum
     public ResumeSection createWithScore(String resumeId, String type, String title, String content, Integer score) {
         ResumeSection section = new ResumeSection();
         section.setResumeId(resumeId);
-        section.setResumeVersionId(null);
         section.setType(type);
         section.setTitle(title);
         section.setContent(content);

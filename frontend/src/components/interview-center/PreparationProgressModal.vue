@@ -1,0 +1,796 @@
+<!--=====================================================
+  LandIt 面试准备清单进度弹窗（全屏模式）
+  @author Azir
+=====================================================-->
+
+<template>
+  <Teleport to="body">
+    <Transition name="modal">
+      <div
+        v-if="visible"
+        class="modal-overlay"
+      >
+        <div class="modal-container">
+          <!-- 头部 -->
+          <div class="modal-header">
+            <div class="header-left">
+              <div class="header-icon" :class="headerClass">
+                <font-awesome-icon v-if="state.isRunning" icon="fa-solid fa-spinner" class="spinner" />
+                <font-awesome-icon v-else-if="state.hasError" icon="fa-solid fa-circle-xmark" />
+                <font-awesome-icon v-else-if="state.isCompleted" icon="fa-solid fa-circle-check" />
+                <font-awesome-icon v-else icon="fa-solid fa-bolt" />
+              </div>
+              <div class="header-title">
+                <h3>{{ headerTitle }}</h3>
+                <p v-if="state.isRunning" class="header-subtitle">{{ state.message }}</p>
+              </div>
+            </div>
+            <button class="close-btn" @click="handleClose">
+              <font-awesome-icon icon="fa-solid fa-xmark" />
+            </button>
+          </div>
+
+          <!-- 面试信息 -->
+          <div v-if="interview" class="interview-info">
+            <span class="info-label">面试</span>
+            <span class="info-value">{{ interview.companyName }} · {{ interview.position }}</span>
+            <span v-if="interview.roundType" class="info-round">{{ getRoundLabel(interview.roundType) }}</span>
+          </div>
+
+          <!-- 进度条 -->
+          <ProgressBar
+            :progress="state.progress"
+            :message="state.message"
+          />
+
+          <!-- 阶段列表 -->
+          <div class="stage-list">
+            <div
+              v-for="item in sortedStageHistory"
+              :key="item.stage"
+              class="stage-item"
+              :class="{
+                active: item.stage === state.currentStage && state.isRunning,
+                completed: item.completed,
+                cached: item.cached && item.completed
+              }"
+            >
+              <div
+                class="stage-main"
+                :class="{ clickable: item.completed && item.data }"
+                @click="item.completed && item.data && toggleExpand(item.stage)"
+              >
+                <div class="stage-left">
+                  <!-- 阶段指示器 -->
+                  <div class="stage-indicator">
+                    <font-awesome-icon
+                      v-if="item.completed"
+                      icon="fa-solid fa-check"
+                    />
+                    <div
+                      v-else-if="item.stage === state.currentStage && state.isRunning"
+                      class="spinner"
+                    />
+                    <div
+                      v-else
+                      class="dot"
+                    />
+                  </div>
+                  <!-- 阶段标签 -->
+                  <span class="stage-label">{{ getStageLabel(item.stage) }}</span>
+                  <!-- 跳过标签 -->
+                  <span v-if="item.cached && item.completed" class="cached-tag">已跳过</span>
+                  <!-- 耗时（跳过的节点不显示） -->
+                  <span
+                    v-if="item.startTime && !item.cached"
+                    class="stage-elapsed"
+                    :class="{ running: !item.endTime && item.stage === state.currentStage && state.isRunning }"
+                  >
+                    {{ formatElapsed(item) }}
+                  </span>
+                </div>
+                <!-- 展开指示器 -->
+                <div
+                  v-if="item.completed && item.data"
+                  class="expand-indicator"
+                >
+                  <font-awesome-icon
+                    icon="fa-solid fa-chevron-down"
+                    :class="{ rotated: item.expanded }"
+                  />
+                </div>
+              </div>
+
+              <!-- 展开的数据区域 -->
+              <Transition name="expand">
+                <div
+                  v-if="item.expanded && item.data"
+                  class="stage-data-wrapper"
+                >
+                  <div class="stage-data">
+                    <!-- 公司调研数据 -->
+                    <div v-if="item.stage === 'company_research'" class="data-section">
+                      <CompanyResearchContent :data="(item.data as CompanyResearchResult)" />
+                    </div>
+                    <!-- JD 分析数据 -->
+                    <div v-else-if="item.stage === 'jd_analysis'" class="data-section">
+                      <JDAnalysisContent :data="(item.data as JDAnalysisResult)" />
+                    </div>
+                    <!-- 准备事项数据 -->
+                    <div v-else-if="item.stage === 'generate_preparation'" class="data-section">
+                      <PreparationItemsContent
+                        :items="(item.data as PreparationItem[])"
+                        v-model:selected-items="selectedItems"
+                      />
+                    </div>
+                    <!-- 默认显示 -->
+                    <div v-else class="data-content">
+                      <pre class="json-display">{{ JSON.stringify(item.data, null, 2) }}</pre>
+                    </div>
+                  </div>
+                </div>
+              </Transition>
+            </div>
+          </div>
+
+          <!-- 错误提示 -->
+          <div v-if="state.hasError" class="error-section">
+            <font-awesome-icon icon="fa-solid fa-circle-exclamation" />
+            <span>{{ state.errorMessage || '生成失败，请重试' }}</span>
+          </div>
+
+          <!-- 底部操作 -->
+          <div class="modal-footer">
+            <template v-if="state.hasError">
+              <button class="btn btn-secondary" @click="handleClose">关闭</button>
+              <button class="btn btn-primary" @click="handleRetry">
+                <font-awesome-icon icon="fa-solid fa-arrows-rotate" />
+                重试
+              </button>
+            </template>
+            <template v-else-if="state.isCompleted && preparationItemsFromStage.length > 0">
+              <button class="btn btn-secondary" @click="handleClose">取消</button>
+              <button
+                class="btn btn-primary"
+                :disabled="selectedCount === 0"
+                @click="handleSave"
+              >
+                保存选中 ({{ selectedCount }})
+              </button>
+            </template>
+            <template v-else-if="state.isCompleted">
+              <button class="btn btn-secondary" @click="handleClose">关闭</button>
+            </template>
+            <template v-else>
+              <button class="btn btn-secondary" @click="handleCancel">取消</button>
+            </template>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+</template>
+
+<script setup lang="ts">
+import { computed, ref, watch } from 'vue'
+import { useScrollLock } from '@vueuse/core'
+import type {
+  PreparationState,
+  PreparationItem,
+  PreparationStage,
+  PreparationStageHistoryItem,
+  CompanyResearchResult,
+  JDAnalysisResult,
+  InterviewDetail,
+  RoundType
+} from '@/types/interview-center'
+import { ROUND_TYPE_LABELS } from '@/types/interview-center'
+import { useInterviewPreparation } from '@/composables/useInterviewPreparation'
+import { useStageTimer } from '@/composables/useStageTimer'
+import ProgressBar from '@/components/resume/optimize/ProgressBar.vue'
+import CompanyResearchContent from './preparation/CompanyResearchContent.vue'
+import JDAnalysisContent from './preparation/JDAnalysisContent.vue'
+import PreparationItemsContent from './preparation/PreparationItemsContent.vue'
+
+const props = defineProps<{
+  visible: boolean
+  state: PreparationState
+  interview?: InterviewDetail
+}>()
+
+const emit = defineEmits<{
+  'update:visible': [value: boolean]
+  'save': [items: PreparationItem[]]
+  'cancel': []
+  'retry': []
+}>()
+
+// 锁定背景滚动
+const isScrollLocked = useScrollLock(document.body)
+
+// 勾选状态
+const selectedItems = ref<Record<number, boolean>>({})
+
+// 获取 composable 方法
+const { toggleExpand, getStageLabel } = useInterviewPreparation()
+
+// 使用通用阶段计时器 composable
+const { formatElapsed } = useStageTimer(() => props.state.isRunning)
+
+// 面试轮次标签
+function getRoundLabel(roundType: RoundType): string {
+  return ROUND_TYPE_LABELS[roundType] || roundType
+}
+
+// ==================== 计算属性 ====================
+
+// 排序后的阶段历史
+const sortedStageHistory = computed(() => {
+  const displayStages: PreparationStage[] = ['company_research', 'jd_analysis', 'generate_preparation']
+  return displayStages.map(stage => {
+    const historyItem = props.state.stageHistory.find(h => h.stage === stage)
+    return historyItem || {
+      stage,
+      message: '',
+      timestamp: 0,
+      startTime: undefined,
+      endTime: undefined,
+      completed: false,
+      data: null,
+      expanded: false
+    } as PreparationStageHistoryItem
+  })
+})
+
+const headerClass = computed(() => {
+  if (props.state.hasError) return 'error'
+  if (props.state.isCompleted) return 'success'
+  if (props.state.isRunning) return 'running'
+  return 'idle'
+})
+
+const headerTitle = computed(() => {
+  if (props.state.hasError) return '生成失败'
+  if (props.state.isCompleted) return '生成完成'
+  if (props.state.isRunning) return 'AI 生成准备清单...'
+  return 'AI 生成准备清单'
+})
+
+// 从阶段历史获取准备事项数据
+const preparationItemsFromStage = computed(() => {
+  const generateStage = props.state.stageHistory.find(h => h.stage === 'generate_preparation')
+  return generateStage?.data as PreparationItem[] || []
+})
+
+const selectedCount = computed(() => {
+  return Object.values(selectedItems.value).filter(Boolean).length
+})
+
+// ==================== 事件处理 ====================
+
+function handleClose() {
+  emit('update:visible', false)
+}
+
+function handleCancel() {
+  emit('cancel')
+  emit('update:visible', false)
+}
+
+function handleSave() {
+  const itemsToSave = preparationItemsFromStage.value.filter((_, index) => selectedItems.value[index])
+  emit('save', itemsToSave)
+}
+
+function handleRetry() {
+  emit('retry')
+}
+
+// ==================== 监听器 ====================
+
+watch(
+  () => props.visible,
+  (visible) => {
+    isScrollLocked.value = visible
+    if (visible) {
+      // 重置勾选状态
+      selectedItems.value = {}
+      // 默认全选（从阶段历史获取）
+      preparationItemsFromStage.value.forEach((_, index) => {
+        selectedItems.value[index] = true
+      })
+    }
+  },
+  { immediate: true }
+)
+
+// 监听准备事项变化，自动全选新项
+watch(
+  preparationItemsFromStage,
+  (items) => {
+    items.forEach((_, index) => {
+      if (selectedItems.value[index] === undefined) {
+        selectedItems.value[index] = true
+      }
+    })
+  }
+)
+</script>
+
+<style lang="scss" scoped>
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: $z-modal;
+  padding: $spacing-xl;
+}
+
+.modal-container {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  background: $color-bg-primary;
+  border-radius: $radius-xl;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+// 头部
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-lg;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+}
+
+// 面试信息
+.interview-info {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-lg;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.info-label {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+}
+
+.info-value {
+  font-size: $text-sm;
+  color: $color-accent;
+  font-weight: $weight-medium;
+}
+
+.info-round {
+  font-size: $text-xs;
+  padding: 2px 8px;
+  background: rgba($color-accent, 0.15);
+  color: $color-accent;
+  border-radius: $radius-sm;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+}
+
+.header-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: $radius-lg;
+  background: rgba(255, 255, 255, 0.05);
+
+  &.running {
+    background: rgba($color-accent, 0.15);
+    color: $color-accent;
+  }
+
+  &.success {
+    background: rgba($color-success, 0.15);
+    color: $color-success;
+  }
+
+  &.error {
+    background: rgba($color-error, 0.15);
+    color: $color-error;
+  }
+
+  .spinner {
+    animation: spin 1s linear infinite;
+  }
+}
+
+.header-title {
+  h3 {
+    font-size: 1.125rem;
+    font-weight: $weight-semibold;
+    color: $color-text-primary;
+    margin: 0;
+  }
+
+  .header-subtitle {
+    font-size: $text-sm;
+    color: $color-text-tertiary;
+    margin: $spacing-xs 0 0;
+  }
+}
+
+.close-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $color-text-tertiary;
+  border-radius: $radius-md;
+  transition: all $transition-fast;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: $color-text-primary;
+  }
+}
+
+// 阶段列表
+.stage-list {
+  padding: $spacing-lg;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.stage-item {
+  padding: $spacing-md;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: $radius-md;
+  margin-bottom: $spacing-sm;
+  border: 1px solid transparent;
+  transition: all $transition-fast;
+
+  &.active {
+    border-color: rgba(212, 168, 83, 0.3);
+    background: rgba(212, 168, 83, 0.05);
+  }
+
+  &.completed {
+    border-color: rgba(52, 211, 153, 0.2);
+
+    // 使用缓存（跳过）的节点使用灰色边框
+    &.cached {
+      border-color: rgba(96, 165, 250, 0.2);
+    }
+  }
+}
+
+.stage-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  &.clickable {
+    cursor: pointer;
+
+    &:hover {
+      .stage-label {
+        color: $color-text-primary;
+      }
+      .expand-indicator {
+        color: $color-accent;
+      }
+    }
+  }
+}
+
+.stage-left {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.stage-indicator {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $color-success;
+
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(212, 168, 83, 0.3);
+    border-top-color: $color-accent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+  }
+}
+
+.stage-label {
+  font-size: $text-sm;
+  color: $color-text-secondary;
+}
+
+.cached-tag {
+  font-size: 10px;
+  padding: 2px 6px;
+  background: rgba($color-info, 0.15);
+  color: $color-info;
+  border-radius: $radius-sm;
+  margin-left: $spacing-xs;
+}
+
+.stage-elapsed {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+  font-variant-numeric: tabular-nums;
+  min-width: 40px;
+
+  &.running {
+    color: $color-accent;
+  }
+}
+
+.expand-indicator {
+  display: flex;
+  align-items: center;
+  color: $color-text-tertiary;
+  transition: color $transition-fast;
+
+  svg {
+    transition: transform $transition-fast;
+
+    &.rotated {
+      transform: rotate(180deg);
+    }
+  }
+}
+
+// 展开数据区域
+.stage-data-wrapper {
+  display: grid;
+  grid-template-rows: 1fr;
+  overflow: hidden;
+  max-height: 400px;
+
+  &:not(:empty) {
+    margin-top: $spacing-sm;
+  }
+}
+
+.stage-data {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.data-section {
+  padding: $spacing-sm;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: $radius-sm;
+}
+
+.data-content {
+  font-size: $text-sm;
+}
+
+.json-display {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+  background: rgba(0, 0, 0, 0.2);
+  padding: $spacing-sm;
+  border-radius: $radius-sm;
+  overflow-x: auto;
+  max-height: 200px;
+  margin: 0;
+}
+
+// 展开动画
+.expand-enter-active {
+  transition: grid-template-rows 0.25s ease-out, opacity 0.2s ease-out;
+}
+
+.expand-leave-active {
+  transition: grid-template-rows 0.2s ease-in, opacity 0.15s ease-in;
+}
+
+.expand-enter-from,
+.expand-leave-to {
+  grid-template-rows: 0fr;
+  opacity: 0;
+}
+
+.expand-enter-to,
+.expand-leave-from {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.preview-item {
+  display: flex;
+  gap: $spacing-sm;
+  padding: $spacing-sm;
+  background: $color-bg-secondary;
+  border-radius: $radius-md;
+  transition: background $transition-fast;
+
+  &:hover {
+    background: $color-bg-tertiary;
+  }
+}
+
+.item-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: $color-accent;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.item-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.item-title {
+  font-size: $text-sm;
+  color: $color-text-primary;
+}
+
+.item-desc {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+  line-height: 1.5;
+}
+
+.item-meta {
+  display: flex;
+  gap: $spacing-xs;
+  margin-top: 4px;
+}
+
+.meta-tag {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: $radius-sm;
+
+  &.category {
+    background: $color-bg-tertiary;
+    color: $color-text-tertiary;
+  }
+
+  &.priority {
+    &.high {
+      background: rgba($color-error, 0.15);
+      color: $color-error;
+    }
+
+    &.medium {
+      background: rgba($color-warning, 0.15);
+      color: $color-warning;
+    }
+
+    &.low {
+      background: rgba($color-info, 0.15);
+      color: $color-info;
+    }
+  }
+}
+
+// 错误提示
+.error-section {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-md $spacing-lg;
+  background: rgba($color-error, 0.1);
+  color: $color-error;
+  font-size: $text-sm;
+  flex-shrink: 0;
+}
+
+// 底部
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-lg;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-lg;
+  font-size: $text-sm;
+  font-weight: $weight-medium;
+  border-radius: $radius-md;
+  transition: all $transition-fast;
+  cursor: pointer;
+
+  &.btn-primary {
+    background: $gradient-gold;
+    color: $color-bg-deep;
+    border: none;
+
+    &:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(212, 168, 83, 0.3);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  &.btn-secondary {
+    background: transparent;
+    color: $color-text-secondary;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: $color-text-primary;
+    }
+  }
+}
+
+// 动画
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.3s ease;
+
+  .modal-container {
+    transition: transform 0.3s ease;
+  }
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+
+  .modal-container {
+    transform: scale(0.95);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>

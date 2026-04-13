@@ -9,6 +9,8 @@ import { MAX_IMAGE_COUNT } from '@/types/ai-chat'
 import { streamChat, applyChanges as apiApplyChanges, getChatHistory, clearChatHistory, updateActionStatus as apiUpdateActionStatus } from '@/api/aiChat'
 import { useToast } from './useToast'
 
+const SESSION_ID_KEY = 'aiChat_sessionId'
+
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }
@@ -23,11 +25,14 @@ let currentAiMessage: ChatMessage | null = null
 
 function getState(): AIChatState {
   if (!stateInstance) {
+    // 从 localStorage 读取已存在的 sessionId
+    const savedSessionId = localStorage.getItem(SESSION_ID_KEY)
+
     stateInstance = reactive<AIChatState>({
       isWindowOpen: false,
       hideFloat: false,
       chatMode: 'general',
-      sessionId: generateSessionId(),
+      sessionId: savedSessionId || generateSessionId(),
       currentResumeId: null,
       detectedResume: null,
       messages: [],
@@ -38,6 +43,11 @@ function getState(): AIChatState {
       selectedImages: [],
       error: null
     })
+
+    // 首次初始化时保存 sessionId
+    if (!savedSessionId) {
+      localStorage.setItem(SESSION_ID_KEY, stateInstance.sessionId!)
+    }
   }
   return stateInstance
 }
@@ -51,15 +61,43 @@ export function useAIChat() {
   async function loadHistory(sessionId: string): Promise<void> {
     try {
       const history = await getChatHistory(sessionId)
+
       state.messages = history.map(m => ({
         id: m.id,
         role: m.role as 'user' | 'assistant' | 'system',
         content: m.content,
         timestamp: new Date(m.createdAt).getTime(),
-        actions: m.actions,
+        // 根据 actionStatus 初始化每个 change 的 status
+        actions: m.actions?.map(action => ({
+          ...action,
+          status: action.status || (m.actionStatus === 'applied' ? 'applied' :
+                                   m.actionStatus === 'rejected' ? 'rejected' :
+                                   m.actionStatus === 'failed' ? 'failed' : 'pending')
+        })) || [],
         actionStatus: m.actionStatus,
-        segments: m.segments
+        segments: m.segments,
+        resumeId: m.resumeId
       }))
+
+      // 恢复简历上下文：取最新的有 resumeId 的消息
+      const latestResumeMsg = [...state.messages].reverse().find(m => m.resumeId)
+      if (latestResumeMsg?.resumeId) {
+        state.currentResumeId = latestResumeMsg.resumeId
+        state.chatMode = 'resume'
+        // 从历史消息中查找简历名称（如果有 resume_selected 系统消息）
+        const resumeSelectedMsg = state.messages.find(m =>
+          m.role === 'system' && m.content.includes('已切换到')
+        )
+        if (resumeSelectedMsg) {
+          const match = resumeSelectedMsg.content.match(/已切换到「(.+)」/)
+          if (match) {
+            state.detectedResume = {
+              id: latestResumeMsg.resumeId,
+              name: match[1]
+            }
+          }
+        }
+      }
     } catch (error) {
       console.error('[AIChat] 加载历史失败', error)
       state.messages = []
@@ -192,7 +230,7 @@ export function useAIChat() {
       }
       newMessage.segments!.push({ type: 'text', content: '' })
       state.messages.push(newMessage)
-      currentAiMessage = newMessage
+      currentAiMessage = state.messages[state.messages.length - 1]
     }
   }
 
@@ -222,14 +260,16 @@ export function useAIChat() {
    */
   async function applySingleChange(messageId: string, index: number): Promise<void> {
     const message = state.messages.find(m => m.id === messageId)
-    if (!message?.actions?.[index] || !state.currentResumeId) return
+    // 优先使用消息自身的 resumeId，没有的话用全局的
+    const resumeId = message?.resumeId || state.currentResumeId
+    if (!message?.actions?.[index] || !resumeId) return
 
     const change = message.actions[index]
     const toast = useToast()
 
     try {
       change.status = 'applied'
-      await apiApplyChanges(state.currentResumeId, [change])
+      await apiApplyChanges(resumeId, [change])
       toast.success(`「${change.sectionTitle || '修改'}」已应用`)
       syncMessageStatus(message)
       await apiUpdateActionStatus(messageId, message.actionStatus!)
@@ -258,7 +298,9 @@ export function useAIChat() {
    */
   async function applyAllChanges(messageId: string): Promise<void> {
     const message = state.messages.find(m => m.id === messageId)
-    if (!message?.actions || !state.currentResumeId) return
+    // 优先使用消息自身的 resumeId，没有的话用全局的
+    const resumeId = message?.resumeId || state.currentResumeId
+    if (!message?.actions || !resumeId) return
 
     const pendingChanges = message.actions.filter(a => a.status === 'pending')
     if (pendingChanges.length === 0) return
@@ -268,7 +310,7 @@ export function useAIChat() {
     try {
       // 先乐观更新状态
       pendingChanges.forEach(c => { c.status = 'applied' })
-      await apiApplyChanges(state.currentResumeId, pendingChanges)
+      await apiApplyChanges(resumeId, pendingChanges)
       toast.success(`${pendingChanges.length} 项修改已全部应用`)
       syncMessageStatus(message)
       await apiUpdateActionStatus(messageId, message.actionStatus!)
@@ -315,13 +357,13 @@ export function useAIChat() {
 
   function handleErrorEvent(errorMessage: string): void {
     if (currentAiMessage) {
-      currentAiMessage.content += `\n\n❌ 错误：${errorMessage}`
+      currentAiMessage.content += `\n\n错误：${errorMessage}`
       currentAiMessage.isStreaming = false
     } else {
       state.messages.push({
         id: generateId(),
         role: 'system',
-        content: `❌ 错误：${errorMessage}`,
+        content: `错误：${errorMessage}`,
         timestamp: Date.now()
       })
     }
@@ -372,6 +414,7 @@ export function useAIChat() {
 
       // 重置状态
       state.sessionId = generateSessionId()
+      localStorage.setItem(SESSION_ID_KEY, state.sessionId!)
       state.currentResumeId = null
       state.detectedResume = null
       state.chatMode = 'general'
@@ -391,7 +434,7 @@ export function useAIChat() {
       state.messages.push({
         id: generateId(),
         role: 'system',
-        content: '❌ 开始新会话失败，请稍后重试',
+        content: '开始新会话失败，请稍后重试',
         timestamp: Date.now()
       })
     }
@@ -416,6 +459,14 @@ export function useAIChat() {
 
   function toggleWindow(): void {
     state.isWindowOpen = !state.isWindowOpen
+  }
+
+  function openWindow(): void {
+    state.isWindowOpen = true
+    // 窗口打开时加载历史（只在消息为空时加载，避免重复加载）
+    if (state.sessionId && state.messages.length === 0) {
+      loadHistory(state.sessionId)
+    }
   }
 
   function closeWindow(): void {
@@ -445,6 +496,7 @@ export function useAIChat() {
     handleImageRemove,
     handleImageRemoveAll,
     toggleWindow,
+    openWindow,
     closeWindow,
     startNewSession
   }

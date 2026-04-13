@@ -126,7 +126,8 @@ public class TailoredResumeToSectionConverter {
         section.setType(type.getCode());
         section.setTitle(title);
         section.setContent(content);
-        section.setScore(0); // 默认分数，前端会根据内容计算
+        // 默认分数，前端会根据内容计算
+        section.setScore(0);
         section.setSuggestions(null);
         return section;
     }

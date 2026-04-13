@@ -5,18 +5,11 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import {
-  currentUser,
-  resumeDetail,
-  interviewHistory,
-  interviewQuestions,
-  interviewDetail,
-  interviewReview,
-  statistics,
-  jobRecommendations
-} from '@/mock/data'
 import * as userApi from '@/api/user'
 import * as resumeApi from '@/api/resume'
+import * as statisticsApi from '@/api/statistics'
+import * as authApi from '@/api/auth'
+import { updateToken } from '@/utils/request'
 import type {
   User,
   Resume,
@@ -26,7 +19,6 @@ import type {
   Interview,
   InterviewQuestions,
   InterviewDetail,
-  InterviewReview,
   Statistics,
   Job,
   UserUpdateInfo,
@@ -36,31 +28,49 @@ import type {
   ResumeListItem,
   CreateResumeRequest
 } from '@/types'
+import type { RegisterRequest } from '@/types/auth'
 
 export const useAppStore = defineStore('app', () => {
   // 用户状态
-  const user = ref<User>(currentUser)
-  const isLoggedIn = ref<boolean>(true)
+  const user = ref<User>({ id: '', name: '', gender: null, avatar: null, initialized: false, createdAt: '' })
+  const token = ref<string | null>(null)
+  const isLoggedIn = ref<boolean>(false)
   const isInitialized = ref<boolean>(false)
 
   // 简历相关
   const resumeList = ref<Resume[]>([])
-  const currentResume = ref<ResumeDetail>(resumeDetail)
+  const currentResume = ref<ResumeDetail>({
+    id: '', name: '', targetPosition: '', sections: [],
+    overallScore: 0, contentScore: 0, structureScore: 0,
+    matchingScore: 0, competitivenessScore: 0, analyzed: false
+  })
   const suggestions = ref<ResumeSuggestion[]>([])
   const suggestionsByResume = ref<ResumeSuggestionsGroup[]>([])
   const primaryResume = ref<PrimaryResumeVO | null>(null)
 
   // 面试相关
-  const interviews = ref<Interview[]>(interviewHistory)
-  const questions = ref<InterviewQuestions>(interviewQuestions)
-  const currentInterview = ref<InterviewDetail>(interviewDetail)
-  const currentReview = ref<InterviewReview>(interviewReview)
+  const interviews = ref<Interview[]>([])
+  const questions = ref<InterviewQuestions>({ technical: [], behavioral: [] })
+  const currentInterview = ref<InterviewDetail>({
+    id: '', type: 'technical', position: '', company: '',
+    date: '', duration: 0, score: 0, conversation: [],
+    analysis: { strengths: [], weaknesses: [], overallFeedback: '' }
+  })
 
   // 统计数据
-  const stats = ref<Statistics>(statistics)
+  const stats = ref<Statistics>({
+    overview: {
+      realInterviews: 0,
+      mockInterviews: 0,
+      resumeCount: 0,
+      preparationCompletionRate: 0
+    },
+    weeklyProgress: [],
+    recentActivity: []
+  })
 
   // 职位推荐
-  const jobs = ref<Job[]>(jobRecommendations)
+  const jobs = ref<Job[]>([])
 
   // 当前活跃的导航
   const activeNav = ref<string>('home')
@@ -90,6 +100,7 @@ export const useAppStore = defineStore('app', () => {
 
   function updateUserInfo(info: UserUpdateInfo): void {
     user.value = { ...user.value, ...info }
+    localStorage.setItem('user', JSON.stringify(user.value))
   }
 
   function addInterview(interview: Interview): void {
@@ -109,6 +120,8 @@ export const useAppStore = defineStore('app', () => {
           avatar: status.user.avatar
         }
         isInitialized.value = true
+        localStorage.setItem('isInitialized', 'true')
+        localStorage.setItem('user', JSON.stringify(user.value))
         isLoggedIn.value = true
       }
       return status
@@ -128,6 +141,7 @@ export const useAppStore = defineStore('app', () => {
         gender: result.gender
       }
       isInitialized.value = true
+      localStorage.setItem('isInitialized', 'true')
       isLoggedIn.value = true
     } catch (error) {
       console.error('初始化用户失败', error)
@@ -426,9 +440,101 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
+  // 获取统计数据（从 API）
+  async function fetchStatistics(): Promise<void> {
+    try {
+      const result = await statisticsApi.getStatistics()
+      stats.value = result
+    } catch (error) {
+      console.error('获取统计数据失败', error)
+    }
+  }
+
+  // ========== 以下是认证相关方法 ==========
+
+  /**
+   * 初始化认证状态
+   * 从 localStorage 恢复登录状态和初始化状态
+   */
+  function initAuthState(): void {
+    const savedToken = localStorage.getItem('token')
+    if (savedToken) {
+      token.value = savedToken
+      isLoggedIn.value = true
+      isInitialized.value = localStorage.getItem('isInitialized') === 'true'
+      // 同步到 request.ts 的缓存
+      updateToken(savedToken)
+      // 从 localStorage 恢复用户信息
+      const savedUser = localStorage.getItem('user')
+      if (savedUser) {
+        try {
+          user.value = JSON.parse(savedUser)
+        } catch (e) {
+          localStorage.removeItem('user')
+        }
+      }
+    }
+  }
+
+  /**
+   * 用户登录
+   */
+  async function login(account: string, password: string): Promise<void> {
+    try {
+      const response = await authApi.login({ account, password })
+      // 保存 Token 和用户信息
+      token.value = response.token
+      updateToken(response.token)
+      user.value = response.user
+      isLoggedIn.value = true
+      // 持久化用户信息，刷新页面后能恢复
+      localStorage.setItem('user', JSON.stringify(user.value))
+      if (response.user.initialized) {
+        isInitialized.value = true
+        localStorage.setItem('isInitialized', 'true')
+      }
+    } catch (error) {
+      console.error('登录失败', error)
+      throw error
+    }
+  }
+
+  /**
+   * 用户注册
+   */
+  async function register(data: RegisterRequest): Promise<void> {
+    try {
+      await authApi.register(data)
+      // 注册成功，需要用户登录
+    } catch (error) {
+      console.error('注册失败', error)
+      throw error
+    }
+  }
+
+  /**
+   * 用户登出
+   */
+  async function logout(): Promise<void> {
+    try {
+      await authApi.logout()
+    } catch (error) {
+      console.error('登出失败', error)
+    } finally {
+      // 清除本地状态
+      token.value = null
+      isLoggedIn.value = false
+      isInitialized.value = false
+      localStorage.removeItem('isInitialized')
+      localStorage.removeItem('user')
+      updateToken(null)
+    }
+  }
+
   return {
     // 状态
     user,
+    token,
     isLoggedIn,
     isInitialized,
     resumeList,
@@ -439,7 +545,6 @@ export const useAppStore = defineStore('app', () => {
     interviews,
     questions,
     currentInterview,
-    currentReview,
     stats,
     jobs,
     activeNav,
@@ -469,6 +574,12 @@ export const useAppStore = defineStore('app', () => {
     deleteSuggestion,
     fetchSuggestions,
     fetchAllSuggestions,
-    updateResumeBasicInfo
+    updateResumeBasicInfo,
+    fetchStatistics,
+    // 认证方法
+    initAuthState,
+    login,
+    register,
+    logout
   }
 })

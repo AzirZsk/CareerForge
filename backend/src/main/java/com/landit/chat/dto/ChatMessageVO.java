@@ -49,6 +49,11 @@ public class ChatMessageVO {
     private String actionStatus;
 
     /**
+     * 简历ID（该消息关联的简历，仅简历模式下有值）
+     */
+    private String resumeId;
+
+    /**
      * 内容分片列表（有序：text和action交替，用于前端按穿插顺序渲染）
      */
     private List<ContentSegment> segments;

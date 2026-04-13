@@ -44,6 +44,46 @@ springdoc:
   api-docs:
     path: /v3/api-docs
 
+# JWT 配置
+landit:
+  jwt:
+    # JWT 密钥（生产环境必须配置环境变量，开发环境使用默认值）
+    secret: ${JWT_SECRET:landit-dev-secret-key-for-jwt-token-generation-2026}
+    # Token 过期时间（毫秒），默认 2 小时
+    expire: 7200000
+
+# 语音服务配置
+  voice:
+    provider: aliyun  # aliyun, openai, azure（启动时确定，不支持运行时切换）
+
+    aliyun:
+      api-key: ${ALIYUN_API_KEY:}
+      asr:
+        model: paraformer-realtime-v2
+        format: pcm
+        sample-rate: 16000
+        enable-punctuation: true
+        enable-itn: true
+        language: zh
+        enable-vad: true
+      tts:
+        model: cosyvoice-v2
+        format: wav
+        sample-rate: 16000
+      voices:
+        interviewer: longxiaochun_v2
+        assistant: zhimiao_emo_v2
+      # 离线 ASR（录音文件识别）
+      file-asr:
+        model: paraformer-v2
+        language: zh
+        max-file-size-mb: 50
+        polling-interval-ms: 2000
+        # 本地存储路径
+        storage-path: ./data/audio-uploads
+        # 公网访问 URL 基础路径（根据实际部署环境修改）
+        public-url-base: ${AUDIO_PUBLIC_URL_BASE:http://localhost:8080/landit/audio-files}
+
 # 日志配置 - 打印 AI 请求详情
 logging:
   level:

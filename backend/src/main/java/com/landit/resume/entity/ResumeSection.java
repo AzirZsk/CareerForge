@@ -17,8 +17,6 @@ public class ResumeSection extends BaseEntity {
 
     private String resumeId;
 
-    private String resumeVersionId;
-
     private String type;
 
     private String title;

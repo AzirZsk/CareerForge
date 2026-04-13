@@ -17,8 +17,8 @@ type InternalNodeId = OptimizeStage | '__START__' | '__END__'
 import { STAGE_CONFIG } from '@/types/resume-optimize'
 import { applyOptimizeChanges } from '@/api/resume'
 import type { SectionDataItem } from '@/api/resume'
-
-const API_BASE = '/landit'
+import { API_BASE } from '@/api/config'
+import { authFetch } from '@/utils/request'
 
 export function useResumeOptimize() {
   // 状态
@@ -40,8 +40,8 @@ export function useResumeOptimize() {
     stageHistory: []
   })
 
-  // EventSource 实例
-  let eventSource: EventSource | null = null
+  // AbortController 用于中断请求
+  let abortController: AbortController | null = null
 
   // 计算属性
   const isOptimizing = computed(() => state.isOptimizing)
@@ -54,7 +54,7 @@ export function useResumeOptimize() {
   /**
    * 开始优化
    */
-  function startOptimize(resumeId: string, options?: {
+  async function startOptimize(resumeId: string, options?: {
     mode?: OptimizeMode
     targetPosition?: string
   }) {
@@ -67,6 +67,9 @@ export function useResumeOptimize() {
     state.isConnecting = true
     state.isOptimizing = true
 
+    // 创建 AbortController
+    abortController = new AbortController()
+
     // 构建 URL
     const params = new URLSearchParams()
     params.append('mode', state.mode)
@@ -78,30 +81,62 @@ export function useResumeOptimize() {
 
     console.log('[SSE] 连接URL:', url)
 
-    // 创建 EventSource
-    eventSource = new EventSource(url)
+    try {
+      // 使用 authFetch 发起请求
+      const response = await authFetch(url, {}, 120000) // 2分钟超时
 
-    // 连接成功
-    eventSource.onopen = () => {
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+
       state.isConnecting = false
       console.log('[SSE] 连接成功')
-    }
 
-    // 接收消息
-    eventSource.onmessage = (event) => {
-      try {
-        const data: OptimizeProgressEvent = JSON.parse(event.data)
-        handleEvent(data)
-      } catch (e) {
-        console.error('[SSE] 解析消息失败', e)
+      // 获取 ReadableStream
+      const reader = response.body?.getReader()
+      if (!reader) {
+        throw new Error('无法读取响应流')
       }
-    }
 
-    // 错误处理
-    eventSource.onerror = (error) => {
-      console.error('[SSE] 连接错误', error)
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      // 读取流
+      while (state.isOptimizing && !state.isCompleted && !state.hasError) {
+        const { done, value } = await reader.read()
+
+        if (done) {
+          console.log('[SSE] 流结束')
+          break
+        }
+
+        // 解码并处理数据
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          const trimmed = line.trim()
+          if (!trimmed) continue
+          // 兼容标准 SSE 格式（event:\ndata:{...}）和 NDJSON 格式（纯 JSON）
+          if (trimmed.startsWith('event:')) continue
+          try {
+            const jsonStr = trimmed.startsWith('data:') ? trimmed.slice(5).trim() : trimmed
+            if (jsonStr) {
+              const data: OptimizeProgressEvent = JSON.parse(jsonStr)
+              handleEvent(data)
+            }
+          } catch (e) {
+            console.error('[SSE] 解析消息失败', e, trimmed)
+          }
+        }
+      }
+
+      reader.releaseLock()
+    } catch (error) {
+      console.error('[SSE] 请求失败', error)
       state.hasError = true
-      state.errorMessage = '连接失败，请稍后重试'
+      state.errorMessage = error instanceof Error ? error.message : '连接失败，请稍后重试'
       state.isOptimizing = false
       state.isConnecting = false
     }
@@ -340,9 +375,9 @@ export function useResumeOptimize() {
    * 关闭连接
    */
   function closeConnection() {
-    if (eventSource) {
-      eventSource.close()
-      eventSource = null
+    if (abortController) {
+      abortController.abort()
+      abortController = null
     }
     state.isConnecting = false
   }

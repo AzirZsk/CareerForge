@@ -57,18 +57,7 @@
                 class="footer-btn primary"
                 @click="handleRetry"
               >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <polyline points="23 4 23 10 17 10" />
-                  <polyline points="1 20 1 14 7 14" />
-                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-                </svg>
+                <font-awesome-icon icon="fa-solid fa-arrows-rotate" />
                 重试
               </button>
             </template>
@@ -105,32 +94,7 @@
                   v-if="hasOptimizedSections && !state.isApplying"
                   class="apply-hint"
                 >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="10"
-                    />
-                    <line
-                      x1="12"
-                      y1="16"
-                      x2="12"
-                      y2="12"
-                    />
-                    <line
-                      x1="12"
-                      y1="8"
-                      x2="12.01"
-                      y2="8"
-                    />
-                  </svg>
+                  <font-awesome-icon icon="fa-solid fa-circle-info" />
                   <span>应用后将重新进行 AI 评分</span>
                 </div>
                 <button
@@ -138,17 +102,7 @@
                   class="footer-btn secondary"
                   @click="resetEdits"
                 >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <polyline points="1 4 1 10 7 10" />
-                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-                  </svg>
+                  <font-awesome-icon icon="fa-solid fa-arrows-rotate" />
                   重置
                 </button>
                 <button
@@ -163,24 +117,11 @@
                   :disabled="state.isApplying || !hasOptimizedSections"
                   @click="handleApply"
                 >
-                  <svg
+                  <font-awesome-icon
                     v-if="state.isApplying"
-                    class="spinner-icon"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke-opacity="0.3"
-                    />
-                    <path d="M12 2a10 10 0 0 1 10 10" />
-                  </svg>
+                    icon="fa-solid fa-spinner"
+                    spin
+                  />
                   {{ state.isApplying ? '评分中...' : '应用变更' }}
                 </button>
               </template>
@@ -214,27 +155,7 @@
                 class="fullscreen-comparison-close"
                 @click="showFullComparison = false"
               >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <line
-                    x1="18"
-                    y1="6"
-                    x2="6"
-                    y2="18"
-                  />
-                  <line
-                    x1="6"
-                    y1="6"
-                    x2="18"
-                    y2="18"
-                  />
-                </svg>
+                <font-awesome-icon icon="fa-solid fa-xmark" />
               </button>
             </div>
             <div class="fullscreen-comparison-body">

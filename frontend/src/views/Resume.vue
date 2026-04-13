@@ -582,7 +582,7 @@ async function createNewResume(): Promise<void> {
     }
   } catch (error) {
     console.error('创建简历失败', error)
-    alert('创建简历失败，请重试')
+    toast.error('创建简历失败，请重试')
   }
 }
 
@@ -591,7 +591,7 @@ async function setPrimary(id: string): Promise<void> {
     await store.setPrimaryResumeApi(id)
   } catch (error) {
     console.error('设置主简历失败', error)
-    alert('设置主简历失败，请重试')
+    toast.error('设置主简历失败，请重试')
   }
 }
 

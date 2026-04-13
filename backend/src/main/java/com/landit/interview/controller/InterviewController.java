@@ -7,8 +7,6 @@ import com.landit.interview.dto.FinishSessionResponse;
 import com.landit.interview.dto.HintResponse;
 import com.landit.interview.dto.InterviewDetailVO;
 import com.landit.interview.dto.InterviewQuestionsVO;
-import com.landit.interview.dto.StartSessionRequest;
-import com.landit.interview.dto.StartSessionResponse;
 import com.landit.interview.dto.SubmitAnswerRequest;
 import com.landit.interview.dto.SubmitAnswerResponse;
 import com.landit.interview.entity.Interview;
@@ -40,12 +38,6 @@ public class InterviewController {
 
     private final InterviewService interviewService;
     private final InterviewHandler interviewHandler;
-
-    @Operation(summary = "开始面试会话")
-    @PostMapping("/sessions")
-    public ApiResponse<StartSessionResponse> startInterviewSession(@Valid @RequestBody StartSessionRequest request) {
-        return ApiResponse.success(interviewHandler.startInterviewSession(request));
-    }
 
     @Operation(summary = "提交回答")
     @PostMapping("/sessions/{sessionId}/answers")

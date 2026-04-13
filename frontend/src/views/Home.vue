@@ -25,14 +25,20 @@
             class="action-btn primary"
             @click="startInterview"
           >
-            <span class="action-icon">🎯</span>
+            <font-awesome-icon
+              icon="fa-solid fa-bullseye"
+              class="action-icon"
+            />
             <span>开始面试</span>
           </button>
           <button
             class="action-btn secondary"
             @click="goToResume"
           >
-            <span class="action-icon">📄</span>
+            <font-awesome-icon
+              icon="fa-solid fa-file-lines"
+              class="action-icon"
+            />
             <span>优化简历</span>
           </button>
         </div>
@@ -50,146 +56,55 @@
           <span class="section-badge">本周</span>
         </div>
         <div class="stats-grid">
-          <div class="stat-card">
+          <div
+            class="stat-card clickable"
+            @click="goToInterviewCenter"
+          >
             <div class="stat-icon interviews">
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-              </svg>
+              <font-awesome-icon icon="fa-solid fa-comments" />
             </div>
             <div class="stat-content">
-              <span class="stat-value">{{ store.stats.overview.totalInterviews }}</span>
-              <span class="stat-label">模拟面试次数</span>
-            </div>
-            <div class="stat-trend up">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-                <polyline points="17 6 23 6 23 12" />
-              </svg>
-              +12%
+              <span class="stat-value">{{ store.stats.overview.realInterviews }}</span>
+              <span class="stat-label">真实面试</span>
             </div>
           </div>
 
-          <div class="stat-card">
-            <div class="stat-icon score">
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-              </svg>
+          <div
+            class="stat-card clickable"
+            @click="goToMockInterview"
+          >
+            <div class="stat-icon mock">
+              <font-awesome-icon icon="fa-solid fa-star" />
             </div>
             <div class="stat-content">
-              <span class="stat-value">{{ store.stats.overview.averageScore }}</span>
-              <span class="stat-label">平均得分</span>
-            </div>
-            <div class="stat-trend up">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-                <polyline points="17 6 23 6 23 12" />
-              </svg>
-              +8%
+              <span class="stat-value">{{ store.stats.overview.mockInterviews }}</span>
+              <span class="stat-label">模拟面试</span>
             </div>
           </div>
 
-          <div class="stat-card">
-            <div class="stat-icon improvement">
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <line
-                  x1="12"
-                  y1="20"
-                  x2="12"
-                  y2="10"
-                />
-                <line
-                  x1="18"
-                  y1="20"
-                  x2="18"
-                  y2="4"
-                />
-                <line
-                  x1="6"
-                  y1="20"
-                  x2="6"
-                  y2="16"
-                />
-              </svg>
+          <div
+            class="stat-card clickable"
+            @click="goToResume"
+          >
+            <div class="stat-icon resume">
+              <font-awesome-icon icon="fa-solid fa-file-alt" />
             </div>
             <div class="stat-content">
-              <span class="stat-value">{{ store.stats.overview.improvementRate }}%</span>
-              <span class="stat-label">能力提升率</span>
-            </div>
-            <div class="stat-trend up">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-                <polyline points="17 6 23 6 23 12" />
-              </svg>
-              +23%
+              <span class="stat-value">{{ store.stats.overview.resumeCount }}</span>
+              <span class="stat-label">简历数量</span>
             </div>
           </div>
 
-          <div class="stat-card">
-            <div class="stat-icon study">
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="10"
-                />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
+          <div
+            class="stat-card clickable"
+            @click="goToInterviewCenter"
+          >
+            <div class="stat-icon preparation">
+              <font-awesome-icon icon="fa-solid fa-circle-check" />
             </div>
             <div class="stat-content">
-              <span class="stat-value">{{ store.stats.overview.studyHours }}h</span>
-              <span class="stat-label">累计学习时长</span>
-            </div>
-            <div class="stat-trend neutral">
-              本周 +5h
+              <span class="stat-value">{{ store.stats.overview.preparationCompletionRate }}%</span>
+              <span class="stat-label">准备完成率</span>
             </div>
           </div>
         </div>
@@ -204,7 +119,7 @@
         >
           <div class="section-header">
             <h2 class="section-title">
-              学习进度
+              近期面试
             </h2>
             <div class="chart-tabs">
               <button
@@ -229,9 +144,9 @@
                 <div class="bar-wrapper">
                   <div
                     class="bar"
-                    :style="{ height: item.score + '%' }"
+                    :style="{ height: getBarHeight(item) + '%' }"
                   >
-                    <span class="bar-value">{{ item.score }}</span>
+                    <span class="bar-value">{{ getBarValue(item) }}</span>
                   </div>
                 </div>
                 <span class="bar-label">{{ item.week }}</span>
@@ -240,68 +155,29 @@
           </div>
         </section>
 
-        <!-- 技能雷达 -->
-        <section
-          class="skills-section animate-in"
-          style="--delay: 3"
-        >
-          <div class="section-header">
-            <h2 class="section-title">
-              技能评估
-            </h2>
-          </div>
-          <div class="skills-list">
-            <div
-              v-for="(skill, index) in store.stats.skillRadar"
-              :key="skill.skill"
-              class="skill-item"
-              :style="{ '--index': index }"
-            >
-              <div class="skill-info">
-                <span class="skill-name">{{ skill.skill }}</span>
-                <span class="skill-score">{{ skill.score }}</span>
-              </div>
-              <div class="skill-bar">
-                <div
-                  class="skill-fill"
-                  :style="{ width: skill.score + '%' }"
-                />
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <!-- 最近动态 & 推荐岗位 -->
-      <div class="bottom-grid">
         <!-- 最近动态 -->
         <section
           class="activity-section animate-in"
-          style="--delay: 4"
+          style="--delay: 3"
         >
           <div class="section-header">
             <h2 class="section-title">
               最近动态
             </h2>
-            <button class="view-all-btn">
-              查看全部
-            </button>
           </div>
           <div class="activity-list">
             <div
               v-for="(activity, index) in store.stats.recentActivity"
               :key="index"
-              class="activity-item"
+              class="activity-item clickable"
               :style="{ '--index': index }"
+              @click="goToActivity(activity)"
             >
               <div
                 class="activity-icon"
                 :class="activity.type"
               >
-                <span v-if="activity.type === 'interview'">🎯</span>
-                <span v-else-if="activity.type === 'resume'">📄</span>
-                <span v-else-if="activity.type === 'practice'">📝</span>
-                <span v-else>📊</span>
+                <font-awesome-icon :icon="getActivityIcon(activity.type)" />
               </div>
               <div class="activity-content">
                 <p class="activity-text">
@@ -318,65 +194,17 @@
             </div>
           </div>
         </section>
-
-        <!-- 推荐岗位 -->
-        <section
-          class="jobs-section animate-in"
-          style="--delay: 5"
-        >
-          <div class="section-header">
-            <h2 class="section-title">
-              推荐岗位
-            </h2>
-            <button class="view-all-btn">
-              更多职位
-            </button>
-          </div>
-          <div class="jobs-list">
-            <div
-              v-for="job in store.jobs.slice(0, 3)"
-              :key="job.id"
-              class="job-card"
-            >
-              <div class="job-header">
-                <div class="company-logo">
-                  {{ job.company.charAt(0) }}
-                </div>
-                <div class="job-info">
-                  <h4 class="job-position">
-                    {{ job.position }}
-                  </h4>
-                  <span class="job-company">{{ job.company }}</span>
-                </div>
-                <div class="match-score">
-                  <span class="score-value">{{ job.matchScore }}%</span>
-                  <span class="score-label">匹配度</span>
-                </div>
-              </div>
-              <div class="job-details">
-                <span class="job-salary">{{ job.salary }}</span>
-                <span class="job-location">{{ job.location }}</span>
-              </div>
-              <div class="job-tags">
-                <span
-                  v-for="tag in job.tags"
-                  :key="tag"
-                  class="job-tag"
-                >{{ tag }}</span>
-              </div>
-            </div>
-          </div>
-        </section>
       </div>
+
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAppStore } from '@/stores'
 import { useRouter } from 'vue-router'
-import type { WeeklyProgress } from '@/types'
+import type { WeeklyProgress, RecentActivity } from '@/types'
 
 interface ChartTab {
   key: string
@@ -394,6 +222,11 @@ const chartTabs: ChartTab[] = [
 
 const chartData = computed<WeeklyProgress[]>(() => store.stats.weeklyProgress)
 
+// 加载统计数据
+onMounted(async () => {
+  await store.fetchStatistics()
+})
+
 function startInterview(): void {
   router.push('/interview')
   store.setActiveNav('interview')
@@ -402,6 +235,64 @@ function startInterview(): void {
 function goToResume(): void {
   router.push('/resume')
   store.setActiveNav('resume')
+}
+
+function goToInterviewCenter(): void {
+  router.push('/interview-center')
+  store.setActiveNav('interview-center')
+}
+
+function goToMockInterview(): void {
+  router.push('/interview')
+  store.setActiveNav('interview')
+}
+
+// 点击最近动态跳转到对应详情页
+function goToActivity(activity: RecentActivity): void {
+  if (!activity.relatedId) return
+  switch (activity.type) {
+    case 'resume':
+      router.push(`/resume/${activity.relatedId}`)
+      store.setActiveNav('resume')
+      break
+    case 'interview':
+    case 'practice':
+    case 'review':
+      router.push(`/interview-center/${activity.relatedId}`)
+      store.setActiveNav('interview-center')
+      break
+  }
+}
+
+// 获取动态图标
+function getActivityIcon(type: string): string {
+  const iconMap: Record<string, string> = {
+    interview: 'fa-solid fa-briefcase',
+    resume: 'fa-solid fa-file-pen',
+    practice: 'fa-solid fa-pencil',
+    default: 'fa-solid fa-chart-line'
+  }
+  return iconMap[type] || iconMap.default
+}
+
+// 根据当前 tab 获取柱状图高度
+function getBarHeight(item: WeeklyProgress): number {
+  if (activeChartTab.value === 'score') {
+    // 分数范围 0-100，直接作为百分比
+    return Math.max(item.score, 5)
+  } else {
+    // 次数范围 0-10，放大到百分比（最大 10 次 = 100%）
+    return Math.max(item.interviews * 10, 5)
+  }
+}
+
+// 根据当前 tab 获取柱状图显示值
+function getBarValue(item: WeeklyProgress): string | number {
+  if (activeChartTab.value === 'score') {
+    return item.score
+  } else {
+    return item.interviews
+  }
 }
 </script>
 
@@ -479,6 +370,9 @@ function goToResume(): void {
   font-size: $text-sm;
   font-weight: $weight-medium;
   transition: all $transition-fast;
+  .action-icon {
+    font-size: 18px; // FA 图标大小
+  }
   &.primary {
     background: $gradient-gold;
     color: $color-bg-deep;
@@ -520,6 +414,12 @@ function goToResume(): void {
     border-color: rgba(212, 168, 83, 0.2);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   }
+  &.clickable {
+    cursor: pointer;
+    &:active {
+      transform: translateY(-2px);
+    }
+  }
 }
 
 .stat-icon {
@@ -529,19 +429,20 @@ function goToResume(): void {
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 20px; // FA 图标大小
   &.interviews {
     background: rgba(96, 165, 250, 0.15);
     color: #60a5fa;
   }
-  &.score {
-    background: rgba(212, 168, 83, 0.15);
-    color: $color-accent;
+  &.mock {
+    background: rgba(251, 191, 36, 0.15);
+    color: #fbbf24;
   }
-  &.improvement {
+  &.resume {
     background: rgba(52, 211, 153, 0.15);
     color: #34d399;
   }
-  &.study {
+  &.preparation {
     background: rgba(167, 139, 250, 0.15);
     color: #a78bfa;
   }
@@ -609,16 +510,27 @@ function goToResume(): void {
 // 主内容区域
 .main-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: $spacing-xl;
+  align-items: stretch;
+}
+
+.progress-section,
+.activity-section {
+  display: flex;
+  flex-direction: column;
 }
 
 // 进度图表
 .chart-container {
+  flex: 1;
   background: $gradient-card;
   border-radius: $radius-lg;
   padding: $spacing-xl;
   border: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  min-height: 320px;
 }
 
 .chart-tabs {
@@ -741,19 +653,15 @@ function goToResume(): void {
   transition: width 0.8s ease;
 }
 
-// 底部区域
-.bottom-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: $spacing-xl;
-}
-
 // 活动列表
 .activity-list {
+  flex: 1;
   background: $gradient-card;
   border-radius: $radius-lg;
   border: 1px solid rgba(255, 255, 255, 0.05);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .activity-item {
@@ -772,6 +680,15 @@ function goToResume(): void {
   &:hover {
     background: rgba(255, 255, 255, 0.02);
   }
+  &.clickable {
+    cursor: pointer;
+    &:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    &:active {
+      background: rgba(255, 255, 255, 0.08);
+    }
+  }
 }
 
 .activity-icon {
@@ -782,6 +699,19 @@ function goToResume(): void {
   align-items: center;
   justify-content: center;
   background: rgba(255, 255, 255, 0.05);
+  font-size: 16px; // FA 图标大小
+  &.interview {
+    background: rgba(96, 165, 250, 0.15);
+    color: #60a5fa;
+  }
+  &.resume {
+    background: rgba(52, 211, 153, 0.15);
+    color: #34d399;
+  }
+  &.practice {
+    background: rgba(251, 191, 36, 0.15);
+    color: #fbbf24;
+  }
 }
 
 .activity-content {
@@ -806,117 +736,6 @@ function goToResume(): void {
   font-size: $text-xs;
   font-weight: $weight-semibold;
   border-radius: $radius-sm;
-}
-
-// 岗位列表
-.jobs-list {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-md;
-}
-
-.job-card {
-  background: $gradient-card;
-  border-radius: $radius-lg;
-  padding: $spacing-lg;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: all $transition-fast;
-  &:hover {
-    transform: translateX(4px);
-    border-color: rgba(212, 168, 83, 0.2);
-  }
-}
-
-.job-header {
-  display: flex;
-  align-items: center;
-  gap: $spacing-md;
-  margin-bottom: $spacing-md;
-}
-
-.company-logo {
-  width: 44px;
-  height: 44px;
-  border-radius: $radius-md;
-  background: $gradient-gold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: $font-display;
-  font-weight: $weight-bold;
-  color: $color-bg-deep;
-}
-
-.job-info {
-  flex: 1;
-}
-
-.job-position {
-  font-size: $text-base;
-  font-weight: $weight-medium;
-  color: $color-text-primary;
-  margin-bottom: $spacing-xs;
-}
-
-.job-company {
-  font-size: $text-sm;
-  color: $color-text-tertiary;
-}
-
-.match-score {
-  text-align: right;
-}
-
-.score-value {
-  display: block;
-  font-size: $text-lg;
-  font-weight: $weight-semibold;
-  color: $color-accent;
-}
-
-.score-label {
-  font-size: $text-xs;
-  color: $color-text-tertiary;
-}
-
-.job-details {
-  display: flex;
-  gap: $spacing-md;
-  margin-bottom: $spacing-md;
-}
-
-.job-salary {
-  font-size: $text-sm;
-  font-weight: $weight-semibold;
-  color: $color-success;
-}
-
-.job-location {
-  font-size: $text-sm;
-  color: $color-text-tertiary;
-}
-
-.job-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: $spacing-xs;
-}
-
-.job-tag {
-  padding: $spacing-xs $spacing-sm;
-  background: rgba(255, 255, 255, 0.05);
-  color: $color-text-secondary;
-  font-size: $text-xs;
-  border-radius: $radius-sm;
-}
-
-.view-all-btn {
-  font-size: $text-sm;
-  color: $color-accent;
-  transition: color $transition-fast;
-  &:hover {
-    color: $color-accent-light;
-  }
 }
 
 // 动画

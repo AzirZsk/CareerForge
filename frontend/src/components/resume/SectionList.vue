@@ -17,27 +17,7 @@
         class="add-section-btn"
         @click="$emit('add-section')"
       >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <line
-            x1="12"
-            y1="5"
-            x2="12"
-            y2="19"
-          />
-          <line
-            x1="5"
-            y1="12"
-            x2="19"
-            y2="12"
-          />
-        </svg>
+        <font-awesome-icon icon="fa-solid fa-plus" />
         添加模块
       </button>
     </div>
@@ -52,7 +32,10 @@
       >
         <div class="section-header">
           <div class="section-info">
-            <span class="section-icon">{{ getSectionIcon(section.type) }}</span>
+            <font-awesome-icon
+              :icon="getSectionIcon(section.type)"
+              class="section-icon"
+            />
             <span class="section-name">{{ section.title }}</span>
           </div>
           <div
@@ -70,7 +53,10 @@
           class="section-hint"
           :class="getHighestPriorityClass(section.suggestions)"
         >
-          <span class="hint-icon">{{ getSuggestionIcon(section.suggestions) }}</span>
+          <font-awesome-icon
+            :icon="getSuggestionIcon(section.suggestions)"
+            class="hint-icon"
+          />
           {{ section.suggestions.length }} 条建议
         </div>
       </div>
@@ -100,13 +86,13 @@ const {
   getScoreClass
 } = useSectionHelper()
 
-// 根据最高优先级获取图标
+// 根据最高优先级获取图标 - Font Awesome 图标类名
 function getSuggestionIcon(suggestions: ResumeSuggestionItem[]): string {
   const hasCritical = suggestions.some(s => s.type === 'critical')
   const hasImprovement = suggestions.some(s => s.type === 'improvement')
-  if (hasCritical) return '⚠️'
-  if (hasImprovement) return '💡'
-  return '✨'
+  if (hasCritical) return 'fa-solid fa-triangle-exclamation'
+  if (hasImprovement) return 'fa-solid fa-lightbulb'
+  return 'fa-solid fa-wand-magic-sparkles'
 }
 
 // 根据最高优先级获取样式类

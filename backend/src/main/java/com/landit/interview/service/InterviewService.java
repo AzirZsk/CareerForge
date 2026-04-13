@@ -6,6 +6,7 @@ import com.landit.interview.dto.InterviewDetailVO;
 import com.landit.interview.dto.InterviewQuestionsVO;
 import com.landit.interview.entity.Interview;
 import com.landit.interview.mapper.InterviewMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
  * @author Azir
  */
 @Service
+@RequiredArgsConstructor
 public class InterviewService extends ServiceImpl<InterviewMapper, Interview> {
 
     /**

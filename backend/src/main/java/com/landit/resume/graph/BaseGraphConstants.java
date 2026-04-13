@@ -60,4 +60,9 @@ public class BaseGraphConstants {
      */
     public static final String OUTPUT_DATA = "data";
 
+    /**
+     * 节点输出 - 是否使用缓存
+     */
+    public static final String OUTPUT_CACHED = "cached";
+
 }

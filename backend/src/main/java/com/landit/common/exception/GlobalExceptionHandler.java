@@ -34,7 +34,7 @@ public class GlobalExceptionHandler {
         String message = e.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .collect(Collectors.joining("; "));
-        log.warn("参数校验失败: {}", message);
+        log.warn("参数校验失败: {}", message, e);
         return ApiResponse.badRequest(message);
     }
 
@@ -46,7 +46,7 @@ public class GlobalExceptionHandler {
         String message = e.getConstraintViolations().stream()
                 .map(ConstraintViolation::getMessage)
                 .collect(Collectors.joining("; "));
-        log.warn("参数校验失败: {}", message);
+        log.warn("参数校验失败: {}", message, e);
         return ApiResponse.badRequest(message);
     }
 
@@ -55,7 +55,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ApiResponse<Void> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
-        log.warn("请求体解析失败: {}", e.getMessage());
+        log.warn("请求体解析失败: {}", e.getMessage(), e);
         return ApiResponse.badRequest("请求体格式错误，请检查JSON格式是否正确");
     }
 
@@ -65,7 +65,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ApiResponse<Void> handleMissingServletRequestParameterException(MissingServletRequestParameterException e) {
         String message = "缺少必需参数: " + e.getParameterName();
-        log.warn(message);
+        log.warn("{}", message, e);
         return ApiResponse.badRequest(message);
     }
 
@@ -75,7 +75,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ApiResponse<Void> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e) {
         String message = "参数 '" + e.getName() + "' 类型错误，期望类型: " + e.getRequiredType();
-        log.warn(message);
+        log.warn("{}", message, e);
         return ApiResponse.badRequest(message);
     }
 
@@ -85,7 +85,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ApiResponse<Void> handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException e) {
         String message = "不支持的请求方法: " + e.getMethod();
-        log.warn(message);
+        log.warn("{}", message, e);
         return ApiResponse.error(405, message);
     }
 
@@ -94,7 +94,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(NoHandlerFoundException.class)
     public ApiResponse<Void> handleNoHandlerFoundException(NoHandlerFoundException e) {
-        log.warn("请求的资源不存在: {}", e.getRequestURL());
+        log.warn("请求的资源不存在: {}", e.getRequestURL(), e);
         return ApiResponse.notFound("请求的资源不存在");
     }
 
@@ -103,7 +103,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ApiResponse<Void> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e) {
-        log.warn("文件大小超限: {}", e.getMessage());
+        log.warn("文件大小超限: {}", e.getMessage(), e);
         return ApiResponse.badRequest("上传文件大小超过限制");
     }
 
@@ -112,7 +112,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(BusinessException.class)
     public ApiResponse<Void> handleBusinessException(BusinessException e) {
-        log.warn("业务异常: code={}, message={}", e.getCode(), e.getMessage());
+        log.warn("业务异常: code={}, message={}", e.getCode(), e.getMessage(), e);
         return ApiResponse.error(e.getCode(), e.getMessage());
     }
 
@@ -121,7 +121,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(IllegalArgumentException.class)
     public ApiResponse<Void> handleIllegalArgumentException(IllegalArgumentException e) {
-        log.warn("参数错误: {}", e.getMessage());
+        log.warn("参数错误: {}", e.getMessage(), e);
         return ApiResponse.badRequest(e.getMessage());
     }
 
@@ -130,7 +130,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(IllegalStateException.class)
     public ApiResponse<Void> handleIllegalStateException(IllegalStateException e) {
-        log.warn("状态错误: {}", e.getMessage());
+        log.warn("状态错误: {}", e.getMessage(), e);
         return ApiResponse.badRequest(e.getMessage());
     }
 
