@@ -8,6 +8,7 @@
 
 | 日期 | 版本 | 变更内容 |
 |------|------|----------|
+| 2026-04-13 | 2.5.0 | **文档同步更新**：新增 task 异步任务模块文档（10 个 Java 文件） |
 | 2026-04-10 | 2.4.0 | **新增多用户登录注册系统**：新增 auth 模块（5 个 Java 文件）、AuthController；SSE 从 Reactor 迁移至 Spring MVC SseEmitter；语音面试新增问题预生成与追问机制；更新文件统计 |
 | 2026-04-07 | 2.3.0 | **清理老版本复盘模块**：删除 `review/` 目录（13 个 Java 文件），复盘功能统一使用 `interview/graph/review/` 工作流 + `InterviewReviewNote` |
 | 2026-04-02 | 2.2.0 | **新增 AI 语音面试模块**（37 个 Java 文件）：WebSocket + 阿里云 ASR/TTS + 求助系统 + 录音回放；新增 company/jobposition 模块（11+11 个文件）；新增面试中心相关表和语音面试相关表；新增 7 个 Controllers |
@@ -34,6 +35,7 @@
 - **AI 语音模拟面试**（WebSocket 实时对话 + 求助系统 + 录音回放 + 问题预生成）
 - 面试复盘与分析
 - 数据统计
+- **异步任务管理**（音频转录、简历优化、复盘分析）
 - 职位推荐
 - **公司信息与调研**
 - **职位信息与 JD 分析**
@@ -98,6 +100,7 @@ export ALIYUN_ACCESS_KEY_SECRET=your_access_key_secret
 | statistics | `/statistics` | StatisticsController | 数据统计 |
 | job | `/jobs` | JobController | 职位推荐 |
 | **job-position** | `/job-positions` | **JobPositionController** | **职位信息与 JD 分析** |
+| **task** | `/tasks` | **TaskController** | **异步任务管理** |
 
 ### 统一响应格式
 ```java
@@ -619,6 +622,18 @@ public abstract class BaseEntity {
   - 职位推荐
   - 匹配度计算
 
+### task - 异步任务模块
+- **路径**：`src/main/java/com/careerforge/task/`
+- **文件统计**：10 个 Java 文件
+- **实体**：AsyncTask（表 t_async_task）
+- **枚举**：TaskStatus（PENDING/RUNNING/SUCCESS/FAILED）、TaskType（AUDIO_TRANSCRIBE/RESUME_OPTIMIZE/REVIEW_ANALYSIS）
+- **核心功能**：
+  - 异步任务创建、查询、删除
+  - 音频转录任务（AudioTranscribeTaskService）
+  - 任务状态管理（pending -> running -> success/failed）
+- **Controller**：TaskController（REST API `/tasks`）
+- **Service**：AsyncTaskService（CRUD）、AudioTranscribeTaskService（音频转录）
+
 ---
 
 ## 常见问题 (FAQ)
@@ -743,6 +758,7 @@ backend/
 │   │   │       └── util/                # 工具类
 │   │   ├── company/                     # 公司模块（6 个文件）
 │   │   ├── jobposition/                 # 职位模块（11 个文件）
+│   │   ├── task/                        # 异步任务模块（10 个文件）
 │   │   ├── statistics/                  # 统计模块（4 个文件）
 │   │   └── job/                         # 职位模块（4 个文件）
 │   └── resources/

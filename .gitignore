@@ -59,7 +59,8 @@ buildNumber.properties
 # SQLite 数据库文件
 backend/data/
 
-.claude/
+.claude/*
+!.claude/index.json
 
 # ==================== 前端 (Vue/Node.js/Vite) ====================
 # 依赖目录
