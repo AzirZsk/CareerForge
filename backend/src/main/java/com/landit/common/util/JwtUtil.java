@@ -50,10 +50,14 @@ public class JwtUtil {
             if (!jwt.verify()) {
                 throw new BusinessException("Token签名验证失败");
             }
-            // 检查过期时间（使用 Hutool 的 getExpiresAt() 方法）
-            Date expiresAt = jwt.getExpiresAt();
-            if (expiresAt != null && expiresAt.before(new Date())) {
-                throw new BusinessException("Token已过期");
+            // 检查过期时间（Hutool JWT 的 exp 返回秒级时间戳 Number）
+            Object expObj = jwt.getPayload("exp");
+            if (expObj instanceof Number) {
+                long expTimestamp = ((Number) expObj).longValue() * 1000;
+                Date expiresAt = new Date(expTimestamp);
+                if (expiresAt.before(new Date())) {
+                    throw new BusinessException("Token已过期");
+                }
             }
             // 提取用户ID并进行空值检查
             Object userIdObj = jwt.getPayload("userId");
@@ -74,7 +78,10 @@ public class JwtUtil {
      */
     public long getExpireTime(String token) {
         JWT jwt = JWT.of(token);
-        Date expiresAt = jwt.getExpiresAt();
-        return expiresAt != null ? expiresAt.getTime() : 0L;
+        Object expObj = jwt.getPayload("exp");
+        if (expObj instanceof Number) {
+            return ((Number) expObj).longValue() * 1000;
+        }
+        return 0L;
     }
 }
