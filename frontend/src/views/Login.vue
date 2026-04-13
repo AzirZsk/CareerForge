@@ -230,7 +230,9 @@ async function handleRegister() {
     isLoading.value = true
     errorMessage.value = ''
 
-    const { confirmPassword, ...data } = registerForm.value
+    const { confirmPassword, gender, ...rest } = registerForm.value
+    // gender 为空字符串时不发送该字段
+    const data = { ...rest, ...(gender ? { gender } : {}) }
     await authApi.register(data)
 
     // 注册成功，切换到登录模式

@@ -5,6 +5,7 @@ import com.landit.auth.dto.LoginRequest;
 import com.landit.auth.dto.LoginResponse;
 import com.landit.auth.dto.RegisterRequest;
 import com.landit.auth.dto.RegisterResponse;
+import com.landit.common.enums.Gender;
 import com.landit.common.exception.BusinessException;
 import com.landit.common.util.JwtUtil;
 import com.landit.common.util.WebUtils;
@@ -50,7 +51,9 @@ public class AuthService {
         // 创建用户
         User user = new User();
         user.setName(request.getName());
-        user.setGender(request.getGender() != null ? request.getGender().name() : null);
+        // 将前端传入的性别值统一转为枚举名存储
+        Gender gender = Gender.fromValue(request.getGender());
+        user.setGender(gender != null ? gender.name() : null);
         user.setEmail(request.getEmail());
         user.setPassword(hashedPassword);
         user.setStatus("ACTIVE");

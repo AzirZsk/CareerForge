@@ -1,6 +1,5 @@
 package com.landit.auth.dto;
 
-import com.landit.common.enums.Gender;
 import lombok.Data;
 
 import jakarta.validation.constraints.Email;
@@ -38,7 +37,7 @@ public class RegisterRequest {
     private String name;
 
     /**
-     * 性别
+     * 性别（MALE/Female 或 男/女）
      */
-    private Gender gender;
+    private String gender;
 }
