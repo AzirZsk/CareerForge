@@ -12,7 +12,7 @@ let cachedToken: string | null = null
 // 创建 Axios 实例
 const request = axios.create({
   baseURL: '/landit',
-  timeout: 30000
+  timeout: 60000
 })
 
 // 更新缓存的 token

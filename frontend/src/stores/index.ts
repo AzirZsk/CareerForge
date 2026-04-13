@@ -121,6 +121,7 @@ export const useAppStore = defineStore('app', () => {
         }
         isInitialized.value = true
         localStorage.setItem('isInitialized', 'true')
+        localStorage.setItem('user', JSON.stringify(user.value))
         isLoggedIn.value = true
       }
       return status
@@ -486,6 +487,12 @@ export const useAppStore = defineStore('app', () => {
       updateToken(response.token)
       user.value = response.user
       isLoggedIn.value = true
+      // 持久化用户信息，刷新页面后能恢复
+      localStorage.setItem('user', JSON.stringify(user.value))
+      if (response.user.initialized) {
+        isInitialized.value = true
+        localStorage.setItem('isInitialized', 'true')
+      }
     } catch (error) {
       console.error('登录失败', error)
       throw error

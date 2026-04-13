@@ -196,7 +196,8 @@ export async function applyOptimizeChanges(
   return request({
     url: `/resumes/${resumeId}/optimize/apply`,
     method: 'post',
-    data
+    data,
+    timeout: 120000
   })
 }
 
