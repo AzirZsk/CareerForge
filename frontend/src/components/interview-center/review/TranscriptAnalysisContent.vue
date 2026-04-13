@@ -10,18 +10,18 @@
       <div class="metric-card">
         <span class="metric-label">整体清晰度</span>
         <div class="metric-value" :class="getClarityClass(data.overallClarity)">
-          {{ data.overallClarity?.toFixed(1) }}
+          {{ data.overallClarity != null ? `${data.overallClarity.toFixed(1)}/5` : '-' }}
         </div>
       </div>
       <div class="metric-card">
         <span class="metric-label">简历匹配度</span>
         <div class="metric-value" :class="getResumeMatchClass(data.overallResumeMatch)">
-          {{ data.overallResumeMatch?.toFixed(1) }}
+          {{ data.overallResumeMatch != null ? `${data.overallResumeMatch.toFixed(1)}/5` : '-' }}
         </div>
       </div>
       <div class="metric-card">
         <span class="metric-label">JD 匹配度</span>
-        <div class="metric-value">{{ data.jdMatchScore != null ? `${data.jdMatchScore}/10` : '-' }}</div>
+        <div class="metric-value">{{ data.jdMatchScore != null ? `${data.jdMatchScore}/5` : '-' }}</div>
       </div>
     </div>
 
@@ -59,7 +59,7 @@
             <span class="qa-label">清晰度:</span>
             <span class="qa-value">
               <span class="score-badge" :class="getScoreClass(qa.clarityScore)">
-                {{ qa.clarityScore }}
+                {{ qa.clarityScore }}/5
               </span>
             </span>
           </div>
@@ -71,7 +71,7 @@
             <span class="qa-label">简历匹配:</span>
             <span class="qa-value">
               <span class="score-badge" :class="getResumeMatchClass(qa.resumeMatchScore)">
-                {{ qa.resumeMatchScore }}
+                {{ qa.resumeMatchScore }}/5
               </span>
             </span>
           </div>

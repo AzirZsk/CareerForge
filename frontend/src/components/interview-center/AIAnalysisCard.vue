@@ -28,23 +28,10 @@
 
     <!-- 卡片内容（可折叠） -->
     <div v-if="isExpanded" class="card-content">
-      <!-- 面试表现分析（来自持久化结果） -->
-      <div v-if="interviewAnalysis" class="analysis-section">
-        <div class="section-header-inline" @click="toggleInterviewAnalysis">
-          <span class="section-title">面试表现分析</span>
-          <font-awesome-icon icon="fa-solid fa-chevron-down" :class="{ rotated: showInterviewAnalysis }" />
-        </div>
-        <Transition name="expand">
-          <div v-if="showInterviewAnalysis" class="section-content">
-            <InterviewAnalysisContent :data="interviewAnalysis" />
-          </div>
-        </Transition>
-      </div>
-
-      <!-- 对话分析详情（来自持久化结果） -->
+      <!-- 分析面试对话（来自持久化结果） -->
       <div v-if="transcriptAnalysis" class="analysis-section">
         <div class="section-header-inline" @click="toggleTranscriptAnalysis">
-          <span class="section-title">对话分析详情</span>
+          <span class="section-title">分析面试对话</span>
           <font-awesome-icon icon="fa-solid fa-chevron-down" :class="{ rotated: showTranscriptAnalysis }" />
         </div>
         <Transition name="expand">
@@ -54,34 +41,37 @@
         </Transition>
       </div>
 
-      <!-- AI 建议列表 -->
-      <div v-if="adviceList.length > 0" class="advice-list">
-        <div v-for="(advice, index) in adviceList" :key="index" class="advice-item">
-          <div class="advice-header">
-            <span v-if="advice.category" class="advice-category">{{ advice.category }}</span>
-            <span class="advice-title">{{ advice.title }}</span>
-            <span v-if="advice.priority" class="advice-priority" :class="advice.priority">
-              {{ getPriorityLabel(advice.priority) }}
-            </span>
-          </div>
-          <p class="advice-description">{{ advice.description }}</p>
-          <ul v-if="advice.actionItems && advice.actionItems.length > 0" class="action-items">
-            <li v-for="(item, idx) in advice.actionItems" :key="idx">{{ item }}</li>
-          </ul>
+      <!-- AI 分析表现（来自持久化结果） -->
+      <div v-if="interviewAnalysis" class="analysis-section">
+        <div class="section-header-inline" @click="toggleInterviewAnalysis">
+          <span class="section-title">AI 分析表现</span>
+          <font-awesome-icon icon="fa-solid fa-chevron-down" :class="{ rotated: showInterviewAnalysis }" />
         </div>
+        <Transition name="expand">
+          <div v-if="showInterviewAnalysis" class="section-content">
+            <InterviewAnalysisContent :data="interviewAnalysis" />
+          </div>
+        </Transition>
+      </div>
+
+      <!-- 生成改进建议 -->
+      <div v-if="adviceList.length > 0" class="analysis-section">
+        <div class="section-header-inline" @click="toggleAdviceList">
+          <span class="section-title">生成改进建议</span>
+          <font-awesome-icon icon="fa-solid fa-chevron-down" :class="{ rotated: showAdviceList }" />
+        </div>
+        <Transition name="expand">
+          <div v-if="showAdviceList" class="section-content">
+            <AdviceListContent :data="adviceList" />
+          </div>
+        </Transition>
       </div>
 
       <!-- 空状态 -->
-      <div v-else class="empty-state">
+      <div v-if="!transcriptAnalysis && !interviewAnalysis && adviceList.length === 0" class="empty-state">
         <p>暂无 AI 分析结果</p>
       </div>
 
-      <!-- 参考建议按钮 -->
-      <div v-if="showReferenceButton && adviceList.length > 0" class="card-footer">
-        <button class="btn btn-sm btn-reference" @click="handleReference">
-          <font-awesome-icon icon="fa-solid fa-clipboard" /> 参考 AI 建议写笔记
-        </button>
-      </div>
     </div>
   </div>
 </template>
@@ -90,6 +80,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import TranscriptAnalysisContent from './review/TranscriptAnalysisContent.vue'
 import InterviewAnalysisContent from './review/InterviewAnalysisContent.vue'
+import AdviceListContent from './review/AdviceListContent.vue'
 import type { AIAnalysisVO, AdviceItem, TranscriptAnalysisResult, InterviewAnalysisResult } from '@/types/interview-center'
 
 const props = defineProps<{
@@ -97,17 +88,14 @@ const props = defineProps<{
   aiAnalysisNote?: AIAnalysisVO | null
   /** 是否正在分析中 */
   isAnalyzing?: boolean
-  /** 是否显示操作按钮（重新分析、参考建议） */
+  /** 是否显示操作按钮（重新分析） */
   hideActions?: boolean
-  /** 是否显示参考建议按钮 */
-  showReferenceButton?: boolean
   /** 是否默认展开 */
   defaultExpanded?: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'reanalyze'): void
-  (e: 'reference', adviceList: AdviceItem[]): void
 }>()
 
 const isExpanded = ref(props.defaultExpanded ?? false)
@@ -135,6 +123,7 @@ const interviewAnalysis = computed<InterviewAnalysisResult | undefined>(() => {
 // 折叠状态
 const showInterviewAnalysis = ref(false)
 const showTranscriptAnalysis = ref(false)
+const showAdviceList = ref(false)
 
 // 格式化时间
 function formatTime(dateStr: string): string {
@@ -146,16 +135,6 @@ function formatTime(dateStr: string): string {
     hour: '2-digit',
     minute: '2-digit'
   })
-}
-
-// 获取优先级标签
-function getPriorityLabel(priority: string): string {
-  const labels: Record<string, string> = {
-    high: '高',
-    medium: '中',
-    low: '低'
-  }
-  return labels[priority] || priority
 }
 
 // 切换展开/折叠
@@ -173,14 +152,14 @@ function toggleTranscriptAnalysis() {
   showTranscriptAnalysis.value = !showTranscriptAnalysis.value
 }
 
+// 切换改进建议展开/折叠
+function toggleAdviceList() {
+  showAdviceList.value = !showAdviceList.value
+}
+
 // 重新分析
 function handleReanalyze() {
   emit('reanalyze')
-}
-
-// 参考建议
-function handleReference() {
-  emit('reference', adviceList.value)
 }
 
 // 监听分析状态，完成后自动展开
@@ -343,110 +322,9 @@ onMounted(() => {
   opacity: 1;
 }
 
-.advice-list {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-md;
-  margin-top: $spacing-md;
-}
-
-.advice-item {
-  padding: $spacing-sm;
-  background: $color-bg-secondary;
-  border-radius: $radius-sm;
-}
-
-.advice-header {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  margin-bottom: $spacing-xs;
-  flex-wrap: wrap;
-}
-
-.advice-category {
-  font-size: 0.625rem;
-  padding: 2px 6px;
-  background: $color-bg-tertiary;
-  border-radius: $radius-sm;
-  color: $color-text-tertiary;
-}
-
-.advice-title {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: $color-text-primary;
-}
-
-.advice-priority {
-  font-size: 0.625rem;
-  padding: 2px 6px;
-  border-radius: $radius-sm;
-
-  &.high {
-    background: rgba($color-error, 0.15);
-    color: $color-error;
-  }
-
-  &.medium {
-    background: rgba($color-warning, 0.15);
-    color: $color-warning;
-  }
-
-  &.low {
-    background: rgba($color-success, 0.15);
-    color: $color-success;
-  }
-}
-
-.advice-description {
-  font-size: 0.8125rem;
-  color: $color-text-secondary;
-  line-height: 1.5;
-  margin: 0;
-}
-
-.action-items {
-  margin: $spacing-sm 0 0;
-  padding-left: $spacing-lg;
-  font-size: 0.8125rem;
-  color: $color-text-secondary;
-
-  li {
-    margin-bottom: 4px;
-
-    &:last-child {
-      margin-bottom: 0;
-    }
-  }
-}
-
 .empty-state {
   text-align: center;
   padding: $spacing-xl;
   color: $color-text-tertiary;
-}
-
-.card-footer {
-  margin-top: $spacing-md;
-  padding-top: $spacing-md;
-  border-top: 1px solid $color-border;
-}
-
-.btn-reference {
-  width: 100%;
-  background: rgba($color-accent, 0.15);
-  border: 1px solid rgba($color-accent, 0.3);
-  color: $color-accent;
-  padding: $spacing-sm;
-  font-size: 0.875rem;
-  border-radius: $radius-sm;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    background: rgba($color-accent, 0.25);
-    border-color: $color-accent;
-  }
 }
 </style>

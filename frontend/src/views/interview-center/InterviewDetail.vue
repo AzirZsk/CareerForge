@@ -209,9 +209,7 @@
               :ai-analysis-note="interview.aiAnalysisNote"
               :is-analyzing="reviewState.isRunning"
               :default-expanded="reviewState.isCompleted && reviewState.adviceList.length > 0"
-              :show-reference-button="!interview.reviewNote"
               @reanalyze="handleReanalyze"
-              @reference="handleReferenceAIAdvice"
             />
 
           </div>
@@ -275,7 +273,6 @@ import { createSession } from '@/api/interview-voice'
 import {
   type InterviewDetail,
   type PreparationVO,
-  type AdviceItem,
   type CompanyResearchResult,
   type JDAnalysisResult,
   type ReviewNoteVO,
@@ -322,13 +319,6 @@ const interview = ref<InterviewDetail | null>(null)
 const showAddPreparationDialog = ref(false)
 const showReviewDialog = ref(false)
 const showEditDialog = ref(false)
-// 临时存储 AI 建议参考内容（用于填充到复盘笔记表单）
-const referencedAdvice = ref<{
-  highPoints: string
-  weakPoints: string
-  lessonsLearned: string
-  overallFeeling: string
-} | null>(null)
 const showPrepModal = ref(false)
 const showMockConfigDialog = ref(false)
 const isCreatingSession = ref(false)
@@ -645,54 +635,6 @@ async function handleReanalyze() {
     // 重新分析
     startAnalysis(interview.value.id, sessionTranscript.value)
   }
-}
-
-// 参考 AI 建议
-function handleReferenceAIAdvice(adviceList: AdviceItem[]) {
-  if (!interview.value || adviceList.length === 0) return
-
-  // 将 AI 建议分类整理
-  const highPoints: string[] = []
-  const weakPoints: string[] = []
-  const lessonsLearned: string[] = []
-
-  adviceList.forEach(advice => {
-    const category = advice.category?.toLowerCase() || ''
-    let text = `${advice.title}: ${advice.description}`
-    if (advice.actionItems && advice.actionItems.length > 0) {
-      text += '\n' + advice.actionItems.map(item => `  - ${item}`).join('\n')
-    }
-
-    // 根据类别分类
-    if (category.includes('技能') || category.includes('知识')) {
-      lessonsLearned.push(text)
-    } else if (category.includes('表现') || category.includes('优点') || category.includes('亮点')) {
-      highPoints.push(text)
-    } else if (category.includes('不足') || category.includes('改进') || category.includes('问题')) {
-      weakPoints.push(text)
-    } else {
-      lessonsLearned.push(text)
-    }
-  })
-
-  // 弹出确认框
-  confirm({
-    title: '参考 AI 建议',
-    message: '是否将 AI 分析建议填充到复盘笔记？这将覆盖原有内容（如有）',
-    confirmText: '填充'
-  }).then(confirmed => {
-    if (confirmed && interview.value) {
-      // 临时存储参考内容，用于 ReviewNoteDialog 加载
-      referencedAdvice.value = {
-        highPoints: highPoints.join('\n\n') || interview.value.reviewNote?.highPoints || '',
-        weakPoints: weakPoints.join('\n\n') || interview.value.reviewNote?.weakPoints || '',
-        lessonsLearned: lessonsLearned.join('\n\n') || interview.value.reviewNote?.lessonsLearned || '',
-        overallFeeling: interview.value.reviewNote?.overallFeeling || ''
-      }
-      // 打开复盘笔记编辑弹窗
-      showReviewDialog.value = true
-    }
-  })
 }
 
 // 保存转译文本
