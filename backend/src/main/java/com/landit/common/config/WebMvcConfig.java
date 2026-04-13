@@ -1,14 +1,16 @@
 package com.landit.common.config;
 
-import com.landit.common.interceptor.JwtInterceptor;
+import com.landit.common.filter.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.core.Ordered;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * Web MVC 配置类
- * 注册 JWT 拦截器并配置放行路径
+ * 注册 JWT 认证过滤器（Servlet Filter 层面，比 Interceptor 更早拦截）
  * 静态资源由 Nginx 直接 serve，Spring Boot 只处理 API 请求
  *
  * @author Azir
@@ -17,22 +19,20 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @RequiredArgsConstructor
 public class WebMvcConfig implements WebMvcConfigurer {
 
-    private final JwtInterceptor jwtInterceptor;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     /**
-     * 注册 JWT 拦截器
-     * 拦截所有 /landit/** 路径，排除认证接口和 Swagger 文档
-     *
-     * @param registry 拦截器注册表
+     * 注册 JWT 认证过滤器
+     * 拦截所有请求，在 Servlet 容器层面进行认证校验
+     * 路径排除逻辑在 Filter 内部处理
      */
-    @Override
-    public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(jwtInterceptor)
-                .addPathPatterns("/landit/**")
-                .excludePathPatterns(
-                        "/landit/auth/**",           // 认证接口放行
-                        "/landit/swagger-ui/**",     // Swagger UI 放行
-                        "/landit/v3/api-docs/**"     // API 文档放行
-                );
+    @Bean
+    public FilterRegistrationBean<JwtAuthenticationFilter> jwtFilterRegistration() {
+        FilterRegistrationBean<JwtAuthenticationFilter> registration = new FilterRegistrationBean<>();
+        registration.setFilter(jwtAuthenticationFilter);
+        registration.addUrlPatterns("/landit/*");
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        registration.setName("jwtAuthenticationFilter");
+        return registration;
     }
 }

@@ -16,7 +16,7 @@ public class SecurityUtils {
 
     /**
      * 获取当前登录用户ID
-     * 从 Request Attribute 中获取（由 JwtInterceptor 设置）
+     * 从 Request Attribute 中获取（由 JwtAuthenticationFilter 设置）
      *
      * @return 用户ID
      * @throws BusinessException 用户未登录
