@@ -24,13 +24,14 @@ public class WebMvcConfig implements WebMvcConfigurer {
     /**
      * 注册 JWT 认证过滤器
      * 拦截所有请求，在 Servlet 容器层面进行认证校验
+     * URL Pattern 相对于 context-path，所以用 /* 而不是 /landit/*
      * 路径排除逻辑在 Filter 内部处理
      */
     @Bean
     public FilterRegistrationBean<JwtAuthenticationFilter> jwtFilterRegistration() {
         FilterRegistrationBean<JwtAuthenticationFilter> registration = new FilterRegistrationBean<>();
         registration.setFilter(jwtAuthenticationFilter);
-        registration.addUrlPatterns("/landit/*");
+        registration.addUrlPatterns("/*");  // 相对于 context-path /landit，实际匹配 /landit/*
         registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
         registration.setName("jwtAuthenticationFilter");
         return registration;

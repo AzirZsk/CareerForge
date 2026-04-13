@@ -50,8 +50,8 @@ public class JwtUtil {
             if (!jwt.verify()) {
                 throw new BusinessException("Token签名验证失败");
             }
-            // 检查过期时间（Hutool 5.x API）
-            Date expiresAt = (Date) jwt.getPayload("exp");
+            // 检查过期时间（使用 Hutool 的 getExpiresAt() 方法）
+            Date expiresAt = jwt.getExpiresAt();
             if (expiresAt != null && expiresAt.before(new Date())) {
                 throw new BusinessException("Token已过期");
             }
@@ -74,7 +74,7 @@ public class JwtUtil {
      */
     public long getExpireTime(String token) {
         JWT jwt = JWT.of(token);
-        Date expiresAt = (Date) jwt.getPayload("exp");
+        Date expiresAt = jwt.getExpiresAt();
         return expiresAt != null ? expiresAt.getTime() : 0L;
     }
 }
