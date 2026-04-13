@@ -29,6 +29,7 @@ export async function initUser(file: File): Promise<UserInitResponse> {
     url: '/user/init',
     method: 'post',
     data: formData,
+    timeout: 300000, // 5分钟超时，AI解析简历需要较长时间
     headers: {
       'Content-Type': 'multipart/form-data'
     }

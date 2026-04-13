@@ -8,6 +8,7 @@
 import { ref, computed, onUnmounted } from 'vue'
 import { useStreamingAudio } from './useStreamingAudio'
 import type { AssistRequest, TextEventData, AudioEventData, DoneEventData, ErrorEventData } from '@/types/interview-voice'
+import { authFetch } from '@/utils/request'
 
 /**
  * SSE 流式求助
@@ -39,8 +40,8 @@ export function useStreamAssist(sessionId: string) {
   /** 错误信息 */
   const error = ref<string | null>(null)
 
-  /** EventSource 实例 */
-  let eventSource: EventSource | null = null
+  /** AbortController 用于中断请求 */
+  let abortController: AbortController | null = null
 
   // ============================================================================
   // 计算属性
@@ -77,6 +78,9 @@ export function useStreamAssist(sessionId: string) {
     // 初始化音频播放器
     audioPlayer.initAudioContext(16000)
 
+    // 创建 AbortController
+    abortController = new AbortController()
+
     try {
       // 构建 SSE URL
       const params = new URLSearchParams({
@@ -84,34 +88,64 @@ export function useStreamAssist(sessionId: string) {
         question: request.question || '',
         candidateDraft: request.candidateDraft || ''
       })
-      // 获取 token（EventSource 不支持自定义 Header，只能通过 URL 参数传递）
-      const token = localStorage.getItem('token')
-      if (token) {
-        params.append('token', token)
-      }
       const url = `/landit/interviews/sessions/${sessionId}/assist/stream?${params}`
 
-      // 创建 EventSource
-      eventSource = new EventSource(url)
+      // 使用 authFetch 发起请求
+      const response = await authFetch(url, {}, 60000) // 1分钟超时
 
-      // 文本事件
-      eventSource.addEventListener('text', handleTextEvent)
-
-      // 音频事件
-      eventSource.addEventListener('audio', handleAudioEvent)
-
-      // 完成事件
-      eventSource.addEventListener('done', handleDoneEvent)
-
-      // 错误事件
-      eventSource.addEventListener('error', handleErrorEvent)
-
-      // 连接错误
-      eventSource.onerror = (event) => {
-        console.error('[useStreamAssist] SSE 连接错误:', event)
-        error.value = '连接失败，请重试'
-        cleanup()
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
+
+      // 获取 ReadableStream
+      const reader = response.body?.getReader()
+      if (!reader) {
+        throw new Error('无法读取响应流')
+      }
+
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      // 读取流
+      while (isRequesting.value) {
+        const { done, value } = await reader.read()
+
+        if (done) {
+          console.log('[useStreamAssist] 流结束')
+          break
+        }
+
+        // 解码并处理数据
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          if (line.trim() && line.startsWith('data:')) {
+            try {
+              const json = line.slice(5).trim()
+              if (!json) continue
+
+              const event = JSON.parse(json)
+
+              // 根据事件类型分发
+              if (event.type === 'text') {
+                handleTextEventData(event.data)
+              } else if (event.type === 'audio') {
+                await handleAudioEventData(event.data)
+              } else if (event.type === 'done') {
+                handleDoneEventData(event.data)
+              } else if (event.type === 'error') {
+                handleErrorEventData(event.data)
+              }
+            } catch (e) {
+              console.error('[useStreamAssist] 解析事件失败:', e, line)
+            }
+          }
+        }
+      }
+
+      reader.releaseLock()
     } catch (e) {
       console.error('[useStreamAssist] 请求失败:', e)
       error.value = e instanceof Error ? e.message : '请求失败'
@@ -131,9 +165,9 @@ export function useStreamAssist(sessionId: string) {
    * 清理资源
    */
   function cleanup(): void {
-    if (eventSource) {
-      eventSource.close()
-      eventSource = null
+    if (abortController) {
+      abortController.abort()
+      abortController = null
     }
     isRequesting.value = false
   }
@@ -143,34 +177,27 @@ export function useStreamAssist(sessionId: string) {
   // ============================================================================
 
   /**
-   * 处理文本事件
+   * 处理文本事件数据
    */
-  function handleTextEvent(event: MessageEvent): void {
-    try {
-      const data: TextEventData = JSON.parse(event.data)
-
-      if (data.isDelta) {
-        // 增量文本，追加显示
-        deltaText.value = data.content
-        textContent.value += data.content
-      } else {
-        // 完整文本，替换显示
-        textContent.value = data.content
-      }
-
-      // 同步到音频播放器的文本显示
-      audioPlayer.appendText(data.content, !data.isDelta)
-    } catch (e) {
-      console.error('[useStreamAssist] 解析文本事件失败:', e)
+  function handleTextEventData(data: TextEventData): void {
+    if (data.isDelta) {
+      // 增量文本，追加显示
+      deltaText.value = data.content
+      textContent.value += data.content
+    } else {
+      // 完整文本，替换显示
+      textContent.value = data.content
     }
+
+    // 同步到音频播放器的文本显示
+    audioPlayer.appendText(data.content, !data.isDelta)
   }
 
   /**
-   * 处理音频事件
+   * 处理音频事件数据
    */
-  async function handleAudioEvent(event: MessageEvent): Promise<void> {
+  async function handleAudioEventData(data: AudioEventData): Promise<void> {
     try {
-      const data: AudioEventData = JSON.parse(event.data)
       await audioPlayer.playAudioChunk(data.audio, data.format)
     } catch (e) {
       console.error('[useStreamAssist] 处理音频事件失败:', e)
@@ -178,11 +205,10 @@ export function useStreamAssist(sessionId: string) {
   }
 
   /**
-   * 处理完成事件
+   * 处理完成事件数据
    */
-  function handleDoneEvent(event: MessageEvent): void {
+  function handleDoneEventData(data: DoneEventData): void {
     try {
-      const data: DoneEventData = JSON.parse(event.data)
       assistRemaining.value = data.assistRemaining
       totalDurationMs.value = data.totalDurationMs
     } catch (e) {
@@ -193,16 +219,11 @@ export function useStreamAssist(sessionId: string) {
   }
 
   /**
-   * 处理错误事件
+   * 处理错误事件数据
    */
-  function handleErrorEvent(event: MessageEvent): void {
-    try {
-      const data: ErrorEventData = JSON.parse(event.data)
-      error.value = data.message
-      console.error('[useStreamAssist] 服务端错误:', data.code, data.message)
-    } catch (e) {
-      error.value = '未知错误'
-    }
+  function handleErrorEventData(data: ErrorEventData): void {
+    error.value = data.message
+    console.error('[useStreamAssist] 服务端错误:', data.code, data.message)
     cleanup()
   }
 

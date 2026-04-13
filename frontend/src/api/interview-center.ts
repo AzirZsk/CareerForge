@@ -172,15 +172,6 @@ export async function saveReviewNote(interviewId: string, data: SaveReviewNoteRe
 // ==================== 工作流 API ====================
 
 /**
- * 流式执行面试准备工作流
- * SSE 流式返回工作流进度（GET 请求，使用 EventSource）
- */
-export function streamPreparation(interviewId: string): EventSource {
-  const url = `${API_BASE}/interview-center/${interviewId}/preparation/stream`
-  return new EventSource(url)
-}
-
-/**
  * 流式执行复盘分析工作流
  * SSE 流式返回工作流进度（POST 请求，需要传递面试过程文本）
  *

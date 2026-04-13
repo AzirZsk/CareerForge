@@ -14,6 +14,7 @@ import type {
 } from '@/types/resume-tailor'
 import { TAILOR_STAGE_CONFIG } from '@/types/resume-tailor'
 import { API_BASE } from '@/api/config'
+import { authFetch } from '@/utils/request'
 
 /** 内部节点 ID 类型（包含工作流控制节点） */
 type InternalNodeId = TailorStage | '__START__' | '__END__'
@@ -53,8 +54,8 @@ export function useResumeTailor() {
     stageHistory: []
   })
 
-  // EventSource 实例
-  let eventSource: EventSource | null = null
+  // AbortController 用于中断请求
+  let abortController: AbortController | null = null
 
   // 计算属性
   const isTailoring = computed(() => state.isTailoring)
@@ -67,7 +68,7 @@ export function useResumeTailor() {
   /**
    * 开始定制
    */
-  function startTailor(resumeId: string, targetPosition: string, jobDescription: string) {
+  async function startTailor(resumeId: string, targetPosition: string, jobDescription: string) {
     // 重置状态
     resetState()
 
@@ -77,45 +78,69 @@ export function useResumeTailor() {
     state.isConnecting = true
     state.isTailoring = true
 
+    // 创建 AbortController
+    abortController = new AbortController()
+
     // 构建 URL
     const params = new URLSearchParams()
     params.append('targetPosition', targetPosition)
     params.append('jobDescription', jobDescription)
 
-    // 获取 token（EventSource 不支持自定义 Header，只能通过 URL 参数传递）
-    const token = localStorage.getItem('token')
-    if (token) {
-      params.append('token', token)
-    }
-
     const url = `${API_BASE}/resumes/${resumeId}/tailor/stream?${params.toString()}`
 
     console.log('[职位适配-SSE] 连接URL:', url)
 
-    // 创建 EventSource
-    eventSource = new EventSource(url)
+    try {
+      // 使用 authFetch 发起请求
+      const response = await authFetch(url, {}, 120000) // 2分钟超时
 
-    // 连接成功
-    eventSource.onopen = () => {
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+
       state.isConnecting = false
       console.log('[职位适配-SSE] 连接成功')
-    }
 
-    // 接收消息
-    eventSource.onmessage = (event) => {
-      try {
-        const data: TailorProgressEvent = JSON.parse(event.data)
-        handleEvent(data)
-      } catch (e) {
-        console.error('[职位适配-SSE] 解析消息失败', e)
+      // 获取 ReadableStream
+      const reader = response.body?.getReader()
+      if (!reader) {
+        throw new Error('无法读取响应流')
       }
-    }
 
-    // 错误处理
-    eventSource.onerror = (error) => {
-      console.error('[职位适配-SSE] 连接错误', error)
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      // 读取流
+      while (state.isTailoring && !state.isCompleted && !state.hasError) {
+        const { done, value } = await reader.read()
+
+        if (done) {
+          console.log('[职位适配-SSE] 流结束')
+          break
+        }
+
+        // 解码并处理数据
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          if (line.trim()) {
+            try {
+              const data: TailorProgressEvent = JSON.parse(line)
+              handleEvent(data)
+            } catch (e) {
+              console.error('[职位适配-SSE] 解析消息失败', e, line)
+            }
+          }
+        }
+      }
+
+      reader.releaseLock()
+    } catch (error) {
+      console.error('[职位适配-SSE] 请求失败', error)
       state.hasError = true
-      state.errorMessage = '连接失败，请稍后重试'
+      state.errorMessage = error instanceof Error ? error.message : '连接失败，请稍后重试'
       state.isTailoring = false
       state.isConnecting = false
     }
@@ -346,9 +371,9 @@ export function useResumeTailor() {
    * 关闭连接
    */
   function closeConnection() {
-    if (eventSource) {
-      eventSource.close()
-      eventSource = null
+    if (abortController) {
+      abortController.abort()
+      abortController = null
     }
     state.isConnecting = false
   }

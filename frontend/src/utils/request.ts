@@ -76,27 +76,50 @@ request.interceptors.response.use(
  * 自动从 localStorage 读取 token 并添加 Authorization header
  * 用于 SSE 流式请求等原生 fetch 场景
  * 自动处理 401 未授权错误，清除本地 token 并跳转登录页
+ * @param url 请求地址
+ * @param options 请求配置
+ * @param timeout 超时时间（毫秒），默认 60000（1分钟）
  */
-export async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
-  const token = cachedToken || localStorage.getItem('token')
-  if (token) {
-    options.headers = {
-      ...options.headers,
-      Authorization: `Bearer ${token}`
+export async function authFetch(url: string, options: RequestInit = {}, timeout: number = 60000): Promise<Response> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeout)
+
+  try {
+    const token = cachedToken || localStorage.getItem('token')
+    if (token) {
+      options.headers = {
+        ...options.headers,
+        Authorization: `Bearer ${token}`
+      }
     }
-  }
 
-  const response = await fetch(url, options)
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    })
 
-  // 处理 401 未授权错误
-  if (response.status === 401) {
-    updateToken(null)  // 清除本地 token
-    if (window.location.pathname !== '/login') {
-      window.location.href = '/login'  // 跳转登录页
+    clearTimeout(timeoutId)
+
+    // 处理 401 未授权错误
+    if (response.status === 401) {
+      updateToken(null)  // 清除本地 token
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login'  // 跳转登录页
+      }
     }
-  }
 
-  return response
+    return response
+  } catch (error) {
+    clearTimeout(timeoutId)
+
+    // 区分超时错误和网络错误
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      console.error(`[authFetch] 请求超时 (${timeout}ms):`, url)
+      throw new Error(`请求超时（${Math.floor(timeout / 1000)}秒）`)
+    }
+
+    throw error
+  }
 }
 
 export default request

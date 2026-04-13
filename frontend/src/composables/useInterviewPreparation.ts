@@ -12,6 +12,7 @@ import type {
   CompanyResearchResult,
   JDAnalysisResult
 } from '@/types/interview-center'
+import { authFetch } from '@/utils/request'
 
 // 单例状态
 let stateInstance: PreparationState | null = null
@@ -83,40 +84,73 @@ export function useInterviewPreparation() {
     stateInstance = reactive<PreparationState>(createInitialState())
   }
 
-  let eventSource: EventSource | null = null
+  let abortController: AbortController | null = null
 
   /**
    * 开始执行面试准备工作流
    */
-  function startPreparation(interviewId: string): void {
+  async function startPreparation(interviewId: string): Promise<void> {
     resetState()
     stateInstance!.isConnecting = true
     stateInstance!.message = '正在连接...'
 
-    // 获取 token（EventSource 不支持自定义 Header，只能通过 URL 参数传递）
-    const token = localStorage.getItem('token')
-    const url = `/landit/interview-center/${interviewId}/preparation/stream${token ? `?token=${token}` : ''}`
-    eventSource = new EventSource(url)
+    // 创建 AbortController
+    abortController = new AbortController()
 
-    eventSource.onopen = () => {
+    const url = `/landit/interview-center/${interviewId}/preparation/stream`
+
+    try {
+      // 使用 authFetch 发起请求
+      const response = await authFetch(url, {}, 120000) // 2分钟超时
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+
       stateInstance!.isConnecting = false
       stateInstance!.isRunning = true
       devLog('[SSE] 连接已建立')
-    }
 
-    eventSource.onmessage = (event) => {
-      try {
-        const data: GraphProgressEvent = JSON.parse(event.data)
-        handleEvent(data)
-      } catch (e) {
-        devLog('[SSE] 解析事件失败:', e)
+      // 获取 ReadableStream
+      const reader = response.body?.getReader()
+      if (!reader) {
+        throw new Error('无法读取响应流')
       }
-    }
 
-    eventSource.onerror = () => {
-      devLog('[SSE] 连接错误')
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      // 读取流
+      while (stateInstance!.isRunning && !stateInstance!.isCompleted && !stateInstance!.hasError) {
+        const { done, value } = await reader.read()
+
+        if (done) {
+          devLog('[SSE] 流结束')
+          break
+        }
+
+        // 解码并处理数据
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          if (line.trim()) {
+            try {
+              const data: GraphProgressEvent = JSON.parse(line)
+              handleEvent(data)
+            } catch (e) {
+              devLog('[SSE] 解析事件失败:', e, line)
+            }
+          }
+        }
+      }
+
+      reader.releaseLock()
+    } catch (error) {
+      devLog('[SSE] 连接错误', error)
       stateInstance!.hasError = true
-      stateInstance!.errorMessage = '连接失败，请稍后重试'
+      stateInstance!.errorMessage = error instanceof Error ? error.message : '连接失败，请稍后重试'
       closeConnection()
     }
   }
@@ -321,9 +355,9 @@ export function useInterviewPreparation() {
    * 关闭 SSE 连接
    */
   function closeConnection(): void {
-    if (eventSource) {
-      eventSource.close()
-      eventSource = null
+    if (abortController) {
+      abortController.abort()
+      abortController = null
       devLog('[SSE] 连接已关闭')
     }
   }

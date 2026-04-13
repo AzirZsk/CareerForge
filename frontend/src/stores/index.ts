@@ -32,7 +32,7 @@ import type { RegisterRequest } from '@/types/auth'
 
 export const useAppStore = defineStore('app', () => {
   // 用户状态
-  const user = ref<User>({ id: '', name: '', gender: null, avatar: null, createdAt: '' })
+  const user = ref<User>({ id: '', name: '', gender: null, avatar: null, initialized: false, createdAt: '' })
   const token = ref<string | null>(null)
   const isLoggedIn = ref<boolean>(false)
   const isInitialized = ref<boolean>(false)

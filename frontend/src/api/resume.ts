@@ -176,26 +176,6 @@ export async function deriveResume(
   })
 }
 
-/**
- * 创建职位适配 SSE 连接
- * @param resumeId 简历ID
- * @param targetPosition 目标职位
- * @param jobDescription 职位描述
- * @returns EventSource 实例
- */
-export function createTailorResumeStream(
-  resumeId: string,
-  targetPosition: string,
-  jobDescription: string
-): EventSource {
-  const params = new URLSearchParams({
-    targetPosition,
-    jobDescription
-  })
-  const url = `${API_BASE}/resumes/${resumeId}/tailor/stream?${params.toString()}`
-  return new EventSource(url)
-}
-
 /** 区块数据项（用于应用优化变更） */
 export interface SectionDataItem {
   id: string
