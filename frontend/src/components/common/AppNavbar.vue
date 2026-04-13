@@ -60,13 +60,8 @@
           />
         </button>
 
-        <!-- 用户头像 -->
-        <div
-          class="user-avatar"
-          @click="goToProfile"
-        >
-          <span class="avatar-text">{{ userInitial }}</span>
-        </div>
+        <!-- 用户头像下拉菜单 -->
+        <UserDropdown />
       </div>
     </div>
 
@@ -83,17 +78,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useAppStore } from '@/stores'
 import { useNotificationStore } from '@/stores/notification'
-import { useRouter, useRoute } from 'vue-router'
+import { useRoute } from 'vue-router'
 import type { NavItem } from '@/types'
 import NotificationDropdown from './NotificationDropdown.vue'
+import UserDropdown from './UserDropdown.vue'
 import type { AsyncTask } from '@/types/notification'
 
 const store = useAppStore()
 const notificationStore = useNotificationStore()
-const router = useRouter()
 const route = useRoute()
 
 // 通知下拉面板状态
@@ -121,10 +116,6 @@ const navItems: NavItem[] = [
   }
 ]
 
-const userInitial = computed((): string => {
-  return store.user.name ? store.user.name.charAt(0) : 'U'
-})
-
 function isActive(key: string): boolean {
   const currentPath = route.path
   // 首页精确匹配
@@ -137,11 +128,6 @@ function isActive(key: string): boolean {
     return currentPath.startsWith(navItem.path)
   }
   return false
-}
-
-function goToProfile(): void {
-  router.push('/profile')
-  store.setActiveNav('profile')
 }
 
 // 通知相关方法
@@ -336,30 +322,6 @@ onUnmounted(() => {
 }
 
 .notification-btn.has-unread {
-  color: $color-accent;
-}
-
-.user-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: $radius-md;
-  background: $gradient-card;
-  border: 2px solid $color-accent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all $transition-fast;
-  &:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 20px rgba(212, 168, 83, 0.3);
-  }
-}
-
-.avatar-text {
-  font-family: $font-display;
-  font-size: $text-base;
-  font-weight: $weight-semibold;
   color: $color-accent;
 }
 
