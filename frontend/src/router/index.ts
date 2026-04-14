@@ -11,7 +11,7 @@ const routes: RouteRecordRaw[] = [
     path: '/onboarding',
     name: 'Onboarding',
     component: () => import('@/views/Onboarding.vue'),
-    meta: { title: '欢迎' }
+    meta: { title: '欢迎', hideAIChat: true }
   },
   {
     path: '/',

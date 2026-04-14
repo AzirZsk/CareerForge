@@ -12,14 +12,14 @@
             {{ advice.category }}
           </div>
           <h4 class="advice-title">{{ advice.title }}</h4>
-          <p class="advice-description">{{ advice.description }}</p>
-          <ul v-if="advice.actionItems && advice.actionItems.length > 0" class="action-list">
-            <li v-for="(item, actionIndex) in advice.actionItems" :key="actionIndex" class="action-item">
-              <font-awesome-icon icon="fa-solid fa-check" class="check-icon" />
-              <span>{{ item }}</span>
-            </li>
-          </ul>
         </div>
+        <p class="advice-description">{{ advice.description }}</p>
+        <ul v-if="advice.actionItems && advice.actionItems.length > 0" class="action-list">
+          <li v-for="(item, actionIndex) in advice.actionItems" :key="actionIndex" class="action-item">
+            <font-awesome-icon icon="fa-solid fa-check" class="check-icon" />
+            <span>{{ item }}</span>
+          </li>
+        </ul>
       </div>
     </div>
     <div v-else class="empty-state">
@@ -57,6 +57,9 @@ function getPriorityClass(priority: string | undefined): string {
 }
 
 .advice-item {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
   padding: $spacing-sm;
   background: rgba(255, 255, 255, 0.02);
   border-radius: $radius-md;
@@ -71,7 +74,6 @@ function getPriorityClass(priority: string | undefined): string {
   display: flex;
   align-items: center;
   gap: $spacing-sm;
-  margin-bottom: $spacing-sm;
 }
 
 .advice-category {
@@ -98,14 +100,12 @@ function getPriorityClass(priority: string | undefined): string {
   font-size: $text-sm;
   font-weight: $weight-medium;
   color: $color-text-primary;
-  margin-bottom: $spacing-xs;
 }
 
 .advice-description {
   font-size: $text-sm;
   color: $color-text-secondary;
   line-height: 1.6;
-  margin-bottom: $spacing-sm;
 }
 
 .action-list {
@@ -113,29 +113,17 @@ function getPriorityClass(priority: string | undefined): string {
   padding-left: $spacing-md;
 
   li {
-    position: relative;
-    padding-left: $spacing-lg;
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
     font-size: $text-sm;
     color: $color-text-secondary;
     line-height: 1.5;
 
-    &::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 50%;
-      width: 4px;
-      height: 4px;
-      background: $color-success;
-      border-radius: 50%;
-      opacity: 0;
-      transition: opacity $transition-fast;
-    }
-
-  .check-icon {
+    .check-icon {
       color: $color-success;
       font-size: 0.875rem;
-      margin-right: $spacing-xs;
+      flex-shrink: 0;
     }
   }
 }

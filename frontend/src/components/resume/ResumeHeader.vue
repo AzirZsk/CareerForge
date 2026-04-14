@@ -100,6 +100,7 @@
       </div>
       <div class="header-actions">
         <button
+          v-if="analyzed"
           class="action-btn secondary"
           :class="{ disabled: !hasContent }"
           :disabled="!hasContent"
