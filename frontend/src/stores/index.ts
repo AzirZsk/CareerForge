@@ -10,6 +10,7 @@ import * as resumeApi from '@/api/resume'
 import * as statisticsApi from '@/api/statistics'
 import * as authApi from '@/api/auth'
 import { updateToken } from '@/utils/request'
+import { useNotificationStore } from '@/stores/notification'
 import type {
   User,
   Resume,
@@ -493,6 +494,9 @@ export const useAppStore = defineStore('app', () => {
         isInitialized.value = true
         localStorage.setItem('isInitialized', 'true')
       }
+      // 登录成功后初始化任务通知
+      const notificationStore = useNotificationStore()
+      notificationStore.init()
     } catch (error) {
       console.error('登录失败', error)
       throw error
@@ -521,6 +525,9 @@ export const useAppStore = defineStore('app', () => {
     } catch (error) {
       console.error('登出失败', error)
     } finally {
+      // 清理任务通知
+      const notificationStore = useNotificationStore()
+      notificationStore.dispose()
       // 清除本地状态
       token.value = null
       isLoggedIn.value = false

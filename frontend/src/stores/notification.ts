@@ -178,6 +178,10 @@ export const useNotificationStore = defineStore('notification', () => {
 
   // 初始化
   function init() {
+    // 未登录时不请求任务列表
+    if (!localStorage.getItem('token')) {
+      return
+    }
     // 加载任务列表
     fetchTasks()
 
