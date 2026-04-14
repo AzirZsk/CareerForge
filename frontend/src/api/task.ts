@@ -6,29 +6,10 @@
 
 import type {
   AsyncTask,
-  CreateTaskResponse,
   TaskType,
   TaskStatus
 } from '@/types/notification'
 import request from '@/utils/request'
-
-/**
- * 创建音频转录任务
- */
-export async function createAudioTranscribeTask(
-  interviewId: string,
-  file: File
-): Promise<CreateTaskResponse> {
-  const formData = new FormData()
-  formData.append('interviewId', interviewId)
-  formData.append('file', file)
-
-  return request({
-    url: '/tasks/audio-transcribe',
-    method: 'POST',
-    data: formData
-  })
-}
 
 /**
  * 获取任务列表

@@ -8,11 +8,6 @@ package com.careerforge.task.enums;
 public enum TaskType {
 
     /**
-     * 音频转录
-     */
-    AUDIO_TRANSCRIBE("audio_transcribe", "音频转录"),
-
-    /**
      * 简历优化
      */
     RESUME_OPTIMIZE("resume_optimize", "简历优化"),

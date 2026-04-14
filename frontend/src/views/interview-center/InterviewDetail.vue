@@ -271,7 +271,6 @@ import {
   type InterviewStatus,
   type InterviewResult
 } from '@/types/interview-center'
-import { useNotificationStore } from '@/stores/notification'
 // 弹窗组件
 import AddPreparationDialog from '@/components/interview-center/AddPreparationDialog.vue'
 import ReviewNoteDialog from '@/components/interview-center/ReviewNoteDialog.vue'
@@ -303,7 +302,6 @@ import { useScrollLock } from '@vueuse/core'
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
-const notificationStore = useNotificationStore()
 const { confirm, visible: confirmVisible, title: confirmTitle, message: confirmMessage, confirmText, danger: confirmDanger, handleConfirm, handleCancel } = useConfirm()
 const loading = ref(true)
 const interview = ref<InterviewDetail | null>(null)
@@ -826,30 +824,10 @@ watch(isCreatingSession, updateFloatVisibility)
 
 onMounted(() => {
   loadDetail()
-  // 监听转录完成事件（从 AppNavbar 触发）
-  window.addEventListener('apply-transcript', handleApplyTranscriptEvent as EventListener)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('apply-transcript', handleApplyTranscriptEvent as EventListener)
 })
-
-// 处理转录完成事件
-function handleApplyTranscriptEvent(event: Event) {
-  const customEvent = event as CustomEvent
-  const { task } = customEvent.detail
-  if (task?.taskType === 'audio_transcribe' && task?.businessId === interview.value?.id) {
-    try {
-      const result = JSON.parse(task.result)
-      sessionTranscript.value = result.transcriptText
-      toast.success('转录完成，已自动保存到面试记录')
-      // 标记已应用
-      notificationStore.markTranscribeApplied(interview.value!.id)
-    } catch (e) {
-      console.error('[InterviewDetail] 解析转录结果失败:', e)
-    }
-  }
-}
 </script>
 
 <style scoped lang="scss">

@@ -73,16 +73,6 @@ careerforge:
       voices:
         interviewer: longxiaochun_v2
         assistant: zhimiao_emo_v2
-      # 离线 ASR（录音文件识别）
-      file-asr:
-        model: paraformer-v2
-        language: zh
-        max-file-size-mb: 50
-        polling-interval-ms: 2000
-        # 本地存储路径
-        storage-path: ./data/audio-uploads
-        # 公网访问 URL 基础路径（根据实际部署环境修改）
-        public-url-base: ${AUDIO_PUBLIC_URL_BASE:http://localhost:8080/careerforge/audio-files}
 
 # 日志配置 - 打印 AI 请求详情
 logging:

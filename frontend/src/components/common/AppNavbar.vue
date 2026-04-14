@@ -72,7 +72,6 @@
     <NotificationDropdown
       :is-open="showNotificationDropdown"
       @close="closeNotification"
-      @apply-transcript="handleApplyTranscript"
     />
   </header>
 </template>
@@ -85,7 +84,6 @@ import { useRoute } from 'vue-router'
 import type { NavItem } from '@/types'
 import NotificationDropdown from './NotificationDropdown.vue'
 import UserDropdown from './UserDropdown.vue'
-import type { AsyncTask } from '@/types/notification'
 
 const store = useAppStore()
 const notificationStore = useNotificationStore()
@@ -137,13 +135,6 @@ function toggleNotification() {
 
 function closeNotification() {
   showNotificationDropdown.value = false
-}
-
-function handleApplyTranscript(task: AsyncTask) {
-  // 触发全局事件，由 InterviewDetail 页面处理
-  window.dispatchEvent(new CustomEvent('apply-transcript', {
-    detail: { task }
-  }))
 }
 
 // 生命周期钩子

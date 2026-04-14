@@ -1,22 +1,17 @@
 package com.careerforge.task.controller;
 
-import com.careerforge.common.constant.CommonConstants;
-import com.careerforge.common.response.ApiResponse;
 import com.careerforge.common.util.SecurityUtils;
-import com.careerforge.task.dto.CreateTaskResponse;
+import com.careerforge.common.response.ApiResponse;
 import com.careerforge.task.dto.TaskVO;
 import com.careerforge.task.entity.AsyncTask;
 import com.careerforge.task.enums.TaskStatus;
-import com.careerforge.task.enums.TaskType;
 import com.careerforge.task.service.AsyncTaskService;
-import com.careerforge.task.service.AudioTranscribeTaskService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
 import java.util.List;
@@ -35,25 +30,6 @@ import java.util.Map;
 public class TaskController {
 
     private final AsyncTaskService asyncTaskService;
-    private final AudioTranscribeTaskService audioTranscribeTaskService;
-
-    /**
-     * 创建音频转录任务
-     */
-    @Operation(summary = "创建音频转录任务")
-    @PostMapping("/audio-transcribe")
-    public ApiResponse<CreateTaskResponse> createAudioTranscribeTask(
-            @Parameter(description = "面试ID") @RequestParam String interviewId,
-            @Parameter(description = "音频文件") @RequestParam("file") MultipartFile file) {
-        log.info("[TaskController] 创建音频转录任务: interviewId={}, filename={}",
-                interviewId, file.getOriginalFilename());
-        String userId = SecurityUtils.getCurrentUserId();
-        AsyncTask task = audioTranscribeTaskService.createTranscribeTask(userId, interviewId, file);
-        return ApiResponse.success(CreateTaskResponse.builder()
-                .taskId(task.getId())
-                .status(task.getStatus())
-                .build());
-    }
 
     /**
      * 获取任务列表

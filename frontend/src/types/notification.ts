@@ -11,7 +11,7 @@
 /**
  * 任务类型
  */
-export type TaskType = 'audio_transcribe' | 'resume_optimize' | 'review_analysis'
+export type TaskType = 'resume_optimize' | 'review_analysis'
 
 /**
  * 任务状态
@@ -41,14 +41,6 @@ export interface AsyncTask {
 }
 
 /**
- * 音频转录结果
- */
-export interface AudioTranscribeResult {
-  transcriptText: string
-  duration: number
-}
-
-/**
  * 创建任务响应
  */
 export interface CreateTaskResponse {
@@ -64,7 +56,6 @@ export interface CreateTaskResponse {
  * 任务类型标签映射
  */
 export const TASK_TYPE_LABELS: Record<TaskType, string> = {
-  audio_transcribe: '音频转录',
   resume_optimize: '简历优化',
   review_analysis: '复盘分析'
 }

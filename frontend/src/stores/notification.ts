@@ -7,7 +7,7 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { AsyncTask, TaskStatus, AudioTranscribeResult } from '@/types/notification'
+import type { AsyncTask, TaskStatus } from '@/types/notification'
 import * as taskApi from '@/api/task'
 
 export const useNotificationStore = defineStore('notification', () => {
@@ -55,36 +55,6 @@ export const useNotificationStore = defineStore('notification', () => {
       return await taskApi.getTaskStatus(taskId)
     } catch (error) {
       console.error('[NotificationStore] 获取任务失败:', error)
-      return null
-    }
-  }
-
-  async function createAudioTranscribeTask(
-    interviewId: string,
-    file: File
-  ): Promise<string | null> {
-    try {
-      const result = await taskApi.createAudioTranscribeTask(interviewId, file)
-      // 添加到列表头部
-      tasks.value.unshift({
-        id: result.taskId,
-        taskType: 'audio_transcribe',
-        taskTypeLabel: '音频转录',
-        businessId: interviewId,
-        status: result.status as TaskStatus,
-        statusLabel: '等待中',
-        progress: 0,
-        message: '任务已创建',
-        result: null,
-        errorMessage: null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      })
-      // 开始轮询
-      startPolling()
-      return result.taskId
-    } catch (error) {
-      console.error('[NotificationStore] 创建任务失败:', error)
       return null
     }
   }
@@ -200,37 +170,6 @@ export const useNotificationStore = defineStore('notification', () => {
     document.removeEventListener('visibilitychange', handleVisibilityChange)
   }
 
-  // 获取转录结果
-  function getTranscribeResult(interviewId: string): AudioTranscribeResult | null {
-    const task = tasks.value.find(
-      t => t.taskType === 'audio_transcribe'
-        && t.businessId === interviewId
-        && t.status === 'completed'
-        && t.result
-    )
-    if (task?.result) {
-      try {
-        return JSON.parse(task.result) as AudioTranscribeResult
-      } catch (e) {
-        console.error('[NotificationStore] 解析转录结果失败:', e)
-        return null
-      }
-    }
-    return null
-  }
-
-  // 标记转录结果已应用（删除任务）
-  function markTranscribeApplied(interviewId: string) {
-    const task = tasks.value.find(
-      t => t.taskType === 'audio_transcribe'
-        && t.businessId === interviewId
-        && t.status === 'completed'
-    )
-    if (task) {
-      removeTask(task.id)
-    }
-  }
-
   return {
     // 状态
     tasks,
@@ -244,7 +183,6 @@ export const useNotificationStore = defineStore('notification', () => {
     // 方法
     fetchTasks,
     fetchTaskById,
-    createAudioTranscribeTask,
     updateTask,
     removeTask,
     clearCompletedTasks,
@@ -252,8 +190,6 @@ export const useNotificationStore = defineStore('notification', () => {
     stopPolling,
     handleVisibilityChange,
     init,
-    dispose,
-    getTranscribeResult,
-    markTranscribeApplied
+    dispose
   }
 })

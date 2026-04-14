@@ -17,52 +17,12 @@
     <!-- 编辑模式：无转译文本或正在编辑 -->
     <template v-else>
       <h4>面试过程记录</h4>
-      <p class="hint">请输入面试过程中的问题、回答、面试官反馈等内容，或上传面试录音自动转录</p>
-
-      <!-- 音频上传区域 -->
-      <!-- 音频上传区域 -->
-      <div
-        class="upload-zone"
-        :class="{ 'drag-over': isDragOver, 'uploading': isUploading, 'task-running': hasRunningTask }"
-        @click="triggerFileSelect"
-        @drop.prevent="handleDrop"
-        @dragover.prevent="isDragOver = true"
-        @dragleave.prevent="isDragOver = false"
-      >
-        <input
-          ref="fileInput"
-          type="file"
-          accept="audio/*,.wav,.mp3,.m4a,.aac,.ogg,.flac,.opus,.webm,.mov,.mp4"
-          class="hidden-input"
-          @change="handleFileSelect"
-        />
-
-        <!-- 任务进行中状态 -->
-        <div v-if="hasRunningTask" class="upload-status task-status">
-          <font-awesome-icon icon="fa-solid fa-spinner" class="upload-icon spinning" />
-          <div class="task-info">
-            <span class="task-message">转录任务进行中...</span>
-            <span class="task-hint">请在消息中心查看进度</span>
-          </div>
-        </div>
-
-        <!-- 上传中状态 -->
-        <div v-else-if="isUploading" class="upload-status">
-          <font-awesome-icon icon="fa-solid fa-hourglass-half" class="upload-icon spinning" />
-          <span>正在上传...</span>
-        </div>
-
-        <!-- 空闲状态 -->
-        <div v-else class="upload-prompt">
-          <p>拖拽音频文件到此处，或点击上传</p>
-          <span class="format-hint">（wav/mp3/m4a 等，最大 50MB）</span>
-        </div>
-      </div>
+      <p class="hint">请输入面试过程中的问题、回答、面试官反馈等内容</p>
 
       <!-- 文本输入区域 -->
       <div class="text-input-area">
         <div class="input-header">
-          <span>或直接输入/编辑文本</span>
+          <span>直接输入/编辑文本</span>
           <span v-if="charCount" class="char-count">{{ charCount }} 字</span>
         </div>
         <textarea
@@ -84,13 +44,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useNotificationStore } from '@/stores/notification'
+import { ref, computed } from 'vue'
 import { useToast } from '@/composables/useToast'
-
-// 支持的音频格式
-const SUPPORTED_FORMATS = ['wav', 'mp3', 'm4a', 'aac', 'ogg', 'flac', 'opus', 'webm', 'mov', 'mp4']
-const MAX_FILE_SIZE_MB = 50
 
 const props = defineProps<{
   interviewId: string
@@ -102,23 +57,10 @@ const emit = defineEmits<{
   'save': [value: string]
 }>()
 
-const notificationStore = useNotificationStore()
 const toast = useToast()
 
-const fileInput = ref<HTMLInputElement>()
-const isDragOver = ref(false)
 const localText = ref('')
-const isUploading = ref(false)
 const isEditing = ref(false)
-
-// 检查是否有进行中的任务
-const hasRunningTask = computed(() => {
-  return notificationStore.tasks.some(
-    t => t.taskType === 'audio_transcribe'
-      && t.businessId === props.interviewId
-      && (t.status === 'pending' || t.status === 'running')
-  )
-})
 
 // 是否有转译文本
 const hasTranscript = computed(() => {
@@ -134,22 +76,6 @@ const displayText = computed(() => {
 const charCount = computed(() => {
   return displayText.value.length || 0
 })
-
-// 监听任务完成事件
-function handleTaskCompleted(event: CustomEvent) {
-  const { task } = event.detail
-  if (task?.taskType === 'audio_transcribe' && task?.businessId === props.interviewId && task?.result) {
-    try {
-      const result = JSON.parse(task.result)
-      if (result.transcriptText) {
-        emit('update:modelValue', result.transcriptText)
-        toast.success('转录完成')
-      }
-    } catch (e) {
-      console.error('[AudioUploadArea] 解析转录结果失败:', e)
-    }
-  }
-}
 
 /**
  * 开始编辑模式
@@ -177,103 +103,12 @@ function saveEditing() {
   toast.success('已保存')
 }
 
-/**
- * 验证文件格式和大小
- */
-function validateFile(file: File): string | null {
-  const ext = getFileExtension(file.name)
-  if (!ext || !SUPPORTED_FORMATS.includes(ext)) {
-    return `不支持的文件格式，支持: ${SUPPORTED_FORMATS.join(', ')}`
-  }
-  if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-    return `文件大小超过 ${MAX_FILE_SIZE_MB}MB 限制`
-  }
-  return null
-}
-
-/**
- * 获取文件扩展名
- */
-function getFileExtension(filename: string): string {
-  if (!filename) return ''
-  const dotIndex = filename.lastIndexOf('.')
-  return dotIndex > 0 ? filename.substring(dotIndex + 1).toLowerCase() : ''
-}
-
-function triggerFileSelect() {
-  if (isUploading.value || hasRunningTask.value) {
-    if (hasRunningTask.value) {
-      toast.info('转录任务进行中，请稍候')
-    }
-    return
-  }
-  fileInput.value?.click()
-}
-
-function handleFileSelect(event: Event) {
-  const target = event.target as HTMLInputElement
-  const file = target.files?.[0]
-  if (file) {
-    processFile(file)
-  }
-  // 清空 input 以便重复选择同一文件
-  target.value = ''
-}
-
-function handleDrop(event: DragEvent) {
-  if (hasRunningTask.value) {
-    toast.info('转录任务进行中，请稍候')
-    return
-  }
-  isDragOver.value = false
-  const file = event.dataTransfer?.files[0]
-  if (file && file.type.startsWith('audio/')) {
-    processFile(file)
-  }
-}
-
-async function processFile(file: File) {
-  const error = validateFile(file)
-  if (error) {
-    toast.error(error)
-    return
-  }
-
-  isUploading.value = true
-  try {
-    const taskId = await notificationStore.createAudioTranscribeTask(
-      props.interviewId,
-      file
-    )
-    if (taskId) {
-      toast.success('音频已提交，转录任务已创建，请在消息中心查看进度')
-    } else {
-      toast.error('创建转录任务失败')
-    }
-  } catch (e) {
-    console.error('[AudioUploadArea] 创建任务失败:', e)
-    toast.error('创建转录任务失败')
-  } finally {
-    isUploading.value = false
-  }
-}
-
 function handleTextInput(event: Event) {
   const target = event.target as HTMLTextAreaElement
   localText.value = target.value
   // 不再实时同步到父组件，避免触发自动保存
   // 用户需要点击"保存"按钮才会同步
 }
-
-// 组件挂载时监听任务完成事件
-onMounted(() => {
-  window.addEventListener('apply-transcript', handleTaskCompleted as EventListener)
-})
-
-// 组件卸载时清理监听
-onUnmounted(() => {
-  window.removeEventListener('apply-transcript', handleTaskCompleted as EventListener)
-})
 </script>
 
 <style scoped lang="scss">
@@ -360,100 +195,6 @@ onUnmounted(() => {
   }
 }
 
-.upload-zone {
-  border: 1.5px dashed $color-bg-elevated;
-  border-radius: $radius-sm;
-  padding: $spacing-sm $spacing-md;
-  text-align: center;
-  transition: all 0.2s;
-  margin-bottom: $spacing-md;
-  background: $color-bg-tertiary;
-  cursor: pointer;
-
-  &:hover {
-    border-color: $color-accent;
-    background: rgba($color-accent, 0.05);
-  }
-
-  &.drag-over {
-    border-color: $color-accent;
-    background: rgba($color-accent, 0.1);
-  }
-
-  &.uploading {
-    cursor: not-allowed;
-  }
-
-  &.task-running {
-    cursor: not-allowed;
-    border-color: $color-accent;
-    background: rgba($color-accent, 0.05);
-  }
-}
-
-.hidden-input {
-  display: none;
-}
-
-.upload-prompt {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: $spacing-sm;
-  flex-wrap: wrap;
-
-  p {
-    color: $color-text-secondary;
-    font-size: 0.8125rem;
-    margin: 0;
-  }
-
-  .format-hint {
-    font-size: 0.6875rem;
-    color: $color-text-tertiary;
-  }
-}
-
-.upload-status {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: $spacing-xs;
-
-  .upload-icon.spinning {
-    display: inline-block;
-    animation: spin 1s linear infinite;
-  }
-
-  span {
-    color: $color-text-secondary;
-    font-size: 0.8125rem;
-  }
-
-  &.task-status {
-    flex-direction: column;
-    gap: $spacing-xs;
-
-    .task-info {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-
-      .task-message {
-        color: $color-accent;
-        font-size: 0.8125rem;
-        font-weight: 500;
-      }
-
-      .task-hint {
-        color: $color-text-tertiary;
-        font-size: 0.6875rem;
-      }
-    }
-  }
-}
-
 .text-input-area {
   .input-header {
     display: flex;
@@ -497,14 +238,5 @@ onUnmounted(() => {
   justify-content: flex-end;
   gap: $spacing-sm;
   margin-top: $spacing-md;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
 }
 </style>

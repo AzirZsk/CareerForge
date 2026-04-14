@@ -98,13 +98,6 @@
               <!-- 操作按钮 -->
               <div class="task-actions">
                 <button
-                  v-if="task.status === 'completed'"
-                  class="btn-action btn-apply"
-                  @click.stop="applyResult(task)"
-                >
-                  应用
-                </button>
-                <button
                   v-if="task.status === 'failed'"
                   class="btn-action btn-retry"
                   @click.stop="retryTask(task)"
@@ -147,7 +140,6 @@ defineProps<{
 
 const emit = defineEmits<{
   close: []
-  'apply-transcript': [task: AsyncTask]
 }>()
 
 const router = useRouter()
@@ -196,17 +188,9 @@ function formatTime(dateStr: string): string {
 }
 
 function handleTaskClick(task: AsyncTask) {
-  // 根据任务类型跳转
-  if (task.taskType === 'audio_transcribe' && task.businessId) {
+  // 根据任务关联的业务ID跳转
+  if (task.businessId) {
     router.push(`/interview-center/${task.businessId}`)
-  }
-  close()
-}
-
-function applyResult(task: AsyncTask) {
-  // 应用转录结果（由父组件处理）
-  if (task.taskType === 'audio_transcribe' && task.result) {
-    emit('apply-transcript', task)
   }
   close()
 }
