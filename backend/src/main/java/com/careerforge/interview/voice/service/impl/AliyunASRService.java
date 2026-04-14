@@ -9,57 +9,63 @@ import com.careerforge.common.config.VoiceProperties;
 import com.careerforge.interview.voice.dto.ASRResult;
 import com.careerforge.interview.voice.service.ASRService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.Sinks;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * 阿里云 Fun-ASR 实时语音识别服务实现
- * 基于 DashScope SDK 官方封装，简化 WebSocket 管理
+ * 阿里云 Fun-ASR 实时语音识别会话实现
+ * 每个面试会话创建一个实例，管理一条 WebSocket 长连接
  *
- * <p>参考文档：https://help.aliyun.com/zh/model-studio/real-time-speech-recognition-fun-asr
+ * <p>内部使用 Sinks.Many 汇聚音频帧，通过 Recognition SDK 发送到阿里云
  *
  * @author Azir
  */
 @Slf4j
-@Service("aliyunASRService")
 public class AliyunASRService implements ASRService {
 
-    private static final String PROVIDER = "aliyun";
-
     private final VoiceProperties voiceProperties;
+    private final String sessionId;
+    private final AtomicBoolean closed = new AtomicBoolean(false);
+    private final AtomicBoolean started = new AtomicBoolean(false);
 
+    // 音频帧汇聚点：多帧音频通过同一个 Sink 发送到同一个连接
+    private Sinks.Many<byte[]> audioSink;
+    // 识别结果流
+    private Flux<ASRResult> resultFlux;
+    // 阿里云识别器
+    private Recognition recognizer;
+
+    /**
+     * 构造函数（由 VoiceServiceFactory 调用）
+     *
+     * @param voiceProperties 语音配置
+     */
     public AliyunASRService(VoiceProperties voiceProperties) {
         this.voiceProperties = voiceProperties;
-        // 设置北京地域 WebSocket URL（新加坡地域用 dashscope-intl.aliyuncs.com）
+        this.sessionId = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        // 设置北京地域 WebSocket URL
         Constants.baseWebsocketApiUrl = "wss://dashscope.aliyuncs.com/api-ws/v1/inference";
     }
 
     @Override
-    public String getProvider() {
-        return PROVIDER;
-    }
+    public void start() {
+        if (started.getAndSet(true)) {
+            log.warn("[AliyunASR] 会话已启动，忽略重复调用, sessionId={}", sessionId);
+            return;
+        }
 
-    /**
-     * 流式语音识别
-     * 将音频流实时发送到 Fun-ASR 服务，返回识别结果流
-     *
-     * @param audioStream PCM 音频流（16kHz）
-     * @return 识别结果流（包含中间结果和最终结果）
-     */
-    @Override
-    public Flux<ASRResult> streamRecognize(Flux<byte[]> audioStream) {
         VoiceProperties.AliyunConfig.ASRConfig asrConfig = voiceProperties.getAliyun().getAsr();
+        this.audioSink = Sinks.many().multicast().onBackpressureBuffer(256);
+        this.recognizer = new Recognition();
+        RecognitionParam param = buildRecognitionParam(asrConfig);
 
-        return Flux.create(emitter -> {
-            Recognition recognizer = new Recognition();
-            String taskId = UUID.randomUUID().toString().replace("-", "");
-            RecognitionParam param = buildRecognitionParam(asrConfig);
-
-            // 构建回调处理器，将 SDK 事件转换为 Flux 元素
+        this.resultFlux = Flux.<ASRResult>create(emitter -> {
+            // 构建 SDK 回调
             ResultCallback<RecognitionResult> callback = new ResultCallback<>() {
                 @Override
                 public void onEvent(RecognitionResult result) {
@@ -67,56 +73,104 @@ public class AliyunASRService implements ASRService {
                     if (!emitter.isCancelled()) {
                         emitter.next(asrResult);
                     }
-                    log.trace("[AliyunASR] 识别事件: isFinal={}, text={}, taskId={}",
-                            asrResult.getIsFinal(), asrResult.getText(), taskId);
+                    log.trace("[AliyunASR] 识别事件: isFinal={}, text={}, sessionId={}",
+                            asrResult.getIsFinal(), asrResult.getText(), sessionId);
                 }
 
                 @Override
                 public void onComplete() {
-                    log.info("[AliyunASR] 识别完成, taskId={}", taskId);
+                    log.info("[AliyunASR] 识别完成, sessionId={}", sessionId);
                     if (!emitter.isCancelled()) {
                         emitter.complete();
                     }
-                    closeRecognizer(recognizer, taskId);
+                    markClosed();
                 }
 
                 @Override
                 public void onError(Exception e) {
-                    log.error("[AliyunASR] 识别错误, taskId={}", taskId, e);
+                    log.error("[AliyunASR] 识别错误, sessionId={}", sessionId, e);
                     if (!emitter.isCancelled()) {
                         emitter.error(e);
                     }
-                    closeRecognizer(recognizer, taskId);
+                    markClosed();
                 }
             };
 
             try {
+                // 建立 WebSocket 连接
                 recognizer.call(param, callback);
-                log.info("[AliyunASR] 识别开始, taskId={}, model={}", taskId, asrConfig.getModel());
+                log.info("[AliyunASR] 连接已建立, sessionId={}, model={}", sessionId, asrConfig.getModel());
+            } catch (Exception e) {
+                log.error("[AliyunASR] 建立连接失败, sessionId={}", sessionId, e);
+                emitter.error(e);
+                return;
+            }
 
-                // 订阅音频流，将每帧音频发送到识别器
-                audioStream.subscribe(
-                    audioData -> recognizer.sendAudioFrame(ByteBuffer.wrap(audioData)),
+            // 订阅音频帧流，逐帧发送到识别器
+            audioSink.asFlux().subscribe(
+                    audioData -> {
+                        try {
+                            recognizer.sendAudioFrame(ByteBuffer.wrap(audioData));
+                        } catch (Exception e) {
+                            log.error("[AliyunASR] 发送音频帧失败, sessionId={}", sessionId, e);
+                        }
+                    },
                     error -> {
-                        log.error("[AliyunASR] 音频流错误, taskId={}", taskId, error);
+                        log.error("[AliyunASR] 音频流异常, sessionId={}", sessionId, error);
                         if (!emitter.isCancelled()) {
                             emitter.error(error);
                         }
                     },
                     () -> {
-                        log.info("[AliyunASR] 音频流结束，停止识别, taskId={}", taskId);
-                        recognizer.stop();
+                        // 音频流结束，通知服务端
+                        try {
+                            recognizer.stop();
+                            log.debug("[AliyunASR] 已调用 stop, sessionId={}", sessionId);
+                        } catch (Exception e) {
+                            log.warn("[AliyunASR] stop 失败, sessionId={}", sessionId, e);
+                        }
                     }
-                );
-            } catch (Exception e) {
-                log.error("[AliyunASR] 启动识别失败, taskId={}", taskId, e);
-                if (!emitter.isCancelled()) {
-                    emitter.error(e);
-                }
-            }
+            );
 
-            emitter.onDispose(() -> closeRecognizer(recognizer, taskId));
-        }, FluxSink.OverflowStrategy.BUFFER);
+            // Flux 被取消时关闭连接
+            emitter.onDispose(() -> closeInternal());
+        }, FluxSink.OverflowStrategy.BUFFER)
+                // 多个订阅者共享同一个连接（publish + autoConnect）
+                .publish().autoConnect();
+
+        log.info("[AliyunASR] 会话已初始化, sessionId={}", sessionId);
+    }
+
+    @Override
+    public void sendAudio(byte[] audioFrame) {
+        if (closed.get()) {
+            log.warn("[AliyunASR] 会话已关闭，丢弃音频帧, sessionId={}", sessionId);
+            return;
+        }
+        if (!started.get()) {
+            log.warn("[AliyunASR] 会话未启动，丢弃音频帧, sessionId={}", sessionId);
+            return;
+        }
+        audioSink.tryEmitNext(audioFrame);
+    }
+
+    @Override
+    public Flux<ASRResult> results() {
+        if (!started.get()) {
+            log.warn("[AliyunASR] 会话未启动，results() 返回空流, sessionId={}", sessionId);
+            return Flux.empty();
+        }
+        return resultFlux;
+    }
+
+    @Override
+    public void close() {
+        closeInternal();
+    }
+
+    @Override
+    public boolean isClosed() {
+        return closed.get();
     }
 
     @Override
@@ -126,8 +180,37 @@ public class AliyunASRService implements ASRService {
     }
 
     /**
+     * 安全关闭连接
+     */
+    private void closeInternal() {
+        if (closed.getAndSet(true)) {
+            return;
+        }
+        // 关闭音频 Sink，触发 recognizer.stop()
+        if (audioSink != null) {
+            audioSink.tryEmitComplete();
+        }
+        // 关闭 WebSocket 连接
+        if (recognizer != null) {
+            try {
+                recognizer.getDuplexApi().close(1000, "bye");
+                log.debug("[AliyunASR] 连接已关闭, sessionId={}", sessionId);
+            } catch (Exception e) {
+                log.warn("[AliyunASR] 关闭连接失败, sessionId={}", sessionId, e);
+            }
+        }
+        log.info("[AliyunASR] 会话已关闭, sessionId={}", sessionId);
+    }
+
+    /**
+     * 标记为已关闭（由 SDK 回调触发）
+     */
+    private void markClosed() {
+        closed.set(true);
+    }
+
+    /**
      * 构建 Fun-ASR 识别参数
-     * 所有配置从 application.yml 读取，无需运行时传参
      */
     private RecognitionParam buildRecognitionParam(VoiceProperties.AliyunConfig.ASRConfig config) {
         return RecognitionParam.builder()
@@ -135,9 +218,9 @@ public class AliyunASRService implements ASRService {
                 .apiKey(voiceProperties.getAliyun().getApiKey())
                 .format(config.getFormat())
                 .sampleRate(config.getSampleRate())
-                // 语言提示（数组形式，首个元素生效）
+                // 语言提示
                 .parameter("language_hints", new String[]{config.getLanguage()})
-                // 标点预测（默认开启）
+                // 标点预测
                 .parameter("punctuation_prediction_enabled",
                         config.getEnablePunctuation() != null ? config.getEnablePunctuation() : true)
                 .build();
@@ -153,17 +236,5 @@ public class AliyunASRService implements ASRService {
                 .startTime(result.getSentence().getBeginTime())
                 .endTime(result.getSentence().getEndTime())
                 .build();
-    }
-
-    /**
-     * 安全关闭识别器
-     */
-    private void closeRecognizer(Recognition recognizer, String taskId) {
-        try {
-            recognizer.getDuplexApi().close(1000, "bye");
-            log.debug("[AliyunASR] 识别器已关闭, taskId={}", taskId);
-        } catch (Exception e) {
-            log.warn("[AliyunASR] 关闭识别器失败, taskId={}", taskId, e);
-        }
     }
 }

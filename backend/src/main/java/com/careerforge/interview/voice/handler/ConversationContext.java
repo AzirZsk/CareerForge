@@ -1,5 +1,6 @@
 package com.careerforge.interview.voice.handler;
 
+import com.careerforge.interview.voice.service.ASRService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -7,10 +8,11 @@ import java.io.ByteArrayOutputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 /**
  * 语音面试对话上下文
- * 存储面试过程中的会话状态、对话历史和音频数据
+ * 存储面试过程中的会话状态、对话历史、音频数据和 ASR 会话
  *
  * @author Azir
  */
@@ -50,6 +52,31 @@ public class ConversationContext {
      * 录音片段开始时间
      */
     private LocalDateTime segmentStartTime;
+
+    /**
+     * ASR 会话（每个面试会话独立持有，连接级生命周期）
+     */
+    private transient ASRService asrService;
+
+    /**
+     * 获取或创建 ASR 会话
+     * 如果会话不存在或已关闭，通过 supplier 创建新的并启动
+     *
+     * @param supplier ASR 会话创建函数
+     * @return 可用的 ASR 会话
+     */
+    public ASRService getOrCreateASRService(Supplier<ASRService> supplier) {
+        if (asrService == null || asrService.isClosed()) {
+            synchronized (this) {
+                if (asrService == null || asrService.isClosed()) {
+                    log.debug("[ConversationContext] 创建新的 ASR 会话");
+                    asrService = supplier.get();
+                    asrService.start();
+                }
+            }
+        }
+        return asrService;
+    }
 
     /**
      * 添加候选人消息到对话历史

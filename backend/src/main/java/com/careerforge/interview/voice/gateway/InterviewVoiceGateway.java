@@ -333,6 +333,8 @@ public class InterviewVoiceGateway {
         if (state != null) {
             state.setActive(false);
         }
+        // 清理 ASR 会话资源
+        interviewerAgentHandler.cleanupSession(sessionId);
         log.info("[VoiceGateway] 会话已注销, sessionId={}", sessionId);
     }
 
@@ -457,6 +459,8 @@ public class InterviewVoiceGateway {
                 .assistRemaining(state.getAssistRemaining())
                 .elapsedTime(state.getElapsedTime())
                 .build()));
+        // 清理 ASR 会话资源
+        interviewerAgentHandler.cleanupSession(sessionId);
     }
 
     /**

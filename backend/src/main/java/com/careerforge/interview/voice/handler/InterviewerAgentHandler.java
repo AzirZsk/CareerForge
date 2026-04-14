@@ -20,7 +20,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.io.ByteArrayOutputStream;
 import java.time.Duration;
@@ -28,7 +27,6 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 面试官 Agent 处理器
@@ -57,21 +55,18 @@ public class InterviewerAgentHandler {
 
     /**
      * 处理候选人音频
+     * 音频帧通过 ASR 会话汇聚到同一条 WebSocket 连接，识别结果通过回调处理
      *
-     * @param sessionId  会话 ID
-     * @param audioData  音频数据（PCM）
-     * @return 响应流（转录 + AI 回复 + 音频）
+     * @param sessionId 会话 ID
+     * @param audioData 音频数据（PCM）
+     * @return 空流（结果通过 voiceGateway.sendResponse 回调推送）
      */
     public Flux<VoiceResponse> handleCandidateAudio(String sessionId, byte[] audioData) {
         log.debug("[InterviewerAgent] 处理候选人音频, sessionId={}, size={}", sessionId, audioData.length);
 
-        // 获取 ASR 服务
-        ASRService asrService = voiceServiceFactory.getASRService();
-
         // 获取会话上下文（从 Gateway 加载 JD/简历）
         ConversationContext context = contexts.computeIfAbsent(sessionId, k -> {
             ConversationContext ctx = new ConversationContext();
-            // 从 Gateway 获取会话状态
             SessionState state = voiceGateway.getInternalState(k);
             if (state != null) {
                 ctx.setPosition(state.getPosition() != null ? state.getPosition() : "Java 开发工程师");
@@ -81,42 +76,90 @@ public class InterviewerAgentHandler {
             return ctx;
         });
 
-        // 收集候选人音频数据
+        // 收集候选人音频数据（用于录音保存）
         context.appendCandidateAudio(audioData);
 
-        // Step 1: ASR 识别（配置从 application.yml 读取）
-        return asrService.streamRecognize(Flux.just(audioData))
-                .flatMap(asrResult -> {
-                    // 发送转录结果
-                    Flux<VoiceResponse> transcriptFlux = Flux.just(VoiceResponse.transcript(
-                            VoiceResponse.TranscriptData.builder()
-                                    .text(asrResult.getText())
-                                    .isFinal(asrResult.getIsFinal())
-                                    .role(TranscriptRole.CANDIDATE.getValue())
-                                    .confidence(asrResult.getConfidence())
-                                    .build()
-                    ));
+        // 获取或创建 ASR 会话（首次创建时订阅识别结果）
+        ASRService asr = context.getOrCreateASRService(() -> {
+            ASRService service = voiceServiceFactory.createASRService();
+            // 订阅识别结果，通过回调处理转录和面试逻辑
+            service.results().subscribe(
+                    asrResult -> handleASRResult(sessionId, asrResult),
+                    error -> {
+                        log.error("[InterviewerAgent] ASR 会话错误, sessionId={}", sessionId, error);
+                        voiceGateway.sendResponse(sessionId, VoiceResponse.error(VoiceResponse.ErrorData.builder()
+                                .code("ASR_ERROR")
+                                .message("语音识别失败: " + error.getMessage())
+                                .build()));
+                    },
+                    () -> log.info("[InterviewerAgent] ASR 会话结束, sessionId={}", sessionId)
+            );
+            return service;
+        });
 
-                    // 如果是最终结果，根据阶段处理
-                    if (asrResult.getIsFinal() && !asrResult.getText().isEmpty()) {
-                        context.addCandidateMessage(asrResult.getText());
+        // 发送音频帧到 ASR 会话（复用同一条连接）
+        asr.sendAudio(audioData);
 
-                        // 保存候选人录音片段
-                        saveCandidateRecording(sessionId, context, asrResult.getText());
+        return Flux.empty();
+    }
 
-                        // 根据面试阶段处理
-                        return transcriptFlux.concatWith(handleCandidateTranscriptByPhase(sessionId, asrResult.getText()));
-                    }
+    /**
+     * 处理 ASR 识别结果
+     * 发送转录结果给客户端，isFinal 时触发面试逻辑
+     *
+     * @param sessionId 会话 ID
+     * @param asrResult ASR 识别结果
+     */
+    private void handleASRResult(String sessionId, ASRResult asrResult) {
+        ConversationContext context = contexts.get(sessionId);
+        if (context == null) {
+            log.warn("[InterviewerAgent] 会话上下文不存在, sessionId={}", sessionId);
+            return;
+        }
 
-                    return transcriptFlux;
-                })
-                .onErrorResume(e -> {
-                    log.error("[InterviewerAgent] 处理音频出错, sessionId={}", sessionId, e);
-                    return Flux.just(VoiceResponse.error(VoiceResponse.ErrorData.builder()
-                            .code("ASR_ERROR")
-                            .message("语音识别失败: " + e.getMessage())
-                            .build()));
-                });
+        // 发送转录结果到客户端
+        VoiceResponse transcriptResponse = VoiceResponse.transcript(
+                VoiceResponse.TranscriptData.builder()
+                        .text(asrResult.getText())
+                        .isFinal(asrResult.getIsFinal())
+                        .role(TranscriptRole.CANDIDATE.getValue())
+                        .confidence(asrResult.getConfidence())
+                        .build()
+        );
+        voiceGateway.sendResponse(sessionId, transcriptResponse);
+
+        // 如果是最终结果且文本非空，触发面试逻辑
+        if (asrResult.getIsFinal() && !asrResult.getText().isEmpty()) {
+            log.info("[InterviewerAgent] 收到最终识别结果, sessionId={}, text={}", sessionId, asrResult.getText());
+
+            context.addCandidateMessage(asrResult.getText());
+            saveCandidateRecording(sessionId, context, asrResult.getText());
+
+            // 根据面试阶段处理（通过 subscribe 驱动，结果通过 sendResponse 推送）
+            handleCandidateTranscriptByPhase(sessionId, asrResult.getText())
+                    .subscribe(
+                            response -> voiceGateway.sendResponse(sessionId, response),
+                            error -> log.error("[InterviewerAgent] 阶段处理错误, sessionId={}", sessionId, error)
+                    );
+        }
+    }
+
+    /**
+     * 清理会话资源（关闭 ASR 连接、移除上下文）
+     *
+     * @param sessionId 会话 ID
+     */
+    public void cleanupSession(String sessionId) {
+        ConversationContext context = contexts.get(sessionId);
+        if (context != null && context.getAsrService() != null) {
+            try {
+                context.getAsrService().close();
+            } catch (Exception e) {
+                log.warn("[InterviewerAgent] 关闭 ASR 会话失败, sessionId={}", sessionId, e);
+            }
+        }
+        contexts.remove(sessionId);
+        log.info("[InterviewerAgent] 会话资源已清理, sessionId={}", sessionId);
     }
 
     /**
