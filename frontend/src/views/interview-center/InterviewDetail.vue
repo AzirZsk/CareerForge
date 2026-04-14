@@ -293,6 +293,7 @@ import ReviewAnalysisProgress from '@/components/interview-center/ReviewAnalysis
 // 工作流 composables
 import { useInterviewPreparation } from '@/composables/useInterviewPreparation'
 import { useReviewAnalysis } from '@/composables/useReviewAnalysis'
+import { usePageGuard } from '@/composables/usePageGuard'
 import { useToast } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
 import { useAIChat } from '@/composables/useAIChat'
@@ -312,6 +313,21 @@ const showPrepModal = ref(false)
 const showMockConfigDialog = ref(false)
 const isCreatingSession = ref(false)
 const isBodyScrollLocked = useScrollLock(document.body)
+
+// 弹窗打开时注册页面离开保护
+const { registerGuard, unregisterGuard } = usePageGuard()
+
+watch(showEditDialog, (open) => {
+  open ? registerGuard('modal:edit-interview') : unregisterGuard('modal:edit-interview')
+})
+
+watch(showReviewDialog, (open) => {
+  open ? registerGuard('modal:review-note') : unregisterGuard('modal:review-note')
+})
+
+watch(showPrepModal, (open) => {
+  open ? registerGuard('modal:preparation') : unregisterGuard('modal:preparation')
+})
 
 // 创建会话遮罩层显示时锁定背景滚动
 watch(isCreatingSession, (creating) => {

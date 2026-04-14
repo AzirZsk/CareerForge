@@ -8,6 +8,7 @@
 
 | 日期 | 版本 | 变更内容 |
 |------|------|----------|
+| 2026-04-14 | 2.6.0 | **新增页面离开保护**：新增 usePageGuard composable（全局保护锁注册表 + beforeunload）；工作流运行/AI聊天流式/语音面试/弹窗打开时阻止关闭页面；Composables 数量 19→20 |
 | 2026-04-10 | 2.5.0 | **新增多用户登录注册系统**：新增 Login.vue 视图、auth.ts API/Types、路由守卫更新；删除 useAudioTranscribe composable；更新文件统计 |
 | 2026-04-07 | 2.4.0 | **清理老版本复盘模块**：删除 Review.vue/ReviewDetail.vue 视图、currentReview 状态、interviewReview Mock 数据；复盘功能通过面试中心详情页实现 |
 | 2026-04-02 | 2.3.0 | **新增 useStreamAssist composable**：SSE 流式求助功能；更新 Composables 数量（17->18）；更新文件统计 |
@@ -601,6 +602,24 @@ Markdown 渲染的组合式函数:
 - Markdown 文本渲染
 - 代码高亮
 
+### usePageGuard (composables/usePageGuard.ts)
+页面离开保护的组合式函数（全局单例）:
+```typescript
+const {
+  // 方法
+  registerGuard,     // 注册保护锁
+  unregisterGuard,   // 移除保护锁
+
+  // 状态
+  isBlocked,         // 是否有任何保护锁激活
+  activeKeys         // 当前激活的保护锁列表
+} = usePageGuard()
+```
+**功能**：
+- 全局保护锁注册表（模块级 reactive Set）
+- 工作流运行/AI聊天流式/语音面试/弹窗打开时注册保护锁
+- App.vue 绑定 beforeunload 事件，isBlocked 时弹出浏览器原生确认框
+
 ---
 
 ## 设计系统
@@ -991,7 +1010,7 @@ frontend/
 │   ├── utils/
 │   │   ├── stageHelpers.ts      # 阶段辅助工具函数
 │   │   └── recording-helpers.ts # 录音回放辅助工具函数
-│   ├── composables/             # 18 个 Composables
+│   ├── composables/             # 20 个 Composables
 │   │   ├── useAIChat.ts         # AI 聊天
 │   │   ├── useInterviewVoice.ts # AI 语音面试
 │   │   ├── useStreamingAudio.ts # 流式音频播放
@@ -1009,6 +1028,7 @@ frontend/
 │   │   ├── useMarkdown.ts       # Markdown 渲染
 │   │   ├── useConfirm.ts        # 确认弹窗
 │   │   ├── useToast.ts          # Toast 提示
+│   │   ├── usePageGuard.ts      # 页面离开保护
 │   │   └── useFormValidation.ts # 表单验证
 │   ├── views/                   # 页面组件（12 个）
 │   │   ├── Onboarding.vue

@@ -795,7 +795,7 @@ START --> AnalyzeTranscript --> AnalyzeInterview --> GenerateAdvice --> END
 | Chat 工具 | 8 | GetResume/GetSection/UpdateSection/AddSection/DeleteSection/CreateResume/GetResumeList/SelectResume |
 | 前端 Views | 14 | 页面组件（含 InterviewSession.vue、InterviewRecording.vue、InterviewDetail.vue） |
 | 前端 Components | 95 | chat(10) + common(5) + resume(51) + interview-center(7) + interview/voice(4) + interview/recording(2) + App.vue + 其他 |
-| 前端 Composables | 19 | useAIChat, useConfirm, useFormValidation, useMarkdown, useResumeOptimize, useResumeTailor, useSectionDiff, useSectionEdit, useSectionHelper, useStageEdit, useStageTimer, useToast, useInterviewPreparation, useReviewAnalysis, useInterviewVoice, useStreamingAudio, useStreamAssist, useAudioRecorder, useMicrophonePermission |
+| 前端 Composables | 20 | useAIChat, useConfirm, useFormValidation, useMarkdown, useResumeOptimize, useResumeTailor, useSectionDiff, useSectionEdit, useSectionHelper, useStageEdit, useStageTimer, useToast, useInterviewPreparation, useReviewAnalysis, useInterviewVoice, useStreamingAudio, useStreamAssist, useAudioRecorder, useMicrophonePermission, usePageGuard |
 | 前端 Utils | 2 | stageHelpers, recording-helpers |
 | 前端 Types | 10 | index.ts, **auth.ts**, ai-chat.ts, resume-optimize.ts, resume-tailor.ts, interview-center.ts, interview-voice.ts, job-position.ts, notification.ts, marked.d.ts |
 | 前端 API | 7 | user.ts, **auth.ts**, resume.ts, aiChat.ts, interview-center.ts, interview-voice.ts, job-position.ts |

@@ -8,6 +8,7 @@
 import { ref, computed, onUnmounted } from 'vue'
 import { useStreamingAudio } from './useStreamingAudio'
 import { useAudioRecorder } from './useAudioRecorder'
+import { usePageGuard } from './usePageGuard'
 import type {
   SessionState,
   VoiceSettings,
@@ -36,6 +37,8 @@ const DEFAULT_SETTINGS: VoiceSettings = {
  * @param sessionId 面试会话ID
  */
 export function useInterviewVoice(sessionId: string) {
+  const { registerGuard, unregisterGuard } = usePageGuard()
+
   // ============================================================================
   // 状态
   // ============================================================================
@@ -297,6 +300,7 @@ export function useInterviewVoice(sessionId: string) {
     // 防御性处理：将 "connected" 视为 "ready"（兼容旧版本后端）
     if ((data.state as string) === 'connected') {
       sessionState.value = 'ready'
+      registerGuard('voice-interview')
       return
     }
 
@@ -319,6 +323,7 @@ export function useInterviewVoice(sessionId: string) {
   function handleReadyMessage(data: ReadyData): void {
     console.log('[useInterviewVoice] 预生成完成:', data.message)
     sessionState.value = 'ready'
+    registerGuard('voice-interview')
   }
 
   /**
@@ -433,6 +438,7 @@ export function useInterviewVoice(sessionId: string) {
   function endInterview(): void {
     sendControlMessage('end')
     sessionState.value = 'completed'
+    unregisterGuard('voice-interview')
     stopRecording()
     stopTimer()
   }
@@ -481,6 +487,7 @@ export function useInterviewVoice(sessionId: string) {
     stopTimer()
     stopHeartbeat()
     stopRecording()
+    unregisterGuard('voice-interview')
 
     if (ws) {
       ws.close(1000, 'User closed')

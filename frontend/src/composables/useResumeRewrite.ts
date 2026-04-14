@@ -13,6 +13,7 @@ import type {
 import { REWRITE_STAGE_CONFIG } from '@/types/resume-rewrite'
 import { applyOptimizeChanges, createRewriteResumeStream } from '@/api/resume'
 import type { SectionDataItem } from '@/api/resume'
+import { usePageGuard } from './usePageGuard'
 
 /** 内部节点 ID 类型（包含工作流控制节点） */
 type InternalNodeId = RewriteStage | '__START__' | '__END__'
@@ -38,6 +39,8 @@ export function useResumeRewrite() {
   // EventSource 实例
   let eventSource: EventSource | null = null
 
+  const { registerGuard, unregisterGuard } = usePageGuard()
+
   // 计算属性
   const isRewriting = computed(() => state.isRewriting)
   const progress = computed(() => state.progress)
@@ -59,6 +62,7 @@ export function useResumeRewrite() {
     state.tempKey = tempKey
     state.isConnecting = true
     state.isRewriting = true
+    registerGuard('rewrite')
 
     // 使用 API 模块创建 EventSource
     eventSource = createRewriteResumeStream(resumeId, tempKey)
@@ -87,6 +91,7 @@ export function useResumeRewrite() {
       state.hasError = true
       state.errorMessage = '连接失败，请稍后重试'
       state.isRewriting = false
+      unregisterGuard('rewrite')
       state.isConnecting = false
     }
   }
@@ -234,6 +239,7 @@ export function useResumeRewrite() {
    */
   function handleCompleteEvent(_event: RewriteProgressEvent) {
     state.isRewriting = false
+    unregisterGuard('rewrite')
     state.isCompleted = true
     state.progress = 100
     state.currentStage = 'end'
@@ -257,6 +263,7 @@ export function useResumeRewrite() {
     state.hasError = true
     state.errorMessage = event.message || '风格改写失败'
     state.isRewriting = false
+    unregisterGuard('rewrite')
 
     // 标记当前运行中节点的结束时间
     const now = Date.now()
@@ -285,6 +292,7 @@ export function useResumeRewrite() {
   function cancelRewrite() {
     closeConnection()
     state.isRewriting = false
+    unregisterGuard('rewrite')
     state.message = '已取消'
   }
 
@@ -320,6 +328,7 @@ export function useResumeRewrite() {
 
     state.isConnecting = false
     state.isRewriting = false
+    unregisterGuard('rewrite')
     state.isCompleted = false
     state.hasError = false
     state.threadId = null

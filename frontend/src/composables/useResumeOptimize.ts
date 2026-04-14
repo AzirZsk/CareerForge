@@ -19,6 +19,7 @@ import { applyOptimizeChanges } from '@/api/resume'
 import type { SectionDataItem } from '@/api/resume'
 import { API_BASE } from '@/api/config'
 import { authFetch } from '@/utils/request'
+import { usePageGuard } from './usePageGuard'
 
 export function useResumeOptimize() {
   // 状态
@@ -43,6 +44,8 @@ export function useResumeOptimize() {
   // AbortController 用于中断请求
   let abortController: AbortController | null = null
 
+  const { registerGuard, unregisterGuard } = usePageGuard()
+
   // 计算属性
   const isOptimizing = computed(() => state.isOptimizing)
   const progress = computed(() => state.progress)
@@ -66,6 +69,7 @@ export function useResumeOptimize() {
     state.targetPosition = options?.targetPosition || ''
     state.isConnecting = true
     state.isOptimizing = true
+    registerGuard('optimize')
 
     // 创建 AbortController
     abortController = new AbortController()
@@ -138,6 +142,7 @@ export function useResumeOptimize() {
       state.hasError = true
       state.errorMessage = error instanceof Error ? error.message : '连接失败，请稍后重试'
       state.isOptimizing = false
+      unregisterGuard('optimize')
       state.isConnecting = false
     }
   }
@@ -299,6 +304,7 @@ export function useResumeOptimize() {
    */
   function handleCompleteEvent(_event: OptimizeProgressEvent) {
     state.isOptimizing = false
+    unregisterGuard('optimize')
     state.isCompleted = true
     state.progress = 100
     state.currentStage = 'end'
@@ -322,6 +328,7 @@ export function useResumeOptimize() {
     state.hasError = true
     state.errorMessage = event.message || '优化失败'
     state.isOptimizing = false
+    unregisterGuard('optimize')
 
     // 标记当前运行中节点的结束时间
     const now = Date.now()
@@ -350,6 +357,7 @@ export function useResumeOptimize() {
   function cancelOptimize() {
     closeConnection()
     state.isOptimizing = false
+    unregisterGuard('optimize')
     state.message = '已取消'
   }
 
@@ -390,6 +398,7 @@ export function useResumeOptimize() {
 
     state.isConnecting = false
     state.isOptimizing = false
+    unregisterGuard('optimize')
     state.isCompleted = false
     state.hasError = false
     state.isApplying = false

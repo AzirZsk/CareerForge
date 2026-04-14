@@ -282,6 +282,7 @@ import { useAIChat } from '@/composables/useAIChat'
 import { useSectionEdit } from '@/composables/useSectionEdit'
 import { useSectionHelper } from '@/composables/useSectionHelper'
 import { useToast } from '@/composables/useToast'
+import { usePageGuard } from '@/composables/usePageGuard'
 import type { ResumeSection, ResumeSuggestionItem, SectionType } from '@/types'
 
 const store = useAppStore()
@@ -315,6 +316,21 @@ const pendingDeleteSuggestionId = ref<string | null>(null)
 
 // 添加模块相关状态
 const showAddSectionModal = ref<boolean>(false)
+
+// 弹窗打开时注册页面离开保护
+const { registerGuard, unregisterGuard } = usePageGuard()
+
+watch(showAddSectionModal, (open) => {
+  open ? registerGuard('modal:add-section') : unregisterGuard('modal:add-section')
+})
+
+watch(showOptimizeModal, (open) => {
+  open ? registerGuard('modal:optimize') : unregisterGuard('modal:optimize')
+})
+
+watch(showRewriteModal, (open) => {
+  open ? registerGuard('modal:rewrite') : unregisterGuard('modal:rewrite')
+})
 
 // 已存在的模块类型列表
 const existingSectionTypes = computed<SectionType[]>(() => {
@@ -402,6 +418,11 @@ const {
   handleSave,
   deleteItem
 } = useSectionEdit(resumeId, activeSection, currentSectionDetail)
+
+// 编辑弹窗保护
+watch(isEditModalVisible, (open) => {
+  open ? registerGuard('modal:edit-section') : unregisterGuard('modal:edit-section')
+})
 
 // 优化建议
 const sectionSuggestions = computed<ResumeSuggestionItem[]>(() => {

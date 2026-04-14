@@ -15,6 +15,7 @@ import type {
 import { TAILOR_STAGE_CONFIG } from '@/types/resume-tailor'
 import { API_BASE } from '@/api/config'
 import { authFetch } from '@/utils/request'
+import { usePageGuard } from './usePageGuard'
 
 /** 内部节点 ID 类型（包含工作流控制节点） */
 type InternalNodeId = TailorStage | '__START__' | '__END__'
@@ -57,6 +58,8 @@ export function useResumeTailor() {
   // AbortController 用于中断请求
   let abortController: AbortController | null = null
 
+  const { registerGuard, unregisterGuard } = usePageGuard()
+
   // 计算属性
   const isTailoring = computed(() => state.isTailoring)
   const progress = computed(() => state.progress)
@@ -77,6 +80,7 @@ export function useResumeTailor() {
     state.jobDescription = jobDescription
     state.isConnecting = true
     state.isTailoring = true
+    registerGuard('tailor')
 
     // 创建 AbortController
     abortController = new AbortController()
@@ -147,6 +151,7 @@ export function useResumeTailor() {
       state.hasError = true
       state.errorMessage = error instanceof Error ? error.message : '连接失败，请稍后重试'
       state.isTailoring = false
+      unregisterGuard('tailor')
       state.isConnecting = false
     }
   }
@@ -300,6 +305,7 @@ export function useResumeTailor() {
    */
   function handleCompleteEvent(_event: TailorProgressEvent) {
     state.isTailoring = false
+    unregisterGuard('tailor')
     state.isCompleted = true
     state.progress = 100
     state.currentStage = 'end'
@@ -323,6 +329,7 @@ export function useResumeTailor() {
     state.hasError = true
     state.errorMessage = event.message || '定制失败'
     state.isTailoring = false
+    unregisterGuard('tailor')
 
     // 标记当前运行中节点的结束时间
     const now = Date.now()
@@ -351,6 +358,7 @@ export function useResumeTailor() {
   function cancelTailor() {
     closeConnection()
     state.isTailoring = false
+    unregisterGuard('tailor')
     state.message = '已取消'
   }
 
@@ -391,6 +399,7 @@ export function useResumeTailor() {
 
     state.isConnecting = false
     state.isTailoring = false
+    unregisterGuard('tailor')
     state.isCompleted = false
     state.hasError = false
     state.threadId = null

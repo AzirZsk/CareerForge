@@ -13,6 +13,7 @@ import type {
   AdviceItem
 } from '@/types/interview-center'
 import { streamReviewAnalysis } from '@/api/interview-center'
+import { usePageGuard } from './usePageGuard'
 
 // 单例状态
 let stateInstance: ReviewAnalysisState | null = null
@@ -68,6 +69,8 @@ export function useReviewAnalysis() {
   if (!stateInstance) {
     stateInstance = reactive<ReviewAnalysisState>(createInitialState())
   }
+
+  const { registerGuard, unregisterGuard } = usePageGuard()
 
   /**
    * 开始某个节点的计时
@@ -125,6 +128,7 @@ export function useReviewAnalysis() {
     devLog('[SSE] 收到事件:', event)
     stateInstance!.isConnecting = false
     stateInstance!.isRunning = true
+    registerGuard('review')
 
     if (event.event === 'start') {
       stateInstance!.currentStage = 'start'
@@ -217,6 +221,7 @@ export function useReviewAnalysis() {
     if (event.event === 'complete') {
       const now = Date.now()
       stateInstance!.isRunning = false
+      unregisterGuard('review')
       stateInstance!.isCompleted = true
       stateInstance!.progress = 100
       stateInstance!.message = event.message || '复盘分析完成'
@@ -245,6 +250,7 @@ export function useReviewAnalysis() {
       stateInstance!.hasError = true
       stateInstance!.errorMessage = event.errorMessage || '分析失败'
       stateInstance!.isRunning = false
+      unregisterGuard('review')
       devLog('[SSE] 工作流出错:', event.errorMessage)
     }
   }
@@ -267,6 +273,7 @@ export function useReviewAnalysis() {
         (error: Error) => {
           stateInstance!.isConnecting = false
           stateInstance!.isRunning = false
+          unregisterGuard('review')
           stateInstance!.hasError = true
           stateInstance!.errorMessage = error.message
           stateInstance!.message = `分析失败: ${error.message}`
@@ -274,6 +281,7 @@ export function useReviewAnalysis() {
         () => {
           // 流结束回调（兜底）
           stateInstance!.isRunning = false
+          unregisterGuard('review')
           stateInstance!.isCompleted = true
           stateInstance!.progress = 100
           stateInstance!.message = '分析完成'
@@ -282,6 +290,7 @@ export function useReviewAnalysis() {
     } catch (error) {
       stateInstance!.isConnecting = false
       stateInstance!.isRunning = false
+      unregisterGuard('review')
       stateInstance!.hasError = true
       stateInstance!.errorMessage = error instanceof Error ? error.message : '分析失败'
       stateInstance!.message = `分析失败: ${stateInstance!.errorMessage}`

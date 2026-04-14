@@ -13,6 +13,7 @@ import type {
   JDAnalysisResult
 } from '@/types/interview-center'
 import { authFetch } from '@/utils/request'
+import { usePageGuard } from './usePageGuard'
 
 // 单例状态
 let stateInstance: PreparationState | null = null
@@ -84,6 +85,8 @@ export function useInterviewPreparation() {
     stateInstance = reactive<PreparationState>(createInitialState())
   }
 
+  const { registerGuard, unregisterGuard } = usePageGuard()
+
   let abortController: AbortController | null = null
 
   /**
@@ -109,6 +112,7 @@ export function useInterviewPreparation() {
 
       stateInstance!.isConnecting = false
       stateInstance!.isRunning = true
+      registerGuard('preparation')
       devLog('[SSE] 连接已建立')
 
       // 获取 ReadableStream
@@ -311,6 +315,7 @@ export function useInterviewPreparation() {
       // 使用前端本地时间
       const now = Date.now()
       stateInstance!.isRunning = false
+      unregisterGuard('preparation')
       stateInstance!.isCompleted = true
       stateInstance!.currentStage = 'end'
       stateInstance!.progress = 100
@@ -335,6 +340,7 @@ export function useInterviewPreparation() {
       stateInstance!.hasError = true
       stateInstance!.errorMessage = event.errorMessage || '生成失败'
       stateInstance!.isRunning = false
+      unregisterGuard('preparation')
       closeConnection()
     }
   }

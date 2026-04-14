@@ -8,6 +8,7 @@ import type { ChatMessage, SectionChange, AIChatState, ResumeSelectedContent } f
 import { MAX_IMAGE_COUNT } from '@/types/ai-chat'
 import { streamChat, applyChanges as apiApplyChanges, getChatHistory, clearChatHistory, updateActionStatus as apiUpdateActionStatus } from '@/api/aiChat'
 import { useToast } from './useToast'
+import { usePageGuard } from './usePageGuard'
 
 const SESSION_ID_KEY = 'aiChat_sessionId'
 
@@ -54,6 +55,7 @@ function getState(): AIChatState {
 
 export function useAIChat() {
   const state = getState()
+  const { registerGuard, unregisterGuard } = usePageGuard()
 
   /**
    * 从后端加载聊天历史
@@ -123,6 +125,7 @@ export function useAIChat() {
     state.selectedImages = []
 
     state.isStreaming = true
+    registerGuard('ai-chat')
     currentAiMessage = null
 
     try {
@@ -144,6 +147,7 @@ export function useAIChat() {
       })
     } finally {
       state.isStreaming = false
+      unregisterGuard('ai-chat')
       currentAiMessage = null
     }
   }

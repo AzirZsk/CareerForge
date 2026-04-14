@@ -38,10 +38,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useEventListener } from '@vueuse/core'
 import AppNavbar from '@/components/common/AppNavbar.vue'
 import Toast from '@/components/common/Toast.vue'
 import AIChatFloat from '@/components/chat/AIChatFloat.vue'
 import { setToastInstance } from '@/composables/useToast'
+import { usePageGuard } from '@/composables/usePageGuard'
 
 const route = useRoute()
 const toastRef = ref<InstanceType<typeof Toast> | null>(null)
@@ -52,6 +54,15 @@ const showAIChat = computed(() => !(route.meta.public as boolean) && !(route.met
 onMounted(() => {
   if (toastRef.value) {
     setToastInstance(toastRef.value)
+  }
+})
+
+// 页面离开保护：任何 composable 注册了保护锁时，关闭页面弹出确认框
+const { isBlocked } = usePageGuard()
+
+useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
+  if (isBlocked.value) {
+    event.preventDefault()
   }
 })
 </script>
