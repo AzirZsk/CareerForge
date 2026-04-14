@@ -42,7 +42,8 @@ export async function createSession(req: CreateSessionRequest): Promise<CreateSe
   return request({
     url: '/interviews/sessions',
     method: 'POST',
-    data: req
+    data: req,
+    timeout: 180000
   })
 }
 

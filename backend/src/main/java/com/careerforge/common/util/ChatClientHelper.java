@@ -3,11 +3,14 @@ package com.careerforge.common.util;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.ResponseFormat;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -74,6 +77,44 @@ public final class ChatClientHelper {
         throw new IllegalStateException("不应到达此处");
     }
 
+    /**
+     * 调用 AI 并解析 JSON 响应为指定类型（多模态版本，支持图片等媒体，带自动重试）
+     * 用于需要向大模型发送图片的场景，如简历文件解析
+     *
+     * @param chatClient    ChatClient 实例
+     * @param systemPrompt  系统提示词（固定部分，可被缓存），可为 null
+     * @param userPrompt    用户提示词（动态部分）
+     * @param mediaList     媒体列表（图片等）
+     * @param responseClass 响应类的 Class 对象（需标注 @SchemaField 注解）
+     * @return 解析后的实体对象
+     * @throws IllegalStateException 当重试次数用尽仍无法解析时抛出
+     */
+    public static <T> T callAndParse(
+            ChatClient chatClient,
+            String systemPrompt,
+            String userPrompt,
+            List<Media> mediaList,
+            Class<T> responseClass) {
+
+        Map<String, Object> schema = SchemaGenerator.fromClass(responseClass);
+        String schemaJson = toJsonSchemaString(schema);
+
+        for (int attempt = 1; attempt <= MAX_RETRY; attempt++) {
+            try {
+                String response = callWithSchemaAndMediaInternal(chatClient, systemPrompt, userPrompt, mediaList, schemaJson);
+                log.debug("大模型响应：{}", response);
+                return JsonParseHelper.parseToEntity(response, responseClass);
+            } catch (Exception e) {
+                log.warn("AI 调用解析失败，第 {}/{} 次尝试，错误: {}", attempt, MAX_RETRY, e.getMessage());
+                if (attempt >= MAX_RETRY) {
+                    throw new IllegalStateException("AI 响应解析失败，已重试 " + MAX_RETRY + " 次", e);
+                }
+            }
+        }
+
+        throw new IllegalStateException("不应到达此处");
+    }
+
     // ==================== 私有辅助方法 ====================
 
     /**
@@ -116,6 +157,42 @@ public final class ChatClientHelper {
             log.error("Schema 序列化失败", e);
             return "{}";
         }
+    }
+
+    /**
+     * 内部方法：带 JSON Schema 调用 AI（多模态版本，支持图片等媒体）
+     */
+    private static String callWithSchemaAndMediaInternal(
+            ChatClient chatClient,
+            String systemPrompt,
+            String userPrompt,
+            List<Media> mediaList,
+            String schemaJson) {
+
+        OpenAiChatOptions options = OpenAiChatOptions.builder()
+                .responseFormat(ResponseFormat.builder()
+                        .type(ResponseFormat.Type.JSON_SCHEMA)
+                        .jsonSchema(ResponseFormat.JsonSchema.builder()
+                                .schema(schemaJson)
+                                .strict(true)
+                                .build())
+                        .build())
+                .build();
+
+        UserMessage userMessage = UserMessage.builder()
+                .text(userPrompt)
+                .media(mediaList)
+                .build();
+
+        var promptSpec = chatClient.prompt().options(options);
+        if (systemPrompt != null && !systemPrompt.isBlank()) {
+            promptSpec.system(systemPrompt);
+        }
+
+        return promptSpec
+                .messages(userMessage)
+                .call()
+                .content();
     }
 
     // ==================== 提示词处理工具方法 ====================

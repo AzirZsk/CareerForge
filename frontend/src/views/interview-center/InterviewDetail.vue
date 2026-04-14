@@ -91,7 +91,7 @@
               <div class="spinner-ring"></div>
             </div>
             <h3 class="session-loading-title">正在准备面试...</h3>
-            <p class="session-loading-desc">请稍候，正在初始化面试环境</p>
+            <p class="session-loading-desc">正在生成面试问题，请稍后</p>
           </div>
         </div>
       </Teleport>
