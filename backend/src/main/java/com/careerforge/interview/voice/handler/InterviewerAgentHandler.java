@@ -79,10 +79,11 @@ public class InterviewerAgentHandler {
         // 收集候选人音频数据（用于录音保存）
         context.appendCandidateAudio(audioData);
 
-        // 获取或创建 ASR 会话（首次创建时订阅识别结果）
+        // 获取或创建 ASR 会话（首次创建时启动并订阅识别结果）
         ASRService asr = context.getOrCreateASRService(() -> {
             ASRService service = voiceServiceFactory.createASRService();
-            // 订阅识别结果，通过回调处理转录和面试逻辑
+            // 先启动连接，再订阅结果（results 依赖 start 初始化的 resultFlux）
+            service.start();
             service.results().subscribe(
                     asrResult -> handleASRResult(sessionId, asrResult),
                     error -> {

@@ -70,8 +70,8 @@ public class ConversationContext {
             synchronized (this) {
                 if (asrService == null || asrService.isClosed()) {
                     log.debug("[ConversationContext] 创建新的 ASR 会话");
+                    // supplier 负责 创建+启动+订阅，保证时序正确
                     asrService = supplier.get();
-                    asrService.start();
                 }
             }
         }
