@@ -246,6 +246,7 @@ function getScoreClass(score: number | undefined): string {
     color: $color-text-tertiary;
     min-width: 80px;
     flex-shrink: 0;
+    line-height: 1.4;
   }
 
   .qa-value {
@@ -253,6 +254,14 @@ function getScoreClass(score: number | undefined): string {
     color: $color-text-secondary;
     font-size: $text-sm;
     line-height: 1.4;
+  }
+
+  &:has(.qa-content) {
+    align-items: flex-start;
+
+    .qa-label {
+      padding-top: $spacing-xs;
+    }
   }
 }
 
