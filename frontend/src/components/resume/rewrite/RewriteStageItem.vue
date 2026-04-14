@@ -232,7 +232,6 @@ defineEmits<{
 </script>
 
 <style lang="scss" scoped>
-@import '@/assets/styles/variables.scss';
 
 .stage-item {
   background: rgba(255, 255, 255, 0.02);

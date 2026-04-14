@@ -105,6 +105,7 @@ CREATE TABLE IF NOT EXISTS t_interview (
     correct_answers INTEGER DEFAULT 0,      -- 正确回答数
     -- 生命周期管理扩展字段
     source VARCHAR(20) DEFAULT 'mock',      -- 面试来源（mock-模拟 real-真实）
+    parent_interview_id VARCHAR(64),        -- 父面试ID（模拟面试关联到原始真实面试）
     jd_content TEXT,                        -- 职位描述内容
     overall_result VARCHAR(20),             -- 面试结果（pass-通过 fail-未通过 pending-待定）
     notes TEXT,                             -- 面试备注

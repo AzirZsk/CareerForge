@@ -764,7 +764,7 @@ async function createSessionAndNavigate() {
       regenerateQuestions: config.regenerateQuestions
     })
     router.push({
-      path: `/interview-center/${interview.value.id}/mock/${response.sessionId}`,
+      path: `/interview-center/${response.interviewId}/mock/${response.sessionId}`,
       query: {
         position: response.position,
         interviewerStyle: config.interviewerStyle,

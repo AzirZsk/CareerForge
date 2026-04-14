@@ -202,6 +202,9 @@ public class InterviewerAgentHandler {
 
         log.info("[InterviewerAgent] 请求自我介绍: {}, sessionId={}", prompt, sessionId);
 
+        // 记录面试官消息到对话历史
+        recordInterviewerMessage(sessionId, prompt);
+
         // 获取 TTS 服务
         TTSService ttsService = voiceServiceFactory.getTTSService();
         TTSConfig ttsConfig = buildInterviewerTTSConfig();
@@ -266,6 +269,9 @@ public class InterviewerAgentHandler {
 
             log.info("[InterviewerAgent] 使用预生成问题, sessionId={}, index={}, text={}",
                     sessionId, state.getCurrentQuestion(), questionText);
+
+            // 记录面试官消息到对话历史
+            recordInterviewerMessage(sessionId, questionText);
 
             // 获取 TTS 服务
             TTSService ttsService = voiceServiceFactory.getTTSService();
@@ -347,9 +353,13 @@ public class InterviewerAgentHandler {
         TTSService ttsService = voiceServiceFactory.getTTSService();
         TTSConfig ttsConfig = buildInterviewerTTSConfig();
 
-        // 使用分句流式合成
+        // 使用分句流式合成，同时累积完整问题文本
+        StringBuilder fullQuestion = new StringBuilder();
         return ttsService.streamSynthesizeBySentence(llmStream, ttsConfig)
                 .flatMap(ttsChunk -> {
+                    // 累积完整问题文本
+                    fullQuestion.append(ttsChunk.getText());
+
                     // 文本响应
                     Flux<VoiceResponse> textFlux = Flux.just(VoiceResponse.transcript(
                             VoiceResponse.TranscriptData.builder()
@@ -373,6 +383,12 @@ public class InterviewerAgentHandler {
                     }
 
                     return textFlux;
+                })
+                .doOnComplete(() -> {
+                    // 流结束后，将完整问题文本记录到对话历史
+                    if (fullQuestion.length() > 0) {
+                        context.addInterviewerMessage(fullQuestion.toString());
+                    }
                 });
     }
 
@@ -406,6 +422,9 @@ public class InterviewerAgentHandler {
             state.setPhase(InterviewPhaseEnum.FOLLOW_UP);
 
             log.info("[InterviewerAgent] 追问生成完成: {}, sessionId={}", followUp, sessionId);
+
+            // 记录面试官追问到对话历史
+            recordInterviewerMessage(sessionId, followUp);
 
             // 获取 TTS 服务
             TTSService ttsService = voiceServiceFactory.getTTSService();
@@ -486,6 +505,20 @@ public class InterviewerAgentHandler {
         }
 
         return true;
+    }
+
+    /**
+     * 获取完整对话历史（面试结束时使用）
+     *
+     * @param sessionId 会话 ID
+     * @return 完整对话文本
+     */
+    public String getFullConversationHistory(String sessionId) {
+        ConversationContext context = contexts.get(sessionId);
+        if (context == null) {
+            return "";
+        }
+        return context.getConversationHistory().toString();
     }
 
     /**
@@ -585,6 +618,16 @@ public class InterviewerAgentHandler {
     }
 
     /**
+     * 记录面试官消息到对话历史
+     */
+    private void recordInterviewerMessage(String sessionId, String message) {
+        ConversationContext ctx = contexts.get(sessionId);
+        if (ctx != null) {
+            ctx.addInterviewerMessage(message);
+        }
+    }
+
+    /**
      * 保存候选人录音片段
      */
     private void saveCandidateRecording(String sessionId, ConversationContext context, String text) {
@@ -647,6 +690,9 @@ public class InterviewerAgentHandler {
         // 生成结束语
         String closingText = "好的，今天的面试就到这里。感谢你的时间，我们会尽快联系你。";
         log.info("[InterviewerAgent] 面试结束: {}, sessionId={}", closingText, sessionId);
+
+        // 记录结束语到对话历史
+        recordInterviewerMessage(sessionId, closingText);
 
         // 获取 TTS 服务
         TTSService ttsService = voiceServiceFactory.getTTSService();

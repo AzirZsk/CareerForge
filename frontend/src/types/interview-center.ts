@@ -46,6 +46,7 @@ export type ReviewNoteType = 'manual' | 'ai_analysis'
 export interface InterviewListItem {
   id: string
   source: InterviewSource
+  parentInterviewId?: string
   companyName: string
   position: string
   interviewDate: string
@@ -61,6 +62,7 @@ export interface InterviewListItem {
 export interface InterviewDetail {
   id: string
   source: InterviewSource
+  parentInterviewId?: string
   companyName: string
   position: string
   interviewDate: string

@@ -1,8 +1,11 @@
 package com.careerforge.interview.voice.gateway;
 
+import com.careerforge.common.enums.InterviewSource;
+import com.careerforge.common.enums.InterviewStatus;
 import com.careerforge.common.exception.BusinessException;
 import com.careerforge.interview.entity.Interview;
 import com.careerforge.interview.entity.InterviewSession;
+import com.careerforge.interview.handler.InterviewCenterHandler;
 import com.careerforge.interview.service.InterviewService;
 import com.careerforge.interview.service.InterviewSessionService;
 import com.careerforge.interview.voice.dto.*;
@@ -42,6 +45,7 @@ public class InterviewVoiceGateway {
     private final VoiceSessionManager voiceSessionManager;
     private final QuestionPreGenerateService questionPreGenerateService;
     private final InterviewService interviewService;
+    private final InterviewCenterHandler interviewCenterHandler;
     private final InterviewSessionService interviewSessionService;
     private final JobPositionService jobPositionService;
     private final ResumeService resumeService;
@@ -60,19 +64,26 @@ public class InterviewVoiceGateway {
      * @return 会话创建结果
      */
     public VoiceSessionCreateVO createSession(VoiceSessionCreateRequest request) {
-        // 验证并加载面试相关数据
-        Interview interview = validateAndGetInterview(request.getInterviewId());
-        JobPosition jobPosition = validateAndGetJobPosition(interview);
-        String resumeContent = loadResumeContent(interview.getResumeId());
+        // 验证并加载原始面试相关数据
+        Interview originalInterview = validateAndGetInterview(request.getInterviewId());
+        JobPosition jobPosition = validateAndGetJobPosition(originalInterview);
 
-        // 生成会话ID并创建数据库记录
+        // 创建独立的模拟面试 Interview 记录
+        Interview mockInterview = createMockInterviewRecord(originalInterview);
+        String mockInterviewId = mockInterview.getId();
+        log.info("[VoiceGateway] 模拟面试 Interview 已创建, mockInterviewId={}, parentInterviewId={}",
+                mockInterviewId, request.getInterviewId());
+
+        String resumeContent = loadResumeContent(originalInterview.getResumeId());
+
+        // 生成会话ID并创建数据库记录（关联到新的模拟面试 Interview）
         String sessionId = generateSessionId();
-        InterviewSession session = createSessionRecord(sessionId, request, interview, jobPosition);
-        log.info("[VoiceGateway] 会话已创建, sessionId={}, interviewId={}, position={}",
-                sessionId, request.getInterviewId(), jobPosition.getTitle());
+        InterviewSession session = createSessionRecord(sessionId, mockInterviewId, request, originalInterview, jobPosition);
+        log.info("[VoiceGateway] 会话已创建, sessionId={}, mockInterviewId={}, position={}",
+                sessionId, mockInterviewId, jobPosition.getTitle());
 
-        // 初始化内存状态（包含JD和简历上下文）
-        initSessionState(sessionId, request, jobPosition, resumeContent, session);
+        // 初始化内存状态（使用新的模拟面试 Interview ID）
+        initSessionState(sessionId, mockInterviewId, jobPosition, resumeContent, session);
 
         // 决定问题生成策略：重新生成 or 复用历史
         boolean regenerate = request.getRegenerateQuestions() == null || request.getRegenerateQuestions();
@@ -82,8 +93,8 @@ public class InterviewVoiceGateway {
             reuseOrGenerateQuestions(sessionId, jobPosition, resumeContent, session, request.getInterviewId());
         }
 
-        // 返回创建结果
-        return buildCreateResponse(sessionId, request, jobPosition, session);
+        // 返回创建结果（interviewId 为新创建的模拟面试 ID）
+        return buildCreateResponse(sessionId, mockInterviewId, jobPosition, session);
     }
 
     /**
@@ -141,22 +152,44 @@ public class InterviewVoiceGateway {
     }
 
     /**
+     * 创建模拟面试 Interview 记录（独立于原始真实面试）
+     *
+     * @param originalInterview 原始面试记录
+     * @return 新创建的模拟面试 Interview
+     */
+    private Interview createMockInterviewRecord(Interview originalInterview) {
+        Interview mockInterview = new Interview();
+        mockInterview.setId(IdWorker.getIdStr());
+        mockInterview.setUserId(originalInterview.getUserId());
+        mockInterview.setType(originalInterview.getType());
+        mockInterview.setSource(InterviewSource.MOCK.getCode());
+        mockInterview.setParentInterviewId(originalInterview.getId());
+        mockInterview.setJobPositionId(originalInterview.getJobPositionId());
+        mockInterview.setResumeId(originalInterview.getResumeId());
+        mockInterview.setJdContent(originalInterview.getJdContent());
+        mockInterview.setStatus(InterviewStatus.IN_PROGRESS.getValue());
+        interviewService.save(mockInterview);
+        return mockInterview;
+    }
+
+    /**
      * 创建会话数据库记录
      *
      * @param sessionId 会话ID
+     * @param mockInterviewId 模拟面试 Interview ID
      * @param request 创建请求
-     * @param interview 面试实体
+     * @param interview 原始面试实体
      * @param jobPosition 职位实体
      * @return 会话实体
      */
-    private InterviewSession createSessionRecord(String sessionId, VoiceSessionCreateRequest request, Interview interview, JobPosition jobPosition) {
+    private InterviewSession createSessionRecord(String sessionId, String mockInterviewId, VoiceSessionCreateRequest request, Interview interview, JobPosition jobPosition) {
         InterviewSession session = new InterviewSession();
         session.setId(sessionId);
-        session.setInterviewId(request.getInterviewId());
+        session.setInterviewId(mockInterviewId);
         session.setUserId(interview.getUserId());
         session.setType(interview.getType());
         session.setPosition(jobPosition.getTitle());
-        session.setStatus("in_progress");
+        session.setStatus(InterviewStatus.IN_PROGRESS.getValue());
         session.setCurrentQuestionIndex(0);
         session.setTotalQuestions(request.getTotalQuestions() != null ? request.getTotalQuestions() : 10);
         session.setVoiceMode(request.getVoiceMode() != null ? request.getVoiceMode() : "half_voice");
@@ -171,14 +204,14 @@ public class InterviewVoiceGateway {
      * 初始化内存状态
      *
      * @param sessionId 会话ID
-     * @param request 创建请求
+     * @param mockInterviewId 模拟面试 Interview ID
      * @param jobPosition 职位实体
      * @param resumeContent 简历内容
      * @param session 会话实体
      */
-    private void initSessionState(String sessionId, VoiceSessionCreateRequest request, JobPosition jobPosition, String resumeContent, InterviewSession session) {
+    private void initSessionState(String sessionId, String mockInterviewId, JobPosition jobPosition, String resumeContent, InterviewSession session) {
         SessionState state = new SessionState();
-        state.setInterviewId(request.getInterviewId());
+        state.setInterviewId(mockInterviewId);
         state.setPosition(jobPosition.getTitle());
         state.setJdContent(jobPosition.getJdContent());
         state.setResumeContent(resumeContent);
@@ -254,15 +287,15 @@ public class InterviewVoiceGateway {
      * 构建创建结果响应
      *
      * @param sessionId 会话ID
-     * @param request 创建请求
+     * @param mockInterviewId 模拟面试 Interview ID
      * @param jobPosition 职位实体
      * @param session 会话实体
      * @return 创建结果VO
      */
-    private VoiceSessionCreateVO buildCreateResponse(String sessionId, VoiceSessionCreateRequest request, JobPosition jobPosition, InterviewSession session) {
+    private VoiceSessionCreateVO buildCreateResponse(String sessionId, String mockInterviewId, JobPosition jobPosition, InterviewSession session) {
         return VoiceSessionCreateVO.builder()
                 .sessionId(sessionId)
-                .interviewId(request.getInterviewId())
+                .interviewId(mockInterviewId)
                 .position(jobPosition.getTitle())
                 .voiceMode(session.getVoiceMode())
                 .totalQuestions(session.getTotalQuestions())
@@ -401,26 +434,58 @@ public class InterviewVoiceGateway {
 
     /**
      * 结束面试
-     * 标记会话为已完成状态，停止处理所有音频和控制请求
+     * 标记会话为已完成状态，保存对话文本，触发异步复盘分析
      *
      * @param sessionId 会话ID
      */
     public void endInterview(String sessionId) {
         SessionState state = sessionStates.get(sessionId);
-        if (state != null) {
-            // 标记会话为非活跃和已完成状态
-            state.setActive(false);
-            state.setCompleted(true);
-            log.info("[VoiceGateway] 面试已结束, sessionId={}", sessionId);
+        if (state == null) {
+            return;
+        }
+        state.setActive(false);
+        state.setCompleted(true);
+        String interviewId = state.getInterviewId();
+        log.info("[VoiceGateway] 面试已结束, sessionId={}, interviewId={}", sessionId, interviewId);
+        // 保存对话文本并触发异步复盘分析
+        saveInterviewResult(sessionId, interviewId);
+        // 通知客户端状态变更
+        sendResponse(sessionId, VoiceResponse.state(VoiceResponse.StateData.builder()
+                .state(InterviewSessionState.COMPLETED.getCode())
+                .currentQuestion(state.getCurrentQuestion())
+                .totalQuestions(state.getTotalQuestions())
+                .assistRemaining(state.getAssistRemaining())
+                .elapsedTime(state.getElapsedTime())
+                .build()));
+    }
 
-            // 通知客户端状态变更
-            sendResponse(sessionId, VoiceResponse.state(VoiceResponse.StateData.builder()
-                    .state(InterviewSessionState.COMPLETED.getCode())
-                    .currentQuestion(state.getCurrentQuestion())
-                    .totalQuestions(state.getTotalQuestions())
-                    .assistRemaining(state.getAssistRemaining())
-                    .elapsedTime(state.getElapsedTime())
-                    .build()));
+    /**
+     * 保存面试结果并触发异步复盘分析
+     */
+    private void saveInterviewResult(String sessionId, String interviewId) {
+        try {
+            String conversationHistory = interviewerAgentHandler.getFullConversationHistory(sessionId);
+            // 保存 transcript 到 Interview
+            if (interviewId != null && !conversationHistory.isEmpty()) {
+                Interview interview = interviewService.getById(interviewId);
+                if (interview != null) {
+                    interview.setTranscript(conversationHistory);
+                    interview.setStatus(InterviewStatus.COMPLETED.getValue());
+                    interviewService.updateById(interview);
+                    log.info("[VoiceGateway] 对话文本已保存, interviewId={}, length={}", interviewId, conversationHistory.length());
+                    // 传递已查询的 Interview 对象，避免重复查询
+                    interviewCenterHandler.autoReviewAnalysis(interview);
+                    log.info("[VoiceGateway] 已触发异步复盘分析, interviewId={}", interviewId);
+                }
+            }
+            // 更新 InterviewSession 状态
+            InterviewSession sessionRecord = interviewSessionService.getById(sessionId);
+            if (sessionRecord != null) {
+                sessionRecord.setStatus(InterviewStatus.COMPLETED.getValue());
+                interviewSessionService.updateById(sessionRecord);
+            }
+        } catch (Exception e) {
+            log.error("[VoiceGateway] 面试结束后处理失败, sessionId={}", sessionId, e);
         }
     }
 

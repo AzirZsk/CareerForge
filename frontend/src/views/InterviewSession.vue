@@ -250,14 +250,9 @@ import type { VoiceMode, AssistType } from '@/types/interview-voice'
 const router = useRouter()
 const route = useRoute()
 
-// DEBUG: 打印路由参数
-console.log('[InterviewSession] route.params:', route.params)
-console.log('[InterviewSession] route.params.sessionId:', route.params.sessionId)
-
 // 从路由获取会话ID（路由参数名是 sessionId，不是 id）
 const sessionId = computed(() => {
   const id = route.params.sessionId as string || `session_${Date.now()}`
-  console.log('[InterviewSession] computed sessionId:', id)
   return id
 })
 
@@ -396,8 +391,6 @@ watch(() => messages.value.length, () => {
 })
 
 // ============================================================================
-// 音量控制
-// ============================================================================
 // 助手相关
 // ============================================================================
 
@@ -461,7 +454,12 @@ function confirmEnd() {
 function handleEndInterview() {
   voiceInterview.endInterview()
   voiceInterview.dispose()
-  router.push('/review')
+  const interviewId = route.params.id as string
+  if (interviewId) {
+    router.push(`/interview-center/${interviewId}`)
+  } else {
+    router.push('/interview-center')
+  }
 }
 
 // ============================================================================

@@ -444,7 +444,6 @@ function formatElapsed(item: { startTime?: number; endTime?: number }): string {
 </script>
 
 <style lang="scss" scoped>
-@import '@/assets/styles/variables.scss';
 
 .modal-overlay {
   position: fixed;

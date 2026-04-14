@@ -38,6 +38,11 @@ public class Interview extends BaseEntity {
 
     private String source;
 
+    /**
+     * 父面试ID（模拟面试关联到原始真实面试）
+     */
+    private String parentInterviewId;
+
     private String jdContent;
 
     private String overallResult;

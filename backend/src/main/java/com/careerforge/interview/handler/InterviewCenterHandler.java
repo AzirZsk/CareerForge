@@ -5,6 +5,7 @@ import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.careerforge.common.enums.InterviewSource;
+import com.careerforge.common.enums.InterviewStatus;
 import com.careerforge.common.exception.BusinessException;
 import com.careerforge.common.response.PageResponse;
 import com.careerforge.company.entity.Company;
@@ -25,6 +26,9 @@ import com.careerforge.jobposition.service.JobPositionService;
 import com.careerforge.resume.dto.ResumeDetailVO;
 import com.careerforge.resume.entity.Resume;
 import com.careerforge.resume.service.ResumeService;
+import com.careerforge.task.entity.AsyncTask;
+import com.careerforge.task.enums.TaskType;
+import com.careerforge.task.service.AsyncTaskService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +38,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import reactor.core.Disposable;
 import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
@@ -44,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 // 使用完整限定名避免常量冲突
@@ -63,6 +69,9 @@ public class InterviewCenterHandler {
 
     private static final long SSE_TIMEOUT = 300_000L; // 5分钟超时
 
+    // 异步复盘分析任务管理（interviewId -> Disposable）
+    private final ConcurrentHashMap<String, Disposable> activeAnalyses = new ConcurrentHashMap<>();
+
     private final InterviewCenterService interviewCenterService;
     private final InterviewPreparationService preparationService;
     private final InterviewReviewNoteService reviewNoteService;
@@ -72,6 +81,7 @@ public class InterviewCenterHandler {
     private final InterviewPreparationGraphService preparationGraphService;
     private final ReviewAnalysisGraphService reviewGraphService;
     private final ResumeService resumeService;
+    private final AsyncTaskService asyncTaskService;
     private final ObjectMapper objectMapper;
 
     /**
@@ -188,7 +198,7 @@ public class InterviewCenterHandler {
         if (request.getOverallResult() != null) {
             interview.setOverallResult(request.getOverallResult());
             // 手动设置面试结果后，自动将状态修改为已完成
-            interview.setStatus("completed");
+            interview.setStatus(InterviewStatus.COMPLETED.getValue());
         }
         if (request.getInterviewType() != null) {
             interview.setInterviewType(request.getInterviewType());
@@ -297,10 +307,7 @@ public class InterviewCenterHandler {
         configureSseResponse(response);
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT);
         String threadId = UUID.randomUUID().toString();
-        // 构建初始状态：仅传 interviewId 和 messages
-        Map<String, Object> initialState = new HashMap<>();
-        initialState.put(ReviewAnalysisGraphConstants.STATE_INTERVIEW_ID, id);
-        initialState.put(ReviewAnalysisGraphConstants.STATE_MESSAGES, new ArrayList<String>());
+        Map<String, Object> initialState = buildReviewAnalysisInitialState(id);
         // 发送开始事件
         sendSseEvent(emitter, GraphProgressEvent.startReviewAnalysis(id, threadId));
 
@@ -329,6 +336,60 @@ public class InterviewCenterHandler {
                         }
                 );
         return emitter;
+    }
+
+    /**
+     * 自动触发复盘分析（异步后台执行，通过通知中心通知用户）
+     *
+     * @param interview 模拟面试 Interview 对象（由调用方传入，避免重复查询）
+     */
+    public void autoReviewAnalysis(Interview interview) {
+        String interviewId = interview.getId();
+        log.info("[AutoReview] 开始异步复盘分析: interviewId={}", interviewId);
+
+        if (interview.getUserId() == null) {
+            log.error("[AutoReview] 面试记录缺少用户ID: interviewId={}", interviewId);
+            return;
+        }
+
+        // 创建异步任务
+        AsyncTask task = asyncTaskService.createTask(interview.getUserId(), TaskType.REVIEW_ANALYSIS, interviewId);
+        String taskId = task.getId();
+        log.info("[AutoReview] 异步任务已创建: taskId={}, interviewId={}", taskId, interviewId);
+
+        // 构建工作流初始状态
+        String threadId = UUID.randomUUID().toString();
+        Map<String, Object> initialState = buildReviewAnalysisInitialState(interviewId);
+
+        // 异步执行复盘分析工作流
+        Disposable disposable = reviewGraphService.streamAnalysis(initialState, threadId)
+                .subscribeOn(Schedulers.boundedElastic())
+                .subscribe(
+                        output -> {
+                            String node = output.node();
+                            asyncTaskService.markRunning(taskId);
+                            // 根据节点更新进度
+                            if (node.contains("analyze_transcript")) {
+                                asyncTaskService.updateProgress(taskId, 33, "对话分析完成");
+                            } else if (node.contains("analyze_interview")) {
+                                asyncTaskService.updateProgress(taskId, 66, "面试分析完成");
+                            } else if (node.contains("generate_advice")) {
+                                asyncTaskService.updateProgress(taskId, 90, "正在生成改进建议");
+                            }
+                            log.debug("[AutoReview] 节点完成: node={}, interviewId={}", node, interviewId);
+                        },
+                        error -> {
+                            log.error("[AutoReview] 复盘分析工作流异常: interviewId={}", interviewId, error);
+                            asyncTaskService.markFailed(taskId, error.getMessage());
+                            activeAnalyses.remove(interviewId);
+                        },
+                        () -> {
+                            log.info("[AutoReview] 复盘分析工作流完成: interviewId={}, taskId={}", interviewId, taskId);
+                            asyncTaskService.markCompleted(taskId, "复盘分析完成");
+                            activeAnalyses.remove(interviewId);
+                        }
+                );
+        activeAnalyses.put(interviewId, disposable);
     }
 
     /**
@@ -361,6 +422,16 @@ public class InterviewCenterHandler {
      */
     private boolean isInterruptionOutput(NodeOutput output) {
         return output instanceof InterruptionMetadata;
+    }
+
+    /**
+     * 构建复盘分析工作流初始状态
+     */
+    private Map<String, Object> buildReviewAnalysisInitialState(String interviewId) {
+        Map<String, Object> initialState = new HashMap<>();
+        initialState.put(ReviewAnalysisGraphConstants.STATE_INTERVIEW_ID, interviewId);
+        initialState.put(ReviewAnalysisGraphConstants.STATE_MESSAGES, new ArrayList<String>());
+        return initialState;
     }
 
     // ===== 私有业务逻辑方法 =====
