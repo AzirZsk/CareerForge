@@ -16,7 +16,7 @@
         <p class="advice-description">{{ advice.description }}</p>
         <ul v-if="advice.actionItems && advice.actionItems.length > 0" class="action-list">
           <li v-for="(item, actionIndex) in advice.actionItems" :key="actionIndex" class="action-item">
-            <font-awesome-icon icon="fa-solid fa-check" class="check-icon" />
+            <span class="dot-icon"></span>
             <span>{{ item }}</span>
           </li>
         </ul>
@@ -120,9 +120,11 @@ function getPriorityClass(priority: string | undefined): string {
     color: $color-text-secondary;
     line-height: 1.5;
 
-    .check-icon {
-      color: $color-success;
-      font-size: 0.875rem;
+    .dot-icon {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: $color-text-tertiary;
       flex-shrink: 0;
     }
   }

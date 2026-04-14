@@ -295,6 +295,7 @@ function getMatchLevelLabel(level: string): string {
   ul {
     margin: 0;
     padding-left: $spacing-md;
+    list-style: disc;
   }
 
   li {
@@ -302,6 +303,7 @@ function getMatchLevelLabel(level: string): string {
     color: $color-text-secondary;
     line-height: 1.6;
     margin-bottom: $spacing-xs;
+    padding-left: $spacing-xs;
   }
 
   &.strengths h4 { color: $color-success; }
@@ -451,6 +453,7 @@ function getMatchLevelLabel(level: string): string {
   ul {
     margin: 0;
     padding-left: $spacing-md;
+    list-style: disc;
   }
 
   li {
@@ -458,6 +461,7 @@ function getMatchLevelLabel(level: string): string {
     color: $color-text-secondary;
     line-height: 1.6;
     margin-bottom: $spacing-xs;
+    padding-left: $spacing-xs;
   }
 }
 
