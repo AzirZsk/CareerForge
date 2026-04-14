@@ -40,6 +40,10 @@
         </div>
         <div class="qa-body">
           <div class="qa-row">
+            <span class="qa-label">面试官问题:</span>
+            <div class="qa-content">{{ qa.question }}</div>
+          </div>
+          <div class="qa-row">
             <span class="qa-label">问题意图:</span>
             <span class="qa-value">{{ qa.questionIntent }}</span>
           </div>
