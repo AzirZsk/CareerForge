@@ -17,19 +17,17 @@ public class SessionState {
     private String jdContent;
     private String resumeContent;
     // 面试官风格
-    private String interviewerStyle = "professional";
+    private String interviewerStyle = VoiceInterviewDefaults.DEFAULT_INTERVIEWER_STYLE;
     // 语音模式（half_voice/full_voice）
-    private String voiceMode = "half_voice";
-    // 会话状态
-    private boolean active = false;
-    private boolean frozen = false;
-    private boolean completed = false;
+    private String voiceMode = VoiceInterviewDefaults.DEFAULT_VOICE_MODE;
+    // 会话状态（枚举替代多布尔值，避免不一致状态）
+    private InterviewSessionState sessionState = InterviewSessionState.IDLE;
     private long startTime;
     private long freezeTime;
     private int currentQuestion = 0;
-    private int totalQuestions = 10;
-    private int assistRemaining = 5;
-    private int assistLimit = 5;
+    private int totalQuestions = VoiceInterviewDefaults.DEFAULT_TOTAL_QUESTIONS;
+    private int assistRemaining = VoiceInterviewDefaults.DEFAULT_ASSIST_LIMIT;
+    private int assistLimit = VoiceInterviewDefaults.DEFAULT_ASSIST_LIMIT;
     private int segmentIndex = 0;
 
     /**
@@ -53,17 +51,31 @@ public class SessionState {
     public static final int MAX_FOLLOW_UP = 2;
 
     /**
+     * 判断面试是否活跃（面试进行中或已冻结）
+     */
+    public boolean isActive() {
+        return sessionState == InterviewSessionState.INTERVIEWING || sessionState == InterviewSessionState.FROZEN;
+    }
+
+    /**
+     * 判断面试是否已冻结
+     */
+    public boolean isFrozen() {
+        return sessionState == InterviewSessionState.FROZEN;
+    }
+
+    /**
      * 获取会话状态枚举
      */
     public InterviewSessionState getState() {
-        return InterviewSessionState.from(completed, frozen, active);
+        return sessionState;
     }
 
     /**
      * 获取会话状态代码
      */
     public String getStateCode() {
-        return getState().getCode();
+        return sessionState.getCode();
     }
 
     /**
@@ -72,5 +84,40 @@ public class SessionState {
     public int getElapsedTime() {
         if (startTime == 0) return 0;
         return (int) ((System.currentTimeMillis() - startTime) / 1000);
+    }
+
+    /**
+     * 标记面试开始
+     */
+    public void startInterview() {
+        this.sessionState = InterviewSessionState.INTERVIEWING;
+    }
+
+    /**
+     * 标记面试冻结
+     */
+    public void freeze() {
+        this.sessionState = InterviewSessionState.FROZEN;
+    }
+
+    /**
+     * 标记面试恢复
+     */
+    public void resume() {
+        this.sessionState = InterviewSessionState.INTERVIEWING;
+    }
+
+    /**
+     * 标记面试完成
+     */
+    public void complete() {
+        this.sessionState = InterviewSessionState.COMPLETED;
+    }
+
+    /**
+     * 标记会话不活跃（WebSocket 断开或异常）
+     */
+    public void deactivate() {
+        this.sessionState = InterviewSessionState.IDLE;
     }
 }

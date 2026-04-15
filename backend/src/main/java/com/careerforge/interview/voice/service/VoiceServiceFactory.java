@@ -92,11 +92,7 @@ public class VoiceServiceFactory {
      * @return true 表示配置完整可用
      */
     public boolean isASRAvailable() {
-        VoiceProperties.AliyunConfig aliyun = voiceProperties.getAliyun();
-        return "aliyun".equals(voiceProperties.getProvider())
-                && aliyun != null
-                && aliyun.getApiKey() != null
-                && !aliyun.getApiKey().isBlank();
+        return AliyunASRService.isConfigured(voiceProperties);
     }
 
     /**

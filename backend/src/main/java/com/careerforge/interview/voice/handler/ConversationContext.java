@@ -56,7 +56,7 @@ public class ConversationContext {
     /**
      * ASR 会话（每个面试会话独立持有，连接级生命周期）
      */
-    private transient ASRService asrService;
+    private ASRService asrService;
 
     /**
      * 获取或创建 ASR 会话
@@ -67,13 +67,9 @@ public class ConversationContext {
      */
     public ASRService getOrCreateASRService(Supplier<ASRService> supplier) {
         if (asrService == null || asrService.isClosed()) {
-            synchronized (this) {
-                if (asrService == null || asrService.isClosed()) {
-                    log.debug("[ConversationContext] 创建新的 ASR 会话");
-                    // supplier 负责 创建+启动+订阅，保证时序正确
-                    asrService = supplier.get();
-                }
-            }
+            log.debug("[ConversationContext] 创建新的 ASR 会话");
+            // supplier 负责 创建+启动+订阅，保证时序正确
+            asrService = supplier.get();
         }
         return asrService;
     }

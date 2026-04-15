@@ -20,23 +20,23 @@ public class VoiceSessionCreateRequest {
     /**
      * 总问题数（可选，默认 10）
      */
-    private Integer totalQuestions = 10;
+    private Integer totalQuestions = VoiceInterviewDefaults.DEFAULT_TOTAL_QUESTIONS;
 
     /**
      * 求助次数上限（可选，默认 5）
      */
-    private Integer assistLimit = 5;
+    private Integer assistLimit = VoiceInterviewDefaults.DEFAULT_ASSIST_LIMIT;
 
     /**
      * 语音模式（可选，默认 half_voice）
      */
-    private String voiceMode = "half_voice";
+    private String voiceMode = VoiceInterviewDefaults.DEFAULT_VOICE_MODE;
 
     /**
      * 面试官风格（professional/friendly/challenging）
      * 默认为专业严肃型
      */
-    private String interviewerStyle = "professional";
+    private String interviewerStyle = VoiceInterviewDefaults.DEFAULT_INTERVIEWER_STYLE;
 
     /**
      * 是否重新生成面试问题（默认 true）

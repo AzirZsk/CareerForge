@@ -65,16 +65,7 @@ public class InterviewerAgentHandler {
         log.debug("[InterviewerAgent] 处理候选人音频, sessionId={}, size={}", sessionId, audioData.length);
 
         // 获取会话上下文（从 Gateway 加载 JD/简历）
-        ConversationContext context = contexts.computeIfAbsent(sessionId, k -> {
-            ConversationContext ctx = new ConversationContext();
-            SessionState state = voiceGateway.getInternalState(k);
-            if (state != null) {
-                ctx.setPosition(state.getPosition() != null ? state.getPosition() : "Java 开发工程师");
-                ctx.setJdContent(state.getJdContent());
-                ctx.setResumeContent(state.getResumeContent());
-            }
-            return ctx;
-        });
+        ConversationContext context = getOrCreateContext(sessionId);
 
         // 收集候选人音频数据（用于录音保存）
         context.appendCandidateAudio(audioData);
@@ -194,18 +185,8 @@ public class InterviewerAgentHandler {
         } else if (phase == InterviewPhaseEnum.FOLLOW_UP) {
             // 追问阶段，处理追问后的回答
             log.info("[InterviewerAgent] 追问回答完成，进入下一题, sessionId={}", sessionId);
-            // 重置状态并进入下一个问题
             state.setPhase(InterviewPhaseEnum.ASKING_QUESTIONS);
-            state.setFollowUpCount(0);
-            state.setCurrentQuestion(state.getCurrentQuestion() + 1);
-
-            // 检查是否还有问题
-            if (state.getCurrentQuestion() < state.getTotalQuestions()) {
-                return generateNextQuestion(sessionId);
-            } else {
-                // 面试结束
-                return endInterview(sessionId);
-            }
+            return advanceToNextQuestion(sessionId, state);
 
         } else if (phase == InterviewPhaseEnum.COMPLETED) {
             // 面试已结束
@@ -228,11 +209,7 @@ public class InterviewerAgentHandler {
     public Flux<VoiceResponse> requestSelfIntroduction(String sessionId) {
         log.debug("[InterviewerAgent] 请求自我介绍, sessionId={}", sessionId);
 
-        SessionState state = voiceGateway.getInternalState(sessionId);
-        if (state == null) {
-            log.warn("[InterviewerAgent] 会话不存在, sessionId={}", sessionId);
-            return Flux.error(new BusinessException("会话不存在"));
-        }
+        SessionState state = requireSession(sessionId);
 
         // 获取面试官风格配置
         AIPromptProperties.InterviewerStyleConfig styleConfig =
@@ -249,37 +226,7 @@ public class InterviewerAgentHandler {
         // 记录面试官消息到对话历史
         recordInterviewerMessage(sessionId, prompt);
 
-        // 获取 TTS 服务
-        TTSService ttsService = voiceServiceFactory.getTTSService();
-        TTSConfig ttsConfig = buildInterviewerTTSConfig();
-
-        // 使用分句流式合成
-        return ttsService.streamSynthesizeBySentence(Flux.just(prompt), ttsConfig)
-                .flatMap(ttsChunk -> {
-                    // 文本响应
-                    Flux<VoiceResponse> textFlux = Flux.just(VoiceResponse.transcript(
-                            VoiceResponse.TranscriptData.builder()
-                                    .text(ttsChunk.getText())
-                                    .isFinal(ttsChunk.getIsFinal())
-                                    .role(TranscriptRole.INTERVIEWER.getValue())
-                                    .build()
-                    ));
-
-                    // 音频响应
-                    if (ttsChunk.getAudio() != null && ttsChunk.getAudio().length > 0) {
-                        String audioBase64 = Base64.getEncoder().encodeToString(ttsChunk.getAudio());
-                        Flux<VoiceResponse> audioFlux = Flux.just(VoiceResponse.audio(
-                                VoiceResponse.AudioData.builder()
-                                        .audio(audioBase64)
-                                        .format(ttsConfig.getFormat())
-                                        .sampleRate(ttsConfig.getSampleRate())
-                                        .build()
-                        ));
-                        return textFlux.concatWith(audioFlux);
-                    }
-
-                    return textFlux;
-                });
+        return synthesizeToVoiceResponses(prompt);
     }
 
     /**
@@ -291,11 +238,7 @@ public class InterviewerAgentHandler {
     public Flux<VoiceResponse> generateNextQuestion(String sessionId) {
         log.debug("[InterviewerAgent] 生成下一个问题, sessionId={}", sessionId);
 
-        SessionState state = voiceGateway.getInternalState(sessionId);
-        if (state == null) {
-            log.warn("[InterviewerAgent] 会话不存在, sessionId={}", sessionId);
-            return Flux.error(new BusinessException("会话不存在"));
-        }
+        SessionState state = requireSession(sessionId);
 
         // 优先从预生成缓存获取
         Optional<PreGeneratedQuestion> cachedQuestion =
@@ -317,37 +260,7 @@ public class InterviewerAgentHandler {
             // 记录面试官消息到对话历史
             recordInterviewerMessage(sessionId, questionText);
 
-            // 获取 TTS 服务
-            TTSService ttsService = voiceServiceFactory.getTTSService();
-            TTSConfig ttsConfig = buildInterviewerTTSConfig();
-
-            // 使用分句流式合成
-            return ttsService.streamSynthesizeBySentence(Flux.just(questionText), ttsConfig)
-                    .flatMap(ttsChunk -> {
-                        // 文本响应
-                        Flux<VoiceResponse> textFlux = Flux.just(VoiceResponse.transcript(
-                                VoiceResponse.TranscriptData.builder()
-                                        .text(ttsChunk.getText())
-                                        .isFinal(ttsChunk.getIsFinal())
-                                        .role(TranscriptRole.INTERVIEWER.getValue())
-                                        .build()
-                        ));
-
-                        // 音频响应
-                        if (ttsChunk.getAudio() != null && ttsChunk.getAudio().length > 0) {
-                            String audioBase64 = Base64.getEncoder().encodeToString(ttsChunk.getAudio());
-                            Flux<VoiceResponse> audioFlux = Flux.just(VoiceResponse.audio(
-                                    VoiceResponse.AudioData.builder()
-                                            .audio(audioBase64)
-                                            .format(ttsConfig.getFormat())
-                                            .sampleRate(ttsConfig.getSampleRate())
-                                            .build()
-                            ));
-                            return textFlux.concatWith(audioFlux);
-                        }
-
-                        return textFlux;
-                    });
+            return synthesizeToVoiceResponses(questionText);
         } else {
             // 降级到实时生成
             log.warn("[InterviewerAgent] 预生成问题未找到, 降级到实时生成, sessionId={}, index={}",
@@ -360,17 +273,7 @@ public class InterviewerAgentHandler {
      * 实时生成问题
      */
     private Flux<VoiceResponse> generateQuestionRealTime(String sessionId) {
-        // 获取会话上下文（从 Gateway 加载 JD/简历）
-        ConversationContext context = contexts.computeIfAbsent(sessionId, k -> {
-            ConversationContext ctx = new ConversationContext();
-            SessionState state = voiceGateway.getInternalState(k);
-            if (state != null) {
-                ctx.setPosition(state.getPosition() != null ? state.getPosition() : "Java 开发工程师");
-                ctx.setJdContent(state.getJdContent());
-                ctx.setResumeContent(state.getResumeContent());
-            }
-            return ctx;
-        });
+        ConversationContext context = getOrCreateContext(sessionId);
 
         SessionState state = voiceGateway.getInternalState(sessionId);
 
@@ -393,43 +296,16 @@ public class InterviewerAgentHandler {
         // 调用 LLM 生成问题
         Flux<String> llmStream = callLLMStream(systemPrompt, userPrompt);
 
-        // 获取 TTS 服务
-        TTSService ttsService = voiceServiceFactory.getTTSService();
-        TTSConfig ttsConfig = buildInterviewerTTSConfig();
-
-        // 使用分句流式合成，同时累积完整问题文本
+        // 累积完整问题文本用于记录对话历史
         StringBuilder fullQuestion = new StringBuilder();
-        return ttsService.streamSynthesizeBySentence(llmStream, ttsConfig)
-                .flatMap(ttsChunk -> {
-                    // 累积完整问题文本
-                    fullQuestion.append(ttsChunk.getText());
-
-                    // 文本响应
-                    Flux<VoiceResponse> textFlux = Flux.just(VoiceResponse.transcript(
-                            VoiceResponse.TranscriptData.builder()
-                                    .text(ttsChunk.getText())
-                                    .isFinal(ttsChunk.getIsFinal())
-                                    .role(TranscriptRole.INTERVIEWER.getValue())
-                                    .build()
-                    ));
-
-                    // 音频响应
-                    if (ttsChunk.getAudio() != null && ttsChunk.getAudio().length > 0) {
-                        String audioBase64 = Base64.getEncoder().encodeToString(ttsChunk.getAudio());
-                        Flux<VoiceResponse> audioFlux = Flux.just(VoiceResponse.audio(
-                                VoiceResponse.AudioData.builder()
-                                        .audio(audioBase64)
-                                        .format(ttsConfig.getFormat())
-                                        .sampleRate(ttsConfig.getSampleRate())
-                                        .build()
-                        ));
-                        return textFlux.concatWith(audioFlux);
+        return synthesizeStreamToVoiceResponses(llmStream)
+                .doOnNext(resp -> {
+                    // 从 transcript 响应中提取文本累积
+                    if (resp.getData() instanceof VoiceResponse.TranscriptData data) {
+                        fullQuestion.append(data.getText());
                     }
-
-                    return textFlux;
                 })
                 .doOnComplete(() -> {
-                    // 流结束后，将完整问题文本记录到对话历史
                     if (fullQuestion.length() > 0) {
                         context.addInterviewerMessage(fullQuestion.toString());
                     }
@@ -442,11 +318,7 @@ public class InterviewerAgentHandler {
     private Flux<VoiceResponse> generateInterviewerReply(String sessionId, String candidateAnswer) {
         log.debug("[InterviewerAgent] 生成面试官回复, sessionId={}", sessionId);
 
-        SessionState state = voiceGateway.getInternalState(sessionId);
-        if (state == null) {
-            log.warn("[InterviewerAgent] 会话不存在, sessionId={}", sessionId);
-            return Flux.error(new BusinessException("会话不存在"));
-        }
+        SessionState state = requireSession(sessionId);
 
         // 判断是否需要追问
         if (shouldAskFollowUp(candidateAnswer, state)) {
@@ -470,54 +342,10 @@ public class InterviewerAgentHandler {
             // 记录面试官追问到对话历史
             recordInterviewerMessage(sessionId, followUp);
 
-            // 获取 TTS 服务
-            TTSService ttsService = voiceServiceFactory.getTTSService();
-            TTSConfig ttsConfig = buildInterviewerTTSConfig();
-
-            // 使用分句流式合成
-            return ttsService.streamSynthesizeBySentence(Flux.just(followUp), ttsConfig)
-                    .flatMap(ttsChunk -> {
-                        // 文本响应
-                        Flux<VoiceResponse> textFlux = Flux.just(VoiceResponse.transcript(
-                                VoiceResponse.TranscriptData.builder()
-                                        .text(ttsChunk.getText())
-                                        .isFinal(ttsChunk.getIsFinal())
-                                        .role(TranscriptRole.INTERVIEWER.getValue())
-                                        .build()
-                        ));
-
-                        // 音频响应
-                        if (ttsChunk.getAudio() != null && ttsChunk.getAudio().length > 0) {
-                            String audioBase64 = Base64.getEncoder().encodeToString(ttsChunk.getAudio());
-                            Flux<VoiceResponse> audioFlux = Flux.just(VoiceResponse.audio(
-                                    VoiceResponse.AudioData.builder()
-                                            .audio(audioBase64)
-                                            .format(ttsConfig.getFormat())
-                                            .sampleRate(ttsConfig.getSampleRate())
-                                            .build()
-                            ));
-                            return textFlux.concatWith(audioFlux);
-                        }
-
-                        return textFlux;
-                    });
+            return synthesizeToVoiceResponses(followUp);
         } else {
-            // 不追问，重置计数器，进入下一个问题
-            state.setFollowUpCount(0);
-
-            // 更新问题计数
-            state.setCurrentQuestion(state.getCurrentQuestion() + 1);
-
-            // 检查是否还有问题
-            if (state.getCurrentQuestion() < state.getTotalQuestions()) {
-                log.info("[InterviewerAgent] 进入下一个问题, sessionId={}, index={}",
-                        sessionId, state.getCurrentQuestion());
-                return generateNextQuestion(sessionId);
-            } else {
-                // 面试结束
-                log.info("[InterviewerAgent] 所有问题完成，结束面试, sessionId={}", sessionId);
-                return endInterview(sessionId);
-            }
+            // 不追问，直接进入下一个问题
+            return advanceToNextQuestion(sessionId, state);
         }
     }
 
@@ -645,6 +473,89 @@ public class InterviewerAgentHandler {
     }
 
     /**
+     * 将文本通过 TTS 分句流式合成，转换为 VoiceResponse 流
+     * 统一处理 transcript + audio 的构建逻辑
+     *
+     * @param text 要合成的文本
+     * @return VoiceResponse 流（交替包含 transcript 和 audio）
+     */
+    private Flux<VoiceResponse> synthesizeToVoiceResponses(String text) {
+        TTSService ttsService = voiceServiceFactory.getTTSService();
+        TTSConfig ttsConfig = buildInterviewerTTSConfig();
+        return ttsService.streamSynthesizeBySentence(Flux.just(text), ttsConfig)
+                .flatMap(chunk -> buildTTSResponseFlux(chunk, ttsConfig));
+    }
+
+    /**
+     * 将 LLM 文本流通过 TTS 分句流式合成，转换为 VoiceResponse 流
+     * 用于实时生成问题的场景
+     *
+     * @param textStream LLM 文本流
+     * @return VoiceResponse 流（交替包含 transcript 和 audio）
+     */
+    private Flux<VoiceResponse> synthesizeStreamToVoiceResponses(Flux<String> textStream) {
+        TTSService ttsService = voiceServiceFactory.getTTSService();
+        TTSConfig ttsConfig = buildInterviewerTTSConfig();
+        return ttsService.streamSynthesizeBySentence(textStream, ttsConfig)
+                .flatMap(chunk -> buildTTSResponseFlux(chunk, ttsConfig));
+    }
+
+    /**
+     * 将单个 TTSChunk 转换为 VoiceResponse 流
+     * 有音频时输出 transcript + audio，无音频时仅输出 transcript
+     */
+    private Flux<VoiceResponse> buildTTSResponseFlux(TTSChunk ttsChunk, TTSConfig ttsConfig) {
+        Flux<VoiceResponse> textFlux = Flux.just(VoiceResponse.transcript(
+                VoiceResponse.TranscriptData.builder()
+                        .text(ttsChunk.getText())
+                        .isFinal(ttsChunk.getIsFinal())
+                        .role(TranscriptRole.INTERVIEWER.getValue())
+                        .build()
+        ));
+        if (ttsChunk.getAudio() != null && ttsChunk.getAudio().length > 0) {
+            String audioBase64 = Base64.getEncoder().encodeToString(ttsChunk.getAudio());
+            Flux<VoiceResponse> audioFlux = Flux.just(VoiceResponse.audio(
+                    VoiceResponse.AudioData.builder()
+                            .audio(audioBase64)
+                            .format(ttsConfig.getFormat())
+                            .sampleRate(ttsConfig.getSampleRate())
+                            .build()
+            ));
+            return textFlux.concatWith(audioFlux);
+        }
+        return textFlux;
+    }
+
+    /**
+     * 获取或创建会话上下文
+     * 首次创建时从 Gateway 加载 JD/简历信息
+     */
+    private ConversationContext getOrCreateContext(String sessionId) {
+        return contexts.computeIfAbsent(sessionId, k -> {
+            ConversationContext ctx = new ConversationContext();
+            SessionState state = voiceGateway.getInternalState(k);
+            if (state != null) {
+                ctx.setPosition(state.getPosition() != null ? state.getPosition() : "Java 开发工程师");
+                ctx.setJdContent(state.getJdContent());
+                ctx.setResumeContent(state.getResumeContent());
+            }
+            return ctx;
+        });
+    }
+
+    /**
+     * 获取必须存在的会话状态，不存在则抛出异常
+     */
+    private SessionState requireSession(String sessionId) {
+        SessionState state = voiceGateway.getInternalState(sessionId);
+        if (state == null) {
+            log.warn("[InterviewerAgent] 会话不存在, sessionId={}", sessionId);
+            throw new BusinessException("会话不存在");
+        }
+        return state;
+    }
+
+    /**
      * 构建面试官 TTS 配置
      */
     private TTSConfig buildInterviewerTTSConfig() {
@@ -712,6 +623,26 @@ public class InterviewerAgentHandler {
 
 
     /**
+     * 推进到下一个问题或结束面试
+     * 重置追问状态，更新问题计数，根据剩余问题数决定下一步
+     *
+     * @param sessionId 会话 ID
+     * @param state     会话状态
+     * @return 响应流（下一个问题或结束语）
+     */
+    private Flux<VoiceResponse> advanceToNextQuestion(String sessionId, SessionState state) {
+        state.setFollowUpCount(0);
+        state.setCurrentQuestion(state.getCurrentQuestion() + 1);
+
+        if (state.getCurrentQuestion() < state.getTotalQuestions()) {
+            log.info("[InterviewerAgent] 进入下一个问题, sessionId={}, index={}", sessionId, state.getCurrentQuestion());
+            return generateNextQuestion(sessionId);
+        }
+        log.info("[InterviewerAgent] 所有问题完成，结束面试, sessionId={}", sessionId);
+        return endInterview(sessionId);
+    }
+
+    /**
      * 结束面试
      *
      * @param sessionId 会话 ID
@@ -728,8 +659,7 @@ public class InterviewerAgentHandler {
 
         // 标记面试完成
         state.setPhase(InterviewPhaseEnum.COMPLETED);
-        state.setCompleted(true);
-        state.setActive(false);
+        state.complete();
 
         // 生成结束语
         String closingText = "好的，今天的面试就到这里。感谢你的时间，我们会尽快联系你。";
@@ -738,36 +668,6 @@ public class InterviewerAgentHandler {
         // 记录结束语到对话历史
         recordInterviewerMessage(sessionId, closingText);
 
-        // 获取 TTS 服务
-        TTSService ttsService = voiceServiceFactory.getTTSService();
-        TTSConfig ttsConfig = buildInterviewerTTSConfig();
-
-        // 使用分句流式合成
-        return ttsService.streamSynthesizeBySentence(Flux.just(closingText), ttsConfig)
-                .flatMap(ttsChunk -> {
-                    // 文本响应
-                    Flux<VoiceResponse> textFlux = Flux.just(VoiceResponse.transcript(
-                            VoiceResponse.TranscriptData.builder()
-                                    .text(ttsChunk.getText())
-                                    .isFinal(ttsChunk.getIsFinal())
-                                    .role(TranscriptRole.INTERVIEWER.getValue())
-                                    .build()
-                    ));
-
-                    // 音频响应
-                    if (ttsChunk.getAudio() != null && ttsChunk.getAudio().length > 0) {
-                        String audioBase64 = Base64.getEncoder().encodeToString(ttsChunk.getAudio());
-                        Flux<VoiceResponse> audioFlux = Flux.just(VoiceResponse.audio(
-                                VoiceResponse.AudioData.builder()
-                                        .audio(audioBase64)
-                                        .format(ttsConfig.getFormat())
-                                        .sampleRate(ttsConfig.getSampleRate())
-                                        .build()
-                        ));
-                        return textFlux.concatWith(audioFlux);
-                    }
-
-                    return textFlux;
-                });
+        return synthesizeToVoiceResponses(closingText);
     }
 }

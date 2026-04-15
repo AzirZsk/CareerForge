@@ -191,11 +191,11 @@ public class InterviewVoiceGateway {
         session.setPosition(jobPosition.getTitle());
         session.setStatus(InterviewStatus.IN_PROGRESS.getValue());
         session.setCurrentQuestionIndex(0);
-        session.setTotalQuestions(request.getTotalQuestions() != null ? request.getTotalQuestions() : 10);
-        session.setVoiceMode(request.getVoiceMode() != null ? request.getVoiceMode() : "half_voice");
+        session.setTotalQuestions(request.getTotalQuestions() != null ? request.getTotalQuestions() : VoiceInterviewDefaults.DEFAULT_TOTAL_QUESTIONS);
+        session.setVoiceMode(request.getVoiceMode() != null ? request.getVoiceMode() : VoiceInterviewDefaults.DEFAULT_VOICE_MODE);
         session.setAssistCount(0);
-        session.setAssistLimit(request.getAssistLimit() != null ? request.getAssistLimit() : 5);
-        session.setInterviewerStyle(request.getInterviewerStyle() != null ? request.getInterviewerStyle() : "professional");
+        session.setAssistLimit(request.getAssistLimit() != null ? request.getAssistLimit() : VoiceInterviewDefaults.DEFAULT_ASSIST_LIMIT);
+        session.setInterviewerStyle(request.getInterviewerStyle() != null ? request.getInterviewerStyle() : VoiceInterviewDefaults.DEFAULT_INTERVIEWER_STYLE);
         interviewSessionService.save(session);
         return session;
     }
@@ -331,7 +331,7 @@ public class InterviewVoiceGateway {
         // 标记会话为非活跃状态
         SessionState state = sessionStates.get(sessionId);
         if (state != null) {
-            state.setActive(false);
+            state.deactivate();
         }
         // 清理 ASR 会话资源
         interviewerAgentHandler.cleanupSession(sessionId);
@@ -343,10 +343,9 @@ public class InterviewVoiceGateway {
      * 验证会话状态后转发给面试官 Agent 处理
      *
      * @param sessionId 会话ID
-     * @param wsSession WebSocket会话对象
      * @param audioData 音频数据（PCM格式）
      */
-    public void handleAudioData(String sessionId, WebSocketSession wsSession, byte[] audioData) {
+    public void handleAudioData(String sessionId, byte[] audioData) {
         SessionState state = sessionStates.get(sessionId);
         // 验证会话存在且活跃
         if (state == null || !state.isActive()) {
@@ -381,7 +380,7 @@ public class InterviewVoiceGateway {
         // 标记会话为非活跃状态
         SessionState state = sessionStates.get(sessionId);
         if (state != null) {
-            state.setActive(false);
+            state.deactivate();
         }
     }
 
@@ -395,18 +394,13 @@ public class InterviewVoiceGateway {
         SessionState state = sessionStates.get(sessionId);
         if (state != null) {
             // 标记会话为冻结状态
-            state.setFrozen(true);
+            state.freeze();
             state.setFreezeTime(System.currentTimeMillis());
             log.info("[VoiceGateway] 面试已冻结, sessionId={}", sessionId);
 
             // 通知客户端状态变更
-            sendResponse(sessionId, VoiceResponse.state(VoiceResponse.StateData.builder()
-                    .state(InterviewSessionState.FROZEN.getCode())
-                    .currentQuestion(state.getCurrentQuestion())
-                    .totalQuestions(state.getTotalQuestions())
-                    .assistRemaining(state.getAssistRemaining())
-                    .elapsedTime(state.getElapsedTime())
-                    .build()));
+            sendResponse(sessionId, VoiceResponse.state(
+                    buildStateData(InterviewSessionState.FROZEN.getCode(), state)));
         }
     }
 
@@ -420,17 +414,12 @@ public class InterviewVoiceGateway {
         SessionState state = sessionStates.get(sessionId);
         if (state != null) {
             // 解除冻结状态
-            state.setFrozen(false);
+            state.resume();
             log.info("[VoiceGateway] 面试已恢复, sessionId={}", sessionId);
 
             // 通知客户端状态变更
-            sendResponse(sessionId, VoiceResponse.state(VoiceResponse.StateData.builder()
-                    .state(InterviewSessionState.INTERVIEWING.getCode())
-                    .currentQuestion(state.getCurrentQuestion())
-                    .totalQuestions(state.getTotalQuestions())
-                    .assistRemaining(state.getAssistRemaining())
-                    .elapsedTime(state.getElapsedTime())
-                    .build()));
+            sendResponse(sessionId, VoiceResponse.state(
+                    buildStateData(InterviewSessionState.INTERVIEWING.getCode(), state)));
         }
     }
 
@@ -445,20 +434,14 @@ public class InterviewVoiceGateway {
         if (state == null) {
             return;
         }
-        state.setActive(false);
-        state.setCompleted(true);
+        state.complete();
         String interviewId = state.getInterviewId();
         log.info("[VoiceGateway] 面试已结束, sessionId={}, interviewId={}", sessionId, interviewId);
         // 保存对话文本并触发异步复盘分析
         saveInterviewResult(sessionId, interviewId);
         // 通知客户端状态变更
-        sendResponse(sessionId, VoiceResponse.state(VoiceResponse.StateData.builder()
-                .state(InterviewSessionState.COMPLETED.getCode())
-                .currentQuestion(state.getCurrentQuestion())
-                .totalQuestions(state.getTotalQuestions())
-                .assistRemaining(state.getAssistRemaining())
-                .elapsedTime(state.getElapsedTime())
-                .build()));
+        sendResponse(sessionId, VoiceResponse.state(
+                buildStateData(InterviewSessionState.COMPLETED.getCode(), state)));
         // 清理 ASR 会话资源
         interviewerAgentHandler.cleanupSession(sessionId);
     }
@@ -510,13 +493,7 @@ public class InterviewVoiceGateway {
         }
 
         // 返回当前会话状态
-        return VoiceResponse.StateData.builder()
-                .state(state.getStateCode())
-                .currentQuestion(state.getCurrentQuestion())
-                .totalQuestions(state.getTotalQuestions())
-                .assistRemaining(state.getAssistRemaining())
-                .elapsedTime(state.getElapsedTime())
-                .build();
+        return buildStateData(state.getStateCode(), state);
     }
 
     /**
@@ -546,26 +523,15 @@ public class InterviewVoiceGateway {
 
     /**
      * 处理音频请求
-     * 解析 Base64 编码的音频数据并转发给音频处理器
+     * 解析 Base64 编码的音频数据并转发给面试官 Agent 处理
      *
      * @param sessionId 会话ID
-     * @param request 音频请求对象（包含 Base64 编码的音频数据、格式、采样率）
+     * @param request 音频请求对象（包含 Base64 编码的音频数据）
      */
     public void handleAudioRequest(String sessionId, VoiceRequest<VoiceRequest.AudioData> request) {
         try {
-            VoiceRequest.AudioData audioData = request.getData();
-            String audioBase64 = audioData.getAudio();
-            // 获取音频格式，默认为 PCM
-            String format = audioData.getFormat() != null ? audioData.getFormat() : "pcm";
-            // 获取采样率，默认为 16kHz
-            Integer sampleRate = audioData.getSampleRate() != null ? audioData.getSampleRate() : 16000;
-
-            // 解码 Base64 音频数据
-            byte[] audioDataBytes = Base64.getDecoder().decode(audioBase64);
-
-            // 转发给音频处理器进行 ASR 识别
-            handleAudioData(sessionId, wsSessions.get(sessionId), audioDataBytes);
-
+            byte[] audioDataBytes = Base64.getDecoder().decode(request.getData().getAudio());
+            handleAudioData(sessionId, audioDataBytes);
         } catch (Exception e) {
             log.error("[VoiceGateway] 处理音频请求失败, sessionId={}", sessionId, e);
         }
@@ -626,8 +592,7 @@ public class InterviewVoiceGateway {
         SessionState state = sessionStates.computeIfAbsent(sessionId, k -> new SessionState());
 
         // 设置初始状态
-        state.setActive(true);
-        state.setFrozen(false);
+        state.startInterview();
         state.setStartTime(System.currentTimeMillis());
         state.setPhase(InterviewPhaseEnum.WAITING_SELF_INTRODUCTION);
 
@@ -647,13 +612,8 @@ public class InterviewVoiceGateway {
         log.info("[VoiceGateway] 面试开始, sessionId={}", sessionId);
 
         // 通知客户端面试开始
-        sendResponse(sessionId, VoiceResponse.state(VoiceResponse.StateData.builder()
-                .state(InterviewSessionState.INTERVIEWING.getCode())
-                .currentQuestion(state.getCurrentQuestion())
-                .totalQuestions(state.getTotalQuestions())
-                .assistRemaining(state.getAssistRemaining())
-                .elapsedTime(0)
-                .build()));
+        sendResponse(sessionId, VoiceResponse.state(
+                buildStateData(InterviewSessionState.INTERVIEWING.getCode(), state)));
 
         // 请求候选人自我介绍
         interviewerAgentHandler.requestSelfIntroduction(sessionId)
@@ -675,6 +635,23 @@ public class InterviewVoiceGateway {
         if (state != null) {
             log.info("[VoiceGateway] 录音停止, sessionId={}", sessionId);
         }
+    }
+
+    /**
+     * 根据状态码和会话状态构建 StateData
+     *
+     * @param stateCode 状态码
+     * @param state 会话状态
+     * @return StateData 对象
+     */
+    private VoiceResponse.StateData buildStateData(String stateCode, SessionState state) {
+        return VoiceResponse.StateData.builder()
+                .state(stateCode)
+                .currentQuestion(state.getCurrentQuestion())
+                .totalQuestions(state.getTotalQuestions())
+                .assistRemaining(state.getAssistRemaining())
+                .elapsedTime(state.getElapsedTime())
+                .build();
     }
 
     /**

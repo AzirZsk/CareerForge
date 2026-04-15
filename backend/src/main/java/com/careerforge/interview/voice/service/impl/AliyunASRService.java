@@ -11,7 +11,6 @@ import com.careerforge.interview.voice.service.ASRService;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
-import reactor.core.publisher.Sinks;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
@@ -33,8 +32,6 @@ public class AliyunASRService implements ASRService {
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final AtomicBoolean started = new AtomicBoolean(false);
 
-    // 音频帧汇聚点：多帧音频通过同一个 Sink 发送到同一个连接
-    private Sinks.Many<byte[]> audioSink;
     // 识别结果流
     private Flux<ASRResult> resultFlux;
     // 阿里云识别器
@@ -60,7 +57,6 @@ public class AliyunASRService implements ASRService {
         }
 
         VoiceProperties.AliyunConfig.ASRConfig asrConfig = voiceProperties.getAliyun().getAsr();
-        this.audioSink = Sinks.many().multicast().onBackpressureBuffer(256);
         this.recognizer = new Recognition();
         RecognitionParam param = buildRecognitionParam(asrConfig);
 
@@ -106,32 +102,6 @@ public class AliyunASRService implements ASRService {
                 return;
             }
 
-            // 订阅音频帧流，逐帧发送到识别器
-            audioSink.asFlux().subscribe(
-                    audioData -> {
-                        try {
-                            recognizer.sendAudioFrame(ByteBuffer.wrap(audioData));
-                        } catch (Exception e) {
-                            log.error("[AliyunASR] 发送音频帧失败, sessionId={}", sessionId, e);
-                        }
-                    },
-                    error -> {
-                        log.error("[AliyunASR] 音频流异常, sessionId={}", sessionId, error);
-                        if (!emitter.isCancelled()) {
-                            emitter.error(error);
-                        }
-                    },
-                    () -> {
-                        // 音频流结束，通知服务端
-                        try {
-                            recognizer.stop();
-                            log.debug("[AliyunASR] 已调用 stop, sessionId={}", sessionId);
-                        } catch (Exception e) {
-                            log.warn("[AliyunASR] stop 失败, sessionId={}", sessionId, e);
-                        }
-                    }
-            );
-
             // Flux 被取消时关闭连接
             emitter.onDispose(() -> closeInternal());
         }, FluxSink.OverflowStrategy.BUFFER)
@@ -151,7 +121,11 @@ public class AliyunASRService implements ASRService {
             log.warn("[AliyunASR] 会话未启动，丢弃音频帧, sessionId={}", sessionId);
             return;
         }
-        audioSink.tryEmitNext(audioFrame);
+        try {
+            recognizer.sendAudioFrame(ByteBuffer.wrap(audioFrame));
+        } catch (Exception e) {
+            log.error("[AliyunASR] 发送音频帧失败, sessionId={}", sessionId, e);
+        }
     }
 
     @Override
@@ -175,8 +149,21 @@ public class AliyunASRService implements ASRService {
 
     @Override
     public boolean isAvailable() {
+        return isConfigured(voiceProperties);
+    }
+
+    /**
+     * 检查阿里云 ASR 配置是否完整（静态方法，供工厂复用）
+     *
+     * @param voiceProperties 语音配置
+     * @return true 表示配置完整可用
+     */
+    public static boolean isConfigured(VoiceProperties voiceProperties) {
         VoiceProperties.AliyunConfig aliyun = voiceProperties.getAliyun();
-        return aliyun != null && aliyun.getApiKey() != null && !aliyun.getApiKey().isBlank();
+        return "aliyun".equals(voiceProperties.getProvider())
+                && aliyun != null
+                && aliyun.getApiKey() != null
+                && !aliyun.getApiKey().isBlank();
     }
 
     /**
@@ -186,12 +173,15 @@ public class AliyunASRService implements ASRService {
         if (closed.getAndSet(true)) {
             return;
         }
-        // 关闭音频 Sink，触发 recognizer.stop()
-        if (audioSink != null) {
-            audioSink.tryEmitComplete();
-        }
-        // 关闭 WebSocket 连接
+        // 通知服务端结束识别
         if (recognizer != null) {
+            try {
+                recognizer.stop();
+                log.debug("[AliyunASR] 已调用 stop, sessionId={}", sessionId);
+            } catch (Exception e) {
+                log.warn("[AliyunASR] stop 失败, sessionId={}", sessionId, e);
+            }
+            // 关闭 WebSocket 连接
             try {
                 recognizer.getDuplexApi().close(1000, "bye");
                 log.debug("[AliyunASR] 连接已关闭, sessionId={}", sessionId);
