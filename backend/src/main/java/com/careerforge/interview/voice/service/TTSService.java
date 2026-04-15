@@ -10,7 +10,7 @@ import reactor.core.publisher.Flux;
  *
  * <p>实现类：
  * <ul>
- *   <li>{@code AliyunTTSService} - 阿里云 CosyVoice 流式语音合成</li>
+ *   <li>{@code AliyunTTSService} - 阿里云千问TTS实时语音合成（DashScope SDK）</li>
  * </ul>
  *
  * @author Azir
@@ -31,12 +31,17 @@ public interface TTSService {
      * <p>使用示例：
      * <pre>{@code
      * String text = "你好，欢迎参加面试。";
-     * TTSConfig config = TTSConfig.interviewer("longxiaochun_v2");
+     * TTSConfig config = TTSConfig.builder()
+     *         .model("qwen3-tts-flash-realtime")
+     *         .voice("Cherry")
+     *         .format("wav")
+     *         .sampleRate(16000)
+     *         .speechRate(1.0)
+     *         .volume(0.8)
+     *         .pitch(0.0)
+     *         .build();
      * Flux<byte[]> audioStream = ttsService.streamSynthesize(text, config);
-     * audioStream.subscribe(audioChunk -> {
-     *     // 播放音频片段
-     *     playAudio(audioChunk);
-     * });
+     * audioStream.subscribe(audioChunk -> playAudio(audioChunk));
      * }</pre>
      *
      * @param text   要合成的文本
@@ -58,13 +63,19 @@ public interface TTSService {
      *
      * <p>使用示例：
      * <pre>{@code
-     * Flux<String> llmStream = llmService.streamGenerate(prompt); // LLM 输出
-     * TTSConfig config = TTSConfig.interviewer("longxiaochun_v2");
+     * Flux<String> llmStream = llmService.streamGenerate(prompt);
+     * TTSConfig config = TTSConfig.builder()
+     *         .model("qwen3-tts-flash-realtime")
+     *         .voice("Cherry")
+     *         .format("wav")
+     *         .sampleRate(16000)
+     *         .speechRate(1.0)
+     *         .volume(0.8)
+     *         .pitch(0.0)
+     *         .build();
      * Flux<TTSChunk> chunks = ttsService.streamSynthesizeBySentence(llmStream, config);
      * chunks.subscribe(chunk -> {
-     *     // 显示文本
      *     displayText(chunk.getText());
-     *     // 播放音频
      *     playAudio(chunk.getAudio());
      * });
      * }</pre>

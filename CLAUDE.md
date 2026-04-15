@@ -152,7 +152,7 @@ graph TD
 - **AI 集成**：Spring AI OpenAI（支持 OpenAI 协议的模型）
 - **工作流引擎**：Spring AI Alibaba Agent Framework（状态机 Graph）
 - **Agent 框架**：ReactAgent（AI 聊天 Agent，含工具调用和技能系统）
-- **语音服务**：阿里云智能语音交互（ASR 语音识别 + TTS 语音合成）
+- **语音服务**：阿里云智能语音交互（ASR 语音识别）+ DashScope SDK 千问TTS实时语音合成
 - **实时通信**：WebSocket（Jakarta WebSocket API）
 - **文档处理**：Apache PDFBox 3.0.4（PDF）、Apache POI 5.3.0（Word）
 - **对象映射**：MapStruct 1.6.3

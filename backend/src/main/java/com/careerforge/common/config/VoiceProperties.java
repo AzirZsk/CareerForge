@@ -94,7 +94,7 @@ public class VoiceProperties {
             /**
              * TTS 模型
              */
-            private String model = "cosyvoice-v2";
+            private String model = "qwen3-tts-flash-realtime";
 
             /**
              * 输出格式：pcm, wav, mp3
@@ -112,12 +112,12 @@ public class VoiceProperties {
             /**
              * 面试官音色
              */
-            private String interviewer = "longxiaochun_v2";
+            private String interviewer = "Cherry";
 
             /**
              * AI助手音色（更亲切）
              */
-            private String assistant = "zhimiao_emo_v2";
+            private String assistant = "Cherry";
         }
     }
 

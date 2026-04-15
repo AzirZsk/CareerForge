@@ -67,12 +67,12 @@ careerforge:
         language: zh
         enable-vad: true
       tts:
-        model: cosyvoice-v2
+        model: qwen3-tts-flash-realtime
         format: wav
         sample-rate: 16000
       voices:
-        interviewer: longxiaochun_v2
-        assistant: zhimiao_emo_v2
+        interviewer: Cherry
+        assistant: Cherry
 
 # 日志配置 - 打印 AI 请求详情
 logging:

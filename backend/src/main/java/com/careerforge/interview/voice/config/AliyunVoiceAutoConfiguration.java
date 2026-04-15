@@ -1,6 +1,5 @@
 package com.careerforge.interview.voice.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.careerforge.common.config.VoiceProperties;
 import com.careerforge.interview.voice.service.TTSService;
 import com.careerforge.interview.voice.service.impl.AliyunTTSService;
@@ -29,8 +28,8 @@ public class AliyunVoiceAutoConfiguration {
      */
     @Bean
     @ConditionalOnMissingBean(TTSService.class)
-    public TTSService aliyunTTSService(VoiceProperties voiceProperties, ObjectMapper objectMapper) {
+    public TTSService aliyunTTSService(VoiceProperties voiceProperties) {
         log.info("[AliyunVoiceAutoConfiguration] 正在初始化阿里云TTS服务");
-        return new AliyunTTSService(voiceProperties, objectMapper);
+        return new AliyunTTSService(voiceProperties);
     }
 }

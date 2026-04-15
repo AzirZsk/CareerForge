@@ -1,51 +1,45 @@
 package com.careerforge.interview.voice.service.impl;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.alibaba.dashscope.audio.qwen_tts_realtime.QwenTtsRealtime;
+import com.alibaba.dashscope.audio.qwen_tts_realtime.QwenTtsRealtimeCallback;
+import com.alibaba.dashscope.audio.qwen_tts_realtime.QwenTtsRealtimeConfig;
+import com.alibaba.dashscope.audio.qwen_tts_realtime.QwenTtsRealtimeParam;
+import com.alibaba.dashscope.exception.NoApiKeyException;
 import com.careerforge.common.config.VoiceProperties;
 import com.careerforge.interview.voice.dto.TTSChunk;
 import com.careerforge.interview.voice.dto.TTSConfig;
 import com.careerforge.interview.voice.service.TTSService;
+import com.google.gson.JsonObject;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
-import reactor.core.publisher.Mono;
-import reactor.netty.http.client.HttpClient;
+import reactor.core.scheduler.Schedulers;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * 阿里云 CosyVoice 流式语音合成服务实现
- * 基于 WebSocket 实现流式语音合成
+ * 阿里云千问TTS实时语音合成服务实现
+ * 基于 DashScope SDK 的 QwenTtsRealtime 实现流式语音合成
  *
- * <p>参考文档：https://help.aliyun.com/zh/model-studio/cosyvoice-clone-design-api
+ * <p>参考文档：https://help.aliyun.com/zh/model-studio/qwen-tts-realtime
  *
  * @author Azir
  */
 @Slf4j
-@Service("aliyunTTSService")
-public class AliyunTTSService extends AliyunVoiceBaseService implements TTSService {
+@RequiredArgsConstructor
+public class AliyunTTSService implements TTSService {
 
     private static final String PROVIDER = "aliyun";
-    private static final String WS_BASE_URL = "wss://dashscope.aliyuncs.com/api-ws/v1/inference/";
+    private static final String WS_URL = "wss://dashscope.aliyuncs.com/api-ws/v1/realtime";
     private static final String SENTENCE_END_CHARS = "。！？.!;；\n";
 
-    private final HttpClient httpClient;
-
-    public AliyunTTSService(VoiceProperties voiceProperties, ObjectMapper objectMapper) {
-        super(voiceProperties, objectMapper);
-        this.httpClient = HttpClient.create();
-    }
+    private final VoiceProperties voiceProperties;
 
     @Override
     public String getProvider() {
@@ -54,86 +48,105 @@ public class AliyunTTSService extends AliyunVoiceBaseService implements TTSServi
 
     @Override
     public Flux<byte[]> streamSynthesize(String text, TTSConfig config) {
-        return Flux.create(emitter -> {
+        return Flux.<byte[]>create(emitter -> {
             String taskId = UUID.randomUUID().toString().replace("-", "");
-            AtomicBoolean connected = new AtomicBoolean(false);
-            AtomicReference<reactor.netty.Connection> connectionRef = new AtomicReference<>();
             AtomicInteger audioChunkCount = new AtomicInteger(0);
+            AtomicBoolean completed = new AtomicBoolean(false);
+            CountDownLatch doneLatch = new CountDownLatch(1);
+            // 构建连接参数和回调
+            QwenTtsRealtimeParam param = buildParam(config);
+            QwenTtsRealtimeCallback callback = new QwenTtsRealtimeCallback() {
+                @Override
+                public void onOpen() {
+                    log.info("[AliyunTTS] WebSocket已连接, taskId={}", taskId);
+                }
 
+                @Override
+                public void onEvent(JsonObject message) {
+                    String type = message.get("type").getAsString();
+                    switch (type) {
+                        case "response.audio.delta":
+                            String audioB64 = message.get("delta").getAsString();
+                            byte[] audioData = Base64.getDecoder().decode(audioB64);
+                            audioChunkCount.incrementAndGet();
+                            if (!emitter.isCancelled()) {
+                                emitter.next(audioData);
+                            }
+                            break;
+                        case "response.done":
+                            log.debug("[AliyunTTS] 响应完成, chunks={}, taskId={}", audioChunkCount.get(), taskId);
+                            break;
+                        case "session.finished":
+                            log.info("[AliyunTTS] 会话结束, totalChunks={}, taskId={}", audioChunkCount.get(), taskId);
+                            doneLatch.countDown();
+                            safeComplete(emitter, completed);
+                            break;
+                        case "error":
+                            String errorMsg = message.has("error")
+                                    ? message.get("error").getAsString() : "Unknown TTS error";
+                            log.error("[AliyunTTS] 合成错误: {}, taskId={}", errorMsg, taskId);
+                            doneLatch.countDown();
+                            if (!emitter.isCancelled() && completed.compareAndSet(false, true)) {
+                                emitter.error(new RuntimeException("TTS error: " + errorMsg));
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                }
+
+                @Override
+                public void onClose(int code, String reason) {
+                    log.info("[AliyunTTS] WebSocket关闭, code={}, reason={}, taskId={}", code, reason, taskId);
+                    doneLatch.countDown();
+                    safeComplete(emitter, completed);
+                }
+            };
+            // 创建 TTS 客户端并注册资源释放钩子
+            QwenTtsRealtime qwenTts = new QwenTtsRealtime(param, callback);
+            emitter.onDispose(() -> {
+                try {
+                    qwenTts.close();
+                } catch (Exception e) {
+                    log.warn("[AliyunTTS] 关闭连接异常, taskId={}", taskId, e);
+                }
+            });
+            // 建立连接并推送合成请求
             try {
-                // 构建 WebSocket URL
-                String wsUrl = buildTTSWebSocketUrl(config, taskId);
-                log.info("[AliyunTTS] 正在连接WebSocket, textLength={}, taskId={}",
-                        text.length(), taskId);
-                log.debug("[AliyunTTS] WebSocket URL: {}", wsUrl.replaceAll("api-key=([^&]+)", "api-key=***"));
-
-                // 建立 WebSocket 连接
-                httpClient.websocket()
-                        .uri(wsUrl)
-                        .handle((inbound, outbound) -> {
-                            connected.set(true);
-                            log.info("[AliyunTTS] WebSocket已连接, taskId={}", taskId);
-
-                            // 发送 TTS 请求
-                            String request = buildTTSRequest(text, config, taskId);
-                            Mono<Void> sendRequest = outbound.sendString(Mono.just(request))
-                                    .then()
-                                    .doOnSuccess(v -> log.debug("[AliyunTTS] 已发送TTS请求, taskId={}", taskId));
-
-                            // 处理接收到的消息
-                            Mono<Void> receiveMessages = inbound.receive()
-                                    .aggregate()
-                                    .asString()
-                                    .doOnNext(payload -> handleTextMessage(payload, emitter, taskId, audioChunkCount))
-                                    .then();
-
-                            return sendRequest.then(receiveMessages);
-                        })
-                        .doOnError(error -> {
-                            log.error("[AliyunTTS] WebSocket错误, taskId={}", taskId, error);
-                            if (!emitter.isCancelled()) {
-                                emitter.error(error);
-                            }
-                        })
-                        .doOnTerminate(() -> {
-                            log.info("[AliyunTTS] WebSocket结束, totalChunks={}, taskId={}",
-                                    audioChunkCount.get(), taskId);
-                            if (!emitter.isCancelled()) {
-                                emitter.complete();
-                            }
-                        })
-                        .subscribe();
-
+                qwenTts.connect();
+                QwenTtsRealtimeConfig sessionConfig = buildSessionConfig(config);
+                qwenTts.updateSession(sessionConfig);
+                qwenTts.appendText(text);
+                qwenTts.finish();
+                // 等待音频合成完成，超时30秒兜底
+                if (!doneLatch.await(30, TimeUnit.SECONDS)) {
+                    log.warn("[AliyunTTS] 等待合成超时, taskId={}", taskId);
+                    safeComplete(emitter, completed);
+                }
+            } catch (NoApiKeyException e) {
+                log.error("[AliyunTTS] API Key无效, taskId={}", taskId, e);
+                if (!emitter.isCancelled() && completed.compareAndSet(false, true)) {
+                    emitter.error(new RuntimeException("TTS API key not configured", e));
+                }
             } catch (Exception e) {
                 log.error("[AliyunTTS] 启动合成失败, taskId={}", taskId, e);
-                if (!emitter.isCancelled()) {
+                if (!emitter.isCancelled() && completed.compareAndSet(false, true)) {
                     emitter.error(e);
                 }
             }
-
-            // 清理资源
-            emitter.onDispose(() -> {
-                reactor.netty.Connection conn = connectionRef.get();
-                if (conn != null && !conn.isDisposed()) {
-                    conn.dispose();
-                    log.info("[AliyunTTS] WebSocket已释放, taskId={}", taskId);
-                }
-            });
-        }, FluxSink.OverflowStrategy.BUFFER);
+        }, FluxSink.OverflowStrategy.BUFFER).subscribeOn(Schedulers.boundedElastic());
     }
 
     @Override
     public Flux<TTSChunk> streamSynthesizeBySentence(Flux<String> textStream, TTSConfig config) {
         StringBuilder sentenceBuffer = new StringBuilder();
-
+        // 按句子分割文本流，逐句合成音频
         return textStream.flatMap(delta -> {
             sentenceBuffer.append(delta);
-
+            // 遇到句子结束符时立即合成当前句子
             if (isSentenceEnd(delta)) {
                 String sentence = sentenceBuffer.toString();
                 sentenceBuffer.setLength(0);
-
-                // 流式合成这个句子
                 return streamSynthesize(sentence, config)
                         .map(audio -> TTSChunk.of(sentence, audio));
             }
@@ -151,96 +164,55 @@ public class AliyunTTSService extends AliyunVoiceBaseService implements TTSServi
 
     @Override
     public boolean isAvailable() {
-        return isApiKeyAvailable();
-    }
-
-    /**
-     * 构建 TTS WebSocket URL
-     */
-    private String buildTTSWebSocketUrl(TTSConfig config, String taskId) {
         VoiceProperties.AliyunConfig aliyun = voiceProperties.getAliyun();
-        String apiKey = aliyun.getApiKey();
+        return aliyun != null && aliyun.getApiKey() != null && !aliyun.getApiKey().isBlank();
+    }
+
+    /**
+     * 构建 QwenTtsRealtime 连接参数
+     */
+    private QwenTtsRealtimeParam buildParam(TTSConfig config) {
+        VoiceProperties.AliyunConfig aliyun = voiceProperties.getAliyun();
         String model = config.getModel() != null ? config.getModel() : aliyun.getTts().getModel();
-
-        StringBuilder urlBuilder = new StringBuilder();
-        urlBuilder.append(WS_BASE_URL).append(model);
-        urlBuilder.append("?api-key=").append(encodeUrl(apiKey));
-        urlBuilder.append("&task_id=").append(taskId);
-        urlBuilder.append("&model=").append(encodeUrl(model));
-
-        return urlBuilder.toString();
+        return QwenTtsRealtimeParam.builder()
+                .model(model)
+                .url(WS_URL)
+                .apikey(aliyun.getApiKey())
+                .build();
     }
 
     /**
-     * 构建 TTS 请求 JSON
+     * 构建 QwenTtsRealtime 会话配置
+     * TTSConfig 参数映射到 QwenTtsRealtimeConfig
      */
-    private String buildTTSRequest(String text, TTSConfig config, String taskId) {
-        try {
-            VoiceProperties.AliyunConfig aliyun = voiceProperties.getAliyun();
-
-            Map<String, Object> request = new HashMap<>();
-            request.put("text", text);
-            request.put("voice", config.getVoice() != null ? config.getVoice() : aliyun.getVoices().getInterviewer());
-            request.put("format", config.getFormat() != null ? config.getFormat() : aliyun.getTts().getFormat());
-            request.put("sample_rate", config.getSampleRate() != null ? config.getSampleRate() : aliyun.getTts().getSampleRate());
-            request.put("rate", config.getSpeechRate() != null ? config.getSpeechRate() : 1.0);
-            request.put("volume", config.getVolume() != null ? (int)(config.getVolume() * 100) : 50);
-            request.put("pitch", config.getPitch() != null ? config.getPitch() : 0.0);
-
-            return objectMapper.writeValueAsString(request);
-        } catch (Exception e) {
-            log.error("[AliyunTTS] 构建TTS请求失败", e);
-            throw new RuntimeException("Failed to build TTS request", e);
-        }
+    private QwenTtsRealtimeConfig buildSessionConfig(TTSConfig config) {
+        VoiceProperties.AliyunConfig aliyun = voiceProperties.getAliyun();
+        String voice = config.getVoice() != null ? config.getVoice() : aliyun.getVoices().getInterviewer();
+        String format = config.getFormat() != null ? config.getFormat() : aliyun.getTts().getFormat();
+        int sampleRate = config.getSampleRate() != null ? config.getSampleRate() : aliyun.getTts().getSampleRate();
+        float speechRate = config.getSpeechRate() != null ? config.getSpeechRate().floatValue() : 1.0f;
+        // volume: TTSConfig 0-1 映射到 QwenTtsRealtimeConfig 0-100
+        int volume = config.getVolume() != null ? (int) (config.getVolume() * 100) : 50;
+        // pitch: TTSConfig -1~1 映射到 QwenTtsRealtimeConfig pitchRate 0.5-2.0
+        float pitchRate = config.getPitch() != null ? (float) (1.0 + config.getPitch()) : 1.0f;
+        // 构建会话配置
+        return QwenTtsRealtimeConfig.builder()
+                .voice(voice)
+                .format(format)
+                .sampleRate(sampleRate)
+                .speechRate(speechRate)
+                .volume(volume)
+                .pitchRate(pitchRate)
+                .mode("server_commit")
+                .build();
     }
 
     /**
-     * 处理 WebSocket 文本消息
+     * 安全完成 Flux 发射器，保证只调用一次
      */
-    private void handleTextMessage(String payload, FluxSink<byte[]> emitter,
-                                   String taskId, AtomicInteger audioChunkCount) {
-        try {
-            JsonNode json = objectMapper.readTree(payload);
-            String event = json.path("event").asText();
-
-            log.trace("[AliyunTTS] 收到事件: {}, taskId={}", event, taskId);
-
-            switch (event) {
-                case "result":
-                    JsonNode output = json.path("output");
-                    if (output.has("audio")) {
-                        String audioBase64 = output.path("audio").asText();
-                        if (!audioBase64.isEmpty()) {
-                            byte[] audioData = Base64.getDecoder().decode(audioBase64);
-                            audioChunkCount.incrementAndGet();
-                            log.trace("[AliyunTTS] 收到音频块, size={}字节, taskId={}",
-                                    audioData.length, taskId);
-                            if (!emitter.isCancelled()) {
-                                emitter.next(audioData);
-                            }
-                        }
-                    }
-                    break;
-
-                case "completed":
-                    log.info("[AliyunTTS] 合成完成, totalChunks={}, taskId={}",
-                            audioChunkCount.get(), taskId);
-                    break;
-
-                case "error":
-                    String errorCode = json.path("error_code").asText();
-                    String errorMessage = json.path("error_message").asText();
-                    log.error("[AliyunTTS] 合成错误: {} - {}, taskId={}", errorCode, errorMessage, taskId);
-                    if (!emitter.isCancelled()) {
-                        emitter.error(new RuntimeException("TTS error: " + errorCode + " - " + errorMessage));
-                    }
-                    break;
-
-                default:
-                    log.trace("[AliyunTTS] 未知事件: {}, taskId={}", event, taskId);
-            }
-        } catch (Exception e) {
-            log.error("[AliyunTTS] 解析消息失败, taskId={}", taskId, e);
+    private void safeComplete(FluxSink<byte[]> emitter, AtomicBoolean completed) {
+        if (!emitter.isCancelled() && completed.compareAndSet(false, true)) {
+            emitter.complete();
         }
     }
 
@@ -253,13 +225,5 @@ public class AliyunTTSService extends AliyunVoiceBaseService implements TTSServi
         }
         char lastChar = text.charAt(text.length() - 1);
         return SENTENCE_END_CHARS.indexOf(lastChar) >= 0;
-    }
-
-    private String encodeUrl(String value) {
-        try {
-            return URLEncoder.encode(value, StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            return value;
-        }
     }
 }
