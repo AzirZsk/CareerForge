@@ -154,7 +154,7 @@
               </div>
             </div>
             <!-- 实时转录显示 -->
-            <div v-if="partialTranscript && !partialTranscript.isFinal" class="message partial-transcript">
+            <div v-if="partialTranscript && !partialTranscript.isFinal" class="message partial-transcript" :class="partialTranscript.role">
               <div class="message-avatar">
                 <span v-if="partialTranscript.role === 'interviewer'">AI</span>
                 <span v-else>我</span>
