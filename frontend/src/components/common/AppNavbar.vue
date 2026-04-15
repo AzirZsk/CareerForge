@@ -12,8 +12,8 @@
         class="logo"
         @click="store.setActiveNav('home')"
       >
-        <span class="logo-icon">L</span>
-        <span class="logo-text">Land<span class="accent">It</span></span>
+        <span class="logo-icon">C</span>
+        <span class="logo-text">Career<span class="accent">Forge</span></span>
       </router-link>
 
       <!-- 主导航 -->
