@@ -17,7 +17,7 @@ const emit = defineEmits<{
 const isExpanded = ref(true)
 
 const groupConfig = computed(() => {
-  return ITEM_TYPE_CONFIG[props.groupType] || { label: '其他准备', icon: '📌' }
+  return ITEM_TYPE_CONFIG[props.groupType] || { label: '其他准备', icon: 'fa-solid fa-thumbtack' }
 })
 
 const completedCount = computed(() => {

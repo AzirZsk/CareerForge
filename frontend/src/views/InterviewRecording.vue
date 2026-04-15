@@ -3,13 +3,13 @@
     <!-- 页面头部 -->
     <div class="page-header">
       <button class="back-btn" @click="goBack">
-        <span class="icon">←</span>
+        <font-awesome-icon icon="fa-solid fa-arrow-left" class="icon" />
         <span>返回复盘</span>
       </button>
       <h1>面试录音回放</h1>
       <div class="header-actions">
         <button class="action-btn" @click="downloadAudio" :disabled="!recordingInfo">
-          <span class="icon">⬇</span>
+          <font-awesome-icon icon="fa-solid fa-download" class="icon" />
           下载录音
         </button>
       </div>
@@ -23,7 +23,7 @@
 
     <!-- 错误状态 -->
     <div v-else-if="error" class="error-state">
-      <span class="icon">⚠</span>
+      <font-awesome-icon icon="fa-solid fa-circle-exclamation" class="icon" />
       <p>{{ error }}</p>
       <button class="retry-btn" @click="loadRecordingInfo">重试</button>
     </div>
@@ -54,7 +54,7 @@
 
     <!-- 空状态 -->
     <div v-else class="empty-state">
-      <span class="icon">🎙</span>
+      <font-awesome-icon icon="fa-solid fa-microphone" class="icon" />
       <p>暂无录音数据</p>
     </div>
   </div>

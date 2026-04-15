@@ -1,6 +1,6 @@
 <template>
   <div class="meeting-link-bar" v-if="link">
-    <span class="link-icon">🔗</span>
+    <font-awesome-icon icon="fa-solid fa-link" class="link-icon" />
     <span class="link-label">会议链接:</span>
     <span class="link-url">{{ link }}</span>
     <div class="link-actions">

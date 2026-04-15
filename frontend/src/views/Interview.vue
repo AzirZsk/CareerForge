@@ -61,7 +61,7 @@
                 :class="{ active: selectedType === type.key }"
                 @click="selectedType = type.key"
               >
-                <span class="type-icon">{{ type.icon }}</span>
+                <span class="type-icon"><font-awesome-icon :icon="type.icon" /></span>
                 <span class="type-name">{{ type.name }}</span>
                 <span class="type-desc">{{ type.desc }}</span>
               </button>
@@ -184,8 +184,8 @@
               class="history-icon"
               :class="record.type"
             >
-              <span v-if="record.type === 'technical'">🔬</span>
-              <span v-else>💬</span>
+              <font-awesome-icon v-if="record.type === 'technical'" icon="fa-solid fa-flask" />
+              <font-awesome-icon v-else icon="fa-solid fa-comment" />
             </div>
             <div class="history-info">
               <div class="history-header">
@@ -393,9 +393,9 @@ const selectedType = ref<string>('technical')
 const activeCategory = ref<string>('all')
 
 const interviewTypes: InterviewType[] = [
-  { key: 'technical', name: '技术面试', desc: '专业能力考察', icon: '🔬' },
-  { key: 'behavioral', name: '行为面试', desc: '软技能评估', icon: '💬' },
-  { key: 'mixed', name: '综合面试', desc: '全面能力测试', icon: '🎯' }
+  { key: 'technical', name: '技术面试', desc: '专业能力考察', icon: 'fa-solid fa-flask' },
+  { key: 'behavioral', name: '行为面试', desc: '软技能评估', icon: 'fa-solid fa-comment' },
+  { key: 'mixed', name: '综合面试', desc: '全面能力测试', icon: 'fa-solid fa-bullseye' }
 ]
 
 const settings = ref<InterviewSettings>({

@@ -87,7 +87,7 @@
                 :class="{ active: userInfo.gender === 'MALE' }"
                 @click="userInfo.gender = 'MALE'"
               >
-                <span class="gender-icon">👨</span>
+                <span class="gender-icon"><font-awesome-icon icon="fa-solid fa-person" /></span>
                 <span>男</span>
               </button>
               <button
@@ -95,7 +95,7 @@
                 :class="{ active: userInfo.gender === 'FEMALE' }"
                 @click="userInfo.gender = 'FEMALE'"
               >
-                <span class="gender-icon">👩</span>
+                <span class="gender-icon"><font-awesome-icon icon="fa-solid fa-person-dress" /></span>
                 <span>女</span>
               </button>
             </div>

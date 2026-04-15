@@ -8,7 +8,7 @@
           :class="['message-item', `role-${message.role}`]"
         >
           <div class="message-header">
-            <span class="role-icon">{{ getRoleIcon(message.role) }}</span>
+            <font-awesome-icon class="role-icon" :icon="getRoleIcon(message.role)" />
             <span class="role-name">{{ getRoleName(message.role) }}</span>
             <span class="timestamp">{{ formatTime(message.timestamp) }}</span>
           </div>
@@ -19,7 +19,7 @@
       <!-- 流式输入中的消息 -->
       <div v-if="isStreaming && streamingText" :class="['message-item', `role-${streamingRole}`, 'streaming']">
         <div class="message-header">
-          <span class="role-icon">{{ getRoleIcon(streamingRole) }}</span>
+          <font-awesome-icon class="role-icon" :icon="getRoleIcon(streamingRole)" />
           <span class="role-name">{{ getRoleName(streamingRole) }}</span>
           <span class="streaming-indicator">
             <span class="dot"></span>
@@ -61,9 +61,9 @@ const containerRef = ref<HTMLElement | null>(null)
 
 // 角色图标映射
 const roleIcons: Record<ConversationRole, string> = {
-  interviewer: '👔',
-  candidate: '👤',
-  assistant: '🤖'
+  interviewer: 'fa-solid fa-user-tie',
+  candidate: 'fa-solid fa-user',
+  assistant: 'fa-solid fa-robot'
 }
 
 // 角色名称映射
@@ -75,7 +75,7 @@ const roleNames: Record<ConversationRole, string> = {
 
 // 获取角色图标
 function getRoleIcon(role: ConversationRole): string {
-  return roleIcons[role] || '💬'
+  return roleIcons[role] || 'fa-solid fa-comment'
 }
 
 // 获取角色名称

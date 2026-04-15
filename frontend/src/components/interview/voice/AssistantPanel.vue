@@ -3,7 +3,7 @@
     <!-- 面板头部 -->
     <div class="panel-header">
       <div class="header-left">
-        <span class="icon">🤖</span>
+        <font-awesome-icon icon="fa-solid fa-robot" class="icon" />
         <span class="title">AI 助手</span>
       </div>
       <button class="close-btn" @click="handleReturn">返回面试</button>
@@ -28,7 +28,7 @@
             :class="{ playing: isPlaying }"
             @click="togglePlay"
           >
-            {{ isPlaying ? '⏸️' : '▶️' }}
+            <font-awesome-icon :icon="isPlaying ? 'fa-solid fa-pause' : 'fa-solid fa-play'" />
           </button>
           <div class="progress-bar">
             <div class="progress" :style="{ width: playProgress + '%' }"></div>
@@ -39,7 +39,7 @@
 
       <!-- 空状态 -->
       <div v-else class="empty-state">
-        <span class="empty-icon">💬</span>
+        <font-awesome-icon icon="fa-solid fa-comment" class="empty-icon" />
         <p>助手回复将在这里显示...</p>
       </div>
     </div>

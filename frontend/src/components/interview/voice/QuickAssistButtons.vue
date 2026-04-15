@@ -1,7 +1,7 @@
 <template>
   <div class="quick-assist-buttons">
     <div class="assist-header">
-      <span class="title">💡 快捷求助</span>
+      <span class="title"><font-awesome-icon icon="fa-solid fa-lightbulb" /> 快捷求助</span>
       <span class="remaining">剩余 {{ remaining }}/{{ limit }} 次</span>
     </div>
 
@@ -13,7 +13,7 @@
         :disabled="isDisabled"
         @click="handleAssist(button.type)"
       >
-        <span class="btn-icon">{{ button.icon }}</span>
+        <font-awesome-icon class="btn-icon" :icon="button.icon" />
         <span class="btn-text">{{ button.label }}</span>
       </button>
     </div>
@@ -60,10 +60,10 @@ const emit = defineEmits<{
 
 // 求助按钮配置 - 使用正确的 AssistType 值
 const assistButtons: Array<{ type: AssistType; icon: string; label: string }> = [
-  { type: 'give_hints', icon: '🎯', label: '给我思路' },
-  { type: 'explain_concept', icon: '📖', label: '解释概念' },
-  { type: 'polish_answer', icon: '✍️', label: '帮我润色' },
-  { type: 'free_question', icon: '💬', label: '自由提问' }
+  { type: 'give_hints', icon: 'fa-solid fa-bullseye', label: '给我思路' },
+  { type: 'explain_concept', icon: 'fa-solid fa-book-open', label: '解释概念' },
+  { type: 'polish_answer', icon: 'fa-solid fa-pen-fancy', label: '帮我润色' },
+  { type: 'free_question', icon: 'fa-solid fa-comment', label: '自由提问' }
 ]
 
 // 自由提问

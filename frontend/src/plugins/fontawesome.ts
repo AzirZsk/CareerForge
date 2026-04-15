@@ -7,8 +7,8 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 // 导入工作台页面需要的图标
 import {
-  faBullseye, // 🎯 开始面试
-  faFileLines, // 📄 优化简历
+  faBullseye, // 开始面试
+  faFileLines, // 优化简历
   faComments, // 面试统计
   faStar, // 模拟面试
   faFileAlt, // 简历
@@ -109,10 +109,31 @@ import {
 
 // 导入 AI Chat 模块需要的图标
 import {
-  faScrewdriverWrench, // 🔧 调整
-  faPenFancy, // ✍️ 创建
-  faComment, // 💬 通用聊天
-  faPencilSquare // 📝 默认
+  faScrewdriverWrench, // 调整
+  faPenFancy, // 创建
+  faComment, // 通用聊天
+  faPencilSquare // 默认
+} from '@fortawesome/free-solid-svg-icons'
+
+// 导入 emoji 替换需要的额外图标
+import {
+  faHand, // 挥手
+  faFlask, // 实验/技术
+  faBookOpen, // 书本/概念
+  faBackwardStep, // 上一曲
+  faForwardStep, // 下一曲
+  faPlay, // 播放
+  faPause, // 暂停
+  faCircle, // 圆点/优先级
+  faUserTie, // 正式用户/面试官
+  faPerson, // 男性
+  faPersonDress, // 女性
+  faLock, // 锁/安全
+  faDownload, // 下载
+  faPaperPlane, // 发送/投递
+  faChampagneGlasses, // 庆祝/Offer
+  faArrowRotateLeft, // 撤回
+  faBookmark // 书签/收藏
 } from '@fortawesome/free-solid-svg-icons'
 
 // 注册图标到库
@@ -193,7 +214,25 @@ library.add(
   faScrewdriverWrench,
   faPenFancy,
   faComment,
-  faPencilSquare
+  faPencilSquare,
+  // Emoji 替换图标
+  faHand,
+  faFlask,
+  faBookOpen,
+  faBackwardStep,
+  faForwardStep,
+  faPlay,
+  faPause,
+  faCircle,
+  faUserTie,
+  faPerson,
+  faPersonDress,
+  faLock,
+  faDownload,
+  faPaperPlane,
+  faChampagneGlasses,
+  faArrowRotateLeft,
+  faBookmark
 )
 
 // 导出组件供全局注册

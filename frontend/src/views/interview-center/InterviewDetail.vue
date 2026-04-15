@@ -176,7 +176,7 @@
             <!-- AI 分析入口区域（已有分析数据时隐藏，AIAnalysisCard 自带重新分析按钮） -->
             <div class="ai-analysis-entry" v-if="!interview.aiAnalysisNote && !reviewState.isCompleted">
               <div class="entry-left">
-                <span class="entry-label">🤖 AI 分析</span>
+                <span class="entry-label"><font-awesome-icon icon="fa-solid fa-robot" /> AI 分析</span>
                 <span class="entry-hint">{{ aiAnalysisEntryHint }}</span>
               </div>
               <div class="tooltip-wrapper" v-if="!canStartAIAnalysis && !reviewState.isRunning">

@@ -1,7 +1,7 @@
 <template>
   <div class="create-interview-page">
     <header class="page-header">
-      <button class="back-btn" @click="goBack">← 返回</button>
+      <button class="back-btn" @click="goBack"><font-awesome-icon icon="fa-solid fa-arrow-left" /> 返回</button>
       <h1>创建面试</h1>
     </header>
 

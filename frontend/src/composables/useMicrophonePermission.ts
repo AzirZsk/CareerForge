@@ -214,7 +214,7 @@ export function useMicrophonePermission() {
       return {
         browser: 'Chrome',
         steps: [
-          '1. 点击地址栏左侧的🔒图标或"不安全"文字',
+          '1. 点击地址栏左侧的锁图标或"不安全"文字',
           '2. 找到"麦克风"选项',
           '3. 将其改为"允许"',
           '4. 刷新页面后点击"我已设置，重新检查"'

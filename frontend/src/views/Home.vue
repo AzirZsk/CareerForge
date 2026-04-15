@@ -14,7 +14,7 @@
         <div class="welcome-content">
           <h1 class="welcome-title">
             你好，{{ store.user.name || '求职者' }}
-            <span class="wave-emoji">👋</span>
+            <span class="wave-emoji"><font-awesome-icon icon="fa-solid fa-hand" /></span>
           </h1>
           <p class="welcome-subtitle">
             今天是迈向理想工作的又一天，让我们继续努力吧！

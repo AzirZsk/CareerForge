@@ -3,14 +3,14 @@
     <!-- 播放控制区 -->
     <div class="player-controls">
       <button class="control-btn" @click="skipToPrevious" :disabled="currentSegmentIndex <= 0">
-        <span class="icon">⏮</span>
+        <font-awesome-icon icon="fa-solid fa-backward-step" class="icon" />
       </button>
       <button class="control-btn play-btn" @click="togglePlay" :disabled="isLoading">
-        <span v-if="isLoading" class="icon loading">⟳</span>
-        <span v-else class="icon">{{ isPlaying ? '⏸' : '▶' }}</span>
+        <font-awesome-icon v-if="isLoading" icon="fa-solid fa-rotate" class="icon loading" />
+        <font-awesome-icon v-else :icon="isPlaying ? 'fa-solid fa-pause' : 'fa-solid fa-play'" class="icon" />
       </button>
       <button class="control-btn" @click="skipToNext" :disabled="currentSegmentIndex >= segments.length - 1">
-        <span class="icon">⏭</span>
+        <font-awesome-icon icon="fa-solid fa-forward-step" class="icon" />
       </button>
     </div>
 

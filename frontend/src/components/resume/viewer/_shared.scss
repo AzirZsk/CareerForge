@@ -360,7 +360,7 @@
     padding-left: $spacing-md;
 
     &::before {
-      content: '★';
+      content: '\2713';
       color: $color-success;
     }
   }

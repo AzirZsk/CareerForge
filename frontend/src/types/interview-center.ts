@@ -248,9 +248,9 @@ export const PRIORITY_CONFIG: Record<
   PreparationPriority,
   { label: string; color: string; icon: string }
 > = {
-  required: { label: '必做', color: '#f87171', icon: '🔴' },
-  recommended: { label: '推荐', color: '#fbbf24', icon: '🟡' },
-  optional: { label: '可选', color: '#34d399', icon: '🟢' }
+  required: { label: '必做', color: '#f87171', icon: 'fa-solid fa-circle' },
+  recommended: { label: '推荐', color: '#fbbf24', icon: 'fa-solid fa-circle' },
+  optional: { label: '可选', color: '#34d399', icon: 'fa-solid fa-circle' }
 }
 
 // 准备项类型分组标签

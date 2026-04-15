@@ -71,7 +71,7 @@
         :key="idx"
         class="quickwin-item"
       >
-        ✓ {{ quickWin.action || quickWin }}
+        <font-awesome-icon icon="fa-solid fa-check" /> {{ quickWin.action || quickWin }}
       </div>
     </div>
   </div>

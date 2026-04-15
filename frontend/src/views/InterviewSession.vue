@@ -116,7 +116,7 @@
           :class="{ active: i === currentQuestionIndex, completed: i < currentQuestionIndex }"
           @click="goToQuestion(i)"
         >
-          <span v-if="i < currentQuestionIndex">✓</span>
+          <font-awesome-icon v-if="i < currentQuestionIndex" icon="fa-solid fa-check" />
           <span v-else>{{ i + 1 }}</span>
         </div>
       </div>
@@ -124,7 +124,15 @@
       <!-- 主内容区 -->
       <div class="main-content">
         <!-- 对话区域 -->
-        <main class="conversation-area animate-in" style="--delay: 2">
+        <main class="conversation-area animate-in" style="--delay: 2" :class="{ frozen: isFrozen }">
+          <!-- 冻结提示条（吸顶） -->
+          <Transition name="freeze">
+            <div v-if="isFrozen" class="freeze-banner">
+              <font-awesome-icon icon="fa-solid fa-pause" class="freeze-icon" />
+              <span class="freeze-text">面试已暂停 · AI助手协助中</span>
+            </div>
+          </Transition>
+
           <div class="messages-container" ref="messagesContainer">
             <div
               v-for="(msg, index) in messages"
@@ -135,7 +143,7 @@
             >
               <div class="message-avatar">
                 <span v-if="msg.role === 'interviewer'">AI</span>
-                <span v-else-if="msg.role === 'assistant'">🤖</span>
+                <font-awesome-icon v-else-if="msg.role === 'assistant'" icon="fa-solid fa-robot" />
                 <span v-else>我</span>
               </div>
               <div class="message-content">
@@ -164,6 +172,11 @@
               </div>
             </div>
           </div>
+
+          <!-- 轻量蒙层（不阻断交互，可滚动查看历史） -->
+          <Transition name="freeze">
+            <div v-if="isFrozen" class="freeze-dim"></div>
+          </Transition>
         </main>
 
         <!-- 右侧面板 -->
@@ -194,11 +207,11 @@
               <h4 class="tool-title">面试提示</h4>
               <div class="tips-list">
                 <div class="tip-item">
-                  <span class="tip-icon">💡</span>
+                  <span class="tip-icon"><font-awesome-icon icon="fa-solid fa-lightbulb" /></span>
                   <p class="tip-text">回答时注意结构化，可以先总述再分点说明</p>
                 </div>
                 <div class="tip-item">
-                  <span class="tip-icon">🎯</span>
+                  <span class="tip-icon"><font-awesome-icon icon="fa-solid fa-bullseye" /></span>
                   <p class="tip-text">结合实际项目经验会让回答更有说服力</p>
                 </div>
               </div>
@@ -687,6 +700,7 @@ function goToQuestion(index: number): void {
 
 // 对话区域
 .conversation-area {
+  position: relative;
   background: $gradient-card;
   border-radius: $radius-lg;
   border: 1px solid rgba(255, 255, 255, 0.05);
@@ -1061,5 +1075,51 @@ function goToQuestion(index: number): void {
   &:active {
     transform: translateY(0);
   }
+}
+
+// 冻结状态：吸顶提示条
+.freeze-banner {
+  position: sticky;
+  top: 0;
+  z-index: $z-sticky;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-lg;
+  background: rgba($color-accent, 0.15);
+  border-bottom: 1px solid rgba($color-accent, 0.2);
+  flex-shrink: 0;
+
+  .freeze-icon {
+    font-size: $text-base;
+  }
+
+  .freeze-text {
+    font-size: $text-sm;
+    font-weight: $weight-medium;
+    color: $color-accent;
+  }
+}
+
+// 冻结状态：轻量蒙层（可穿透滚动）
+.freeze-dim {
+  position: absolute;
+  inset: 0;
+  z-index: $z-dropdown;
+  background: rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+  border-radius: $radius-lg;
+}
+
+// 冻结过渡动画
+.freeze-enter-active,
+.freeze-leave-active {
+  transition: opacity $transition-base;
+}
+
+.freeze-enter-from,
+.freeze-leave-to {
+  opacity: 0;
 }
 </style>

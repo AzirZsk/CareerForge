@@ -9,7 +9,7 @@
       <!-- 欢迎区域 -->
       <div class="welcome-section">
         <div class="logo">
-          <span class="logo-icon">🎯</span>
+          <span class="logo-icon"><font-awesome-icon icon="fa-solid fa-bullseye" /></span>
           <span class="logo-text">CareerForge</span>
         </div>
         <h1 class="welcome-title">

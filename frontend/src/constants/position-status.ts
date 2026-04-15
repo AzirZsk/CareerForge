@@ -22,21 +22,21 @@ export const POSITION_STATUS_CONFIG: Record<PositionStatus, StatusConfig> = {
     color: '#71717a',
     bgColor: 'rgba(113, 113, 122, 0.15)',
     borderColor: 'rgba(113, 113, 122, 0.3)',
-    icon: '📝'
+    icon: 'fa-solid fa-pen-to-square'
   },
   applied: {
     label: '已投递',
     color: '#60a5fa',
     bgColor: 'rgba(96, 165, 250, 0.15)',
     borderColor: 'rgba(96, 165, 250, 0.3)',
-    icon: '📤'
+    icon: 'fa-solid fa-paper-plane'
   },
   interviewing: {
     label: '面试中',
     color: '#fbbf24',
     bgColor: 'rgba(251, 191, 36, 0.15)',
     borderColor: 'rgba(251, 191, 36, 0.3)',
-    icon: '🎯',
+    icon: 'fa-solid fa-bullseye',
     pulse: true
   },
   offered: {
@@ -44,21 +44,21 @@ export const POSITION_STATUS_CONFIG: Record<PositionStatus, StatusConfig> = {
     color: '#34d399',
     bgColor: 'rgba(52, 211, 153, 0.15)',
     borderColor: 'rgba(52, 211, 153, 0.3)',
-    icon: '🎉'
+    icon: 'fa-solid fa-champagne-glasses'
   },
   rejected: {
     label: '未通过',
     color: '#f87171',
     bgColor: 'rgba(248, 113, 113, 0.15)',
     borderColor: 'rgba(248, 113, 113, 0.3)',
-    icon: '❌'
+    icon: 'fa-solid fa-circle-xmark'
   },
   withdrawn: {
     label: '已撤回',
     color: '#71717a',
     bgColor: 'rgba(113, 113, 122, 0.15)',
     borderColor: 'rgba(113, 113, 122, 0.3)',
-    icon: '↩️'
+    icon: 'fa-solid fa-arrow-rotate-left'
   }
 }
 

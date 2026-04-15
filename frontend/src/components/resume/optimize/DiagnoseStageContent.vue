@@ -82,7 +82,7 @@
         :key="idx"
         class="quickwin-item"
       >
-        ✓ {{ quickWin }}
+        <font-awesome-icon icon="fa-solid fa-check" /> {{ quickWin }}
       </div>
     </div>
   </div>

@@ -10,7 +10,7 @@
     :class="suggestion.type"
   >
     <div class="suggestion-header">
-      <span class="suggestion-icon">{{ typeIcon }}</span>
+      <font-awesome-icon class="suggestion-icon" :icon="typeIcon" />
       <span class="suggestion-title">{{ suggestion.title }}</span>
       <span
         class="suggestion-impact"
@@ -58,11 +58,11 @@ const emit = defineEmits<{
 // 根据类型返回图标
 const typeIcon = computed<string>(() => {
   const icons: Record<SuggestionType, string> = {
-    critical: '⚠️',
-    improvement: '💡',
-    enhancement: '✨'
+    critical: 'fa-solid fa-triangle-exclamation',
+    improvement: 'fa-solid fa-lightbulb',
+    enhancement: 'fa-solid fa-wand-magic-sparkles'
   }
-  return icons[props.suggestion.type] || '💡'
+  return icons[props.suggestion.type] || 'fa-solid fa-lightbulb'
 })
 
 // 影响程度样式类
