@@ -260,7 +260,7 @@ public class InterviewVoiceGateway {
      */
     private void reuseOrGenerateQuestions(String sessionId, JobPosition jobPosition, String resumeContent, InterviewSession session, String interviewId) {
         try {
-            InterviewSession latestSession = interviewSessionService.getLatestSessionWithQuestions(interviewId);
+            InterviewSession latestSession = interviewSessionService.getLatestSessionByRealInterviewId(interviewId);
             if (latestSession != null) {
                 int result = questionPreGenerateService.copyPreGeneratedQuestions(
                         sessionId,

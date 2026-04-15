@@ -3,6 +3,7 @@ package com.careerforge.jobposition.handler;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.careerforge.common.enums.InterviewSource;
 import com.careerforge.common.enums.PositionStatus;
 import com.careerforge.common.enums.RoundType;
 import com.careerforge.common.exception.BusinessException;
@@ -177,6 +178,7 @@ public class JobPositionHandler {
         log.info("获取职位面试列表: id={}", id);
         LambdaQueryWrapper<Interview> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Interview::getJobPositionId, id)
+                .eq(Interview::getSource, InterviewSource.REAL.getCode())
                 .orderByDesc(Interview::getDate);
         List<Interview> interviews = interviewService.list(wrapper);
         return interviews.stream()
@@ -253,6 +255,7 @@ public class JobPositionHandler {
         // 查询关联面试（按日期降序，取最新面试时间）
         LambdaQueryWrapper<Interview> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Interview::getJobPositionId, jobPosition.getId())
+                .eq(Interview::getSource, InterviewSource.REAL.getCode())
                 .orderByDesc(Interview::getDate);
         List<Interview> interviews = interviewService.list(wrapper);
         int interviewCount = interviews.size();
