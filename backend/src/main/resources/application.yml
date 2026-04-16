@@ -59,7 +59,7 @@ careerforge:
     aliyun:
       api-key: ${ALIYUN_API_KEY:}
       asr:
-        model: paraformer-realtime-v2
+        model: fun-asr-realtime-2026-02-28
         format: pcm
         sample-rate: 16000
         enable-punctuation: true
@@ -67,7 +67,7 @@ careerforge:
         language: zh
         enable-vad: true
       tts:
-        model: qwen3-tts-flash-realtime
+        model: qwen3-tts-instruct-flash-realtime
         format: wav
         sample-rate: 16000
       voices:
