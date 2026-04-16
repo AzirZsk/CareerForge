@@ -151,7 +151,7 @@
                 <span class="message-time">{{ formatMessageTime(msg.timestamp) }}</span>
               </div>
             </div>
-            <div v-if="isAIResponding" class="message interviewer typing">
+            <div v-if="isAIResponding && !interviewerPartialText" class="message interviewer typing">
               <div class="message-avatar">AI</div>
               <div class="message-content">
                 <div class="typing-indicator">
@@ -313,6 +313,13 @@ const statusType = computed(() => {
 
 // AI 响应状态（与音频播放状态同步）
 const isAIResponding = computed(() => voiceInterview.isPlaying.value)
+
+// 面试官实时文字（用于控制 typing indicator 的显示）
+const interviewerPartialText = computed(() =>
+  partialTranscript.value?.role === 'interviewer' && partialTranscript.value.text
+    ? partialTranscript.value.text
+    : ''
+)
 
 // 面试是否已开始（非 idle 状态时隐藏语音模式切换）
 const isInterviewStarted = computed(() => {

@@ -184,7 +184,8 @@ public class AliyunTTSService implements TTSService {
                 return streamSynthesize(lastSentence, config)
                         .map(audio -> TTSChunk.finalChunk(lastSentence, audio));
             }
-            return Flux.empty();
+            // LLM 回复以句号结尾时 buffer 为空，仍需发送 final 信号告知前端回复结束
+            return Flux.just(TTSChunk.finalChunk("", new byte[0]));
         }));
     }
 
@@ -390,7 +391,8 @@ public class AliyunTTSService implements TTSService {
                 return synthesizeWithConnection(lastSentence)
                         .map(audio -> TTSChunk.finalChunk(lastSentence, audio));
             }
-            return Flux.empty();
+            // LLM 回复以句号结尾时 buffer 为空，仍需发送 final 信号告知前端回复结束
+            return Flux.just(TTSChunk.finalChunk("", new byte[0]));
         }));
     }
 

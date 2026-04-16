@@ -269,22 +269,52 @@ export function useInterviewVoice(sessionId: string) {
    * 处理转录消息
    */
   function handleTranscriptMessage(data: TranscriptData): void {
-    // 如果是最终结果，添加到消息列表
-    if (data.isFinal) {
-      const message: ConversationMessage = {
-        id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
-        role: data.role === 'interviewer' ? 'interviewer' : 'candidate',
-        content: data.text,
-        timestamp: Date.now()
+    if (data.role === 'interviewer') {
+      // 面试官 transcript：累积文字（后端按句分块发送）
+      if (!data.isFinal) {
+        if (data.text) {
+          interviewerAccumulatedText += data.text
+        }
+        partialTranscript.value = { ...data, text: interviewerAccumulatedText }
+      } else {
+        // 面试官回复结束（可能是空 final 信号或带文字的 final）
+        if (data.text) {
+          interviewerAccumulatedText += data.text
+        }
+        // 将累积的完整文字添加到消息列表（不添加空消息）
+        if (interviewerAccumulatedText.trim()) {
+          const message: ConversationMessage = {
+            id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+            role: 'interviewer',
+            content: interviewerAccumulatedText,
+            timestamp: Date.now()
+          }
+          messages.value.push(message)
+        }
+        interviewerAccumulatedText = ''
+        partialTranscript.value = null
       }
-      messages.value.push(message)
+    } else {
+      // 候选人 transcript：保持原逻辑
+      if (data.isFinal) {
+        const message: ConversationMessage = {
+          id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+          role: data.role === 'interviewer' ? 'interviewer' : 'candidate',
+          content: data.text,
+          timestamp: Date.now()
+        }
+        messages.value.push(message)
+      }
+      // 更新实时转录状态（非最终结果）
+      partialTranscript.value = data.isFinal ? null : data
     }
-    // 更新实时转录状态（非最终结果）
-    partialTranscript.value = data.isFinal ? null : data
   }
 
   /** 实时转录（非最终结果） */
   const partialTranscript = ref<TranscriptData | null>(null)
+
+  /** 面试官文字累积（后端按句分块发送，前端需要拼接完整回复） */
+  let interviewerAccumulatedText = ''
 
   /**
    * 处理音频消息
