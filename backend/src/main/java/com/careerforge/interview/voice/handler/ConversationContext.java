@@ -1,6 +1,7 @@
 package com.careerforge.interview.voice.handler;
 
 import com.careerforge.interview.voice.service.ASRService;
+import com.careerforge.interview.voice.service.impl.AliyunTTSService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -59,6 +60,11 @@ public class ConversationContext {
     private ASRService asrService;
 
     /**
+     * TTS 会话（每个面试会话独立持有，连接级生命周期）
+     */
+    private AliyunTTSService ttsService;
+
+    /**
      * 获取或创建 ASR 会话
      * 如果会话不存在或已关闭，通过 supplier 创建新的并启动
      *
@@ -72,6 +78,21 @@ public class ConversationContext {
             asrService = supplier.get();
         }
         return asrService;
+    }
+
+    /**
+     * 获取或创建 TTS 会话
+     * 如果会话不存在或已关闭，通过 supplier 创建新的并连接
+     *
+     * @param supplier TTS 会话创建函数
+     * @return 可用的 TTS 会话
+     */
+    public AliyunTTSService getOrCreateTTSService(Supplier<AliyunTTSService> supplier) {
+        if (ttsService == null || ttsService.isClosed()) {
+            log.debug("[ConversationContext] 创建新的 TTS 会话");
+            ttsService = supplier.get();
+        }
+        return ttsService;
     }
 
     /**

@@ -2,7 +2,9 @@ package com.careerforge.interview.voice.service;
 
 import com.careerforge.common.config.VoiceProperties;
 import com.careerforge.common.exception.BusinessException;
+import com.careerforge.interview.voice.dto.TTSConfig;
 import com.careerforge.interview.voice.service.impl.AliyunASRService;
+import com.careerforge.interview.voice.service.impl.AliyunTTSService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -57,7 +59,22 @@ public class VoiceServiceFactory {
     }
 
     /**
-     * 获取当前配置的 TTS 服务
+     * 创建一个新的 TTS 合成会话（会话级实例）
+     * 每个面试会话调用一次，创建独立的 WebSocket 连接
+     *
+     * @param config TTS 配置（音色、语速、音调等）
+     * @return 新的 AliyunTTSService 实例（未连接）
+     * @throws BusinessException 如果服务不可用
+     */
+    public AliyunTTSService createTTSService(TTSConfig config) {
+        if (!isTTSAvailable()) {
+            throw new BusinessException("TTS 服务不可用，请检查配置");
+        }
+        log.debug("[VoiceServiceFactory] 创建新的 TTS 会话");
+        return new AliyunTTSService(voiceProperties, config);
+    }
+
+    /**
      *
      * @return TTS 服务实例
      * @throws BusinessException 如果服务不可用

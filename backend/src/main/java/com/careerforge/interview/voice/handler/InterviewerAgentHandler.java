@@ -11,8 +11,8 @@ import com.careerforge.interview.voice.gateway.InterviewVoiceGateway;
 import com.careerforge.interview.voice.service.ASRService;
 import com.careerforge.interview.voice.service.QuestionPreGenerateService;
 import com.careerforge.interview.voice.service.RecordingService;
-import com.careerforge.interview.voice.service.TTSService;
 import com.careerforge.interview.voice.service.VoiceServiceFactory;
+import com.careerforge.interview.voice.service.impl.AliyunTTSService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -143,11 +143,23 @@ public class InterviewerAgentHandler {
      */
     public void cleanupSession(String sessionId) {
         ConversationContext context = contexts.get(sessionId);
-        if (context != null && context.getAsrService() != null) {
-            try {
-                context.getAsrService().close();
-            } catch (Exception e) {
-                log.warn("[InterviewerAgent] 关闭 ASR 会话失败, sessionId={}", sessionId, e);
+        if (context != null) {
+            // 关闭 ASR 连接
+            if (context.getAsrService() != null) {
+                try {
+                    context.getAsrService().close();
+                } catch (Exception e) {
+                    log.warn("[InterviewerAgent] 关闭 ASR 会话失败, sessionId={}", sessionId, e);
+                }
+            }
+            // 关闭 TTS 连接
+            AliyunTTSService tts = context.getTtsService();
+            if (tts != null) {
+                try {
+                    tts.closeConnection();
+                } catch (Exception e) {
+                    log.warn("[InterviewerAgent] 关闭 TTS 会话失败, sessionId={}", sessionId, e);
+                }
             }
         }
         contexts.remove(sessionId);
@@ -226,7 +238,7 @@ public class InterviewerAgentHandler {
         // 记录面试官消息到对话历史
         recordInterviewerMessage(sessionId, prompt);
 
-        return synthesizeToVoiceResponses(prompt);
+        return synthesizeToVoiceResponses(sessionId, prompt);
     }
 
     /**
@@ -260,7 +272,7 @@ public class InterviewerAgentHandler {
             // 记录面试官消息到对话历史
             recordInterviewerMessage(sessionId, questionText);
 
-            return synthesizeToVoiceResponses(questionText);
+            return synthesizeToVoiceResponses(sessionId, questionText);
         } else {
             // 降级到实时生成
             log.warn("[InterviewerAgent] 预生成问题未找到, 降级到实时生成, sessionId={}, index={}",
@@ -298,7 +310,7 @@ public class InterviewerAgentHandler {
 
         // 累积完整问题文本用于记录对话历史
         StringBuilder fullQuestion = new StringBuilder();
-        return synthesizeStreamToVoiceResponses(llmStream)
+        return synthesizeStreamToVoiceResponses(sessionId, llmStream)
                 .doOnNext(resp -> {
                     // 从 transcript 响应中提取文本累积
                     if (resp.getData() instanceof VoiceResponse.TranscriptData data) {
@@ -342,7 +354,7 @@ public class InterviewerAgentHandler {
             // 记录面试官追问到对话历史
             recordInterviewerMessage(sessionId, followUp);
 
-            return synthesizeToVoiceResponses(followUp);
+            return synthesizeToVoiceResponses(sessionId, followUp);
         } else {
             // 不追问，直接进入下一个问题
             return advanceToNextQuestion(sessionId, state);
@@ -474,29 +486,41 @@ public class InterviewerAgentHandler {
 
     /**
      * 将文本通过 TTS 分句流式合成，转换为 VoiceResponse 流
-     * 统一处理 transcript + audio 的构建逻辑
+     * 使用 session-scoped TTS 连接复用，整场面试共享一条 WebSocket 连接
      *
-     * @param text 要合成的文本
+     * @param sessionId 会话 ID
+     * @param text      要合成的文本
      * @return VoiceResponse 流（交替包含 transcript 和 audio）
      */
-    private Flux<VoiceResponse> synthesizeToVoiceResponses(String text) {
-        TTSService ttsService = voiceServiceFactory.getTTSService();
+    private Flux<VoiceResponse> synthesizeToVoiceResponses(String sessionId, String text) {
+        ConversationContext context = getOrCreateContext(sessionId);
         TTSConfig ttsConfig = buildInterviewerTTSConfig();
-        return ttsService.streamSynthesizeBySentence(Flux.just(text), ttsConfig)
+        AliyunTTSService tts = context.getOrCreateTTSService(() -> {
+            AliyunTTSService service = voiceServiceFactory.createTTSService(ttsConfig);
+            service.connect();
+            return service;
+        });
+        return tts.streamSynthesizeBySentenceWithConnection(Flux.just(text))
                 .flatMap(chunk -> buildTTSResponseFlux(chunk, ttsConfig));
     }
 
     /**
      * 将 LLM 文本流通过 TTS 分句流式合成，转换为 VoiceResponse 流
-     * 用于实时生成问题的场景
+     * 使用 session-scoped TTS 连接复用，用于实时生成问题的场景
      *
+     * @param sessionId  会话 ID
      * @param textStream LLM 文本流
      * @return VoiceResponse 流（交替包含 transcript 和 audio）
      */
-    private Flux<VoiceResponse> synthesizeStreamToVoiceResponses(Flux<String> textStream) {
-        TTSService ttsService = voiceServiceFactory.getTTSService();
+    private Flux<VoiceResponse> synthesizeStreamToVoiceResponses(String sessionId, Flux<String> textStream) {
+        ConversationContext context = getOrCreateContext(sessionId);
         TTSConfig ttsConfig = buildInterviewerTTSConfig();
-        return ttsService.streamSynthesizeBySentence(textStream, ttsConfig)
+        AliyunTTSService tts = context.getOrCreateTTSService(() -> {
+            AliyunTTSService service = voiceServiceFactory.createTTSService(ttsConfig);
+            service.connect();
+            return service;
+        });
+        return tts.streamSynthesizeBySentenceWithConnection(textStream)
                 .flatMap(chunk -> buildTTSResponseFlux(chunk, ttsConfig));
     }
 
@@ -668,6 +692,6 @@ public class InterviewerAgentHandler {
         // 记录结束语到对话历史
         recordInterviewerMessage(sessionId, closingText);
 
-        return synthesizeToVoiceResponses(closingText);
+        return synthesizeToVoiceResponses(sessionId, closingText);
     }
 }
