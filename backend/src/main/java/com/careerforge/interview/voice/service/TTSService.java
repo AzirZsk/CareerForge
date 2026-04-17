@@ -1,7 +1,5 @@
 package com.careerforge.interview.voice.service;
 
-import com.careerforge.interview.voice.dto.TTSConfig;
-
 /**
  * TTS（语音合成）服务接口
  * 采用 connect/synthesize/close 生命周期模式，音频数据通过 TTSListener 异步回调交付

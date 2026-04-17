@@ -1,6 +1,7 @@
 package com.careerforge.interview.voice.config;
 
 import com.careerforge.common.config.VoiceProperties;
+import com.careerforge.interview.voice.enums.VoiceRole;
 import com.careerforge.interview.voice.service.TTSService;
 import com.careerforge.interview.voice.service.impl.AliyunTTSService;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,6 @@ public class AliyunVoiceAutoConfiguration {
     @ConditionalOnMissingBean(TTSService.class)
     public TTSService aliyunTTSService(VoiceProperties voiceProperties) {
         log.info("[AliyunVoiceAutoConfiguration] 正在初始化阿里云TTS服务");
-        return new AliyunTTSService(voiceProperties);
+        return new AliyunTTSService(voiceProperties, VoiceRole.INTERVIEWER);
     }
 }

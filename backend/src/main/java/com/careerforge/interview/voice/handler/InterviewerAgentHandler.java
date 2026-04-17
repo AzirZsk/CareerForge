@@ -7,6 +7,7 @@ import com.careerforge.interview.voice.dto.*;
 import com.careerforge.interview.voice.dto.SessionState;
 import com.careerforge.interview.voice.enums.InterviewPhaseEnum;
 import com.careerforge.interview.voice.enums.TranscriptRole;
+import com.careerforge.interview.voice.enums.VoiceRole;
 import com.careerforge.interview.voice.gateway.InterviewVoiceGateway;
 import com.careerforge.interview.voice.dto.ASRResult;
 import com.careerforge.interview.voice.service.ASRListener;
@@ -347,12 +348,12 @@ public class InterviewerAgentHandler {
      */
     private void synthesizeAndSend(String sessionId, String text, boolean isFinal) {
         ConversationContext context = getOrCreateContext(sessionId);
-        TTSConfig ttsConfig = buildInterviewerTTSConfig();
         TTSService tts = context.getOrCreateTTSService(() -> {
-            TTSService service = voiceServiceFactory.createTTSService(ttsConfig);
+            TTSService service = voiceServiceFactory.createTTSService(VoiceRole.INTERVIEWER);
             service.connect();
             return service;
         });
+        VoiceProperties.AliyunConfig.TTSConfig ttsProps = voiceProperties.getAliyun().getTts();
         // 异步执行 TTS 合成，避免阻塞调用线程
         CompletableFuture.runAsync(() -> {
             // 先发送文本转录
@@ -371,8 +372,8 @@ public class InterviewerAgentHandler {
                     voiceGateway.sendResponse(sessionId, VoiceResponse.audio(
                             VoiceResponse.AudioData.builder()
                                     .audio(audioBase64)
-                                    .format(ttsConfig.getFormat())
-                                    .sampleRate(ttsConfig.getSampleRate())
+                                    .format(ttsProps.getFormat())
+                                    .sampleRate(ttsProps.getSampleRate())
                                     .build()
                     ));
                 }
@@ -406,9 +407,8 @@ public class InterviewerAgentHandler {
      */
     private void synthesizeStreamAndSend(String sessionId, Flux<String> textStream) {
         ConversationContext context = getOrCreateContext(sessionId);
-        TTSConfig ttsConfig = buildInterviewerTTSConfig();
         TTSService tts = context.getOrCreateTTSService(() -> {
-            TTSService service = voiceServiceFactory.createTTSService(ttsConfig);
+            TTSService service = voiceServiceFactory.createTTSService(VoiceRole.INTERVIEWER);
             service.connect();
             return service;
         });
@@ -431,7 +431,7 @@ public class InterviewerAgentHandler {
                                         .build()
                         ));
                         // 同步合成音频（synthesisLock 保证串行）
-                        synthesizeSentenceAudio(sessionId, tts, sentence, ttsConfig, false);
+                        synthesizeSentenceAudio(sessionId, tts, sentence, false);
                     }
                 },
                 error -> log.error("[InterviewerAgent] LLM流错误, sessionId={}", sessionId, error),
@@ -447,7 +447,7 @@ public class InterviewerAgentHandler {
                                         .role(TranscriptRole.INTERVIEWER.getValue())
                                         .build()
                         ));
-                        synthesizeSentenceAudio(sessionId, tts, lastSentence, ttsConfig, true);
+                        synthesizeSentenceAudio(sessionId, tts, lastSentence, true);
                     } else {
                         // LLM 回复以句号结尾时 buffer 为空，仍需发送 final 信号
                         voiceGateway.sendResponse(sessionId, VoiceResponse.transcript(
@@ -471,9 +471,10 @@ public class InterviewerAgentHandler {
      * 使用 session-scoped TTS 连接，synthesisLock 保证串行
      */
     private void synthesizeSentenceAudio(String sessionId, TTSService tts,
-                                          String sentence, TTSConfig ttsConfig, boolean isFinal) {
+                                          String sentence, boolean isFinal) {
         // 用 CountDownLatch 等待合成完成，保证句子按顺序推送
         java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
+        VoiceProperties.AliyunConfig.TTSConfig ttsProps = voiceProperties.getAliyun().getTts();
         tts.synthesize(sentence, new TTSListener() {
             @Override
             public void onAudio(byte[] audioData) {
@@ -481,8 +482,8 @@ public class InterviewerAgentHandler {
                 voiceGateway.sendResponse(sessionId, VoiceResponse.audio(
                         VoiceResponse.AudioData.builder()
                                 .audio(audioBase64)
-                                .format(ttsConfig.getFormat())
-                                .sampleRate(ttsConfig.getSampleRate())
+                                .format(ttsProps.getFormat())
+                                .sampleRate(ttsProps.getSampleRate())
                                 .build()
                 ));
             }
@@ -544,23 +545,6 @@ public class InterviewerAgentHandler {
             throw new BusinessException("会话不存在");
         }
         return state;
-    }
-
-    /**
-     * 构建面试官 TTS 配置
-     */
-    private TTSConfig buildInterviewerTTSConfig() {
-        VoiceProperties.AliyunConfig.TTSConfig ttsConfig = voiceProperties.getAliyun().getTts();
-        String voice = voiceProperties.getAliyun().getVoices().getInterviewer();
-        return TTSConfig.builder()
-                .model(ttsConfig.getModel())
-                .voice(voice)
-                .format(ttsConfig.getFormat())
-                .sampleRate(ttsConfig.getSampleRate())
-                .speechRate(1.0)
-                .volume(0.8)
-                .pitch(0.0)
-                .build();
     }
 
     /**

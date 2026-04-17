@@ -6,7 +6,7 @@ import com.alibaba.dashscope.audio.qwen_tts_realtime.QwenTtsRealtimeConfig;
 import com.alibaba.dashscope.audio.qwen_tts_realtime.QwenTtsRealtimeParam;
 import com.alibaba.dashscope.exception.NoApiKeyException;
 import com.careerforge.common.config.VoiceProperties;
-import com.careerforge.interview.voice.dto.TTSConfig;
+import com.careerforge.interview.voice.enums.VoiceRole;
 import com.careerforge.interview.voice.service.TTSListener;
 import com.careerforge.interview.voice.service.TTSService;
 import com.google.gson.JsonObject;
@@ -35,7 +35,7 @@ public class AliyunTTSService implements TTSService {
     private static final String WS_URL = "wss://dashscope.aliyuncs.com/api-ws/v1/realtime";
 
     private final VoiceProperties voiceProperties;
-    private final TTSConfig defaultConfig;
+    private final VoiceRole role;
     // session-scoped 连接复用相关字段
     private QwenTtsRealtime persistentConnection;
     private TTSListener currentListener;
@@ -46,21 +46,14 @@ public class AliyunTTSService implements TTSService {
     private final Object synthesisLock = new Object();
 
     /**
-     * 单例构造函数（Spring Bean 使用）
-     * defaultConfig 从 VoiceProperties 自动构建，支持无状态模式直接调用 synthesize()
+     * 构造函数
+     *
+     * @param voiceProperties 语音配置属性
+     * @param role            语音角色（面试官/助手），决定音色和语速等参数
      */
-    public AliyunTTSService(VoiceProperties voiceProperties) {
+    public AliyunTTSService(VoiceProperties voiceProperties, VoiceRole role) {
         this.voiceProperties = voiceProperties;
-        this.defaultConfig = buildDefaultConfig();
-    }
-
-    /**
-     * session-scoped 构造函数（VoiceServiceFactory.createTTSService 使用）
-     * 每个面试会话独立创建，指定自定义 TTS 配置，支持 connect() 建立持久连接
-     */
-    public AliyunTTSService(VoiceProperties voiceProperties, TTSConfig defaultConfig) {
-        this.voiceProperties = voiceProperties;
-        this.defaultConfig = defaultConfig;
+        this.role = role;
     }
 
     @Override
@@ -80,7 +73,7 @@ public class AliyunTTSService implements TTSService {
             log.debug("[AliyunTTS] 连接已建立，跳过重复连接");
             return;
         }
-        QwenTtsRealtimeParam param = buildParam(defaultConfig);
+        QwenTtsRealtimeParam param = buildParam();
         QwenTtsRealtimeCallback callback = new QwenTtsRealtimeCallback() {
             @Override
             public void onOpen() {
@@ -134,11 +127,11 @@ public class AliyunTTSService implements TTSService {
         persistentConnection = new QwenTtsRealtime(param, callback);
         try {
             persistentConnection.connect();
-            QwenTtsRealtimeConfig sessionConfig = buildSessionConfig(defaultConfig);
-            // 关键：使用 commit 模式而非 server_commit，支持多轮合成复用连接
-            sessionConfig.setMode("commit");
+            QwenTtsRealtimeConfig sessionConfig = buildSessionConfig();
+            // 使用 service_commit 模式，服务端自动提交，无需手动 commit
+            sessionConfig.setMode("service_commit");
             persistentConnection.updateSession(sessionConfig);
-            log.info("[AliyunTTS] 持久连接建立成功，使用 commit 模式");
+            log.info("[AliyunTTS] 持久连接建立成功，使用 service_commit 模式");
         } catch (Exception e) {
             connected.set(false);
             closed.set(true);
@@ -185,7 +178,6 @@ public class AliyunTTSService implements TTSService {
                 responseDoneLatch = new CountDownLatch(1);
                 try {
                     persistentConnection.appendText(text);
-                    persistentConnection.commit();
                     // 等待本次合成完成，超时30秒
                     if (!responseDoneLatch.await(30, TimeUnit.SECONDS)) {
                         log.warn("[AliyunTTS] 持久连接合成超时");
@@ -212,7 +204,7 @@ public class AliyunTTSService implements TTSService {
             AtomicBoolean completed = new AtomicBoolean(false);
             CountDownLatch doneLatch = new CountDownLatch(1);
             // 构建连接参数和回调
-            QwenTtsRealtimeParam param = buildParam(defaultConfig);
+            QwenTtsRealtimeParam param = buildParam();
             QwenTtsRealtimeCallback callback = new QwenTtsRealtimeCallback() {
                 @Override
                 public void onOpen() {
@@ -262,7 +254,7 @@ public class AliyunTTSService implements TTSService {
             try {
                 // 建立连接并推送合成请求
                 qwenTts.connect();
-                QwenTtsRealtimeConfig sessionConfig = buildSessionConfig(defaultConfig);
+                QwenTtsRealtimeConfig sessionConfig = buildSessionConfig();
                 qwenTts.updateSession(sessionConfig);
                 qwenTts.appendText(text);
                 qwenTts.finish();
@@ -296,37 +288,29 @@ public class AliyunTTSService implements TTSService {
     /**
      * 构建 QwenTtsRealtime 连接参数
      */
-    private QwenTtsRealtimeParam buildParam(TTSConfig config) {
+    private QwenTtsRealtimeParam buildParam() {
         VoiceProperties.AliyunConfig aliyun = voiceProperties.getAliyun();
-        String model = config.getModel() != null ? config.getModel() : aliyun.getTts().getModel();
         return QwenTtsRealtimeParam.builder()
-                .model(model)
+                .model(aliyun.getTts().getModel())
                 .url(WS_URL)
                 .apikey(aliyun.getApiKey())
                 .build();
     }
 
     /**
-     * 构建 QwenTtsRealtime 会话配置
+     * 构建 QwenTtsRealtime 会话配置，根据角色解析音色和参数
      */
-    private QwenTtsRealtimeConfig buildSessionConfig(TTSConfig config) {
+    private QwenTtsRealtimeConfig buildSessionConfig() {
         VoiceProperties.AliyunConfig aliyun = voiceProperties.getAliyun();
-        String voice = config.getVoice() != null ? config.getVoice() : aliyun.getVoices().getInterviewer();
-        String format = config.getFormat() != null ? config.getFormat() : aliyun.getTts().getFormat();
-        int sampleRate = config.getSampleRate() != null ? config.getSampleRate() : aliyun.getTts().getSampleRate();
-        float speechRate = config.getSpeechRate() != null ? config.getSpeechRate().floatValue() : 1.0f;
-        // volume: TTSConfig 0-1 映射到 QwenTtsRealtimeConfig 0-100
-        int volume = config.getVolume() != null ? (int) (config.getVolume() * 100) : 50;
-        // pitch: TTSConfig -1~1 映射到 QwenTtsRealtimeConfig pitchRate 0.5-2.0
-        float pitchRate = config.getPitch() != null ? (float) (1.0 + config.getPitch()) : 1.0f;
         return QwenTtsRealtimeConfig.builder()
-                .voice(voice)
-                .format(format)
-                .sampleRate(sampleRate)
-                .speechRate(speechRate)
-                .volume(volume)
-                .pitchRate(pitchRate)
+                .voice(resolveVoice())
+                .format(aliyun.getTts().getFormat())
+                .sampleRate(aliyun.getTts().getSampleRate())
+                .speechRate(resolveSpeechRate())
+                .volume(resolveVolume())
+                .pitchRate(resolvePitchRate())
                 .mode("server_commit")
+                .languageType("Chinese")
                 .build();
     }
 
@@ -339,19 +323,25 @@ public class AliyunTTSService implements TTSService {
         }
     }
 
-    /**
-     * 构建默认 TTS 配置（从 voiceProperties 读取）
-     */
-    private TTSConfig buildDefaultConfig() {
-        VoiceProperties.AliyunConfig aliyun = voiceProperties.getAliyun();
-        return TTSConfig.builder()
-                .model(aliyun.getTts().getModel())
-                .voice(aliyun.getVoices().getInterviewer())
-                .format(aliyun.getTts().getFormat())
-                .sampleRate(aliyun.getTts().getSampleRate())
-                .speechRate(1.0)
-                .volume(0.8)
-                .pitch(0.0)
-                .build();
+    // ==================== 角色参数解析 ====================
+
+    private String resolveVoice() {
+        VoiceProperties.AliyunConfig.VoicesConfig voices = voiceProperties.getAliyun().getVoices();
+        return role == VoiceRole.INTERVIEWER ? voices.getInterviewer() : voices.getAssistant();
+    }
+
+    private float resolveSpeechRate() {
+        return role == VoiceRole.INTERVIEWER ? 1.0f : 1.1f;
+    }
+
+    private int resolveVolume() {
+        // volume 0-1 映射到 QwenTtsRealtimeConfig 0-100
+        return 80;
+    }
+
+    private float resolvePitchRate() {
+        // pitch -1~1 映射到 pitchRate 0.5-2.0
+        double pitch = role == VoiceRole.INTERVIEWER ? 0.0 : 0.1;
+        return (float) (1.0 + pitch);
     }
 }

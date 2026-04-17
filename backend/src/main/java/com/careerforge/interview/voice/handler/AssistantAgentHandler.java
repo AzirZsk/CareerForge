@@ -3,6 +3,7 @@ package com.careerforge.interview.voice.handler;
 import com.careerforge.common.config.VoiceProperties;
 import com.careerforge.interview.voice.dto.*;
 import com.careerforge.interview.voice.dto.SessionState;
+import com.careerforge.interview.voice.enums.VoiceRole;
 import com.careerforge.interview.voice.gateway.InterviewVoiceGateway;
 import com.careerforge.interview.voice.service.TTSListener;
 import com.careerforge.interview.voice.service.TTSService;
@@ -50,8 +51,7 @@ public class AssistantAgentHandler {
 
     @PostConstruct
     public void init() {
-        TTSConfig ttsConfig = buildAssistantTTSConfig();
-        assistantTTSService = voiceServiceFactory.createTTSService(ttsConfig);
+        assistantTTSService = voiceServiceFactory.createTTSService(VoiceRole.ASSISTANT);
         log.info("[AssistantAgent] 助手 TTS 服务初始化完成");
     }
 
@@ -85,7 +85,7 @@ public class AssistantAgentHandler {
         // 文本缓冲区
         StringBuilder textBuffer = new StringBuilder();
         // 提取 TTS 配置用于构建音频响应
-        TTSConfig ttsConfig = buildAssistantTTSConfig();
+        VoiceProperties.AliyunConfig.TTSConfig ttsProps = voiceProperties.getAliyun().getTts();
 
         // 调用 LLM 流式生成，按句子分割后 TTS 合成
         chatClient
@@ -115,8 +115,8 @@ public class AssistantAgentHandler {
                                         eventConsumer.accept(AssistSSEEvent.audio(
                                                 AssistSSEEvent.AudioEventData.builder()
                                                         .audio(Base64.getEncoder().encodeToString(audioData))
-                                                        .format(ttsConfig.getFormat())
-                                                        .sampleRate(ttsConfig.getSampleRate())
+                                                        .format(ttsProps.getFormat())
+                                                        .sampleRate(ttsProps.getSampleRate())
                                                         .build()
                                         ));
                                     }
@@ -153,8 +153,8 @@ public class AssistantAgentHandler {
                                         eventConsumer.accept(AssistSSEEvent.audio(
                                                 AssistSSEEvent.AudioEventData.builder()
                                                         .audio(Base64.getEncoder().encodeToString(audioData))
-                                                        .format(ttsConfig.getFormat())
-                                                        .sampleRate(ttsConfig.getSampleRate())
+                                                        .format(ttsProps.getFormat())
+                                                        .sampleRate(ttsProps.getSampleRate())
                                                         .build()
                                         ));
                                     }
@@ -263,23 +263,6 @@ public class AssistantAgentHandler {
             case "FREE_QUESTION" -> userQuestion != null ? userQuestion : "请问你有什么问题？";
             default -> "请告诉我你需要什么帮助。";
         };
-    }
-
-    /**
-     * 构建助手 TTS 配置
-     */
-    private TTSConfig buildAssistantTTSConfig() {
-        VoiceProperties.AliyunConfig.TTSConfig ttsConfig = voiceProperties.getAliyun().getTts();
-        String voice = voiceProperties.getAliyun().getVoices().getAssistant();
-        return TTSConfig.builder()
-                .model(ttsConfig.getModel())
-                .voice(voice)
-                .format(ttsConfig.getFormat())
-                .sampleRate(ttsConfig.getSampleRate())
-                .speechRate(1.1)
-                .volume(0.8)
-                .pitch(0.1)
-                .build();
     }
 
     /**
