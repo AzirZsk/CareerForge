@@ -4,6 +4,7 @@
       <span class="title"><font-awesome-icon icon="fa-solid fa-lightbulb" /> 快捷求助</span>
       <span class="remaining">剩余 {{ remaining }}/{{ limit }} 次</span>
     </div>
+    <p class="assist-desc">点击后面试将暂停，AI 助手会实时帮助你</p>
 
     <div class="button-group">
       <button
@@ -15,6 +16,8 @@
       >
         <font-awesome-icon class="btn-icon" :icon="button.icon" />
         <span class="btn-text">{{ button.label }}</span>
+        <font-awesome-icon class="btn-question" icon="fa-solid fa-circle-question" />
+        <span class="btn-tooltip">{{ button.desc }}</span>
       </button>
     </div>
 
@@ -59,11 +62,11 @@ const emit = defineEmits<{
 }>()
 
 // 求助按钮配置 - 使用正确的 AssistType 值
-const assistButtons: Array<{ type: AssistType; icon: string; label: string }> = [
-  { type: 'give_hints', icon: 'fa-solid fa-bullseye', label: '给我思路' },
-  { type: 'explain_concept', icon: 'fa-solid fa-book-open', label: '解释概念' },
-  { type: 'polish_answer', icon: 'fa-solid fa-pen-fancy', label: '帮我润色' },
-  { type: 'free_question', icon: 'fa-solid fa-comment', label: '自由提问' }
+const assistButtons: Array<{ type: AssistType; icon: string; label: string; desc: string }> = [
+  { type: 'give_hints', icon: 'fa-solid fa-bullseye', label: '给我思路', desc: 'AI 帮你梳理答题方向' },
+  { type: 'explain_concept', icon: 'fa-solid fa-book-open', label: '解释概念', desc: 'AI 为你解释专业术语' },
+  { type: 'polish_answer', icon: 'fa-solid fa-pen-fancy', label: '帮我润色', desc: 'AI 优化你的回答表达' },
+  { type: 'free_question', icon: 'fa-solid fa-comment', label: '自由提问', desc: '输入问题，AI 为你解答' }
 ]
 
 // 自由提问
@@ -121,12 +124,20 @@ function submitFreeQuestion() {
   }
 }
 
+.assist-desc {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+  margin-top: $spacing-xs;
+  margin-bottom: $spacing-sm;
+}
+
 .button-group {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: $spacing-sm;
 
   .assist-btn {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -155,6 +166,58 @@ function submitFreeQuestion() {
     .btn-text {
       font-size: $text-xs;
       color: $color-text-secondary;
+    }
+
+    .btn-question {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      font-size: 12px;
+      color: $color-text-tertiary;
+      opacity: 0.6;
+      transition: opacity $transition-fast;
+    }
+
+    .btn-tooltip {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%) translateY(4px);
+      padding: $spacing-xs $spacing-sm;
+      background: $color-bg-elevated;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: $radius-sm;
+      font-size: $text-xs;
+      color: $color-text-secondary;
+      white-space: nowrap;
+      opacity: 0;
+      visibility: hidden;
+      transition: all $transition-fast;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      z-index: $z-tooltip;
+      pointer-events: none;
+
+      &::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 5px solid transparent;
+        border-top-color: $color-bg-elevated;
+      }
+    }
+
+    &:hover {
+      .btn-question {
+        opacity: 1;
+      }
+
+      .btn-tooltip {
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(-50%) translateY(0);
+      }
     }
   }
 }
