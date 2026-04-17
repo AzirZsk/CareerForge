@@ -72,10 +72,5 @@ public class VoiceRequest<T> {
          * 控制动作：start, stop, end
          */
         private String action;
-
-        /**
-         * 扩展参数（可选）
-         */
-        private Object params;
     }
 }

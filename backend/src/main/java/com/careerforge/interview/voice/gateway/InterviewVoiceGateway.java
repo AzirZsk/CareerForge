@@ -555,7 +555,7 @@ public class InterviewVoiceGateway {
             // 路由到对应的处理方法
             switch (action) {
                 case START:
-                    handleStartAction(sessionId, controlData);
+                    handleStartAction(sessionId);
                     break;
                 case STOP:
                     handleStopAction(sessionId);
@@ -580,30 +580,17 @@ public class InterviewVoiceGateway {
     /**
      * 处理开始动作
      * 初始化会话状态，请求候选人进行自我介绍
+     * totalQuestions 和 assistLimit 在 WebSocket 连接时已从数据库加载到 SessionState
      *
      * @param sessionId 会话ID
-     * @param controlData 控制数据（可能包含扩展参数）
      */
-    private void handleStartAction(String sessionId, VoiceRequest.ControlData controlData) {
+    private void handleStartAction(String sessionId) {
         SessionState state = sessionStates.computeIfAbsent(sessionId, k -> new SessionState());
 
         // 设置初始状态
         state.startInterview();
         state.setStartTime(System.currentTimeMillis());
         state.setPhase(InterviewPhaseEnum.WAITING_SELF_INTRODUCTION);
-
-        // 处理扩展参数（题目总数、求助次数限制）
-        Object params = controlData.getParams();
-        if (params instanceof Map) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> paramMap = (Map<String, Object>) params;
-            if (paramMap.containsKey("totalQuestions")) {
-                state.setTotalQuestions((Integer) paramMap.get("totalQuestions"));
-            }
-            if (paramMap.containsKey("assistLimit")) {
-                state.setAssistRemaining((Integer) paramMap.get("assistLimit"));
-            }
-        }
 
         log.info("[VoiceGateway] 面试开始, sessionId={}", sessionId);
 

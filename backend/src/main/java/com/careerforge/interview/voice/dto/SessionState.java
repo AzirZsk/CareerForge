@@ -11,23 +11,74 @@ import lombok.Data;
  */
 @Data
 public class SessionState {
-    // 关联的真实面试信息
+    /**
+     * 关联的真实面试ID
+     */
     private String interviewId;
+
+    /**
+     * 面试职位名称
+     */
     private String position;
+
+    /**
+     * 职位描述（JD）内容
+     */
     private String jdContent;
+
+    /**
+     * 候选人简历内容
+     */
     private String resumeContent;
-    // 面试官风格
+
+    /**
+     * 面试官风格（如专业、友好、严格等）
+     */
     private String interviewerStyle = VoiceInterviewDefaults.DEFAULT_INTERVIEWER_STYLE;
-    // 语音模式（half_voice/full_voice）
+
+    /**
+     * 语音模式：half_voice（候选人语音/AI文字）、full_voice（双方语音）
+     */
     private String voiceMode = VoiceInterviewDefaults.DEFAULT_VOICE_MODE;
-    // 会话状态（枚举替代多布尔值，避免不一致状态）
+
+    /**
+     * 会话状态（枚举替代多布尔值，避免不一致状态）
+     */
     private InterviewSessionState sessionState = InterviewSessionState.IDLE;
+
+    /**
+     * 面试开始时间戳（毫秒）
+     */
     private long startTime;
+
+    /**
+     * 面试冻结时间戳（毫秒），用于暂停计时
+     */
     private long freezeTime;
+
+    /**
+     * 当前问题序号（从0开始）
+     */
     private int currentQuestion = 0;
+
+    /**
+     * 问题总数（创建会话时从数据库加载）
+     */
     private int totalQuestions = VoiceInterviewDefaults.DEFAULT_TOTAL_QUESTIONS;
+
+    /**
+     * 剩余求助次数
+     */
     private int assistRemaining = VoiceInterviewDefaults.DEFAULT_ASSIST_LIMIT;
+
+    /**
+     * 求助次数上限（创建会话时从数据库加载）
+     */
     private int assistLimit = VoiceInterviewDefaults.DEFAULT_ASSIST_LIMIT;
+
+    /**
+     * 录音片段索引（递增，用于录音存储）
+     */
     private int segmentIndex = 0;
 
     /**
