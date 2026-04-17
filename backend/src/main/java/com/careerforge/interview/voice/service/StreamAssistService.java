@@ -9,11 +9,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * 流式求助服务
  * 处理面试过程中的快捷求助功能
+ * 采用回调模式，事件通过 Consumer 直接推送到 SseEmitter
  *
  * @author Azir
  */
@@ -62,46 +62,16 @@ public class StreamAssistService {
         // 冻结面试
         voiceGateway.freezeInterview(sessionId);
 
-        // 异步执行求助逻辑
-        CompletableFuture.runAsync(() -> {
-            try {
-                // 调用助手处理器获取 Flux
-                assistantAgentHandler.handleAssist(sessionId, assistType, question, candidateDraft)
-                        .subscribe(
-                                event -> {
-                                    // 发送每个事件
-                                    sendEvent(emitter, event);
-                                },
-                                error -> {
-                                    // 出错处理
-                                    log.error("[StreamAssist] 求助出错, sessionId={}", sessionId, error);
-                                    voiceGateway.resumeInterview(sessionId);
-                                    sendEvent(emitter, AssistSSEEvent.error(
-                                            AssistSSEEvent.ErrorEventData.builder()
-                                                    .code("ASSIST_ERROR")
-                                                    .message(error.getMessage())
-                                                    .build()
-                                    ));
-                                    emitter.complete();
-                                },
-                                () -> {
-                                    // 完成处理
-                                    log.info("[StreamAssist] 求助完成, sessionId={}", sessionId);
-                                    emitter.complete();
-                                }
-                        );
-            } catch (Exception e) {
-                log.error("[StreamAssist] 意外错误, sessionId={}", sessionId, e);
-                voiceGateway.resumeInterview(sessionId);
-                sendEvent(emitter, AssistSSEEvent.error(
-                        AssistSSEEvent.ErrorEventData.builder()
-                                .code("ASSIST_ERROR")
-                                .message(e.getMessage())
-                                .build()
-                ));
-                emitter.complete();
-            }
-        });
+        // 调用助手处理器，事件通过回调直接推送
+        assistantAgentHandler.handleAssist(sessionId, assistType, question, candidateDraft,
+                event -> {
+                    sendEvent(emitter, event);
+                    // 检测终止事件
+                    if ("done".equals(event.getType()) || "error".equals(event.getType())) {
+                        voiceGateway.resumeInterview(sessionId);
+                        emitter.complete();
+                    }
+                });
     }
 
     /**

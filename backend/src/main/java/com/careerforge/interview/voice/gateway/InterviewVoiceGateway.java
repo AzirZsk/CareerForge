@@ -359,12 +359,8 @@ public class InterviewVoiceGateway {
         }
 
         // 转发给面试官 Agent 处理（ASR识别 -> AI生成回复 -> TTS合成）
-        interviewerAgentHandler.handleCandidateAudio(sessionId, audioData)
-                .subscribe(
-                        response -> sendResponse(sessionId, response),
-                        error -> log.error("[VoiceGateway] 处理音频出错, sessionId={}", sessionId, error),
-                        () -> log.debug("[VoiceGateway] 音频处理完成, sessionId={}", sessionId)
-                );
+        // 结果通过回调直接推送，无需 subscribe
+        interviewerAgentHandler.handleCandidateAudio(sessionId, audioData);
     }
 
     /**
@@ -615,13 +611,8 @@ public class InterviewVoiceGateway {
         sendResponse(sessionId, VoiceResponse.state(
                 buildStateData(InterviewSessionState.INTERVIEWING.getCode(), state)));
 
-        // 请求候选人自我介绍
-        interviewerAgentHandler.requestSelfIntroduction(sessionId)
-                .subscribe(
-                        response -> sendResponse(sessionId, response),
-                        error -> log.error("[VoiceGateway] 请求自我介绍失败, sessionId={}", sessionId, error),
-                        () -> log.debug("[VoiceGateway] 自我介绍请求完成, sessionId={}", sessionId)
-                );
+        // 请求候选人自我介绍（结果通过回调直接推送）
+        interviewerAgentHandler.requestSelfIntroduction(sessionId);
     }
 
     /**
