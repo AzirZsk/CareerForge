@@ -1,26 +1,22 @@
 package com.careerforge.interview.voice.service;
 
-import com.careerforge.interview.voice.dto.ASRResult;
-import reactor.core.publisher.Flux;
-
 /**
  * ASR（语音识别）会话服务
  * 每个面试会话创建一个独立实例，管理一条 WebSocket 长连接
  *
- * <p>生命周期：创建 -> start() -> [sendAudio x N] -> [results 持续发射] -> close()
+ * <p>生命周期：创建 -> start(listener) -> [sendAudio x N] -> [listener 持续回调] -> close()
  *
  * <p>使用示例：
  * <pre>{@code
  * ASRService asr = voiceServiceFactory.createASRService();
- * asr.start();
- *
- * // 订阅识别结果
- * asr.results().subscribe(result -> {
- *     if (result.getIsFinal()) {
- *         System.out.println("最终结果: " + result.getText());
- *     } else {
- *         System.out.println("中间结果: " + result.getText());
+ * asr.start(new ASRListener() {
+ *     public void onResult(ASRResult result) {
+ *         if (result.getIsFinal()) {
+ *             System.out.println("最终结果: " + result.getText());
+ *         }
  *     }
+ *     public void onError(Exception e) { e.printStackTrace(); }
+ *     public void onComplete() { System.out.println("识别结束"); }
  * });
  *
  * // 持续送入音频帧
@@ -36,11 +32,12 @@ import reactor.core.publisher.Flux;
 public interface ASRService {
 
     /**
-     * 建立识别连接
-     * 创建 WebSocket 连接并开始接收识别结果
-     * 调用后 results() 才会有数据输出
+     * 建立识别连接并注册回调
+     * 创建 WebSocket 连接，识别结果通过 listener 异步回调
+     *
+     * @param listener 识别结果回调
      */
-    void start();
+    void start(ASRListener listener);
 
     /**
      * 发送一帧音频数据
@@ -49,15 +46,6 @@ public interface ASRService {
      * @param audioFrame PCM 音频数据（16kHz 16bit mono）
      */
     void sendAudio(byte[] audioFrame);
-
-    /**
-     * 获取识别结果流
-     * 持续发射 ASRResult（中间结果 isFinal=false + 最终结果 isFinal=true）
-     * close() 后此 Flux 收到 onComplete 信号
-     *
-     * @return 识别结果流
-     */
-    Flux<ASRResult> results();
 
     /**
      * 关闭连接，释放所有资源

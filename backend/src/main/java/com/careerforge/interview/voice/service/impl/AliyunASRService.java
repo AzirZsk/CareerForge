@@ -7,10 +7,9 @@ import com.alibaba.dashscope.common.ResultCallback;
 import com.alibaba.dashscope.utils.Constants;
 import com.careerforge.common.config.VoiceProperties;
 import com.careerforge.interview.voice.dto.ASRResult;
+import com.careerforge.interview.voice.service.ASRListener;
 import com.careerforge.interview.voice.service.ASRService;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxSink;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
@@ -20,7 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * 阿里云 Fun-ASR 实时语音识别会话实现
  * 每个面试会话创建一个实例，管理一条 WebSocket 长连接
  *
- * <p>内部使用 Sinks.Many 汇聚音频帧，通过 Recognition SDK 发送到阿里云
+ * <p>SDK 回调直接通过 ASRListener 转发，无需 Flux 包装
  *
  * @author Azir
  */
@@ -32,8 +31,8 @@ public class AliyunASRService implements ASRService {
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final AtomicBoolean started = new AtomicBoolean(false);
 
-    // 识别结果流
-    private Flux<ASRResult> resultFlux;
+    // 识别结果回调
+    private ASRListener listener;
     // 阿里云识别器
     private Recognition recognizer;
 
@@ -50,65 +49,59 @@ public class AliyunASRService implements ASRService {
     }
 
     @Override
-    public void start() {
+    public void start(ASRListener listener) {
         if (started.getAndSet(true)) {
             log.warn("[AliyunASR] 会话已启动，忽略重复调用, sessionId={}", sessionId);
             return;
         }
+        this.listener = listener;
 
         VoiceProperties.AliyunConfig.ASRConfig asrConfig = voiceProperties.getAliyun().getAsr();
         this.recognizer = new Recognition();
         RecognitionParam param = buildRecognitionParam(asrConfig);
 
-        this.resultFlux = Flux.<ASRResult>create(emitter -> {
-            // 构建 SDK 回调
-            ResultCallback<RecognitionResult> callback = new ResultCallback<>() {
-                @Override
-                public void onEvent(RecognitionResult result) {
-                    ASRResult asrResult = convertToASRResult(result);
-                    if (!emitter.isCancelled()) {
-                        emitter.next(asrResult);
-                    }
-                    log.trace("[AliyunASR] 识别事件: isFinal={}, text={}, sessionId={}",
-                            asrResult.getIsFinal(), asrResult.getText(), sessionId);
+        // 构建 SDK 回调，直接转发给 ASRListener
+        ResultCallback<RecognitionResult> callback = new ResultCallback<>() {
+            @Override
+            public void onEvent(RecognitionResult result) {
+                ASRResult asrResult = convertToASRResult(result);
+                if (!closed.get() && AliyunASRService.this.listener != null) {
+                    AliyunASRService.this.listener.onResult(asrResult);
                 }
-
-                @Override
-                public void onComplete() {
-                    log.info("[AliyunASR] 识别完成, sessionId={}", sessionId);
-                    if (!emitter.isCancelled()) {
-                        emitter.complete();
-                    }
-                    markClosed();
-                }
-
-                @Override
-                public void onError(Exception e) {
-                    log.error("[AliyunASR] 识别错误, sessionId={}", sessionId, e);
-                    if (!emitter.isCancelled()) {
-                        emitter.error(e);
-                    }
-                    markClosed();
-                }
-            };
-
-            try {
-                // 建立 WebSocket 连接
-                recognizer.call(param, callback);
-                log.info("[AliyunASR] 连接已建立, sessionId={}, model={}", sessionId, asrConfig.getModel());
-            } catch (Exception e) {
-                log.error("[AliyunASR] 建立连接失败, sessionId={}", sessionId, e);
-                emitter.error(e);
-                return;
+                log.trace("[AliyunASR] 识别事件: isFinal={}, text={}, sessionId={}",
+                        asrResult.getIsFinal(), asrResult.getText(), sessionId);
             }
 
-            // Flux 被取消时关闭连接
-            emitter.onDispose(() -> closeInternal());
-        }, FluxSink.OverflowStrategy.BUFFER)
-                // 多个订阅者共享同一个连接（publish + autoConnect）
-                .publish().autoConnect();
+            @Override
+            public void onComplete() {
+                log.info("[AliyunASR] 识别完成, sessionId={}", sessionId);
+                markClosed();
+                if (AliyunASRService.this.listener != null) {
+                    AliyunASRService.this.listener.onComplete();
+                }
+            }
 
-        log.info("[AliyunASR] 会话已初始化, sessionId={}", sessionId);
+            @Override
+            public void onError(Exception e) {
+                log.error("[AliyunASR] 识别错误, sessionId={}", sessionId, e);
+                markClosed();
+                if (AliyunASRService.this.listener != null) {
+                    AliyunASRService.this.listener.onError(e);
+                }
+            }
+        };
+
+        try {
+            // 建立 WebSocket 连接
+            recognizer.call(param, callback);
+            log.info("[AliyunASR] 连接已建立, sessionId={}, model={}", sessionId, asrConfig.getModel());
+        } catch (Exception e) {
+            log.error("[AliyunASR] 建立连接失败, sessionId={}", sessionId, e);
+            markClosed();
+            if (this.listener != null) {
+                this.listener.onError(e);
+            }
+        }
     }
 
     @Override
@@ -126,15 +119,6 @@ public class AliyunASRService implements ASRService {
         } catch (Exception e) {
             log.error("[AliyunASR] 发送音频帧失败, sessionId={}", sessionId, e);
         }
-    }
-
-    @Override
-    public Flux<ASRResult> results() {
-        if (!started.get()) {
-            log.warn("[AliyunASR] 会话未启动，results() 返回空流, sessionId={}", sessionId);
-            return Flux.empty();
-        }
-        return resultFlux;
     }
 
     @Override

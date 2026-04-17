@@ -8,6 +8,8 @@ import com.careerforge.interview.voice.dto.SessionState;
 import com.careerforge.interview.voice.enums.InterviewPhaseEnum;
 import com.careerforge.interview.voice.enums.TranscriptRole;
 import com.careerforge.interview.voice.gateway.InterviewVoiceGateway;
+import com.careerforge.interview.voice.dto.ASRResult;
+import com.careerforge.interview.voice.service.ASRListener;
 import com.careerforge.interview.voice.service.ASRService;
 import com.careerforge.interview.voice.service.QuestionPreGenerateService;
 import com.careerforge.interview.voice.service.RecordingService;
@@ -70,22 +72,30 @@ public class InterviewerAgentHandler {
         // 收集候选人音频数据（用于录音保存）
         context.appendCandidateAudio(audioData);
 
-        // 获取或创建 ASR 会话（首次创建时启动并订阅识别结果）
+        // 获取或创建 ASR 会话（首次创建时启动并注册回调）
         ASRService asr = context.getOrCreateASRService(() -> {
             ASRService service = voiceServiceFactory.createASRService();
-            // 先启动连接，再订阅结果（results 依赖 start 初始化的 resultFlux）
-            service.start();
-            service.results().subscribe(
-                    asrResult -> handleASRResult(sessionId, asrResult),
-                    error -> {
-                        log.error("[InterviewerAgent] ASR 会话错误, sessionId={}", sessionId, error);
-                        voiceGateway.sendResponse(sessionId, VoiceResponse.error(VoiceResponse.ErrorData.builder()
-                                .code("ASR_ERROR")
-                                .message("语音识别失败: " + error.getMessage())
-                                .build()));
-                    },
-                    () -> log.info("[InterviewerAgent] ASR 会话结束, sessionId={}", sessionId)
-            );
+            // 启动连接并注册回调，识别结果通过 ASRListener 异步回调
+            service.start(new ASRListener() {
+                @Override
+                public void onResult(ASRResult result) {
+                    handleASRResult(sessionId, result);
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    log.error("[InterviewerAgent] ASR 会话错误, sessionId={}", sessionId, e);
+                    voiceGateway.sendResponse(sessionId, VoiceResponse.error(VoiceResponse.ErrorData.builder()
+                            .code("ASR_ERROR")
+                            .message("语音识别失败: " + e.getMessage())
+                            .build()));
+                }
+
+                @Override
+                public void onComplete() {
+                    log.info("[InterviewerAgent] ASR 会话结束, sessionId={}", sessionId);
+                }
+            });
             return service;
         });
 
