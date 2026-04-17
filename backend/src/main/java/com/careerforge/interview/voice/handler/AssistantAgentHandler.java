@@ -7,6 +7,7 @@ import com.careerforge.interview.voice.gateway.InterviewVoiceGateway;
 import com.careerforge.interview.voice.service.TTSListener;
 import com.careerforge.interview.voice.service.TTSService;
 import com.careerforge.interview.voice.service.VoiceServiceFactory;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -39,10 +40,20 @@ public class AssistantAgentHandler {
     @Lazy
     private InterviewVoiceGateway voiceGateway;
 
+    // 助手 TTS 实例（带助手音色配置，无状态模式，每次 synthesize 创建临时连接）
+    private TTSService assistantTTSService;
+
     private static final String SENTENCE_END_CHARS = "。！？.!;；\n";
 
     // 会话上下文
     private final ConcurrentHashMap<String, AssistContext> contexts = new ConcurrentHashMap<>();
+
+    @PostConstruct
+    public void init() {
+        TTSConfig ttsConfig = buildAssistantTTSConfig();
+        assistantTTSService = voiceServiceFactory.createTTSService(ttsConfig);
+        log.info("[AssistantAgent] 助手 TTS 服务初始化完成");
+    }
 
     /**
      * 处理快捷求助
@@ -71,12 +82,10 @@ public class AssistantAgentHandler {
         String systemPrompt = buildSystemPrompt(assistType, sessionState);
         String userPrompt = buildUserPrompt(assistType, userQuestion, candidateDraft, sessionState);
 
-        // 获取 TTS 服务
-        TTSService ttsService = voiceServiceFactory.getTTSService();
-        TTSConfig ttsConfig = buildAssistantTTSConfig();
-
         // 文本缓冲区
         StringBuilder textBuffer = new StringBuilder();
+        // 提取 TTS 配置用于构建音频响应
+        TTSConfig ttsConfig = buildAssistantTTSConfig();
 
         // 调用 LLM 流式生成，按句子分割后 TTS 合成
         chatClient
@@ -100,7 +109,7 @@ public class AssistantAgentHandler {
                                 String sentence = textBuffer.toString();
                                 textBuffer.setLength(0);
                                 // 合成音频并通过回调推送
-                                ttsService.streamSynthesize(sentence, ttsConfig, new TTSListener() {
+                                assistantTTSService.synthesize(sentence, new TTSListener() {
                                     @Override
                                     public void onAudio(byte[] audioData) {
                                         eventConsumer.accept(AssistSSEEvent.audio(
@@ -138,7 +147,7 @@ public class AssistantAgentHandler {
                             if (textBuffer.length() > 0) {
                                 String lastText = textBuffer.toString();
                                 textBuffer.setLength(0);
-                                ttsService.streamSynthesize(lastText, ttsConfig, new TTSListener() {
+                                assistantTTSService.synthesize(lastText, new TTSListener() {
                                     @Override
                                     public void onAudio(byte[] audioData) {
                                         eventConsumer.accept(AssistSSEEvent.audio(

@@ -1,7 +1,7 @@
 package com.careerforge.interview.voice.handler;
 
 import com.careerforge.interview.voice.service.ASRService;
-import com.careerforge.interview.voice.service.impl.AliyunTTSService;
+import com.careerforge.interview.voice.service.TTSService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -13,7 +13,7 @@ import java.util.function.Supplier;
 
 /**
  * 语音面试对话上下文
- * 存储面试过程中的会话状态、对话历史、音频数据和 ASR 会话
+ * 存储面试过程中的会话状态、对话历史、音频数据和 ASR/TTS 会话
  *
  * @author Azir
  */
@@ -62,7 +62,7 @@ public class ConversationContext {
     /**
      * TTS 会话（每个面试会话独立持有，连接级生命周期）
      */
-    private AliyunTTSService ttsService;
+    private TTSService ttsService;
 
     /**
      * 获取或创建 ASR 会话
@@ -82,13 +82,13 @@ public class ConversationContext {
 
     /**
      * 获取或创建 TTS 会话
-     * 如果会话不存在或已关闭，通过 supplier 创建新的并连接
+     * 如果会话不存在，通过 supplier 创建新的并连接
      *
      * @param supplier TTS 会话创建函数
      * @return 可用的 TTS 会话
      */
-    public AliyunTTSService getOrCreateTTSService(Supplier<AliyunTTSService> supplier) {
-        if (ttsService == null || ttsService.isClosed()) {
+    public TTSService getOrCreateTTSService(Supplier<TTSService> supplier) {
+        if (ttsService == null) {
             log.debug("[ConversationContext] 创建新的 TTS 会话");
             ttsService = supplier.get();
         }

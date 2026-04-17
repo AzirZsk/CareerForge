@@ -15,7 +15,7 @@ import com.careerforge.interview.voice.service.QuestionPreGenerateService;
 import com.careerforge.interview.voice.service.RecordingService;
 import com.careerforge.interview.voice.service.TTSListener;
 import com.careerforge.interview.voice.service.VoiceServiceFactory;
-import com.careerforge.interview.voice.service.impl.AliyunTTSService;
+import com.careerforge.interview.voice.service.TTSService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -148,10 +148,10 @@ public class InterviewerAgentHandler {
                 }
             }
             // 关闭 TTS 连接
-            AliyunTTSService tts = context.getTtsService();
+            TTSService tts = context.getTtsService();
             if (tts != null) {
                 try {
-                    tts.closeConnection();
+                    tts.close();
                 } catch (Exception e) {
                     log.warn("[InterviewerAgent] 关闭 TTS 会话失败, sessionId={}", sessionId, e);
                 }
@@ -341,8 +341,8 @@ public class InterviewerAgentHandler {
     private void synthesizeAndSend(String sessionId, String text, boolean isFinal) {
         ConversationContext context = getOrCreateContext(sessionId);
         TTSConfig ttsConfig = buildInterviewerTTSConfig();
-        AliyunTTSService tts = context.getOrCreateTTSService(() -> {
-            AliyunTTSService service = voiceServiceFactory.createTTSService(ttsConfig);
+        TTSService tts = context.getOrCreateTTSService(() -> {
+            TTSService service = voiceServiceFactory.createTTSService(ttsConfig);
             service.connect();
             return service;
         });
@@ -357,7 +357,7 @@ public class InterviewerAgentHandler {
                             .build()
             ));
             // 合成音频并推送
-            tts.synthesizeWithConnection(text, new TTSListener() {
+            tts.synthesize(text, new TTSListener() {
                 @Override
                 public void onAudio(byte[] audioData) {
                     String audioBase64 = Base64.getEncoder().encodeToString(audioData);
@@ -400,8 +400,8 @@ public class InterviewerAgentHandler {
     private void synthesizeStreamAndSend(String sessionId, Flux<String> textStream) {
         ConversationContext context = getOrCreateContext(sessionId);
         TTSConfig ttsConfig = buildInterviewerTTSConfig();
-        AliyunTTSService tts = context.getOrCreateTTSService(() -> {
-            AliyunTTSService service = voiceServiceFactory.createTTSService(ttsConfig);
+        TTSService tts = context.getOrCreateTTSService(() -> {
+            TTSService service = voiceServiceFactory.createTTSService(ttsConfig);
             service.connect();
             return service;
         });
@@ -463,11 +463,11 @@ public class InterviewerAgentHandler {
      * 合成单个句子的音频并推送到客户端
      * 使用 session-scoped TTS 连接，synthesisLock 保证串行
      */
-    private void synthesizeSentenceAudio(String sessionId, AliyunTTSService tts,
+    private void synthesizeSentenceAudio(String sessionId, TTSService tts,
                                           String sentence, TTSConfig ttsConfig, boolean isFinal) {
         // 用 CountDownLatch 等待合成完成，保证句子按顺序推送
         java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
-        tts.synthesizeWithConnection(sentence, new TTSListener() {
+        tts.synthesize(sentence, new TTSListener() {
             @Override
             public void onAudio(byte[] audioData) {
                 String audioBase64 = Base64.getEncoder().encodeToString(audioData);

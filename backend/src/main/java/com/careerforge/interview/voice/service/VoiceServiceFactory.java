@@ -63,10 +63,10 @@ public class VoiceServiceFactory {
      * 每个面试会话调用一次，创建独立的 WebSocket 连接
      *
      * @param config TTS 配置（音色、语速、音调等）
-     * @return 新的 AliyunTTSService 实例（未连接）
+     * @return 新的 TTSService 实例（未连接）
      * @throws BusinessException 如果服务不可用
      */
-    public AliyunTTSService createTTSService(TTSConfig config) {
+    public TTSService createTTSService(TTSConfig config) {
         if (!isTTSAvailable()) {
             throw new BusinessException("TTS 服务不可用，请检查配置");
         }
