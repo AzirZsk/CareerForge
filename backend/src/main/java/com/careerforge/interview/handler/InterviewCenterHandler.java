@@ -15,12 +15,16 @@ import com.careerforge.interview.entity.Interview;
 import com.careerforge.interview.entity.InterviewPreparation;
 import com.careerforge.interview.entity.InterviewReviewNote;
 import com.careerforge.interview.entity.InterviewAIAnalysis;
+import com.careerforge.interview.entity.InterviewSession;
 import com.careerforge.interview.graph.preparation.InterviewPreparationGraphService;
 import com.careerforge.interview.graph.review.ReviewAnalysisGraphService;
 import com.careerforge.interview.service.InterviewCenterService;
 import com.careerforge.interview.service.InterviewPreparationService;
 import com.careerforge.interview.service.InterviewReviewNoteService;
 import com.careerforge.interview.service.InterviewAIAnalysisService;
+import com.careerforge.interview.service.InterviewSessionService;
+import com.careerforge.interview.voice.entity.RecordingIndex;
+import com.careerforge.interview.voice.mapper.RecordingIndexMapper;
 import com.careerforge.jobposition.entity.JobPosition;
 import com.careerforge.jobposition.service.JobPositionService;
 import com.careerforge.resume.dto.ResumeDetailVO;
@@ -76,6 +80,8 @@ public class InterviewCenterHandler {
     private final InterviewPreparationService preparationService;
     private final InterviewReviewNoteService reviewNoteService;
     private final InterviewAIAnalysisService aiAnalysisService;
+    private final InterviewSessionService interviewSessionService;
+    private final RecordingIndexMapper recordingIndexMapper;
     private final JobPositionService jobPositionService;
     private final CompanyService companyService;
     private final InterviewPreparationGraphService preparationGraphService;
@@ -551,6 +557,98 @@ public class InterviewCenterHandler {
         vo.setCreatedAt(aiAnalysis.getCreatedAt());
         vo.setUpdatedAt(aiAnalysis.getUpdatedAt());
         return vo;
+    }
+
+    /**
+     * 获取真实面试关联的模拟面试历史列表
+     */
+    public List<MockSessionSummaryVO> getMockSessions(String interviewId) {
+        LambdaQueryWrapper<Interview> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Interview::getParentInterviewId, interviewId)
+                .eq(Interview::getSource, InterviewSource.MOCK.getCode())
+                .orderByDesc(Interview::getCreatedAt);
+        List<Interview> mockInterviews = interviewCenterService.list(wrapper);
+        return mockInterviews.stream().map(this::convertToMockSessionSummary).collect(Collectors.toList());
+    }
+
+    /**
+     * 获取模拟面试详情（含 AI 分析结果）
+     */
+    public MockSessionDetailVO getMockSessionDetail(String mockInterviewId) {
+        Interview mockInterview = interviewCenterService.getById(mockInterviewId);
+        if (mockInterview == null) {
+            throw new BusinessException("模拟面试记录不存在");
+        }
+        MockSessionDetailVO detail = new MockSessionDetailVO();
+        detail.setSummary(convertToMockSessionSummary(mockInterview));
+        // 查询 AI 分析
+        InterviewAIAnalysis aiAnalysis = aiAnalysisService.getByInterviewId(mockInterviewId);
+        if (aiAnalysis != null) {
+            detail.setAiAnalysis(convertToAIAnalysisVO(aiAnalysis));
+        }
+        // 查询 sessionId
+        InterviewSession session = findSessionByInterviewId(mockInterviewId);
+        if (session != null) {
+            detail.setSessionId(String.valueOf(session.getId()));
+        }
+        return detail;
+    }
+
+    /**
+     * 转换 Interview 为 MockSessionSummaryVO
+     */
+    private MockSessionSummaryVO convertToMockSessionSummary(Interview mockInterview) {
+        MockSessionSummaryVO vo = new MockSessionSummaryVO();
+        vo.setId(String.valueOf(mockInterview.getId()));
+        vo.setCreatedAt(mockInterview.getCreatedAt());
+        vo.setDuration(mockInterview.getDuration());
+        vo.setQuestions(mockInterview.getQuestions());
+        // 查询 InterviewSession 获取会话详情
+        InterviewSession session = findSessionByInterviewId(String.valueOf(mockInterview.getId()));
+        if (session != null) {
+            vo.setSessionId(String.valueOf(session.getId()));
+            vo.setInterviewerStyle(session.getInterviewerStyle());
+            vo.setVoiceMode(session.getVoiceMode());
+            vo.setAssistCount(session.getAssistCount());
+            vo.setAssistLimit(session.getAssistLimit());
+        }
+        // 查询 AI 分析摘要
+        InterviewAIAnalysis aiAnalysis = aiAnalysisService.getByInterviewId(String.valueOf(mockInterview.getId()));
+        if (aiAnalysis != null) {
+            vo.setHasAnalysis(true);
+            var interviewAnalysis = aiAnalysisService.parseInterviewAnalysis(aiAnalysis);
+            if (interviewAnalysis != null) {
+                vo.setOverallScore(interviewAnalysis.getOverallScore());
+                vo.setOverallPerformance(interviewAnalysis.getOverallPerformance());
+                vo.setJdMatchScore(interviewAnalysis.getJdMatchScore());
+            }
+        } else {
+            vo.setHasAnalysis(false);
+        }
+        // 判断是否有录音
+        vo.setHasRecording(checkHasRecording(vo.getSessionId()));
+        return vo;
+    }
+
+    /**
+     * 通过 interviewId 查找 InterviewSession
+     */
+    private InterviewSession findSessionByInterviewId(String interviewId) {
+        LambdaQueryWrapper<InterviewSession> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(InterviewSession::getInterviewId, interviewId);
+        return interviewSessionService.getOne(wrapper, false);
+    }
+
+    /**
+     * 检查是否有录音
+     */
+    private boolean checkHasRecording(String sessionId) {
+        if (sessionId == null || sessionId.isBlank()) {
+            return false;
+        }
+        LambdaQueryWrapper<RecordingIndex> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(RecordingIndex::getSessionId, sessionId);
+        return recordingIndexMapper.selectCount(wrapper) > 0;
     }
 
 }

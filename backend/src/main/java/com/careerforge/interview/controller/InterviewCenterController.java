@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.util.List;
+
 /**
  * 面试中心控制器
  * 负责真实面试的 CRUD 操作
@@ -82,6 +84,22 @@ public class InterviewCenterController {
             HttpServletResponse response) {
         String transcript = (request != null) ? request.getTranscript() : null;
         return handler.streamReviewAnalysis(id, transcript, response);
+    }
+
+    // ===== 模拟面试历史 =====
+
+    @Operation(summary = "获取模拟面试历史列表")
+    @GetMapping("/{id}/mock-sessions")
+    public ApiResponse<List<MockSessionSummaryVO>> getMockSessions(@PathVariable String id) {
+        return ApiResponse.success(handler.getMockSessions(id));
+    }
+
+    @Operation(summary = "获取模拟面试详情")
+    @GetMapping("/{id}/mock-sessions/{mockInterviewId}")
+    public ApiResponse<MockSessionDetailVO> getMockSessionDetail(
+            @PathVariable String id,
+            @PathVariable String mockInterviewId) {
+        return ApiResponse.success(handler.getMockSessionDetail(mockInterviewId));
     }
 
 }

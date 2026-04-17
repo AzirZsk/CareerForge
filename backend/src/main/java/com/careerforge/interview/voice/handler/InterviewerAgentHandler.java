@@ -190,22 +190,37 @@ public class InterviewerAgentHandler {
     }
 
     /**
-     * 请求自我介绍
+     * 请求自我介绍（LLM 动态生成开场白）
      */
     public void requestSelfIntroduction(String sessionId) {
         log.debug("[InterviewerAgent] 请求自我介绍, sessionId={}", sessionId);
+        ConversationContext context = getOrCreateContext(sessionId);
         SessionState state = requireSession(sessionId);
         // 获取面试官风格配置
         AIPromptProperties.InterviewerStyleConfig styleConfig =
                 aiPromptProperties.getVoice().getByStyle(state.getInterviewerStyle());
-        String prompt = styleConfig.getSelfIntroductionPromptTemplate();
-        if (prompt == null || prompt.isBlank()) {
-            prompt = "请先做个自我介绍吧，说说你的技术背景和项目经验。";
+        String selfIntroTemplate = styleConfig.getSelfIntroPromptTemplate();
+        if (selfIntroTemplate == null || selfIntroTemplate.isBlank()) {
+            // 降级：使用静态模板
+            String fallback = styleConfig.getSelfIntroductionPromptTemplate();
+            if (fallback == null || fallback.isBlank()) {
+                fallback = "请先做个自我介绍吧，说说你的技术背景和项目经验。";
+            }
+            log.info("[InterviewerAgent] 自我介绍降级使用静态模板: {}, sessionId={}", fallback, sessionId);
+            recordInterviewerMessage(sessionId, fallback);
+            synthesizeAndSend(sessionId, fallback, false);
+            return;
         }
-        log.info("[InterviewerAgent] 请求自我介绍: {}, sessionId={}", prompt, sessionId);
-        // 记录面试官消息到对话历史
-        recordInterviewerMessage(sessionId, prompt);
-        synthesizeAndSend(sessionId, prompt, false);
+        // 构建提示词（复用已有的上下文格式化方法）
+        String systemPrompt = styleConfig.getSystemPrompt();
+        String userPrompt = selfIntroTemplate
+                .replace("{position}", context.getPosition())
+                .replace("{jdRequirements}", formatJDRequirements(context.getJdContent()))
+                .replace("{resumeSummary}", formatResumeSummary(context.getResumeContent()));
+        log.info("[InterviewerAgent] 使用 LLM 动态生成自我介绍开场白, sessionId={}", sessionId);
+        // LLM 流式生成（synthesizeStreamAndSend 内部 onComplete 会记录对话历史）
+        Flux<String> llmStream = callLLMStream(systemPrompt, userPrompt);
+        synthesizeStreamAndSend(sessionId, llmStream);
     }
 
     /**

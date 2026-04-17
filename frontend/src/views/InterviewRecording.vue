@@ -79,8 +79,8 @@ const recordingInfo = ref<RecordingInfo | null>(null)
 const currentTime = ref(0)
 const currentSegmentIndex = ref(0)
 
-// 获取会话 ID
-const sessionId = route.params.id as string || route.query.sessionId as string
+// 获取会话 ID（路由参数名是 sessionId）
+const sessionId = route.params.sessionId as string || route.query.sessionId as string
 
 // 加载录音信息
 async function loadRecordingInfo(): Promise<void> {
@@ -103,9 +103,14 @@ async function loadRecordingInfo(): Promise<void> {
   }
 }
 
-// 返回复盘页
+// 返回面试详情页
 function goBack(): void {
-  router.push({ name: 'Review' })
+  const interviewId = route.query.interviewId as string
+  if (interviewId) {
+    router.push(`/interview-center/${interviewId}`)
+  } else {
+    router.push('/interview-center')
+  }
 }
 
 // 下载音频

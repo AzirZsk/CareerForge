@@ -2943,6 +2943,28 @@ public class AIPromptProperties {
                     - 格式：[简短确认] + [追问/过渡]
                     - 不要说"很好"、"不错"等模糊评价
                     """);
+            config.setSelfIntroPromptTemplate("""
+                    你正在面试一位应聘 {position} 的候选人。
+
+                    <jd_requirements>
+                    {jdRequirements}
+                    </jd_requirements>
+
+                    <resume_summary>
+                    {resumeSummary}
+                    </resume_summary>
+
+                    ---
+
+                    请用口语化的方式作为面试官开场，然后请候选人做自我介绍。
+
+                    **要求**：
+                    - 30-60字，自然口语
+                    - 简单打招呼 + 提到岗位名称
+                    - 最后请对方做自我介绍
+                    - 语气正式但不生硬
+                    - 不要用"你好，欢迎来到面试"这种套话
+                    """);
             return config;
         }
 
@@ -3064,6 +3086,28 @@ public class AIPromptProperties {
                     - 40-80 字，口语化、温暖
                     - 格式：[具体肯定/引导] + [追问/过渡]
                     - 肯定要具体，不要只说"很好"
+                    """);
+            config.setSelfIntroPromptTemplate("""
+                    你正在面试一位应聘 {position} 的候选人。
+
+                    <jd_requirements>
+                    {jdRequirements}
+                    </jd_requirements>
+
+                    <resume_summary>
+                    {resumeSummary}
+                    </resume_summary>
+
+                    ---
+
+                    请用温暖亲切的语气作为面试官开场，让候选人放松，然后请对方做自我介绍。
+
+                    **要求**：
+                    - 40-80字，自然口语，像聊天一样
+                    - 先轻松打招呼或寒暄一句
+                    - 可以提到岗位或对方简历里的亮点
+                    - 最后请对方做自我介绍
+                    - 语气要让人放松，不要有压迫感
                     """);
             return config;
         }
@@ -3187,6 +3231,28 @@ public class AIPromptProperties {
                     - 30-60 字，直接、干脆
                     - 格式：[质疑/确认] + [追问/过渡]
                     - 质疑要有技术依据，不人身攻击
+                    """);
+            config.setSelfIntroPromptTemplate("""
+                    你正在面试一位应聘 {position} 的候选人。
+
+                    <jd_requirements>
+                    {jdRequirements}
+                    </jd_requirements>
+
+                    <resume_summary>
+                    {resumeSummary}
+                    </resume_summary>
+
+                    ---
+
+                    请用简洁干练的语气作为面试官开场，直接切入正题，然后请候选人做自我介绍。
+
+                    **要求**：
+                    - 20-40字，简洁有力
+                    - 不需要寒暄，直接报岗位名称
+                    - 最后请对方做自我介绍
+                    - 语气要有压迫感但保持专业
+                    - 不要有多余的客套话
                     """);
             return config;
         }
@@ -3366,8 +3432,16 @@ public class AIPromptProperties {
         private String followUpPromptTemplate;
 
         /**
-         * 请求自我介绍的提示词模板
-         * 用于面试开始时请求候选人做自我介绍
+         * 自我介绍请求的 LLM 用户提示词模板（动态生成开场白）
+         * 占位符:
+         * - {position} - 面试岗位
+         * - {jdRequirements} - JD 核心要求
+         * - {resumeSummary} - 候选人简历摘要
+         */
+        private String selfIntroPromptTemplate;
+
+        /**
+         * 请求自我介绍的静态提示词（降级兜底）
          */
         private String selfIntroductionPromptTemplate = "请先做个自我介绍吧，说说你的技术背景和项目经验。";
     }

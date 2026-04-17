@@ -134,6 +134,24 @@
         </div>
       </section>
 
+      <!-- 模拟面试记录 -->
+      <section class="mock-history-section">
+        <div class="section-header">
+          <h2>模拟面试记录</h2>
+        </div>
+        <MockHistorySection
+          :interview-id="interview.id"
+          @open-detail="handleOpenMockDetail"
+        />
+      </section>
+
+      <!-- 模拟面试详情弹窗 -->
+      <MockSessionDetailModal
+        v-model:visible="showMockDetailModal"
+        :mock-interview-id="selectedMockInterviewId"
+        :interview-id="interview.id"
+      />
+
       <section class="review-section">
         <div class="section-header">
           <h2>面试复盘</h2>
@@ -284,6 +302,8 @@ import InterviewHeader from '@/components/interview-center/InterviewHeader.vue'
 import PreparationProgress from '@/components/interview-center/PreparationProgress.vue'
 import PreparationGroup from '@/components/interview-center/PreparationGroup.vue'
 import AudioUploadArea from '@/components/interview-center/AudioUploadArea.vue'
+import MockHistorySection from '@/components/interview-center/MockHistorySection.vue'
+import MockSessionDetailModal from '@/components/interview-center/MockSessionDetailModal.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 // 职位详情展示组件
 import CompanyResearchContent from '@/components/interview-center/preparation/CompanyResearchContent.vue'
@@ -311,6 +331,8 @@ const showReviewDialog = ref(false)
 const showEditDialog = ref(false)
 const showPrepModal = ref(false)
 const showMockConfigDialog = ref(false)
+const showMockDetailModal = ref(false)
+const selectedMockInterviewId = ref('')
 const isCreatingSession = ref(false)
 const isBodyScrollLocked = useScrollLock(document.body)
 
@@ -529,6 +551,11 @@ async function handleDeletePreparation(preparationId: string) {
   } catch (error) {
     console.error('删除准备事项失败:', error)
   }
+}
+
+function handleOpenMockDetail(mockInterviewId: string) {
+  selectedMockInterviewId.value = mockInterviewId
+  showMockDetailModal.value = true
 }
 
 async function handleDelete() {
@@ -1007,7 +1034,7 @@ onUnmounted(() => {
   }
 }
 
-.preparations-section, .review-section {
+.preparations-section, .mock-history-section, .review-section {
   background: $color-bg-secondary;
   border-radius: $radius-lg;
   padding: $spacing-xl;

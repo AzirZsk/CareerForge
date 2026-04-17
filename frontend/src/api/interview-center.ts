@@ -12,7 +12,9 @@ import type {
   UpdateInterviewRequest,
   AddPreparationRequest,
   UpdatePreparationRequest,
-  SaveReviewNoteRequest
+  SaveReviewNoteRequest,
+  MockSessionSummary,
+  MockSessionDetail
 } from '@/types/interview-center'
 import request from '@/utils/request'
 import { authFetch } from '@/utils/request'
@@ -237,4 +239,26 @@ export async function streamReviewAnalysis(
   } catch (error) {
     onError(error as Error)
   }
+}
+
+// ==================== 模拟面试历史 API ====================
+
+/**
+ * 获取模拟面试历史列表
+ */
+export async function getMockSessions(interviewId: string): Promise<MockSessionSummary[]> {
+  return request({
+    url: `/interview-center/${interviewId}/mock-sessions`,
+    method: 'GET'
+  })
+}
+
+/**
+ * 获取模拟面试详情
+ */
+export async function getMockSessionDetail(interviewId: string, mockInterviewId: string): Promise<MockSessionDetail> {
+  return request({
+    url: `/interview-center/${interviewId}/mock-sessions/${mockInterviewId}`,
+    method: 'GET'
+  })
 }

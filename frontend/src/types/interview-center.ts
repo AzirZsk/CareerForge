@@ -516,3 +516,30 @@ export interface InterviewAnalysisResult {
   roundAnalysis: RoundAnalysis
   summary: string
 }
+
+// ==================== 模拟面试历史 ====================
+
+// 模拟面试摘要
+export interface MockSessionSummary {
+  id: string
+  sessionId: string
+  createdAt: string
+  duration: number
+  questions: number
+  overallScore?: number
+  overallPerformance?: string
+  jdMatchScore?: number
+  interviewerStyle: string
+  voiceMode: string
+  assistCount: number
+  assistLimit: number
+  hasRecording: boolean
+  hasAnalysis: boolean
+}
+
+// 模拟面试详情
+export interface MockSessionDetail {
+  summary: MockSessionSummary
+  aiAnalysis?: AIAnalysisVO
+  sessionId: string
+}
