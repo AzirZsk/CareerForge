@@ -209,39 +209,30 @@ public class InterviewerAgentHandler {
     }
 
     /**
-     * 生成下一个问题（优先使用预生成问题）
+     * 生成下一个问题（预生成问题作为参考，LLM 结合上下文微调）
      */
     public void generateNextQuestion(String sessionId) {
         log.debug("[InterviewerAgent] 生成下一个问题, sessionId={}", sessionId);
+        ConversationContext context = getOrCreateContext(sessionId);
         SessionState state = requireSession(sessionId);
-        // 优先从预生成缓存获取
+        // 尝试获取预设问题作为参考
         Optional<PreGeneratedQuestion> cachedQuestion =
                 questionPreGenerateService.getCachedQuestion(sessionId, state.getCurrentQuestion());
+        String preGeneratedText;
         if (cachedQuestion.isPresent()) {
-            String questionText = cachedQuestion.get().getText();
             questionPreGenerateService.markQuestionUsed(sessionId, state.getCurrentQuestion());
-            state.setLastQuestion(questionText);
-            log.info("[InterviewerAgent] 使用预生成问题, sessionId={}, index={}, text={}",
-                    sessionId, state.getCurrentQuestion(), questionText);
-            recordInterviewerMessage(sessionId, questionText);
-            synthesizeAndSend(sessionId, questionText, false);
+            preGeneratedText = cachedQuestion.get().getText();
+            log.info("[InterviewerAgent] 使用预设问题作为参考, sessionId={}, index={}, text={}",
+                    sessionId, state.getCurrentQuestion(), preGeneratedText);
         } else {
-            log.warn("[InterviewerAgent] 预生成问题未找到, 降级到实时生成, sessionId={}, index={}",
+            preGeneratedText = "无";
+            log.warn("[InterviewerAgent] 预设问题未找到, 从零生成, sessionId={}, index={}",
                     sessionId, state.getCurrentQuestion());
-            generateQuestionRealTime(sessionId);
         }
-    }
-
-    /**
-     * 实时生成问题（LLM 流式 + TTS 分句合成）
-     */
-    private void generateQuestionRealTime(String sessionId) {
-        ConversationContext context = getOrCreateContext(sessionId);
-        SessionState state = voiceGateway.getInternalState(sessionId);
         // 根据面试官风格获取提示词配置
         String style = state.getInterviewerStyle();
         AIPromptProperties.InterviewerStyleConfig styleConfig = aiPromptProperties.getVoice().getByStyle(style);
-        // 构建生成问题的提示词
+        // 构建提示词（注入预设问题 + 面试上下文）
         String systemPrompt = styleConfig.getSystemPrompt();
         String userPrompt = styleConfig.getQuestionPromptTemplate()
                 .replace("{position}", context.getPosition())
@@ -251,7 +242,8 @@ public class InterviewerAgentHandler {
                 .replace("{jdRequirements}", formatJDRequirements(context.getJdContent()))
                 .replace("{resumeSummary}", formatResumeSummary(context.getResumeContent()))
                 .replace("{askedQuestions}", formatAskedQuestions(context.getConversationSummary()))
-                .replace("{conversationSummary}", context.getConversationSummary());
+                .replace("{conversationSummary}", context.getConversationSummary())
+                .replace("{preGeneratedQuestion}", preGeneratedText);
         // 调用 LLM 流式生成
         Flux<String> llmStream = callLLMStream(systemPrompt, userPrompt);
         synthesizeStreamAndSend(sessionId, llmStream);

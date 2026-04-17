@@ -2885,9 +2885,19 @@ public class AIPromptProperties {
                     {conversationSummary}
                     </conversation_summary>
 
+                    <reference_question>
+                    {preGeneratedQuestion}
+                    </reference_question>
+
                     ---
 
-                    请生成下一个面试问题。
+                    请基于参考问题和面试上下文生成下一个面试问题。
+
+                    **微调规则**（参考问题为"无"时忽略）：
+                    1. 如果参考问题与已问问题高度重复，调整考察角度或换个相关知识点
+                    2. 如果候选人刚才的回答涉及了参考问题的方向，适当深入或调整角度
+                    3. 如果参考问题在当前语境下完全合适，可保留原文或仅做口语化微调
+                    4. 保持参考问题考察的核心技能点不变，只调整表述和侧重点
 
                     **问题选择策略**：
                     1. 优先考察 JD 中**尚未覆盖**的核心技能
@@ -2996,9 +3006,19 @@ public class AIPromptProperties {
                     {conversationSummary}
                     </conversation_summary>
 
+                    <reference_question>
+                    {preGeneratedQuestion}
+                    </reference_question>
+
                     ---
 
-                    请生成下一个面试问题。
+                    请基于参考问题和面试上下文生成下一个面试问题。
+
+                    **微调规则**（参考问题为"无"时忽略）：
+                    1. 如果参考问题与已问问题高度重复，调整考察角度或换个相关知识点
+                    2. 如果候选人刚才的回答涉及了参考问题的方向，适当深入或调整角度
+                    3. 如果参考问题在当前语境下完全合适，可保留原文或仅做口语化微调
+                    4. 保持参考问题考察的核心技能点不变，只调整表述和侧重点
 
                     **问题选择策略**：
                     1. 优先从候选人**简历中的项目经历**提问，让对方有话可说
@@ -3109,9 +3129,19 @@ public class AIPromptProperties {
                     {conversationSummary}
                     </conversation_summary>
 
+                    <reference_question>
+                    {preGeneratedQuestion}
+                    </reference_question>
+
                     ---
 
-                    请生成下一个面试问题。
+                    请基于参考问题和面试上下文生成下一个面试问题。
+
+                    **微调规则**（参考问题为"无"时忽略）：
+                    1. 如果参考问题与已问问题高度重复，调整考察角度或换个相关知识点
+                    2. 如果候选人刚才的回答涉及了参考问题的方向，适当深入或调整角度
+                    3. 如果参考问题在当前语境下完全合适，可保留原文或仅做口语化微调
+                    4. 保持参考问题考察的核心技能点不变，只调整表述和侧重点
 
                     **问题选择策略**：
                     1. 优先选择**有深度、有陷阱**的问题，考察候选人是否真正理解
