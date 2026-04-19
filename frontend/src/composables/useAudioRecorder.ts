@@ -57,6 +57,22 @@ export function useAudioRecorder() {
   /** 是否启用 VAD */
   let vadEnabled = true
 
+  /** 是否启用静音过滤 */
+  let silenceFilterEnabled = true
+
+  /** 静音 RMS 阈值 */
+  const SILENCE_THRESHOLD = 0.01
+
+  /** 静音过滤状态 */
+  type SilenceFilterState = 'silent' | 'speaking' | 'trailing_silence'
+  let silenceFilterState: SilenceFilterState = 'silent'
+
+  /** 尾部静音帧计数器 */
+  let trailingFrameCount = 0
+
+  /** 尾部静音最大帧数（2帧 ≈ 512ms @16kHz/4096） */
+  const MAX_TRAILING_FRAMES = 2
+
   // ============================================================================
   // 核心方法
   // ============================================================================
@@ -69,10 +85,14 @@ export function useAudioRecorder() {
     onAudioData?: (data: Int16Array) => void
     vadEnabled?: boolean
     vadSilenceMs?: number
+    silenceFilterEnabled?: boolean
   } = {}): Promise<void> {
     onAudioData = options.onAudioData || null
     vadEnabled = options.vadEnabled ?? true
     vadSilenceMs = options.vadSilenceMs ?? 1500
+    silenceFilterEnabled = options.silenceFilterEnabled ?? true
+    silenceFilterState = 'silent'
+    trailingFrameCount = 0
 
     try {
       // 获取麦克风权限
@@ -145,6 +165,7 @@ export function useAudioRecorder() {
 
     // 重置 VAD
     resetVad()
+    resetSilenceFilter()
   }
 
   /**
@@ -168,6 +189,8 @@ export function useAudioRecorder() {
       clearTimeout(vadTimer)
       vadTimer = null
     }
+
+    resetSilenceFilter()
   }
 
   /**
@@ -231,7 +254,7 @@ export function useAudioRecorder() {
 
     const inputData = event.inputBuffer.getChannelData(0)
 
-    // 计算音量电平
+    // 计算音量电平（始终执行，UI波形显示需要）
     const rms = calculateRms(inputData)
     audioLevel.value = rms
 
@@ -240,13 +263,14 @@ export function useAudioRecorder() {
       handleVad(rms)
     }
 
-    // 转换为 16bit PCM
-    const pcmData = float32ToPcm(inputData)
-
-    // 回调
-    if (onAudioData) {
-      onAudioData(pcmData)
+    // 静音过滤模式
+    if (silenceFilterEnabled) {
+      handleSilenceFilter(inputData, rms)
+      return
     }
+
+    // 原始逻辑：无条件发送
+    sendPcmFrame(inputData)
   }
 
   /**
@@ -258,6 +282,62 @@ export function useAudioRecorder() {
       sum += float32Array[i] * float32Array[i]
     }
     return Math.sqrt(sum / float32Array.length)
+  }
+
+  /**
+   * 静音过滤状态机
+   */
+  function handleSilenceFilter(inputData: Float32Array, rms: number): void {
+    const isSpeech = rms > SILENCE_THRESHOLD
+    switch (silenceFilterState) {
+      case 'silent':
+        if (isSpeech) {
+          silenceFilterState = 'speaking'
+          sendPcmFrame(inputData)
+        }
+        break
+      case 'speaking':
+        if (isSpeech) {
+          sendPcmFrame(inputData)
+        } else {
+          silenceFilterState = 'trailing_silence'
+          trailingFrameCount = 0
+          sendPcmFrame(inputData)
+          trailingFrameCount++
+        }
+        break
+      case 'trailing_silence':
+        if (isSpeech) {
+          silenceFilterState = 'speaking'
+          trailingFrameCount = 0
+          sendPcmFrame(inputData)
+        } else if (trailingFrameCount < MAX_TRAILING_FRAMES) {
+          sendPcmFrame(inputData)
+          trailingFrameCount++
+        } else {
+          silenceFilterState = 'silent'
+          trailingFrameCount = 0
+        }
+        break
+    }
+  }
+
+  /**
+   * 将 Float32 音频帧转换为 PCM 并通过回调发送
+   */
+  function sendPcmFrame(inputData: Float32Array): void {
+    const pcmData = float32ToPcm(inputData)
+    if (onAudioData) {
+      onAudioData(pcmData)
+    }
+  }
+
+  /**
+   * 重置静音过滤状态
+   */
+  function resetSilenceFilter(): void {
+    silenceFilterState = 'silent'
+    trailingFrameCount = 0
   }
 
   /**

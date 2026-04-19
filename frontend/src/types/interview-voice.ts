@@ -40,6 +40,8 @@ export interface VoiceSettings {
   vadEnabled: boolean
   /** 静音检测阈值（毫秒） */
   vadSilenceMs: number
+  /** 是否启用静音过滤（过滤无效静音帧） */
+  silenceFilterEnabled: boolean
 }
 
 /** 默认语音设置 */
@@ -50,7 +52,8 @@ export const defaultVoiceSettings: VoiceSettings = {
   assistantVoice: 'zhimiao_emo_v2',
   speechRate: 1.0,
   vadEnabled: true,
-  vadSilenceMs: 1500
+  vadSilenceMs: 1500,
+  silenceFilterEnabled: true
 }
 
 // ============================================================================

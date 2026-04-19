@@ -566,6 +566,7 @@ public class InterviewCenterHandler {
         LambdaQueryWrapper<Interview> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Interview::getParentInterviewId, interviewId)
                 .eq(Interview::getSource, InterviewSource.MOCK.getCode())
+                .eq(Interview::getStatus, InterviewStatus.COMPLETED.getValue())
                 .orderByDesc(Interview::getCreatedAt);
         List<Interview> mockInterviews = interviewCenterService.list(wrapper);
         return mockInterviews.stream().map(this::convertToMockSessionSummary).collect(Collectors.toList());

@@ -29,7 +29,8 @@ const DEFAULT_SETTINGS: VoiceSettings = {
   assistantVoice: 'zhimiao_emo_v2',
   speechRate: 1.0,
   vadEnabled: true,
-  vadSilenceMs: 1500
+  vadSilenceMs: 1500,
+  silenceFilterEnabled: true
 }
 
 /**
@@ -140,6 +141,7 @@ export function useInterviewVoice(sessionId: string) {
       await recorder.init({
         vadEnabled: settings.value.vadEnabled,
         vadSilenceMs: settings.value.vadSilenceMs,
+        silenceFilterEnabled: settings.value.silenceFilterEnabled,
         onAudioData: handleAudioData
       })
 
