@@ -113,7 +113,6 @@ public class AliyunTTSService implements TTSService {
         try {
             connection.connect();
             QwenTtsRealtimeConfig sessionConfig = buildSessionConfig();
-            sessionConfig.setMode("server_commit");
             connection.updateSession(sessionConfig);
             log.info("[AliyunTTS] 连接建立成功，server_commit 模式, role={}", role);
         } catch (Exception e) {
