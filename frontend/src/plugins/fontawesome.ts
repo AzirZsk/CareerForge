@@ -89,7 +89,8 @@ import {
   faFire, // 火
   faMugHot, // 咖啡杯
   faThumbtack, // 图钉
-  faCircleExclamation // 错误提示
+  faCircleExclamation, // 错误提示
+  faCircleQuestion // 快捷求助按钮
 } from '@fortawesome/free-solid-svg-icons'
 
 // 导入面试中心模块需要的图标 - 状态/指示类
@@ -201,6 +202,7 @@ library.add(
   faMugHot,
   faThumbtack,
   faCircleExclamation,
+  faCircleQuestion,
   // 面试中心 - 状态/指示类
   faHourglassHalf,
   faChartBar,

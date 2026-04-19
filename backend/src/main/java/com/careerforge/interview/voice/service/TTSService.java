@@ -2,18 +2,16 @@ package com.careerforge.interview.voice.service;
 
 /**
  * TTS（语音合成）服务接口
- * 采用 connect/synthesize/close 生命周期模式，音频数据通过 TTSListener 异步回调交付
+ * 采用 connect/synthesize/close 生命周期模式，对齐 ASR 的 start/sendAudio/close 模式
+ * 音频数据通过 TTSListener 异步回调交付
  *
  * <p>使用方式：
- * <ul>
- *   <li>无状态模式：直接调用 {@link #synthesize}，每次新建临时连接</li>
- *   <li>会话模式：{@link #connect} 建立持久连接 -> 多次 {@link #synthesize} 复用连接 -> {@link #close} 关闭</li>
- * </ul>
- *
- * <p>实现类：
- * <ul>
- *   <li>{@code AliyunTTSService} - 阿里云千问TTS实时语音合成（DashScope SDK）</li>
- * </ul>
+ * <pre>
+ *   tts.connect(listener);          // 建立连接 + 设置回调
+ *   tts.synthesize(text);           // 非阻塞提交文本，音频通过 listener 异步回传
+ *   tts.synthesize(anotherText);    // 可多次调用（server_commit 模式下自动处理）
+ *   tts.close();                    // 关闭连接
+ * </pre>
  *
  * @author Azir
  */
@@ -36,25 +34,23 @@ public interface TTSService {
     }
 
     /**
-     * 建立持久连接（会话模式）
-     * 无状态实现可忽略此方法（使用 default 空实现）
+     * 建立连接并设置音频回调监听器
+     * 创建 WebSocket 连接，设置 server_commit 模式，保存 listener 用于后续音频回传
+     *
+     * @param listener 音频回调监听器（onAudio 接收音频数据，onError 接收错误）
      */
-    default void connect() {
-    }
+    void connect(TTSListener listener);
 
     /**
-     * 合成语音
-     * 如果已调用 {@link #connect}，则复用持久连接；否则创建临时连接
+     * 提交文本进行语音合成（非阻塞）
+     * server_commit 模式下服务端自动检测句子边界并开始合成，音频通过 connect 时设置的 listener 异步回传
      *
-     * @param text     要合成的文本
-     * @param listener 音频回调监听器
+     * @param text 要合成的文本（完整句子或 LLM delta 片段均可）
      */
-    void synthesize(String text, TTSListener listener);
+    void synthesize(String text);
 
     /**
      * 关闭连接并释放资源
-     * 无状态实现可忽略此方法（使用 default 空实现）
      */
-    default void close() {
-    }
+    void close();
 }

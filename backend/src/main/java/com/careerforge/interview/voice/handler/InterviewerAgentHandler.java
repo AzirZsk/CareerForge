@@ -20,6 +20,7 @@ import com.careerforge.interview.voice.service.TTSService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -29,8 +30,8 @@ import java.io.ByteArrayOutputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -55,8 +56,6 @@ public class InterviewerAgentHandler {
     @Autowired
     @Lazy
     private InterviewVoiceGateway voiceGateway;
-
-    private static final String SENTENCE_END_CHARS = "。！？.!;；\n";
 
     // 会话上下文：sessionId -> ConversationContext
     private final ConcurrentHashMap<String, ConversationContext> contexts = new ConcurrentHashMap<>();
@@ -334,6 +333,9 @@ public class InterviewerAgentHandler {
                 .prompt()
                 .system(systemPrompt)
                 .user(userPrompt)
+                .options(OpenAiChatOptions.builder()
+                        .extraBody(Map.of("enable_thinking", false))
+                        .build())
                 .stream()
                 .content();
     }
@@ -348,24 +350,10 @@ public class InterviewerAgentHandler {
      */
     private void synthesizeAndSend(String sessionId, String text, boolean isFinal) {
         ConversationContext context = getOrCreateContext(sessionId);
+        VoiceProperties.AliyunConfig.TTSConfig ttsProps = voiceProperties.getAliyun().getTts();
         TTSService tts = context.getOrCreateTTSService(() -> {
             TTSService service = voiceServiceFactory.createTTSService(VoiceRole.INTERVIEWER);
-            service.connect();
-            return service;
-        });
-        VoiceProperties.AliyunConfig.TTSConfig ttsProps = voiceProperties.getAliyun().getTts();
-        // 异步执行 TTS 合成，避免阻塞调用线程
-        CompletableFuture.runAsync(() -> {
-            // 先发送文本转录
-            voiceGateway.sendResponse(sessionId, VoiceResponse.transcript(
-                    VoiceResponse.TranscriptData.builder()
-                            .text(text)
-                            .isFinal(false)
-                            .role(TranscriptRole.INTERVIEWER.getValue())
-                            .build()
-            ));
-            // 合成音频并推送
-            tts.synthesize(text, new TTSListener() {
+            service.connect(new TTSListener() {
                 @Override
                 public void onAudio(byte[] audioData) {
                     String audioBase64 = Base64.getEncoder().encodeToString(audioData);
@@ -380,123 +368,92 @@ public class InterviewerAgentHandler {
 
                 @Override
                 public void onError(Exception e) {
-                    log.error("[InterviewerAgent] TTS合成错误, sessionId={}, text={}", sessionId, text, e);
+                    log.error("[InterviewerAgent] TTS合成错误, sessionId={}", sessionId, e);
                 }
 
                 @Override
                 public void onComplete() {
-                    // 发送最终标记
-                    voiceGateway.sendResponse(sessionId, VoiceResponse.transcript(
-                            VoiceResponse.TranscriptData.builder()
-                                    .text("")
-                                    .isFinal(isFinal)
-                                    .role(TranscriptRole.INTERVIEWER.getValue())
-                                    .build()
-                    ));
+                    // 连接关闭时触发
                 }
             });
+            return service;
         });
+        // 发送文本转录
+        voiceGateway.sendResponse(sessionId, VoiceResponse.transcript(
+                VoiceResponse.TranscriptData.builder()
+                        .text(text)
+                        .isFinal(false)
+                        .role(TranscriptRole.INTERVIEWER.getValue())
+                        .build()
+        ));
+        // 提交合成（非阻塞，音频通过 listener 异步推送）
+        tts.synthesize(text);
+        // 发送最终标记
+        voiceGateway.sendResponse(sessionId, VoiceResponse.transcript(
+                VoiceResponse.TranscriptData.builder()
+                        .text("")
+                        .isFinal(isFinal)
+                        .role(TranscriptRole.INTERVIEWER.getValue())
+                        .build()
+        ));
     }
 
     /**
-     * LLM 文本流分句合成并推送
-     * 订阅 LLM Flux，按句子分割，逐句通过 session-scoped TTS 合成音频
+     * LLM 文本流流式合成并推送
+     * 利用 TTS server_commit 模式，将 LLM delta 直接推送到 TTS 服务端
+     * 服务端自动检测句子边界并开始合成，消除应用层分句延迟
      *
      * @param sessionId  会话 ID
      * @param textStream LLM 文本流
      */
     private void synthesizeStreamAndSend(String sessionId, Flux<String> textStream) {
         ConversationContext context = getOrCreateContext(sessionId);
+        VoiceProperties.AliyunConfig.TTSConfig ttsProps = voiceProperties.getAliyun().getTts();
         TTSService tts = context.getOrCreateTTSService(() -> {
             TTSService service = voiceServiceFactory.createTTSService(VoiceRole.INTERVIEWER);
-            service.connect();
+            service.connect(new TTSListener() {
+                @Override
+                public void onAudio(byte[] audioData) {
+                    String audioBase64 = Base64.getEncoder().encodeToString(audioData);
+                    voiceGateway.sendResponse(sessionId, VoiceResponse.audio(
+                            VoiceResponse.AudioData.builder()
+                                    .audio(audioBase64)
+                                    .format(ttsProps.getFormat())
+                                    .sampleRate(ttsProps.getSampleRate())
+                                    .build()
+                    ));
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    log.error("[InterviewerAgent] TTS流式合成错误, sessionId={}", sessionId, e);
+                }
+
+                @Override
+                public void onComplete() {
+                    // 连接关闭时触发
+                }
+            });
             return service;
         });
-        StringBuilder sentenceBuffer = new StringBuilder();
         StringBuilder fullText = new StringBuilder();
         textStream.subscribe(
                 delta -> {
-                    sentenceBuffer.append(delta);
-                    // 遇到句子结束符时立即合成当前句子
-                    if (isSentenceEnd(delta)) {
-                        String sentence = sentenceBuffer.toString();
-                        sentenceBuffer.setLength(0);
-                        fullText.append(sentence);
-                        // 发送文本转录
-                        voiceGateway.sendResponse(sessionId, VoiceResponse.transcript(
-                                VoiceResponse.TranscriptData.builder()
-                                        .text(sentence)
-                                        .isFinal(false)
-                                        .role(TranscriptRole.INTERVIEWER.getValue())
-                                        .build()
-                        ));
-                        // 同步合成音频（synthesisLock 保证串行）
-                        synthesizeSentenceAudio(sessionId, tts, sentence, false);
-                    }
+                    // 提交 delta 到 TTS（非阻塞，server_commit 自动合成）
+                    tts.synthesize(delta);
+                    fullText.append(delta);
+                    // 每个 delta 直接发送转录到客户端
+                    voiceGateway.sendResponse(sessionId, VoiceResponse.transcript(
+                            VoiceResponse.TranscriptData.builder()
+                                    .text(delta)
+                                    .isFinal(false)
+                                    .role(TranscriptRole.INTERVIEWER.getValue())
+                                    .build()
+                    ));
                 },
                 error -> log.error("[InterviewerAgent] LLM流错误, sessionId={}", sessionId, error),
                 () -> {
-                    // 处理剩余文本
-                    if (sentenceBuffer.length() > 0) {
-                        String lastSentence = sentenceBuffer.toString();
-                        fullText.append(lastSentence);
-                        voiceGateway.sendResponse(sessionId, VoiceResponse.transcript(
-                                VoiceResponse.TranscriptData.builder()
-                                        .text(lastSentence)
-                                        .isFinal(false)
-                                        .role(TranscriptRole.INTERVIEWER.getValue())
-                                        .build()
-                        ));
-                        synthesizeSentenceAudio(sessionId, tts, lastSentence, true);
-                    } else {
-                        // LLM 回复以句号结尾时 buffer 为空，仍需发送 final 信号
-                        voiceGateway.sendResponse(sessionId, VoiceResponse.transcript(
-                                VoiceResponse.TranscriptData.builder()
-                                        .text("")
-                                        .isFinal(true)
-                                        .role(TranscriptRole.INTERVIEWER.getValue())
-                                        .build()
-                        ));
-                    }
-                    // 记录完整问题文本到对话历史
-                    if (fullText.length() > 0) {
-                        context.addInterviewerMessage(fullText.toString());
-                    }
-                }
-        );
-    }
-
-    /**
-     * 合成单个句子的音频并推送到客户端
-     * 使用 session-scoped TTS 连接，synthesisLock 保证串行
-     */
-    private void synthesizeSentenceAudio(String sessionId, TTSService tts,
-                                          String sentence, boolean isFinal) {
-        // 用 CountDownLatch 等待合成完成，保证句子按顺序推送
-        java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
-        VoiceProperties.AliyunConfig.TTSConfig ttsProps = voiceProperties.getAliyun().getTts();
-        tts.synthesize(sentence, new TTSListener() {
-            @Override
-            public void onAudio(byte[] audioData) {
-                String audioBase64 = Base64.getEncoder().encodeToString(audioData);
-                voiceGateway.sendResponse(sessionId, VoiceResponse.audio(
-                        VoiceResponse.AudioData.builder()
-                                .audio(audioBase64)
-                                .format(ttsProps.getFormat())
-                                .sampleRate(ttsProps.getSampleRate())
-                                .build()
-                ));
-            }
-
-            @Override
-            public void onError(Exception e) {
-                log.error("[InterviewerAgent] TTS合成错误, sentence={}", sentence, e);
-                latch.countDown();
-            }
-
-            @Override
-            public void onComplete() {
-                if (isFinal) {
+                    // 发送 final 标记
                     voiceGateway.sendResponse(sessionId, VoiceResponse.transcript(
                             VoiceResponse.TranscriptData.builder()
                                     .text("")
@@ -504,19 +461,11 @@ public class InterviewerAgentHandler {
                                     .role(TranscriptRole.INTERVIEWER.getValue())
                                     .build()
                     ));
+                    if (!fullText.isEmpty()) {
+                        context.addInterviewerMessage(fullText.toString());
+                    }
                 }
-                latch.countDown();
-            }
-        });
-        // 等待合成完成，超时30秒
-        try {
-            if (!latch.await(30, java.util.concurrent.TimeUnit.SECONDS)) {
-                log.warn("[InterviewerAgent] TTS合成超时, sentence={}", sentence);
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.warn("[InterviewerAgent] TTS合成被中断, sentence={}", sentence);
-        }
+        );
     }
 
     /**
@@ -625,17 +574,6 @@ public class InterviewerAgentHandler {
         log.info("[InterviewerAgent] 面试结束: {}, sessionId={}", closingText, sessionId);
         recordInterviewerMessage(sessionId, closingText);
         synthesizeAndSend(sessionId, closingText, true);
-    }
-
-    /**
-     * 判断是否句子结束
-     */
-    private boolean isSentenceEnd(String text) {
-        if (text == null || text.isEmpty()) {
-            return false;
-        }
-        char lastChar = text.charAt(text.length() - 1);
-        return SENTENCE_END_CHARS.indexOf(lastChar) >= 0;
     }
 
     /**

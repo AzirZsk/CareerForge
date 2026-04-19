@@ -8,23 +8,20 @@ import com.careerforge.interview.voice.gateway.InterviewVoiceGateway;
 import com.careerforge.interview.voice.service.TTSListener;
 import com.careerforge.interview.voice.service.TTSService;
 import com.careerforge.interview.voice.service.VoiceServiceFactory;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Flux;
 
 import java.util.Base64;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 /**
  * AI 助手 Agent 处理器
  * 处理面试过程中的快捷求助功能
- * 采用回调模式，SSE 事件通过 Consumer 直接推送
+ * 每次求助请求创建独立的 TTS 连接，结束后关闭
  *
  * @author Azir
  */
@@ -41,19 +38,7 @@ public class AssistantAgentHandler {
     @Lazy
     private InterviewVoiceGateway voiceGateway;
 
-    // 助手 TTS 实例（带助手音色配置，无状态模式，每次 synthesize 创建临时连接）
-    private TTSService assistantTTSService;
-
     private static final String SENTENCE_END_CHARS = "。！？.!;；\n";
-
-    // 会话上下文
-    private final ConcurrentHashMap<String, AssistContext> contexts = new ConcurrentHashMap<>();
-
-    @PostConstruct
-    public void init() {
-        assistantTTSService = voiceServiceFactory.createTTSService(VoiceRole.ASSISTANT);
-        log.info("[AssistantAgent] 助手 TTS 服务初始化完成");
-    }
 
     /**
      * 处理快捷求助
@@ -73,20 +58,37 @@ public class AssistantAgentHandler {
             Consumer<AssistSSEEvent> eventConsumer) {
 
         log.info("[AssistantAgent] 处理求助请求, sessionId={}, type={}", sessionId, assistType);
-
-        // 获取上下文
-        AssistContext context = contexts.computeIfAbsent(sessionId, k -> new AssistContext());
         SessionState sessionState = voiceGateway.getInternalState(sessionId);
-
         // 构建提示词
         String systemPrompt = buildSystemPrompt(assistType, sessionState);
         String userPrompt = buildUserPrompt(assistType, userQuestion, candidateDraft, sessionState);
+        // 每次请求创建独立的 TTS 连接
+        VoiceProperties.AliyunConfig.TTSConfig ttsProps = voiceProperties.getAliyun().getTts();
+        TTSService tts = voiceServiceFactory.createTTSService(VoiceRole.ASSISTANT);
+        tts.connect(new TTSListener() {
+            @Override
+            public void onAudio(byte[] audioData) {
+                eventConsumer.accept(AssistSSEEvent.audio(
+                        AssistSSEEvent.AudioEventData.builder()
+                                .audio(Base64.getEncoder().encodeToString(audioData))
+                                .format(ttsProps.getFormat())
+                                .sampleRate(ttsProps.getSampleRate())
+                                .build()
+                ));
+            }
 
+            @Override
+            public void onError(Exception e) {
+                log.error("[AssistantAgent] TTS错误, sessionId={}", sessionId, e);
+            }
+
+            @Override
+            public void onComplete() {
+                // 连接关闭时触发
+            }
+        });
         // 文本缓冲区
         StringBuilder textBuffer = new StringBuilder();
-        // 提取 TTS 配置用于构建音频响应
-        VoiceProperties.AliyunConfig.TTSConfig ttsProps = voiceProperties.getAliyun().getTts();
-
         // 调用 LLM 流式生成，按句子分割后 TTS 合成
         chatClient
                 .prompt()
@@ -104,33 +106,11 @@ public class AssistantAgentHandler {
                                             .isDelta(true)
                                             .build()
                             ));
-                            // 句子结束时触发 TTS 合成
+                            // 句子结束时提交 TTS 合成
                             if (isSentenceEnd(delta)) {
                                 String sentence = textBuffer.toString();
                                 textBuffer.setLength(0);
-                                // 合成音频并通过回调推送
-                                assistantTTSService.synthesize(sentence, new TTSListener() {
-                                    @Override
-                                    public void onAudio(byte[] audioData) {
-                                        eventConsumer.accept(AssistSSEEvent.audio(
-                                                AssistSSEEvent.AudioEventData.builder()
-                                                        .audio(Base64.getEncoder().encodeToString(audioData))
-                                                        .format(ttsProps.getFormat())
-                                                        .sampleRate(ttsProps.getSampleRate())
-                                                        .build()
-                                        ));
-                                    }
-
-                                    @Override
-                                    public void onError(Exception e) {
-                                        log.error("[AssistantAgent] TTS错误", e);
-                                    }
-
-                                    @Override
-                                    public void onComplete() {
-                                        // 单句合成完成，无需特殊处理
-                                    }
-                                });
+                                tts.synthesize(sentence);
                             }
                         },
                         error -> {
@@ -141,49 +121,23 @@ public class AssistantAgentHandler {
                                             .message(error.getMessage())
                                             .build()
                             ));
+                            tts.close();
                         },
                         () -> {
                             // 处理剩余文本
                             if (textBuffer.length() > 0) {
                                 String lastText = textBuffer.toString();
                                 textBuffer.setLength(0);
-                                assistantTTSService.synthesize(lastText, new TTSListener() {
-                                    @Override
-                                    public void onAudio(byte[] audioData) {
-                                        eventConsumer.accept(AssistSSEEvent.audio(
-                                                AssistSSEEvent.AudioEventData.builder()
-                                                        .audio(Base64.getEncoder().encodeToString(audioData))
-                                                        .format(ttsProps.getFormat())
-                                                        .sampleRate(ttsProps.getSampleRate())
-                                                        .build()
-                                        ));
-                                    }
-
-                                    @Override
-                                    public void onError(Exception e) {
-                                        log.error("[AssistantAgent] TTS错误(剩余文本)", e);
-                                    }
-
-                                    @Override
-                                    public void onComplete() {
-                                        // 发送完成事件
-                                        eventConsumer.accept(AssistSSEEvent.done(
-                                                AssistSSEEvent.DoneEventData.builder()
-                                                        .assistRemaining(sessionState != null ? sessionState.getAssistRemaining() : 0)
-                                                        .totalDurationMs(0)
-                                                        .build()
-                                        ));
-                                    }
-                                });
-                            } else {
-                                // 没有剩余文本，直接发送完成事件
-                                eventConsumer.accept(AssistSSEEvent.done(
-                                        AssistSSEEvent.DoneEventData.builder()
-                                                .assistRemaining(sessionState != null ? sessionState.getAssistRemaining() : 0)
-                                                .totalDurationMs(0)
-                                                .build()
-                                ));
+                                tts.synthesize(lastText);
                             }
+                            // 发送完成事件
+                            eventConsumer.accept(AssistSSEEvent.done(
+                                    AssistSSEEvent.DoneEventData.builder()
+                                            .assistRemaining(sessionState != null ? sessionState.getAssistRemaining() : 0)
+                                            .totalDurationMs(0)
+                                            .build()
+                            ));
+                            tts.close();
                         }
                 );
     }
@@ -274,13 +228,5 @@ public class AssistantAgentHandler {
         }
         char lastChar = text.charAt(text.length() - 1);
         return SENTENCE_END_CHARS.indexOf(lastChar) >= 0;
-    }
-
-    /**
-     * 助手上下文
-     */
-    @lombok.Data
-    private static class AssistContext {
-        private int assistCount = 0;
     }
 }
