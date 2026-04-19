@@ -68,7 +68,7 @@ public class AliyunASRService implements ASRService {
                 if (!closed.get() && AliyunASRService.this.listener != null) {
                     AliyunASRService.this.listener.onResult(asrResult);
                 }
-                log.trace("[AliyunASR] 识别事件: isFinal={}, text={}, sessionId={}",
+                log.debug("[AliyunASR] 识别事件: isFinal={}, text={}, sessionId={}",
                         asrResult.getIsFinal(), asrResult.getText(), sessionId);
             }
 

@@ -15,6 +15,7 @@ import com.careerforge.interview.voice.gateway.InterviewVoiceGateway;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -173,6 +174,9 @@ public class QuestionPreGenerateService {
                     .prompt()
                     .system(systemPrompt)
                     .user(userPrompt)
+                    .options(OpenAiChatOptions.builder()
+                            .extraBody(Map.of("enable_thinking", false))
+                            .build())
                     .call()
                     .content();
             log.info("[PreGenerate] 追问生成完成, sessionId={}, text={}", sessionId, followUp);

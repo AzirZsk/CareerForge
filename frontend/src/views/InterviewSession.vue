@@ -196,7 +196,6 @@
             :is-loading="isAssistLoading"
             :assist-remaining="assistRemaining"
             :assist-limit="assistLimit"
-            :audio-chunks="assistantAudioChunks"
             @return="handleResumeInterview"
             @assist="handleAssist"
           />
@@ -350,7 +349,6 @@ const interviewerStyleLabel = computed(() => {
 // ============================================================================
 
 const assistantContent = ref('')
-const assistantAudioChunks = ref<string[]>([])
 const isAssistLoading = ref(false)
 
 // ============================================================================
@@ -419,7 +417,12 @@ async function handleAssist(type: AssistType, question?: string) {
   voiceInterview.freeze()
   isAssistLoading.value = true
   assistantContent.value = ''
-  assistantAudioChunks.value = []
+
+  // 注入共享 AudioContext，避免创建多余的 AudioContext 实例
+  const ctx = voiceInterview.getAudioContext()
+  if (ctx) {
+    streamAssist.setExternalAudioContext(ctx)
+  }
 
   try {
     await streamAssist.requestAssist({
@@ -441,7 +444,6 @@ watch(() => streamAssist.textContent.value, (content) => {
 function handleResumeInterview() {
   voiceInterview.resumeInterview()
   assistantContent.value = ''
-  assistantAudioChunks.value = []
 }
 
 /**

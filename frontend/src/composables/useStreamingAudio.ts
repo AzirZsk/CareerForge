@@ -26,6 +26,9 @@ export function useStreamingAudio() {
   /** AudioContext 实例 */
   let audioContext: AudioContext | null = null
 
+  /** 是否自己创建的 AudioContext（false 表示外部注入） */
+  let ownsAudioContext = true
+
   /** 音频队列 */
   const audioQueue: AudioBuffer[] = []
 
@@ -80,15 +83,41 @@ export function useStreamingAudio() {
 
   /**
    * 初始化 AudioContext
+   * @param sampleRate 采样率
+   * @param externalContext 外部注入的 AudioContext（共享模式）
    * @returns Promise<boolean> 是否成功启动
    */
-  async function initAudioContext(sampleRate: number = DEFAULT_SAMPLE_RATE): Promise<boolean> {
-    if (!audioContext) {
+  async function initAudioContext(
+    sampleRate: number = DEFAULT_SAMPLE_RATE,
+    externalContext?: AudioContext
+  ): Promise<boolean> {
+    if (externalContext) {
+      audioContext = externalContext
+      ownsAudioContext = false
+    } else if (!audioContext) {
       audioContext = new AudioContext({ sampleRate })
+      ownsAudioContext = true
+    }
+    if (!gainNode && audioContext) {
       gainNode = audioContext.createGain()
       gainNode.connect(audioContext.destination)
     }
     return await resumeContext()
+  }
+
+  /**
+   * 注入外部 AudioContext（用于共享模式）
+   */
+  function setExternalAudioContext(ctx: AudioContext): void {
+    if (ownsAudioContext && audioContext) {
+      audioContext.close()
+    }
+    audioContext = ctx
+    ownsAudioContext = false
+    if (!gainNode) {
+      gainNode = audioContext.createGain()
+      gainNode.connect(audioContext.destination)
+    }
   }
 
   /**
@@ -116,7 +145,7 @@ export function useStreamingAudio() {
     _format: 'pcm' | 'wav' = 'wav'
   ): Promise<void> {
     try {
-      initAudioContext()
+      await initAudioContext()
 
       const audioBuffer = await decodeBase64Audio(base64Audio)
       audioQueue.push(audioBuffer)
@@ -291,9 +320,12 @@ export function useStreamingAudio() {
   function dispose(): void {
     stop()
     if (audioContext) {
-      audioContext.close()
+      if (ownsAudioContext) {
+        audioContext.close()
+      }
       audioContext = null
       gainNode = null
+      ownsAudioContext = true
     }
   }
 
@@ -318,6 +350,7 @@ export function useStreamingAudio() {
 
     // 方法
     initAudioContext,
+    setExternalAudioContext,
     playAudioChunk,
     appendText,
     clearText,

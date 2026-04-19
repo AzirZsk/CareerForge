@@ -76,7 +76,7 @@ export function useStreamAssist(sessionId: string) {
     error.value = null
 
     // 初始化音频播放器
-    audioPlayer.initAudioContext(16000)
+    await audioPlayer.initAudioContext(16000)
 
     // 创建 AbortController
     abortController = new AbortController()
@@ -159,6 +159,13 @@ export function useStreamAssist(sessionId: string) {
   function stopAssist(): void {
     cleanup()
     audioPlayer.stop()
+  }
+
+  /**
+   * 注入外部 AudioContext（共享模式，由 useInterviewVoice 调用）
+   */
+  function setExternalAudioContext(ctx: AudioContext): void {
+    audioPlayer.setExternalAudioContext(ctx)
   }
 
   /**
@@ -286,6 +293,7 @@ export function useStreamAssist(sessionId: string) {
     // 方法
     requestAssist,
     stopAssist,
+    setExternalAudioContext,
     giveHints,
     explainConcept,
     polishAnswer,

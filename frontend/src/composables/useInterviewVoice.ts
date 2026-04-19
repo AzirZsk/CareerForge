@@ -27,10 +27,7 @@ const DEFAULT_SETTINGS: VoiceSettings = {
   sampleRate: 16000,
   interviewerVoice: 'longxiaochun_v2',
   assistantVoice: 'zhimiao_emo_v2',
-  speechRate: 1.0,
-  vadEnabled: true,
-  vadSilenceMs: 1500,
-  silenceFilterEnabled: true
+  speechRate: 1.0
 }
 
 /**
@@ -98,6 +95,9 @@ export function useInterviewVoice(sessionId: string) {
   /** 音频录制器 */
   const recorder = useAudioRecorder()
 
+  /** 共享 AudioContext（由本 composable 创建和持有） */
+  let sharedAudioContext: AudioContext | null = null
+
   // ============================================================================
   // 计算属性
   // ============================================================================
@@ -134,15 +134,19 @@ export function useInterviewVoice(sessionId: string) {
    */
   async function init(): Promise<void> {
     try {
-      // 初始化音频播放器
-      await audioPlayer.initAudioContext(settings.value.sampleRate)
+      // 创建共享 AudioContext
+      sharedAudioContext = new AudioContext({ sampleRate: settings.value.sampleRate })
+      if (sharedAudioContext.state === 'suspended') {
+        await sharedAudioContext.resume()
+      }
 
-      // 初始化录音器
+      // 初始化音频播放器（注入共享 context）
+      await audioPlayer.initAudioContext(settings.value.sampleRate, sharedAudioContext)
+
+      // 初始化录音器（注入共享 context）
       await recorder.init({
-        vadEnabled: settings.value.vadEnabled,
-        vadSilenceMs: settings.value.vadSilenceMs,
-        silenceFilterEnabled: settings.value.silenceFilterEnabled,
-        onAudioData: handleAudioData
+        onAudioData: handleAudioData,
+        audioContext: sharedAudioContext
       })
 
       connectWebSocket()
@@ -153,6 +157,13 @@ export function useInterviewVoice(sessionId: string) {
       console.error('[useInterviewVoice] 初始化失败:', e)
       error.value = e instanceof Error ? e.message : '初始化失败'
     }
+  }
+
+  /**
+   * 获取共享 AudioContext（供外部 composable 使用）
+   */
+  function getAudioContext(): AudioContext | null {
+    return sharedAudioContext
   }
 
   // ============================================================================
@@ -528,6 +539,12 @@ export function useInterviewVoice(sessionId: string) {
 
     recorder.dispose()
     audioPlayer.dispose()
+
+    // 关闭共享 AudioContext（子 composable 已断开节点，不会报错）
+    if (sharedAudioContext) {
+      sharedAudioContext.close()
+      sharedAudioContext = null
+    }
   }
 
   onUnmounted(dispose)
@@ -574,6 +591,8 @@ export function useInterviewVoice(sessionId: string) {
     resumeInterview,
     endInterview,
     dispose,
+    // 共享 AudioContext
+    getAudioContext,
     // 音频控制
     pause: audioPlayer.pause,
     resumeAudio: audioPlayer.resume,

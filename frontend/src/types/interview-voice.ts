@@ -36,12 +36,6 @@ export interface VoiceSettings {
   assistantVoice: string
   /** 语速 0.5-2.0 */
   speechRate: number
-  /** 语音活动检测 */
-  vadEnabled: boolean
-  /** 静音检测阈值（毫秒） */
-  vadSilenceMs: number
-  /** 是否启用静音过滤（过滤无效静音帧） */
-  silenceFilterEnabled: boolean
 }
 
 /** 默认语音设置 */
@@ -50,10 +44,7 @@ export const defaultVoiceSettings: VoiceSettings = {
   sampleRate: 16000,
   interviewerVoice: 'longxiaochun_v2',
   assistantVoice: 'zhimiao_emo_v2',
-  speechRate: 1.0,
-  vadEnabled: true,
-  vadSilenceMs: 1500,
-  silenceFilterEnabled: true
+  speechRate: 1.0
 }
 
 // ============================================================================

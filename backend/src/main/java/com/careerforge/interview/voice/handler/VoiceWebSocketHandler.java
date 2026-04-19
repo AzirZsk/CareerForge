@@ -60,7 +60,7 @@ public class VoiceWebSocketHandler implements WebSocketHandler {
      * 解析消息类型后直接路由到 Gateway 对应的处理方法，避免泛型擦除导致的重复判断
      */
     private void handleTextMessage(WebSocketSession session, TextMessage message, String sessionId) {
-        log.debug("[VoiceWS] 收到文本消息, sessionId={}, length={}", sessionId, message.getPayload().length());
+//        log.debug("[VoiceWS] 收到文本消息, sessionId={}, length={}", sessionId, message.getPayload().length());
         try {
             String payload = message.getPayload();
 

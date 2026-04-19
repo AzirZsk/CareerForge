@@ -1,6 +1,6 @@
 /**
  * 音频录制 Composable
- * 支持麦克风采集、PCM 转换、VAD 检测
+ * 支持麦克风采集、PCM 转换
  *
  * @author Azir
  */
@@ -39,6 +39,9 @@ export function useAudioRecorder() {
   /** 音频上下文 */
   let audioContext: AudioContext | null = null
 
+  /** 是否自己创建的 AudioContext（false 表示外部注入） */
+  let ownsAudioContext = true
+
   /** 音频处理器 */
   let processor: ScriptProcessorNode | null = null
 
@@ -48,30 +51,6 @@ export function useAudioRecorder() {
   /** 音频数据回调 */
   let onAudioData: ((data: Int16Array) => void) | null = null
 
-  /** VAD 静音检测计时器 */
-  let vadTimer: number | null = null
-
-  /** VAD 静音阈值（毫秒） */
-  let vadSilenceMs = 1500
-
-  /** 是否启用 VAD */
-  let vadEnabled = true
-
-  /** 是否启用静音过滤 */
-  let silenceFilterEnabled = true
-
-  /** 静音 RMS 阈值 */
-  const SILENCE_THRESHOLD = 0.01
-
-  /** 静音过滤状态 */
-  type SilenceFilterState = 'silent' | 'speaking' | 'trailing_silence'
-  let silenceFilterState: SilenceFilterState = 'silent'
-
-  /** 尾部静音帧计数器 */
-  let trailingFrameCount = 0
-
-  /** 尾部静音最大帧数（2帧 ≈ 512ms @16kHz/4096） */
-  const MAX_TRAILING_FRAMES = 2
 
   // ============================================================================
   // 核心方法
@@ -83,16 +62,9 @@ export function useAudioRecorder() {
    */
   async function init(options: {
     onAudioData?: (data: Int16Array) => void
-    vadEnabled?: boolean
-    vadSilenceMs?: number
-    silenceFilterEnabled?: boolean
+    audioContext?: AudioContext
   } = {}): Promise<void> {
     onAudioData = options.onAudioData || null
-    vadEnabled = options.vadEnabled ?? true
-    vadSilenceMs = options.vadSilenceMs ?? 1500
-    silenceFilterEnabled = options.silenceFilterEnabled ?? true
-    silenceFilterState = 'silent'
-    trailingFrameCount = 0
 
     try {
       // 获取麦克风权限
@@ -106,8 +78,14 @@ export function useAudioRecorder() {
         }
       })
 
-      // 初始化音频上下文
-      audioContext = new AudioContext({ sampleRate: 16000 })
+      // 使用外部注入或自行创建 AudioContext
+      if (options.audioContext) {
+        audioContext = options.audioContext
+        ownsAudioContext = false
+      } else {
+        audioContext = new AudioContext({ sampleRate: 16000 })
+        ownsAudioContext = true
+      }
 
       // 确保 AudioContext 处于运行状态（浏览器安全策略要求）
       if (audioContext.state === 'suspended') {
@@ -162,10 +140,6 @@ export function useAudioRecorder() {
     recordingTimer = window.setInterval(() => {
       recordingTime.value++
     }, 1000)
-
-    // 重置 VAD
-    resetVad()
-    resetSilenceFilter()
   }
 
   /**
@@ -183,14 +157,6 @@ export function useAudioRecorder() {
       clearInterval(recordingTimer)
       recordingTimer = null
     }
-
-    // 清除 VAD 计时器
-    if (vadTimer) {
-      clearTimeout(vadTimer)
-      vadTimer = null
-    }
-
-    resetSilenceFilter()
   }
 
   /**
@@ -235,8 +201,11 @@ export function useAudioRecorder() {
     }
 
     if (audioContext) {
-      audioContext.close()
+      if (ownsAudioContext) {
+        audioContext.close()
+      }
       audioContext = null
+      ownsAudioContext = true
     }
   }
 
@@ -258,18 +227,7 @@ export function useAudioRecorder() {
     const rms = calculateRms(inputData)
     audioLevel.value = rms
 
-    // VAD 检测
-    if (vadEnabled) {
-      handleVad(rms)
-    }
-
-    // 静音过滤模式
-    if (silenceFilterEnabled) {
-      handleSilenceFilter(inputData, rms)
-      return
-    }
-
-    // 原始逻辑：无条件发送
+    // 直接发送所有音频帧，静音判断交给后端
     sendPcmFrame(inputData)
   }
 
@@ -285,44 +243,6 @@ export function useAudioRecorder() {
   }
 
   /**
-   * 静音过滤状态机
-   */
-  function handleSilenceFilter(inputData: Float32Array, rms: number): void {
-    const isSpeech = rms > SILENCE_THRESHOLD
-    switch (silenceFilterState) {
-      case 'silent':
-        if (isSpeech) {
-          silenceFilterState = 'speaking'
-          sendPcmFrame(inputData)
-        }
-        break
-      case 'speaking':
-        if (isSpeech) {
-          sendPcmFrame(inputData)
-        } else {
-          silenceFilterState = 'trailing_silence'
-          trailingFrameCount = 0
-          sendPcmFrame(inputData)
-          trailingFrameCount++
-        }
-        break
-      case 'trailing_silence':
-        if (isSpeech) {
-          silenceFilterState = 'speaking'
-          trailingFrameCount = 0
-          sendPcmFrame(inputData)
-        } else if (trailingFrameCount < MAX_TRAILING_FRAMES) {
-          sendPcmFrame(inputData)
-          trailingFrameCount++
-        } else {
-          silenceFilterState = 'silent'
-          trailingFrameCount = 0
-        }
-        break
-    }
-  }
-
-  /**
    * 将 Float32 音频帧转换为 PCM 并通过回调发送
    */
   function sendPcmFrame(inputData: Float32Array): void {
@@ -330,14 +250,6 @@ export function useAudioRecorder() {
     if (onAudioData) {
       onAudioData(pcmData)
     }
-  }
-
-  /**
-   * 重置静音过滤状态
-   */
-  function resetSilenceFilter(): void {
-    silenceFilterState = 'silent'
-    trailingFrameCount = 0
   }
 
   /**
@@ -350,44 +262,6 @@ export function useAudioRecorder() {
       pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7fff
     }
     return pcmData
-  }
-
-  /**
-   * VAD 静音检测处理
-   */
-  function handleVad(rms: number): void {
-    const threshold = 0.01 // 静音阈值
-
-    if (rms > threshold) {
-      // 有声音，重置静音计时器
-      resetVad()
-    } else {
-      // 静音，启动计时器
-      if (!vadTimer) {
-        vadTimer = window.setTimeout(() => {
-          // 静音超过阈值，触发停止事件
-          onVadTrigger()
-        }, vadSilenceMs)
-      }
-    }
-  }
-
-  /**
-   * 重置 VAD 计时器
-   */
-  function resetVad(): void {
-    if (vadTimer) {
-      clearTimeout(vadTimer)
-      vadTimer = null
-    }
-  }
-
-  /**
-   * VAD 触发回调
-   */
-  function onVadTrigger(): void {
-    // 可以在这里触发自动停止或通知外部
-    console.log('[useAudioRecorder] VAD 检测到静音')
   }
 
   // 组件卸载时清理

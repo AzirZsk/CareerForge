@@ -65,7 +65,7 @@ public class InterviewerAgentHandler {
      * 音频帧通过 ASR 会话汇聚到同一条 WebSocket 连接，识别结果通过回调处理
      */
     public void handleCandidateAudio(String sessionId, byte[] audioData) {
-        log.debug("[InterviewerAgent] 处理候选人音频, sessionId={}, size={}", sessionId, audioData.length);
+//        log.debug("[InterviewerAgent] 处理候选人音频, sessionId={}, size={}", sessionId, audioData.length);
         // 获取会话上下文（从 Gateway 加载 JD/简历）
         ConversationContext context = getOrCreateContext(sessionId);
         // 收集候选人音频数据（用于录音保存）
@@ -407,13 +407,16 @@ public class InterviewerAgentHandler {
      * @param textStream LLM 文本流
      */
     private void synthesizeStreamAndSend(String sessionId, Flux<String> textStream) {
+        log.info("[InterviewerAgent] 开始流式合成, sessionId={}", sessionId);
         ConversationContext context = getOrCreateContext(sessionId);
         VoiceProperties.AliyunConfig.TTSConfig ttsProps = voiceProperties.getAliyun().getTts();
         TTSService tts = context.getOrCreateTTSService(() -> {
+            log.debug("[InterviewerAgent] 创建新TTS服务, sessionId={}", sessionId);
             TTSService service = voiceServiceFactory.createTTSService(VoiceRole.INTERVIEWER);
             service.connect(new TTSListener() {
                 @Override
                 public void onAudio(byte[] audioData) {
+                    log.debug("[InterviewerAgent] TTS音频回调, sessionId={}, size={}", sessionId, audioData.length);
                     String audioBase64 = Base64.getEncoder().encodeToString(audioData);
                     voiceGateway.sendResponse(sessionId, VoiceResponse.audio(
                             VoiceResponse.AudioData.builder()
@@ -431,7 +434,7 @@ public class InterviewerAgentHandler {
 
                 @Override
                 public void onComplete() {
-                    // 连接关闭时触发
+                    log.info("[InterviewerAgent] TTS连接关闭, sessionId={}", sessionId);
                 }
             });
             return service;
@@ -440,6 +443,7 @@ public class InterviewerAgentHandler {
         textStream.subscribe(
                 delta -> {
                     // 提交 delta 到 TTS（非阻塞，server_commit 自动合成）
+                    log.debug("[InterviewerAgent] 提交 delta, sessionId={}, delta={}", sessionId, delta);
                     tts.synthesize(delta);
                     fullText.append(delta);
                     // 每个 delta 直接发送转录到客户端
@@ -462,7 +466,10 @@ public class InterviewerAgentHandler {
                                     .build()
                     ));
                     if (!fullText.isEmpty()) {
+                        log.info("[InterviewerAgent] 流式合成完成, sessionId={}, textLength={}", sessionId, fullText.length());
                         context.addInterviewerMessage(fullText.toString());
+                    } else {
+                        log.warn("[InterviewerAgent] 流式合成完成但文本为空, sessionId={}", sessionId);
                     }
                 }
         );
