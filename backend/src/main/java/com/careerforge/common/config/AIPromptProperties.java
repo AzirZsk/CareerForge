@@ -3439,11 +3439,6 @@ public class AIPromptProperties {
          * - {resumeSummary} - 候选人简历摘要
          */
         private String selfIntroPromptTemplate;
-
-        /**
-         * 请求自我介绍的静态提示词（降级兜底）
-         */
-        private String selfIntroductionPromptTemplate = "请先做个自我介绍吧，说说你的技术背景和项目经验。";
     }
 
 }

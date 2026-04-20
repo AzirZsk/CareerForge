@@ -196,29 +196,14 @@ public class InterviewerAgentHandler {
         log.debug("[InterviewerAgent] 请求自我介绍, sessionId={}", sessionId);
         ConversationContext context = getOrCreateContext(sessionId);
         SessionState state = requireSession(sessionId);
-        // 获取面试官风格配置
         AIPromptProperties.InterviewerStyleConfig styleConfig =
                 aiPromptProperties.getVoice().getByStyle(state.getInterviewerStyle());
-        String selfIntroTemplate = styleConfig.getSelfIntroPromptTemplate();
-        if (selfIntroTemplate == null || selfIntroTemplate.isBlank()) {
-            // 降级：使用静态模板
-            String fallback = styleConfig.getSelfIntroductionPromptTemplate();
-            if (fallback == null || fallback.isBlank()) {
-                fallback = "请先做个自我介绍吧，说说你的技术背景和项目经验。";
-            }
-            log.info("[InterviewerAgent] 自我介绍降级使用静态模板: {}, sessionId={}", fallback, sessionId);
-            recordInterviewerMessage(sessionId, fallback);
-            synthesizeAndSend(sessionId, fallback, false);
-            return;
-        }
-        // 构建提示词（复用已有的上下文格式化方法）
         String systemPrompt = styleConfig.getSystemPrompt();
-        String userPrompt = selfIntroTemplate
+        String userPrompt = styleConfig.getSelfIntroPromptTemplate()
                 .replace("{position}", context.getPosition())
                 .replace("{jdRequirements}", formatJDRequirements(context.getJdContent()))
                 .replace("{resumeSummary}", formatResumeSummary(context.getResumeContent()));
         log.info("[InterviewerAgent] 使用 LLM 动态生成自我介绍开场白, sessionId={}", sessionId);
-        // LLM 流式生成（synthesizeStreamAndSend 内部 onComplete 会记录对话历史）
         Flux<String> llmStream = callLLMStream(systemPrompt, userPrompt);
         synthesizeStreamAndSend(sessionId, llmStream);
     }
@@ -387,7 +372,7 @@ public class InterviewerAgentHandler {
                         .build()
         ));
         // 提交合成（非阻塞，音频通过 listener 异步推送）
-        tts.synthesize(text);
+        tts.synthesize(text, true);
         // 发送最终标记
         voiceGateway.sendResponse(sessionId, VoiceResponse.transcript(
                 VoiceResponse.TranscriptData.builder()
@@ -444,7 +429,7 @@ public class InterviewerAgentHandler {
                 delta -> {
                     // 提交 delta 到 TTS（非阻塞，server_commit 自动合成）
                     log.debug("[InterviewerAgent] 提交 delta, sessionId={}, delta={}", sessionId, delta);
-                    tts.synthesize(delta);
+                    tts.synthesize(delta, false);
                     fullText.append(delta);
                     // 每个 delta 直接发送转录到客户端
                     voiceGateway.sendResponse(sessionId, VoiceResponse.transcript(
@@ -457,6 +442,8 @@ public class InterviewerAgentHandler {
                 },
                 error -> log.error("[InterviewerAgent] LLM流错误, sessionId={}", sessionId, error),
                 () -> {
+                    // LLM 流结束，刷新 TTS 缓冲区中的残余文本
+                    tts.synthesize("", true);
                     // 发送 final 标记
                     voiceGateway.sendResponse(sessionId, VoiceResponse.transcript(
                             VoiceResponse.TranscriptData.builder()

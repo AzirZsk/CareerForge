@@ -110,7 +110,7 @@ public class AssistantAgentHandler {
                             if (isSentenceEnd(delta)) {
                                 String sentence = textBuffer.toString();
                                 textBuffer.setLength(0);
-                                tts.synthesize(sentence);
+                                tts.synthesize(sentence, false);
                             }
                         },
                         error -> {
@@ -128,7 +128,7 @@ public class AssistantAgentHandler {
                             if (textBuffer.length() > 0) {
                                 String lastText = textBuffer.toString();
                                 textBuffer.setLength(0);
-                                tts.synthesize(lastText);
+                                tts.synthesize(lastText, true);
                             }
                             // 发送完成事件
                             eventConsumer.accept(AssistSSEEvent.done(

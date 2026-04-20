@@ -123,13 +123,19 @@ public class AliyunTTSService implements TTSService {
     }
 
     @Override
-    public void synthesize(String text) {
+    public void synthesize(String text, boolean isEnd) {
         if (!connected.get() || closed.get()) {
             log.warn("[AliyunTTS] 连接未建立或已关闭，忽略合成请求, role={}", role);
             return;
         }
         try {
-            connection.appendText(text);
+            if (text != null && !text.isEmpty()) {
+                connection.appendText(text);
+            }
+            if (isEnd) {
+                log.debug("[AliyunTTS] isEnd=true, 触发 commit 刷新缓冲区, role={}", role);
+                connection.commit();
+            }
         } catch (Exception e) {
             log.error("[AliyunTTS] 提交文本失败, role={}", role, e);
             if (listener != null) {
