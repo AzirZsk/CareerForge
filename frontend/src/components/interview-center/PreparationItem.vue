@@ -107,23 +107,6 @@ function getResourceIcon(type: string): string {
           <li v-for="(item, index) in contentItems" :key="index">{{ item }}</li>
         </ul>
         <div v-else-if="preparation.content" class="item-description">{{ preparation.content }}</div>
-        <!-- 详细说明（可折叠） -->
-        <div v-if="preparation.description" class="item-detail-section">
-          <button class="detail-toggle" @click.stop="toggleDescription">
-            <font-awesome-icon icon="fa-solid fa-lightbulb" />
-            <span>{{ showDescription ? '收起说明' : '查看说明' }}</span>
-            <font-awesome-icon
-              icon="fa-solid fa-chevron-down"
-              :class="{ rotated: showDescription }"
-              class="toggle-icon"
-            />
-          </button>
-          <Transition name="expand">
-            <div v-if="showDescription" class="detail-content">
-              <p v-for="(line, idx) in descriptionLines" :key="idx">{{ line }}</p>
-            </div>
-          </Transition>
-        </div>
       </div>
       <div class="item-actions">
         <span class="priority-tag" :class="priorityClass">{{ priorityLabel }}</span>
@@ -139,6 +122,23 @@ function getResourceIcon(type: string): string {
           <font-awesome-icon icon="fa-solid fa-trash" />
         </button>
       </div>
+    </div>
+    <!-- 详细说明（在item-main外面，撑满卡片宽度） -->
+    <div v-if="preparation.description" class="item-detail-section">
+      <button class="detail-toggle" @click.stop="toggleDescription">
+        <font-awesome-icon icon="fa-solid fa-lightbulb" />
+        <span>{{ showDescription ? '收起说明' : '查看说明' }}</span>
+        <font-awesome-icon
+          icon="fa-solid fa-chevron-down"
+          :class="{ rotated: showDescription }"
+          class="toggle-icon"
+        />
+      </button>
+      <Transition name="expand">
+        <div v-if="showDescription" class="detail-content">
+          <p v-for="(line, idx) in descriptionLines" :key="idx">{{ line }}</p>
+        </div>
+      </Transition>
     </div>
     <div v-if="showResources && hasResources" class="resources-panel">
       <div class="resources-header">
@@ -410,7 +410,8 @@ export default {
 }
 
 .item-detail-section {
-  margin-top: $spacing-xs;
+  margin-top: $spacing-sm;
+  margin-left: calc(18px + #{$spacing-sm} + #{$spacing-sm});
 }
 
 .detail-toggle {
