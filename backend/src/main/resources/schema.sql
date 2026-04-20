@@ -309,6 +309,7 @@ CREATE TABLE IF NOT EXISTS t_job_position (
     jd_content TEXT,                         -- JD原文内容
     jd_analysis TEXT,                        -- JD分析结果（AI提取的关键信息）
     jd_analysis_updated_at DATETIME,         -- JD分析更新时间
+    status VARCHAR(32) DEFAULT 'applied',    -- 职位状态（draft/applied/interviewing/offered/rejected/withdrawn）
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 更新时间
     deleted INTEGER DEFAULT 0                -- 逻辑删除标记（0-未删除 1-已删除）

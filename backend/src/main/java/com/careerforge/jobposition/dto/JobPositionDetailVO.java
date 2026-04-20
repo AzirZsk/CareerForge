@@ -40,6 +40,11 @@ public class JobPositionDetailVO {
     private String title;
 
     /**
+     * 职位状态
+     */
+    private String status;
+
+    /**
      * JD原文
      */
     private String jdContent;

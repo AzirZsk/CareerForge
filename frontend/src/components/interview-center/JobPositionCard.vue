@@ -6,7 +6,7 @@
         <span class="position-title">{{ jobPosition.title }}</span>
       </div>
       <div class="header-badges">
-        <PositionStatusBadge v-if="jobPosition.status" :status="jobPosition.status" />
+        <PositionStatusBadge v-if="jobPosition.status" :status="jobPosition.status" :editable="true" @change="handleStatusChange" />
         <span class="interview-badge" v-if="jobPosition.interviewCount > 0">
           {{ jobPosition.interviewCount }} 次面试
         </span>
@@ -50,8 +50,9 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { JobPositionListItem } from '@/types/job-position'
+import type { JobPositionListItem, PositionStatus } from '@/types/job-position'
 import PositionStatusBadge from './PositionStatusBadge.vue'
+import { updatePositionStatus } from '@/api/job-position'
 
 const props = defineProps<{
   jobPosition: JobPositionListItem
@@ -68,6 +69,15 @@ defineEmits<{
 const statusClass = computed(() => {
   return `status-${props.jobPosition.status || 'draft'}`
 })
+
+async function handleStatusChange(newStatus: PositionStatus) {
+  try {
+    await updatePositionStatus(props.jobPosition.id, newStatus)
+    props.jobPosition.status = newStatus
+  } catch (error) {
+    console.error('更新职位状态失败:', error)
+  }
+}
 
 // 格式化日期+时间
 function formatDateTime(dateStr: string): string {

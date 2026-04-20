@@ -43,4 +43,10 @@ public class JobPosition extends BaseEntity {
      */
     private LocalDateTime jdAnalysisUpdatedAt;
 
+    /**
+     * 职位状态（用户手动设置）
+     * draft/applied/interviewing/offered/rejected/withdrawn
+     */
+    private String status;
+
 }

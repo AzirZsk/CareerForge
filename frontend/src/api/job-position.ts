@@ -8,7 +8,8 @@ import type {
   JobPositionDetail,
   CreateJobPositionRequest,
   UpdateJobPositionRequest,
-  InterviewBrief
+  InterviewBrief,
+  PositionStatus
 } from '@/types/job-position'
 import request from '@/utils/request'
 
@@ -77,5 +78,16 @@ export async function getJobPositionInterviews(id: string): Promise<InterviewBri
   return request({
     url: `/job-positions/${id}/interviews`,
     method: 'GET'
+  })
+}
+
+/**
+ * 更新职位状态
+ */
+export async function updatePositionStatus(id: string, status: PositionStatus): Promise<JobPositionDetail> {
+  return request({
+    url: `/job-positions/${id}/status`,
+    method: 'PATCH',
+    data: { status }
   })
 }

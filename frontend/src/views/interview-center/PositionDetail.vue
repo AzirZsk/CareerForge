@@ -24,6 +24,9 @@
         <div class="info-main">
           <h1 class="company-name">{{ position.companyName }}</h1>
           <p class="position-title">{{ position.title }}</p>
+          <div class="position-status-row" v-if="position.status">
+            <PositionStatusBadge :status="position.status" :editable="true" @change="handleStatusChange" />
+          </div>
           <div class="meta-info">
             <span>创建时间：{{ formatDate(position.createdAt) }}</span>
             <span v-if="position.interviews.length > 0">
@@ -132,9 +135,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getJobPositionDetail, deleteJobPosition } from '@/api/job-position'
+import { getJobPositionDetail, deleteJobPosition, updatePositionStatus } from '@/api/job-position'
 import { deleteInterview } from '@/api/interview-center'
-import type { JobPositionDetail } from '@/types/job-position'
+import type { JobPositionDetail, PositionStatus } from '@/types/job-position'
 import {
   INTERVIEW_STATUS_LABELS,
   INTERVIEW_RESULT_LABELS,
@@ -144,6 +147,7 @@ import {
 import type { InterviewBrief } from '@/types/job-position'
 import CreateInterviewDialog from '@/components/interview-center/CreateInterviewDialog.vue'
 import EditPositionDialog from '@/components/interview-center/EditPositionDialog.vue'
+import PositionStatusBadge from '@/components/interview-center/PositionStatusBadge.vue'
 import { useConfirm } from '@/composables/useConfirm'
 import { useToast } from '@/composables/useToast'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
@@ -273,6 +277,17 @@ async function loadDetail() {
   }
 }
 
+async function handleStatusChange(newStatus: PositionStatus) {
+  if (!position.value) return
+  try {
+    await updatePositionStatus(position.value.id, newStatus)
+    position.value.status = newStatus
+  } catch (error) {
+    toast.error('更新状态失败')
+    console.error('更新职位状态失败:', error)
+  }
+}
+
 onMounted(() => {
   loadDetail()
 })
@@ -354,6 +369,10 @@ onMounted(() => {
 .position-title {
   color: $color-text-secondary;
   font-size: 1.125rem;
+  margin-bottom: $spacing-sm;
+}
+
+.position-status-row {
   margin-bottom: $spacing-md;
 }
 

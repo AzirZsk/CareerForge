@@ -87,6 +87,7 @@ public class JobPositionHandler {
         jobPosition.setCompanyId(String.valueOf(company.getId()));
         jobPosition.setTitle(request.getTitle());
         jobPosition.setJdContent(request.getJdContent());
+        jobPosition.setStatus(PositionStatus.APPLIED.getCode());
         jobPositionService.save(jobPosition);
         return convertToDetailVO(jobPosition);
     }
@@ -142,6 +143,29 @@ public class JobPositionHandler {
         if (request.getJdContent() != null) {
             jobPosition.setJdContent(request.getJdContent());
         }
+        jobPositionService.updateById(jobPosition);
+        return convertToDetailVO(jobPosition);
+    }
+
+    /**
+     * 更新职位状态
+     *
+     * @param id     职位ID
+     * @param status 新状态
+     * @return 职位详情
+     */
+    public JobPositionDetailVO updatePositionStatus(String id, String status) {
+        log.info("更新职位状态: id={}, status={}", id, status);
+        // 校验状态合法性
+        PositionStatus positionStatus = PositionStatus.fromCode(status);
+        if (positionStatus == null) {
+            throw new BusinessException("无效的职位状态: " + status);
+        }
+        JobPosition jobPosition = jobPositionService.getById(id);
+        if (jobPosition == null) {
+            throw new BusinessException("职位不存在: " + id);
+        }
+        jobPosition.setStatus(status);
         jobPositionService.updateById(jobPosition);
         return convertToDetailVO(jobPosition);
     }
@@ -260,8 +284,8 @@ public class JobPositionHandler {
         List<Interview> interviews = interviewService.list(wrapper);
         int interviewCount = interviews.size();
         LocalDateTime latestInterviewDate = interviews.isEmpty() ? null : interviews.get(0).getDate();
-        // 推导职位状态
-        String status = derivePositionStatus(interviews);
+        // 职位状态（用户手动设置，默认 applied）
+        String status = jobPosition.getStatus() != null ? jobPosition.getStatus() : PositionStatus.APPLIED.getCode();
         // 获取下次面试信息
         Interview nextInterview = findNextInterview(interviews);
         LocalDateTime nextInterviewDate = nextInterview != null ? nextInterview.getDate() : null;
@@ -278,42 +302,6 @@ public class JobPositionHandler {
                 .createdAt(jobPosition.getCreatedAt())
                 .updatedAt(jobPosition.getUpdatedAt())
                 .build();
-    }
-
-    /**
-     * 推导职位状态
-     * 根据关联面试的状态和结果推导职位状态
-     */
-    private String derivePositionStatus(List<Interview> interviews) {
-        if (interviews.isEmpty()) {
-            return "draft";
-        }
-        // 检查是否有未完成的面试（in_progress 或未到面试时间）
-        boolean hasIncomplete = interviews.stream().anyMatch(i -> {
-            String status = i.getStatus();
-            // 进行中的面试
-            if ("in_progress".equals(status)) {
-                return true;
-            }
-            // 面试时间在未来且状态不是 completed
-            if (!"completed".equals(status) && i.getDate() != null && i.getDate().isAfter(LocalDateTime.now())) {
-                return true;
-            }
-            return false;
-        });
-        if (hasIncomplete) {
-            return "interviewing";
-        }
-        // 所有面试都已完成，检查最新结果
-        Interview latestInterview = interviews.get(0);
-        String result = latestInterview.getOverallResult();
-        if ("passed".equalsIgnoreCase(result)) {
-            return "offered";
-        } else if ("rejected".equalsIgnoreCase(result)) {
-            return "rejected";
-        }
-        // 有面试但结果不明确
-        return "applied";
     }
 
     /**
@@ -371,6 +359,7 @@ public class JobPositionHandler {
                 .companyId(jobPosition.getCompanyId())
                 .companyName(company != null ? company.getName() : "未知公司")
                 .title(jobPosition.getTitle())
+                .status(jobPosition.getStatus() != null ? jobPosition.getStatus() : PositionStatus.APPLIED.getCode())
                 .jdContent(jobPosition.getJdContent())
                 .jdAnalysis(jobPosition.getJdAnalysis())
                 .jdAnalysisUpdatedAt(jobPosition.getJdAnalysisUpdatedAt())

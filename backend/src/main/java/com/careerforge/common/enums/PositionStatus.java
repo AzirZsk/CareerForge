@@ -5,7 +5,7 @@ import lombok.Getter;
 
 /**
  * 职位状态枚举
- * 根据关联面试的状态推导得出
+ * 用户手动设置的岗位求职状态
  *
  * @author Azir
  */

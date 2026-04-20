@@ -54,6 +54,14 @@ public class JobPositionController {
         return ApiResponse.success(handler.updateJobPosition(id, request));
     }
 
+    @Operation(summary = "更新职位状态")
+    @PatchMapping("/{id}/status")
+    public ApiResponse<JobPositionDetailVO> updatePositionStatus(
+            @PathVariable String id,
+            @Valid @RequestBody UpdatePositionStatusRequest request) {
+        return ApiResponse.success(handler.updatePositionStatus(id, request.getStatus()));
+    }
+
     @Operation(summary = "删除职位")
     @DeleteMapping("/{id}")
     public ApiResponse<Void> deleteJobPosition(@PathVariable String id) {
