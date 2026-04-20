@@ -40,6 +40,7 @@ public class StatisticsHandler {
     private final InterviewReviewNoteService interviewReviewNoteService;
 
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("MM-dd HH:mm");
+    private static final DateTimeFormatter WEEK_LABEL_FORMATTER = DateTimeFormatter.ofPattern("M/d");
 
     /**
      * 获取统计数据
@@ -117,10 +118,11 @@ public class StatisticsHandler {
                     .lt(Interview::getCreatedAt, weekEnd);
             long count = interviewService.count(wrapper);
 
+            String weekLabel = weekStart.format(WEEK_LABEL_FORMATTER);
             result.add(StatisticsVO.WeeklyProgressVO.builder()
-                    .week("W" + (6 - i))
+                    .week(weekLabel)
                     .interviews((int) count)
-                    .score(0) // 暂不计算周平均分
+                    .score(0)
                     .build());
         }
 

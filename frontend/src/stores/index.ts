@@ -143,6 +143,7 @@ export const useAppStore = defineStore('app', () => {
       }
       isInitialized.value = true
       localStorage.setItem('isInitialized', 'true')
+      localStorage.setItem('user', JSON.stringify(user.value))
       isLoggedIn.value = true
     } catch (error) {
       console.error('初始化用户失败', error)
