@@ -38,6 +38,9 @@ public class PreparationItemResult {
     @SchemaField(value = "准备步骤列表（3-5条具体可执行的步骤，每条20-50字）", required = true)
     private List<String> contentItems;
 
+    @SchemaField(value = "详细说明（200-500字，包含：知识点解析、核心概念解释、面试常见考察角度、参考答案要点。每段用换行分隔，不要使用Markdown格式）", required = true)
+    private String description;
+
     /**
      * 优先级
      */

@@ -108,7 +108,7 @@ export async function addPreparation(interviewId: string, data: AddPreparationRe
  */
 export async function batchAddPreparations(
   interviewId: string,
-  items: Array<{ title: string; content: string; itemType?: string; priority?: string }>
+  items: Array<{ title: string; content: string; itemType?: string; priority?: string; description?: string }>
 ): Promise<PreparationVO[]> {
   return request({
     url: `/interview-center/${interviewId}/preparations/batch`,

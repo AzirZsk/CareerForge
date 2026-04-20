@@ -41,6 +41,23 @@
         </ul>
         <!-- 纯文本降级（旧数据兼容） -->
         <p v-else-if="item.content && !isJsonArray(item.content)" class="item-description">{{ item.content }}</p>
+        <!-- 详细说明（可折叠） -->
+        <div v-if="item.description" class="item-detail-section">
+          <button class="detail-toggle" @click.stop="toggleDetail(index)">
+            <font-awesome-icon icon="fa-solid fa-lightbulb" />
+            <span>{{ expandedDetails[index] ? '收起说明' : '查看说明' }}</span>
+            <font-awesome-icon
+              icon="fa-solid fa-chevron-down"
+              :class="{ rotated: expandedDetails[index] }"
+              class="toggle-icon"
+            />
+          </button>
+          <Transition name="expand">
+            <div v-if="expandedDetails[index]" class="detail-content">
+              <p v-for="(line, idx) in getDescriptionLines(item.description)" :key="idx">{{ line }}</p>
+            </div>
+          </Transition>
+        </div>
         <div class="item-meta">
           <span v-if="item.itemType" class="category-tag">{{ itemTypeLabels[item.itemType] || item.itemType }}</span>
         </div>
@@ -50,7 +67,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import type { PreparationItem } from '@/types/interview-center'
 
 const props = defineProps<{
@@ -61,6 +78,16 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:selectedItems': [value: Record<number, boolean>]
 }>()
+
+const expandedDetails = ref<Record<number, boolean>>({})
+
+function toggleDetail(index: number) {
+  expandedDetails.value[index] = !expandedDetails.value[index]
+}
+
+function getDescriptionLines(description: string): string[] {
+  return description.split('\n').filter(line => line.trim().length > 0)
+}
 
 // 计算选中数量
 const selectedCount = computed(() => {
@@ -332,5 +359,68 @@ function isJsonArray(content: string): boolean {
   background: rgba(255, 255, 255, 0.05);
   color: $color-text-tertiary;
   border-radius: $radius-sm;
+}
+
+.item-detail-section {
+  margin: $spacing-xs 0 0 48px;
+}
+
+.detail-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  font-size: $text-xs;
+  color: $color-accent;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 0;
+  opacity: 0.8;
+  transition: opacity $transition-fast;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  .toggle-icon {
+    font-size: 10px;
+    transition: transform $transition-fast;
+
+    &.rotated {
+      transform: rotate(180deg);
+    }
+  }
+}
+
+.detail-content {
+  margin-top: $spacing-xs;
+  padding: $spacing-sm;
+  background: rgba($color-accent, 0.05);
+  border-radius: $radius-sm;
+  border-left: 2px solid rgba($color-accent, 0.3);
+
+  p {
+    font-size: $text-xs;
+    color: $color-text-secondary;
+    line-height: 1.6;
+    margin-bottom: 4px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+.expand-enter-active {
+  transition: all 0.2s ease-out;
+}
+
+.expand-leave-active {
+  transition: all 0.15s ease-in;
+}
+
+.expand-enter-from,
+.expand-leave-to {
+  opacity: 0;
 }
 </style>

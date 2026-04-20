@@ -13,6 +13,16 @@ const emit = defineEmits<{
 }>()
 
 const showResources = ref(false)
+const showDescription = ref(false)
+
+function toggleDescription() {
+  showDescription.value = !showDescription.value
+}
+
+const descriptionLines = computed(() => {
+  if (!props.preparation.description) return []
+  return props.preparation.description.split('\n').filter(line => line.trim().length > 0)
+})
 
 const priorityConfig = computed(() => {
   return PRIORITY_CONFIG[props.preparation.priority || 'recommended']
@@ -97,6 +107,23 @@ function getResourceIcon(type: string): string {
           <li v-for="(item, index) in contentItems" :key="index">{{ item }}</li>
         </ul>
         <div v-else-if="preparation.content" class="item-description">{{ preparation.content }}</div>
+        <!-- 详细说明（可折叠） -->
+        <div v-if="preparation.description" class="item-detail-section">
+          <button class="detail-toggle" @click.stop="toggleDescription">
+            <font-awesome-icon icon="fa-solid fa-lightbulb" />
+            <span>{{ showDescription ? '收起说明' : '查看说明' }}</span>
+            <font-awesome-icon
+              icon="fa-solid fa-chevron-down"
+              :class="{ rotated: showDescription }"
+              class="toggle-icon"
+            />
+          </button>
+          <Transition name="expand">
+            <div v-if="showDescription" class="detail-content">
+              <p v-for="(line, idx) in descriptionLines" :key="idx">{{ line }}</p>
+            </div>
+          </Transition>
+        </div>
       </div>
       <div class="item-actions">
         <span class="priority-tag" :class="priorityClass">{{ priorityLabel }}</span>
@@ -380,5 +407,68 @@ export default {
 .external-link-icon {
   color: $color-text-tertiary;
   font-size: 0.75rem;
+}
+
+.item-detail-section {
+  margin-top: $spacing-xs;
+}
+
+.detail-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  font-size: $text-xs;
+  color: $color-accent;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 0;
+  opacity: 0.8;
+  transition: opacity $transition-fast;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  .toggle-icon {
+    font-size: 10px;
+    transition: transform $transition-fast;
+
+    &.rotated {
+      transform: rotate(180deg);
+    }
+  }
+}
+
+.detail-content {
+  margin-top: $spacing-xs;
+  padding: $spacing-sm;
+  background: rgba($color-accent, 0.05);
+  border-radius: $radius-sm;
+  border-left: 2px solid rgba($color-accent, 0.3);
+
+  p {
+    font-size: $text-xs;
+    color: $color-text-secondary;
+    line-height: 1.6;
+    margin-bottom: 4px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+.expand-enter-active {
+  transition: all 0.2s ease-out;
+}
+
+.expand-leave-active {
+  transition: all 0.15s ease-in;
+}
+
+.expand-enter-from,
+.expand-leave-to {
+  opacity: 0;
 }
 </style>

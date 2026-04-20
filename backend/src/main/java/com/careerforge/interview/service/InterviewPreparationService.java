@@ -47,6 +47,7 @@ public class InterviewPreparationService extends ServiceImpl<InterviewPreparatio
         preparation.setItemType(request.getItemType() != null ? request.getItemType() : "todo");
         preparation.setTitle(request.getTitle());
         preparation.setContent(request.getContent());
+        preparation.setDescription(request.getDescription());
         preparation.setCompleted(false);
         preparation.setSource("manual");
         preparation.setPriority(request.getPriority() != null ? request.getPriority() : "recommended");
@@ -70,6 +71,7 @@ public class InterviewPreparationService extends ServiceImpl<InterviewPreparatio
             preparation.setItemType(item.getItemType() != null ? item.getItemType() : "todo");
             preparation.setTitle(item.getTitle());
             preparation.setContent(item.getContent());
+            preparation.setDescription(item.getDescription());
             preparation.setCompleted(false);
             preparation.setSource("ai");
             preparation.setPriority(item.getPriority() != null ? item.getPriority() : "recommended");
@@ -97,6 +99,9 @@ public class InterviewPreparationService extends ServiceImpl<InterviewPreparatio
         }
         if (request.getContent() != null) {
             preparation.setContent(request.getContent());
+        }
+        if (request.getDescription() != null) {
+            preparation.setDescription(request.getDescription());
         }
         if (request.getCompleted() != null) {
             preparation.setCompleted(request.getCompleted());

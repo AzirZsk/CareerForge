@@ -252,8 +252,8 @@ const headerClass = computed(() => {
 const headerTitle = computed(() => {
   if (props.state.hasError) return '生成失败'
   if (props.state.isCompleted) return '生成完成'
-  if (props.state.isRunning) return 'AI 生成准备清单...'
-  return 'AI 生成准备清单'
+  if (props.state.isRunning) return '生成准备清单...'
+  return '生成准备清单'
 })
 
 // 从阶段历史获取准备事项数据

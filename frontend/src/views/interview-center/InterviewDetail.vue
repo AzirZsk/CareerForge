@@ -627,7 +627,8 @@ async function handleSavePreparationItems(items: typeof preparationState.prepara
         ? JSON.stringify(item.contentItems)
         : (item.content || ''),
       itemType: item.itemType,
-      priority: item.priority
+      priority: item.priority,
+      description: item.description || ''
     })))
     showPrepModal.value = false
     // 刷新数据

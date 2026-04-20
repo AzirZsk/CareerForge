@@ -2274,6 +2274,7 @@ public class AIPromptProperties {
                     | itemType | string | 是 | 准备项类型（必须使用下方枚举值，小写下划线格式） |
                     | title | string | 是 | 标题（简洁明了，不超过50字） |
                     | contentItems | array | 是 | 准备步骤列表（3-5条具体可执行的步骤，每条20-50字） |
+                    | description | string | 是 | 详细说明（200-500字，包含：知识点解析、核心概念解释、面试常见考察角度、参考答案要点。每段用换行分隔，不要使用Markdown格式） |
                     | priority | string | 是 | 优先级（必须使用下方枚举值） |
                     | resources | array | 否 | 关联资源列表（可选） |
 
@@ -2314,6 +2315,7 @@ public class AIPromptProperties {
 
                     ### 1. tech_prep（技术准备）
                     - **contentItems 要求**：**必须具体到原理/机制层面**，不要泛泛的"复习XX技术"，每条是一个具体的学习/复习点
+                    - **description 要求**：详细解析核心知识点（原理、机制、底层实现），列出面试常见的深入追问方向（至少3个），给出结构化的参考答案框架，帮助候选人快速建立知识体系
                     - **如果有上一轮复盘笔记**：优先针对薄弱点生成（如上轮"分布式事务答得不好"，则重点复习分布式事务原理）
                     - **示例**：
                       - ✅ 正确 contentItems:
@@ -2321,11 +2323,14 @@ public class AIPromptProperties {
                         - "掌握 spring.factories 文件的加载流程"
                         - "理解自动配置类的生效时机"
                         - "手写一个简单的 Starter 验证理解"
-                      - ❌ 错误："复习Spring Boot"（太笼统）
+                      - ✅ 正确 description 示例:
+                        "知识点解析：\nSpring Boot自动配置的核心是通过@EnableAutoConfiguration触发，利用SpringFactoriesLoader从META-INF/spring.factories加载候选配置类。\n\n核心概念：\n1. @Conditional系列注解决定配置类是否生效\n2. spring.factories SPI机制定义自动配置入口\n3. @ConfigurationProperties绑定外部配置\n\n面试考察角度：\n- 自动配置的完整触发链路（从启动到Bean注册）\n- 如何自定义Starter并控制加载顺序\n- 自动配置类的条件装配原理\n\n参考答案要点：\n从@SpringBootApplication注解入手，说明@EnableAutoConfiguration -> SpringFactoriesLoader.loadFactoryNames() -> 加载spring.factories -> @Conditional过滤 -> @Bean注册的完整流程，重点强调条件装配机制如何实现按需加载。"
+                      - ❌ 错误 contentItems："复习Spring Boot"（太笼统）
                     - **priority**: required（JD必备技能）/ recommended（加分技能）
 
                     ### 2. case_study（案例准备）
                     - **contentItems 要求**：基于简历内容，用STAR法则准备项目案例，每条是一个具体的准备点
+                    - **description 要求**：分析项目案例的面试价值（面试官为什么问这个），说明如何用STAR法则组织回答（Situation/Task/Action/Result），列出面试官可能的追问方向（至少3个），给出量化成果的表达技巧
                     - **如果有上一轮复盘笔记**：针对"项目案例不够清晰"等问题，强调用STAR法则重新准备
                     - **示例**：
                       - "回顾项目背景：日均订单量50万，系统可用性仅99.5%"
@@ -2336,6 +2341,7 @@ public class AIPromptProperties {
 
                     ### 3. behavioral（行为面试）
                     - **contentItems 要求**：基于JD职责，推断可能被问到的行为问题，每条是一个具体的准备方向
+                    - **description 要求**：解析该行为问题的考察意图（面试官真正想了解什么），说明好的回答应该包含哪些要素，给出STAR法则回答的结构模板，列出需要避免的常见错误
                     - **如果有上一轮复盘笔记**：针对"表达不够清晰"等问题，准备结构化回答模板
                     - **示例**：
                       - "准备团队协作案例：用STAR法则准备1-2个跨部门协作的例子"
@@ -2357,7 +2363,7 @@ public class AIPromptProperties {
                     ---
 
                     ## 输出格式示例（严格JSON，单行压缩格式）
-                    {"items":[{"itemType":"tech_prep","title":"复习Spring Boot自动配置原理","contentItems":["深入理解条件装配机制：@Conditional系列注解的触发条件","掌握spring.factories文件的加载流程","理解自动配置类的生效时机","手写一个简单的Starter验证理解"],"priority":"required"},{"itemType":"tech_prep","title":"深入理解分布式事务","contentItems":["复习Seata AT模式原理：全局锁机制","理解两阶段提交流程和回滚日志undo_log的作用","结合订单项目思考分布式事务一致性问题的回答"],"priority":"required"},{"itemType":"case_study","title":"准备订单系统重构项目","contentItems":["回顾项目背景：日均订单量50万，系统可用性仅99.5%","准备技术方案：服务拆分(订单/库存/支付)+Seata分布式事务","量化成果：可用性达99.95%，接口响应时间从200ms降至50ms"],"priority":"recommended"},{"itemType":"behavioral","title":"准备团队协作案例","contentItems":["用STAR法则准备1-2个跨部门协作的例子","梳理在XX项目中与产品、运营团队的协调方式","总结项目按时上线并获得XX成果的经验"]}]}
+                    {"items":[{"itemType":"tech_prep","title":"复习Spring Boot自动配置原理","contentItems":["深入理解条件装配机制：@Conditional系列注解的触发条件","掌握spring.factories文件的加载流程","理解自动配置类的生效时机","手写一个简单的Starter验证理解"],"description":"知识点解析：\nSpring Boot自动配置的核心是通过@EnableAutoConfiguration触发，利用SpringFactoriesLoader从META-INF/spring.factories加载候选配置类。\n\n核心概念：\n1. @Conditional系列注解决定配置类是否生效\n2. spring.factories SPI机制定义自动配置入口\n3. @ConfigurationProperties绑定外部配置\n\n面试考察角度：\n- 自动配置的完整触发链路\n- 如何自定义Starter\n- 条件装配原理\n\n参考答案要点：\n从@SpringBootApplication入手，说明@EnableAutoConfiguration -> SpringFactoriesLoader -> spring.factories -> @Conditional过滤 -> @Bean注册的完整流程。","priority":"required"},{"itemType":"case_study","title":"准备订单系统重构项目","contentItems":["回顾项目背景：日均订单量50万，系统可用性仅99.5%","准备技术方案：服务拆分(订单/库存/支付)+Seata分布式事务","量化成果：可用性达99.95%，接口响应时间从200ms降至50ms"],"description":"面试价值：\n该项目展示了候选人处理高并发和分布式系统的能力，面试官借此评估架构设计和问题解决能力。\n\nSTAR法则组织：\nSituation：单体系统日均50万订单，可用性仅99.5%，频繁宕机\nTask：负责核心链路拆分，提升可用性到99.95%\nAction：采用领域驱动设计拆分服务，引入Seata AT模式保证分布式事务一致性，Redis缓存热点数据\nResult：可用性达99.95%，接口RT降低60%\n\n可能追问：\n- 拆分后如何保证数据一致性？\n- Seata全局锁的性能瓶颈怎么解决？\n- 如果让你重新设计，有什么改进？","priority":"recommended"},{"itemType":"behavioral","title":"准备团队协作案例","contentItems":["用STAR法则准备1-2个跨部门协作的例子","梳理在XX项目中与产品、运营团队的协调方式","总结项目按时上线并获得XX成果的经验"],"description":"考察意图：\n面试官想了解候选人在团队中的协作方式和沟通能力，判断是否具备跨团队合作和推动项目落地的能力。\n\n好的回答要素：\n1. 明确协作背景和目标\n2. 具体说明协调方式和沟通机制\n3. 展示主动推动和解决分歧的能力\n4. 量化协作成果\n\n回答模板：\n在XX项目中，我负责与产品、运营团队协作推进XX功能上线。通过建立周会机制和需求评审流程，确保各方目标一致。遇到需求冲突时，我主动拉齐各方进行优先级排序，最终按时上线并达成XX指标。\n\n常见错误：\n- 只说"我们团队协作很好"没有具体例子\n- 回答中看不到个人贡献\n- 只讲成功不提挑战和解决过程","priority":"recommended"}]}
 
                     ---
 
@@ -2374,6 +2380,7 @@ public class AIPromptProperties {
                     8. 如果有上一轮复盘笔记，**必须针对薄弱点生成至少1条建议**
                     9. 如果提供了简历，至少有1个 case_study 类型的事项
                     10. 只返回JSON对象，不要返回其他内容
+                    11. 每个事项的 description 为200-500字，包含知识点解析、考察角度和参考答案要点，使用换行分段而非Markdown格式
                     """,
                     // userPromptTemplate
                     """

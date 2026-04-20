@@ -326,6 +326,7 @@ CREATE TABLE IF NOT EXISTS t_interview_preparation (
     item_type VARCHAR(20) NOT NULL,          -- 事项类型（company-公司调研 jd-JD分析 resume-简历复习 skill-技能准备）
     title VARCHAR(200) NOT NULL,             -- 事项标题
     content TEXT,                            -- 事项内容（Markdown格式）
+    description TEXT,                        -- 详细说明（200-500字，含知识点解析、参考答案）
     completed INTEGER DEFAULT 0,             -- 完成状态（0-未完成 1-已完成）
     source VARCHAR(20) DEFAULT 'manual',     -- 来源（manual-手动 ai-AI生成）
     priority VARCHAR(20) DEFAULT 'recommended', -- 优先级（high-高 medium-中 low-低 recommended-推荐）

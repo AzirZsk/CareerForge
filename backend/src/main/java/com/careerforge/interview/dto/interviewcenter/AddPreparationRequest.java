@@ -18,6 +18,8 @@ public class AddPreparationRequest {
 
     private String content;
 
+    private String description;
+
     /**
      * 事项类型：company_research/jd_keywords/tech_prep/case_study/behavioral/todo
      * 默认为 todo

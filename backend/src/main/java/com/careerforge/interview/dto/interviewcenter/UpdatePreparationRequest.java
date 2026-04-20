@@ -16,6 +16,8 @@ public class UpdatePreparationRequest {
 
     private String content;
 
+    private String description;
+
     private Boolean completed;
 
     private Integer sortOrder;

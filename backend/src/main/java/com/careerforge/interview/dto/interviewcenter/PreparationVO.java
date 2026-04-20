@@ -23,6 +23,8 @@ public class PreparationVO {
 
     private String content;
 
+    private String description;
+
     private Boolean completed;
 
     private String source;

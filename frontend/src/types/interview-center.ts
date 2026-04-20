@@ -97,6 +97,7 @@ export interface PreparationVO {
   itemType: PreparationItemType
   title: string
   content?: string
+  description?: string
   completed: boolean
   source: PreparationSource
   priority: PreparationPriority
@@ -181,6 +182,7 @@ export interface UpdateInterviewRequest {
 export interface AddPreparationRequest {
   title: string
   content?: string
+  description?: string
   priority?: PreparationPriority
   resources?: PreparationResource[]
 }
@@ -189,6 +191,7 @@ export interface AddPreparationRequest {
 export interface UpdatePreparationRequest {
   title?: string
   content?: string
+  description?: string
   completed?: boolean
   priority?: PreparationPriority
   resources?: PreparationResource[]
@@ -431,6 +434,7 @@ export interface PreparationItem {
   title: string
   content?: string        // 兼容旧数据（纯文本或JSON数组字符串）
   contentItems?: string[] // 新格式（优先使用）
+  description?: string    // 详细说明（200-500字，含知识点解析和参考答案）
   completed: boolean
   source: string          // 来源：ai_generated/manual
   sortOrder: number
