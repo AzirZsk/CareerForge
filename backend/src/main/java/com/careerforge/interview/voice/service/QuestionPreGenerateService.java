@@ -7,6 +7,7 @@ import com.careerforge.common.config.AIPromptProperties;
 import com.careerforge.common.util.ChatClientHelper;
 import com.careerforge.interview.entity.InterviewSession;
 import com.careerforge.interview.service.InterviewSessionService;
+import com.careerforge.interview.voice.dto.FollowUpJudgeResponse;
 import com.careerforge.interview.voice.dto.BatchQuestionsResponse;
 import com.careerforge.interview.voice.dto.PreGenerateContext;
 import com.careerforge.interview.voice.dto.PreGeneratedQuestion;
@@ -15,7 +16,6 @@ import com.careerforge.interview.voice.gateway.InterviewVoiceGateway;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -133,57 +133,63 @@ public class QuestionPreGenerateService {
     }
 
     /**
-     * 生成追问（实时调用）
-     * 当预生成问题不符合当前对话语境时，动态生成追问
+     * 语义判断是否需要追问，若需要则同时生成追问
+     * 使用单次 LLM 调用返回结构化 JSON
      *
      * @param sessionId          会话ID
      * @param lastQuestion       上一个问题
      * @param candidateAnswer    候选人回答
      * @param conversationHistory 最近对话摘要
-     * @return 追问文本
+     * @param jdRequirements     JD 核心要求
+     * @param followUpCount      当前已追问次数
+     * @return FollowUpJudgeResponse（包含 needFollowUp 和可能的 followUpQuestion）
      */
-    public String generateFollowUpQuestion(
+    public FollowUpJudgeResponse judgeAndGenerateFollowUp(
             String sessionId,
             String lastQuestion,
             String candidateAnswer,
-            String conversationHistory) {
-        log.info("[PreGenerate] 生成追问, sessionId={}", sessionId);
+            String conversationHistory,
+            String jdRequirements,
+            int followUpCount) {
+        log.info("[FollowUpJudge] 开始语义判断, sessionId={}, followUpCount={}", sessionId, followUpCount);
 
-        // 获取会话状态以获取面试官风格
         SessionState state = voiceGateway.getInternalState(sessionId);
         if (state == null) {
-            log.warn("[PreGenerate] 会话不存在, sessionId={}", sessionId);
-            return "不好意思，我们换个话题吧。";
+            log.warn("[FollowUpJudge] 会话不存在, sessionId={}", sessionId);
+            return FollowUpJudgeResponse.builder()
+                    .needFollowUp(false)
+                    .reason("会话不存在")
+                    .build();
         }
 
-        // 获取面试官风格配置
-        AIPromptProperties.InterviewerStyleConfig styleConfig = aiPromptProperties.getVoice().getByStyle(state.getInterviewerStyle());
+        AIPromptProperties.InterviewerStyleConfig styleConfig =
+                aiPromptProperties.getVoice().getByStyle(state.getInterviewerStyle());
 
-        // 构建追问提示词
         String systemPrompt = styleConfig.getSystemPrompt();
-        String userPrompt = buildFollowUpPrompt(
-                styleConfig.getFollowUpPromptTemplate(),
+        String userPrompt = buildFollowUpJudgePrompt(
+                styleConfig.getFollowUpJudgePromptTemplate(),
                 lastQuestion,
                 candidateAnswer,
-                conversationHistory
+                conversationHistory,
+                jdRequirements,
+                followUpCount,
+                SessionState.MAX_FOLLOW_UP
         );
 
-        // 调用 LLM 生成追问（纯文本调用，无需结构化）
         try {
-            String followUp = chatClient
-                    .prompt()
-                    .system(systemPrompt)
-                    .user(userPrompt)
-                    .options(OpenAiChatOptions.builder()
-                            .extraBody(Map.of("enable_thinking", false))
-                            .build())
-                    .call()
-                    .content();
-            log.info("[PreGenerate] 追问生成完成, sessionId={}, text={}", sessionId, followUp);
-            return followUp;
+            FollowUpJudgeResponse response = ChatClientHelper.callAndParse(
+                    chatClient, systemPrompt, userPrompt, FollowUpJudgeResponse.class,
+                    Map.of("enable_thinking", false)
+            );
+            log.info("[FollowUpJudge] 判断结果: sessionId={}, needFollowUp={}, reason={}",
+                    sessionId, response.isNeedFollowUp(), response.getReason());
+            return response;
         } catch (Exception e) {
-            log.error("[PreGenerate] 追问生成失败, sessionId={}", sessionId, e);
-            return "能再详细说一下吗？";
+            log.error("[FollowUpJudge] LLM 调用失败, sessionId={}", sessionId, e);
+            return FollowUpJudgeResponse.builder()
+                    .needFollowUp(false)
+                    .reason("LLM调用失败，降级不追问")
+                    .build();
         }
     }
 
@@ -365,36 +371,23 @@ public class QuestionPreGenerateService {
     }
 
     /**
-     * 构建追问提示词
+     * 构建追问判断提示词
      */
-    private String buildFollowUpPrompt(
+    private String buildFollowUpJudgePrompt(
             String template,
             String lastQuestion,
             String candidateAnswer,
-            String conversationHistory) {
-        if (template == null || template.isBlank()) {
-            // 默认追问提示词
-            template = """
-                    <last_question>
-                    {lastQuestion}
-                    </last_question>
-
-                    <candidate_answer>
-                    {candidateAnswer}
-                    </candidate_answer>
-
-                    <conversation_history>
-                    {conversationHistory}
-                    </conversation_history>
-
-                    请根据候选人的回答，生成一个简短的追问（30字以内）。
-                    """;
-        }
-
+            String conversationHistory,
+            String jdRequirements,
+            int followUpCount,
+            int maxFollowUp) {
         return template
                 .replace("{lastQuestion}", lastQuestion != null ? lastQuestion : "")
                 .replace("{candidateAnswer}", candidateAnswer != null ? candidateAnswer : "")
-                .replace("{conversationHistory}", conversationHistory != null ? conversationHistory : "暂无对话历史");
+                .replace("{conversationHistory}", conversationHistory != null ? conversationHistory : "暂无")
+                .replace("{jdRequirements}", jdRequirements != null ? jdRequirements : "暂无")
+                .replace("{followUpCount}", String.valueOf(followUpCount))
+                .replace("{maxFollowUp}", String.valueOf(maxFollowUp));
     }
 
     /**

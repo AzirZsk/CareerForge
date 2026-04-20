@@ -2943,6 +2943,41 @@ public class AIPromptProperties {
                     - 格式：[简短确认] + [追问/过渡]
                     - 不要说"很好"、"不错"等模糊评价
                     """);
+            config.setFollowUpJudgePromptTemplate("""
+                    你是一位资深技术面试官的追问判断助手。
+
+                    <interview_context>
+                    上一个问题：{lastQuestion}
+                    候选人回答：{candidateAnswer}
+                    当前已追问次数：{followUpCount}（最多 {maxFollowUp} 次）
+                    </interview_context>
+
+                    <conversation_history>
+                    {conversationHistory}
+                    </conversation_history>
+
+                    <jd_requirements>
+                    {jdRequirements}
+                    </jd_requirements>
+
+                    ---
+
+                    请判断是否需要对候选人的回答进行追问。
+
+                    **需要追问**的情况：
+                    1. 回答模糊或含糊，缺乏具体技术细节
+                    2. 提到了技术点但未说明实现原理或设计理由
+                    3. 回答前后矛盾，存在逻辑漏洞
+                    4. 关键技能点未充分展示，需要进一步验证
+                    5. 描述了成果但缺少量化数据
+
+                    **不需要追问**的情况：
+                    1. 回答完整、具体、有条理，充分展示了技术能力
+                    2. 已举例说明，有具体的技术方案和数据
+                    3. 候选人明确表示不知道且已给出能说到的范围
+                    4. 回答过于简短（如"没了"、"就这些"、"不太清楚"），追问也得不到有效信息
+                    5. 已经追问过同一话题，继续追问价值不大
+                    """);
             config.setSelfIntroPromptTemplate("""
                     你正在面试一位应聘 {position} 的候选人。
 
@@ -3087,8 +3122,41 @@ public class AIPromptProperties {
                     - 格式：[具体肯定/引导] + [追问/过渡]
                     - 肯定要具体，不要只说"很好"
                     """);
+            config.setFollowUpJudgePromptTemplate("""
+                    你是一位亲和温暖的面试官的追问判断助手。
+
+                    <interview_context>
+                    上一个问题：{lastQuestion}
+                    候选人回答：{candidateAnswer}
+                    当前已追问次数：{followUpCount}（最多 {maxFollowUp} 次）
+                    </interview_context>
+
+                    <conversation_history>
+                    {conversationHistory}
+                    </conversation_history>
+
+                    <jd_requirements>
+                    {jdRequirements}
+                    </jd_requirements>
+
+                    ---
+
+                    请判断是否需要对候选人的回答进行追问或引导。
+
+                    **需要追问/引导**的情况：
+                    1. 回答有一定内容但可以进一步展开，追问能帮候选人展示更多
+                    2. 提到了有趣的项目经历或技术点，可以深入聊聊
+                    3. 回答方向正确但不完整，适当引导能让候选人答得更好
+                    4. 候选人似乎有更多想说的，可以给一个引导性的追问
+
+                    **不需要追问**的情况：
+                    1. 回答已经比较完整，继续追问显得多余
+                    2. 候选人明显紧张或卡住，追问会增加压力
+                    3. 候选人明确表示不知道，引导也不会有更好结果
+                    4. 回答过于简短（如"没了"、"就这些"），追问也得不到有效信息
+                    5. 已经追问过同一话题
+                    """);
             config.setSelfIntroPromptTemplate("""
-                    你正在面试一位应聘 {position} 的候选人。
 
                     <jd_requirements>
                     {jdRequirements}
@@ -3232,8 +3300,43 @@ public class AIPromptProperties {
                     - 格式：[质疑/确认] + [追问/过渡]
                     - 质疑要有技术依据，不人身攻击
                     """);
+            config.setFollowUpJudgePromptTemplate("""
+                    你是一位以严格著称的面试官的追问判断助手。
+
+                    <interview_context>
+                    上一个问题：{lastQuestion}
+                    候选人回答：{candidateAnswer}
+                    当前已追问次数：{followUpCount}（最多 {maxFollowUp} 次）
+                    </interview_context>
+
+                    <conversation_history>
+                    {conversationHistory}
+                    </conversation_history>
+
+                    <jd_requirements>
+                    {jdRequirements}
+                    </jd_requirements>
+
+                    ---
+
+                    请判断是否需要对候选人的回答进行质疑或追问。
+
+                    **需要质疑/追问**的情况：
+                    1. 回答前后矛盾，逻辑不自洽
+                    2. 技术方案有明显缺陷或不合理之处
+                    3. 回答浮于表面，像背书而非真正理解
+                    4. 数据或成果有夸大嫌疑，需要验证
+                    5. 关键技术细节经不起推敲
+                    6. 候选人理解有偏差，需要纠正
+
+                    **不需要追问**的情况：
+                    1. 回答严谨完整，经得起技术推敲
+                    2. 技术方案合理，数据有理有据
+                    3. 回答过于简短（如"没了"、"就这些"），追问也得不到有效信息
+                    4. 已经追问过同一话题，候选人已给出合理解释
+                    5. 候选人明确承认不知道，且没有继续追问的价值
+                    """);
             config.setSelfIntroPromptTemplate("""
-                    你正在面试一位应聘 {position} 的候选人。
 
                     <jd_requirements>
                     {jdRequirements}
@@ -3430,6 +3533,18 @@ public class AIPromptProperties {
          * - {conversationHistory} - 对话摘要
          */
         private String followUpPromptTemplate;
+
+        /**
+         * 追问判断的用户提示词模板（LLM 单次调用同时判断是否追问 + 生成追问内容）
+         * 占位符:
+         * - {lastQuestion} - 上一个问题
+         * - {candidateAnswer} - 候选人回答
+         * - {conversationHistory} - 对话摘要
+         * - {jdRequirements} - JD 核心要求
+         * - {followUpCount} - 当前已追问次数
+         * - {maxFollowUp} - 最大追问次数
+         */
+        private String followUpJudgePromptTemplate;
 
         /**
          * 自我介绍请求的 LLM 用户提示词模板（动态生成开场白）

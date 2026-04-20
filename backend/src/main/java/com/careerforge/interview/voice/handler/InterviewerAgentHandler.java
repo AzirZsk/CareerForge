@@ -250,42 +250,44 @@ public class InterviewerAgentHandler {
     }
 
     /**
-     * 生成面试官回复（含追问判断）
+     * 生成面试官回复（LLM 语义追问判断）
      */
     private void generateInterviewerReply(String sessionId, String candidateAnswer) {
         log.debug("[InterviewerAgent] 生成面试官回复, sessionId={}", sessionId);
         SessionState state = requireSession(sessionId);
-        // 判断是否需要追问
-        if (shouldAskFollowUp(candidateAnswer, state)) {
-            log.info("[InterviewerAgent] 触发追问, sessionId={}, followUpCount={}", sessionId, state.getFollowUpCount());
-            String followUp = questionPreGenerateService.generateFollowUpQuestion(
-                    sessionId,
-                    state.getLastQuestion(),
-                    candidateAnswer,
-                    getConversationSummary(sessionId)
-            );
+        ConversationContext context = getOrCreateContext(sessionId);
+
+        // 快速预检：追问次数达上限或回答过短，直接跳过 LLM 判断
+        if (state.getFollowUpCount() >= SessionState.MAX_FOLLOW_UP
+                || candidateAnswer == null || candidateAnswer.length() < 10) {
+            log.info("[InterviewerAgent] 跳过追问判断（预检不通过）, sessionId={}", sessionId);
+            advanceToNextQuestion(sessionId, state);
+            return;
+        }
+
+        // LLM 语义判断 + 追问生成（单次调用）
+        FollowUpJudgeResponse judgeResponse = questionPreGenerateService.judgeAndGenerateFollowUp(
+                sessionId,
+                state.getLastQuestion(),
+                candidateAnswer,
+                getConversationSummary(sessionId),
+                formatJDRequirements(context.getJdContent()),
+                state.getFollowUpCount()
+        );
+
+        if (judgeResponse.isNeedFollowUp() && judgeResponse.getFollowUpQuestion() != null) {
+            String followUp = judgeResponse.getFollowUpQuestion();
+            log.info("[InterviewerAgent] 触发追问（LLM判断）, sessionId={}, followUpCount={}, reason={}",
+                    sessionId, state.getFollowUpCount(), judgeResponse.getReason());
             state.setFollowUpCount(state.getFollowUpCount() + 1);
             state.setPhase(InterviewPhaseEnum.FOLLOW_UP);
-            log.info("[InterviewerAgent] 追问生成完成: {}, sessionId={}", followUp, sessionId);
             recordInterviewerMessage(sessionId, followUp);
             synthesizeAndSend(sessionId, followUp, false);
         } else {
+            log.info("[InterviewerAgent] 不追问（LLM判断）, sessionId={}, reason={}",
+                    sessionId, judgeResponse.getReason());
             advanceToNextQuestion(sessionId, state);
         }
-    }
-
-    /**
-     * 判断是否需要追问
-     */
-    private boolean shouldAskFollowUp(String answer, SessionState state) {
-        if (state.getFollowUpCount() >= SessionState.MAX_FOLLOW_UP) {
-            return false;
-        }
-        if (answer == null || answer.length() < 20) {
-            return false;
-        }
-        return !answer.contains("没了") && !answer.contains("就这些") && !answer.contains("完了") &&
-                !answer.contains("没有了") && !answer.contains("没有其他");
     }
 
     /**
