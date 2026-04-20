@@ -65,37 +65,10 @@ public class InterviewerAgentHandler {
      * 音频帧通过 ASR 会话汇聚到同一条 WebSocket 连接，识别结果通过回调处理
      */
     public void handleCandidateAudio(String sessionId, byte[] audioData) {
-//        log.debug("[InterviewerAgent] 处理候选人音频, sessionId={}, size={}", sessionId, audioData.length);
-        // 获取会话上下文（从 Gateway 加载 JD/简历）
         ConversationContext context = getOrCreateContext(sessionId);
-        // 收集候选人音频数据（用于录音保存）
         context.appendCandidateAudio(audioData);
-        // 获取或创建 ASR 会话（首次创建时启动并注册回调）
-        ASRService asr = context.getOrCreateASRService(() -> {
-            ASRService service = voiceServiceFactory.createASRService();
-            service.start(new ASRListener() {
-                @Override
-                public void onResult(ASRResult result) {
-                    handleASRResult(sessionId, result);
-                }
-
-                @Override
-                public void onError(Exception e) {
-                    log.error("[InterviewerAgent] ASR 会话错误, sessionId={}", sessionId, e);
-                    voiceGateway.sendResponse(sessionId, VoiceResponse.error(VoiceResponse.ErrorData.builder()
-                            .code("ASR_ERROR")
-                            .message("语音识别失败: " + e.getMessage())
-                            .build()));
-                }
-
-                @Override
-                public void onComplete() {
-                    log.info("[InterviewerAgent] ASR 会话结束, sessionId={}", sessionId);
-                }
-            });
-            return service;
-        });
-        // 发送音频帧到 ASR 会话（复用同一条连接）
+        // ASR 已在 initSession 中创建，连接断开时自动重建
+        ASRService asr = context.getOrCreateASRService(() -> createASRServiceForSession(sessionId));
         asr.sendAudio(audioData);
     }
 
@@ -159,6 +132,84 @@ public class InterviewerAgentHandler {
         }
         contexts.remove(sessionId);
         log.info("[InterviewerAgent] 会话资源已清理, sessionId={}", sessionId);
+    }
+
+    /**
+     * 初始化会话资源（提前创建 ASR/TTS 连接）
+     * 在面试开始时调用，避免首次使用时的建连延迟
+     *
+     * @param sessionId 会话ID
+     */
+    public void initSession(String sessionId) {
+        log.info("[InterviewerAgent] 初始化会话资源, sessionId={}", sessionId);
+        ConversationContext context = getOrCreateContext(sessionId);
+        // 提前创建 TTS 连接
+        TTSService ttsService = createTTSServiceForSession(sessionId);
+        context.setTtsService(ttsService);
+        // 提前创建 ASR 连接
+        ASRService asrService = createASRServiceForSession(sessionId);
+        context.setAsrService(asrService);
+        log.info("[InterviewerAgent] 会话资源初始化完成, sessionId={}", sessionId);
+    }
+
+    /**
+     * 创建并连接 TTS 服务
+     */
+    private TTSService createTTSServiceForSession(String sessionId) {
+        VoiceProperties.AliyunConfig.TTSConfig ttsProps = voiceProperties.getAliyun().getTts();
+        TTSService service = voiceServiceFactory.createTTSService(VoiceRole.INTERVIEWER);
+        service.connect(new TTSListener() {
+            @Override
+            public void onAudio(byte[] audioData) {
+                String audioBase64 = Base64.getEncoder().encodeToString(audioData);
+                voiceGateway.sendResponse(sessionId, VoiceResponse.audio(
+                        VoiceResponse.AudioData.builder()
+                                .audio(audioBase64)
+                                .format(ttsProps.getFormat())
+                                .sampleRate(ttsProps.getSampleRate())
+                                .build()
+                ));
+            }
+
+            @Override
+            public void onError(Exception e) {
+                log.error("[InterviewerAgent] TTS合成错误, sessionId={}", sessionId, e);
+            }
+
+            @Override
+            public void onComplete() {
+                log.info("[InterviewerAgent] TTS连接关闭, sessionId={}", sessionId);
+            }
+        });
+        return service;
+    }
+
+    /**
+     * 创建并启动 ASR 服务
+     */
+    private ASRService createASRServiceForSession(String sessionId) {
+        ASRService service = voiceServiceFactory.createASRService();
+        service.start(new ASRListener() {
+            @Override
+            public void onResult(ASRResult result) {
+                handleASRResult(sessionId, result);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                log.error("[InterviewerAgent] ASR 会话错误, sessionId={}", sessionId, e);
+                voiceGateway.sendResponse(sessionId, VoiceResponse.error(VoiceResponse.ErrorData.builder()
+                        .code("ASR_ERROR")
+                        .message("语音识别失败: " + e.getMessage())
+                        .build()));
+            }
+
+            @Override
+            public void onComplete() {
+                log.info("[InterviewerAgent] ASR 会话结束, sessionId={}", sessionId);
+            }
+        });
+        return service;
     }
 
     /**
@@ -337,34 +388,7 @@ public class InterviewerAgentHandler {
      */
     private void synthesizeAndSend(String sessionId, String text, boolean isFinal) {
         ConversationContext context = getOrCreateContext(sessionId);
-        VoiceProperties.AliyunConfig.TTSConfig ttsProps = voiceProperties.getAliyun().getTts();
-        TTSService tts = context.getOrCreateTTSService(() -> {
-            TTSService service = voiceServiceFactory.createTTSService(VoiceRole.INTERVIEWER);
-            service.connect(new TTSListener() {
-                @Override
-                public void onAudio(byte[] audioData) {
-                    String audioBase64 = Base64.getEncoder().encodeToString(audioData);
-                    voiceGateway.sendResponse(sessionId, VoiceResponse.audio(
-                            VoiceResponse.AudioData.builder()
-                                    .audio(audioBase64)
-                                    .format(ttsProps.getFormat())
-                                    .sampleRate(ttsProps.getSampleRate())
-                                    .build()
-                    ));
-                }
-
-                @Override
-                public void onError(Exception e) {
-                    log.error("[InterviewerAgent] TTS合成错误, sessionId={}", sessionId, e);
-                }
-
-                @Override
-                public void onComplete() {
-                    // 连接关闭时触发
-                }
-            });
-            return service;
-        });
+        TTSService tts = context.getOrCreateTTSService(() -> createTTSServiceForSession(sessionId));
         // 发送文本转录
         voiceGateway.sendResponse(sessionId, VoiceResponse.transcript(
                 VoiceResponse.TranscriptData.builder()
@@ -396,36 +420,7 @@ public class InterviewerAgentHandler {
     private void synthesizeStreamAndSend(String sessionId, Flux<String> textStream) {
         log.info("[InterviewerAgent] 开始流式合成, sessionId={}", sessionId);
         ConversationContext context = getOrCreateContext(sessionId);
-        VoiceProperties.AliyunConfig.TTSConfig ttsProps = voiceProperties.getAliyun().getTts();
-        TTSService tts = context.getOrCreateTTSService(() -> {
-            log.debug("[InterviewerAgent] 创建新TTS服务, sessionId={}", sessionId);
-            TTSService service = voiceServiceFactory.createTTSService(VoiceRole.INTERVIEWER);
-            service.connect(new TTSListener() {
-                @Override
-                public void onAudio(byte[] audioData) {
-                    log.debug("[InterviewerAgent] TTS音频回调, sessionId={}, size={}", sessionId, audioData.length);
-                    String audioBase64 = Base64.getEncoder().encodeToString(audioData);
-                    voiceGateway.sendResponse(sessionId, VoiceResponse.audio(
-                            VoiceResponse.AudioData.builder()
-                                    .audio(audioBase64)
-                                    .format(ttsProps.getFormat())
-                                    .sampleRate(ttsProps.getSampleRate())
-                                    .build()
-                    ));
-                }
-
-                @Override
-                public void onError(Exception e) {
-                    log.error("[InterviewerAgent] TTS流式合成错误, sessionId={}", sessionId, e);
-                }
-
-                @Override
-                public void onComplete() {
-                    log.info("[InterviewerAgent] TTS连接关闭, sessionId={}", sessionId);
-                }
-            });
-            return service;
-        });
+        TTSService tts = context.getOrCreateTTSService(() -> createTTSServiceForSession(sessionId));
         StringBuilder fullText = new StringBuilder();
         textStream.subscribe(
                 delta -> {

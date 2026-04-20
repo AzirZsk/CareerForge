@@ -101,17 +101,6 @@ public class VoiceSessionManager {
     }
 
     /**
-     * 广播消息给所有连接的会话
-     *
-     * @param response 响应数据
-     */
-    public void broadcastAll(VoiceResponse response) {
-        sessions.values().stream()
-                .filter(WebSocketSession::isOpen)
-                .forEach(session -> sendResponse(session, response));
-    }
-
-    /**
      * 检查会话是否存在且打开
      *
      * @param wsSessionId WebSocket 会话 ID

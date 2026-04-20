@@ -508,16 +508,6 @@ public class InterviewVoiceGateway {
     }
 
     /**
-     * 广播响应消息到所有会话
-     * 向所有活跃的 WebSocket 连接推送消息
-     *
-     * @param response 响应对象
-     */
-    public void broadcastResponse(VoiceResponse response) {
-        voiceSessionManager.broadcastAll(response);
-    }
-
-    /**
      * 处理音频请求
      * 解析 Base64 编码的音频数据并转发给面试官 Agent 处理
      *
@@ -597,6 +587,9 @@ public class InterviewVoiceGateway {
         // 通知客户端面试开始
         sendResponse(sessionId, VoiceResponse.state(
                 buildStateData(InterviewSessionState.INTERVIEWING.getCode(), state)));
+
+        // 提前初始化 ASR/TTS 连接，避免首次使用时的建连延迟
+        interviewerAgentHandler.initSession(sessionId);
 
         // 请求候选人自我介绍（结果通过回调直接推送）
         interviewerAgentHandler.requestSelfIntroduction(sessionId);
