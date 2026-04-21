@@ -164,26 +164,39 @@ public class StatisticsHandler {
      */
     private List<StatisticsVO.WeeklyProgressVO> buildSessionProgress() {
         List<StatisticsVO.WeeklyProgressVO> result = new ArrayList<>();
-        // 得分趋势：最近10次模拟面试
+        // 查询最近10次所有来源的面试（用于面试次数tab）
+        LambdaQueryWrapper<Interview> allWrapper = new LambdaQueryWrapper<>();
+        allWrapper.orderByAsc(Interview::getCreatedAt).last("LIMIT 10");
+        List<Interview> allInterviews = interviewService.list(allWrapper);
+        // 查询最近10次有分数的面试（真实面试AI分析+模拟面试，用于得分趋势tab）
         LambdaQueryWrapper<Interview> scoreWrapper = new LambdaQueryWrapper<>();
-        scoreWrapper.eq(Interview::getSource, "mock")
-                .isNotNull(Interview::getScore)
+        scoreWrapper.isNotNull(Interview::getScore)
                 .gt(Interview::getScore, 0)
                 .orderByAsc(Interview::getCreatedAt)
                 .last("LIMIT 10");
         List<Interview> scoredInterviews = interviewService.list(scoreWrapper);
-        for (int i = 0; i < scoredInterviews.size(); i++) {
-            Interview interview = scoredInterviews.get(i);
-            // 统计同一天所有来源的面试次数
-            LocalDateTime dayStart = interview.getCreatedAt().truncatedTo(ChronoUnit.DAYS);
-            LocalDateTime dayEnd = dayStart.plusDays(1);
-            LambdaQueryWrapper<Interview> countWrapper = new LambdaQueryWrapper<>();
-            countWrapper.ge(Interview::getCreatedAt, dayStart).lt(Interview::getCreatedAt, dayEnd);
-            long dayCount = interviewService.count(countWrapper);
+        // 取两组数据中较多的数量作为柱子数
+        int count = Math.max(allInterviews.size(), scoredInterviews.size());
+        // 用日期标签，方便面试次数tab也有意义
+        DateTimeFormatter labelFmt = DateTimeFormatter.ofPattern("M/d");
+        for (int i = 0; i < count; i++) {
+            String label = "";
+            int score = 0;
+            int interviews = 0;
+            if (i < allInterviews.size()) {
+                label = allInterviews.get(i).getCreatedAt().format(labelFmt);
+                interviews = 1;
+            }
+            if (i < scoredInterviews.size()) {
+                if (label.isEmpty()) {
+                    label = scoredInterviews.get(i).getCreatedAt().format(labelFmt);
+                }
+                score = scoredInterviews.get(i).getScore();
+            }
             result.add(StatisticsVO.WeeklyProgressVO.builder()
-                    .week("第" + (i + 1) + "次")
-                    .score(interview.getScore())
-                    .interviews((int) dayCount)
+                    .week(label)
+                    .score(score)
+                    .interviews(interviews)
                     .build());
         }
         return result;
@@ -232,7 +245,6 @@ public class StatisticsHandler {
         wrapper.select(Interview::getScore)
                 .ge(Interview::getCreatedAt, weekStart)
                 .lt(Interview::getCreatedAt, weekEnd)
-                .eq(Interview::getSource, "mock")
                 .isNotNull(Interview::getScore)
                 .gt(Interview::getScore, 0);
         List<Interview> scoredInterviews = interviewService.list(wrapper);
