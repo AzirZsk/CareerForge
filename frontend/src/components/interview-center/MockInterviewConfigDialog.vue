@@ -52,7 +52,7 @@
               </button>
             </div>
             <p class="form-hint">
-              {{ config.voiceMode === 'half_voice' ? '你说语音，AI 回文字（阅读更快）' : '全程语音对话，沉浸式面试体验' }}
+              {{ config.voiceMode === 'half_voice' ? '你说语音，AI 回文字' : '全程语音对话，沉浸式面试体验' }}
             </p>
           </div>
 
@@ -96,7 +96,7 @@
             <p class="form-hint">
               {{ config.regenerateQuestions
                 ? '基于简历和 JD 重新生成全新的面试问题'
-                : '复用同一面试上次生成的问题（更快）'
+                : '复用同一面试上次生成的问题'
               }}
             </p>
           </div>

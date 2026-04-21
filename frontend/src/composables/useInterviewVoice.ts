@@ -143,6 +143,12 @@ export function useInterviewVoice(sessionId: string) {
       // 初始化音频播放器（注入共享 context）
       await audioPlayer.initAudioContext(settings.value.sampleRate, sharedAudioContext)
 
+      // 注册播放时序回调，用于文字-音频同步
+      audioPlayer.setPlaybackCallbacks({
+        onChunkStart: handleChunkStart,
+        onPlaybackEnd: handlePlaybackEnd
+      })
+
       // 初始化录音器（注入共享 context）
       await recorder.init({
         onAudioData: handleAudioData,
@@ -288,24 +294,30 @@ export function useInterviewVoice(sessionId: string) {
         if (data.text) {
           interviewerAccumulatedText += data.text
         }
-        partialTranscript.value = { ...data, text: interviewerAccumulatedText }
+        if (isFullVoice()) {
+          // full_voice 模式：始终缓冲，等音频播放时再释放
+          textGateBuffer = interviewerAccumulatedText
+          console.log('[TextGate] 文字缓冲, bufferLen=', textGateBuffer.length,
+            'revealedChars=', revealedChars, 'audioDur=', accumulatedAudioDuration)
+        } else {
+          // half_voice 模式：立即显示
+          partialTranscript.value = { ...data, text: interviewerAccumulatedText }
+        }
       } else {
         // 面试官回复结束（可能是空 final 信号或带文字的 final）
         if (data.text) {
           interviewerAccumulatedText += data.text
         }
-        // 将累积的完整文字添加到消息列表（不添加空消息）
-        if (interviewerAccumulatedText.trim()) {
-          const message: ConversationMessage = {
-            id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
-            role: 'interviewer',
-            content: interviewerAccumulatedText,
-            timestamp: Date.now()
-          }
-          messages.value.push(message)
+        if (isFullVoice() && revealedChars < interviewerAccumulatedText.length) {
+          // full_voice 且文字还没释放完：标记流结束，等门控追上来再提交
+          textGateBuffer = interviewerAccumulatedText
+          isTextStreamDone = true
+          console.log('[TextGate] isFinal, 文字流结束, 等门控追上, bufferLen=',
+            textGateBuffer.length, 'revealed=', revealedChars)
+        } else {
+          // half_voice 或文字已全部释放：立即提交
+          commitInterviewerMessage()
         }
-        interviewerAccumulatedText = ''
-        partialTranscript.value = null
       }
     } else {
       // 候选人 transcript：保持原逻辑
@@ -328,6 +340,32 @@ export function useInterviewVoice(sessionId: string) {
 
   /** 面试官文字累积（后端按句分块发送，前端需要拼接完整回复） */
   let interviewerAccumulatedText = ''
+
+  // ==================== 音频门控文字同步 ====================
+
+  /** 门控模式下的完整文字缓冲（已到达但未全部显示） */
+  let textGateBuffer = ''
+
+  /** 已释放的字符数 */
+  let revealedChars = 0
+
+  /** 累积音频总时长（秒） */
+  let accumulatedAudioDuration = 0
+
+  /** 文字流是否已结束（isFinal 已到达） */
+  let isTextStreamDone = false
+
+  /** 逐字释放定时器 */
+  let revealTimer: number | null = null
+
+  /** 小数累积器（平滑释放速率） */
+  let fractionalChars = 0
+
+  /** 定时器间隔（毫秒） */
+  const REVEAL_INTERVAL_MS = 50
+
+  /** 中文最低语速估算（字/秒），用于防止初期释放速率过高 */
+  const MIN_SPEECH_RATE = 5
 
   /**
    * 处理音频消息
@@ -388,6 +426,130 @@ export function useInterviewVoice(sessionId: string) {
   function handleErrorMessage(data: { code: string; message: string }): void {
     error.value = data.message
     console.error('[useInterviewVoice] 服务端错误:', data.code, data.message)
+  }
+
+  // ============================================================================
+  // 音频门控文字同步
+  // ============================================================================
+
+  /** 是否为全语音模式（full_voice 下才启用门控） */
+  function isFullVoice(): boolean {
+    return settings.value.mode === 'full_voice'
+  }
+
+  /**
+   * 音频 chunk 开始播放回调
+   * 累加音频时长，启动逐字释放定时器
+   */
+  function handleChunkStart(chunkDuration: number): void {
+    if (!isFullVoice()) return
+    accumulatedAudioDuration += chunkDuration
+    console.log('[TextGate] 音频chunk开始, duration=', chunkDuration.toFixed(3),
+      'accumulated=', accumulatedAudioDuration.toFixed(3),
+      'bufferLen=', textGateBuffer.length, 'revealedChars=', revealedChars)
+    // 第一个音频 chunk 到达且缓冲有文字时，启动释放定时器
+    if (!revealTimer && textGateBuffer.length > 0) {
+      console.log('[TextGate] 启动释放定时器')
+      revealTimer = window.setInterval(revealTick, REVEAL_INTERVAL_MS)
+    }
+  }
+
+  /**
+   * 定时器回调：按音频播放速率逐字释放文字
+   * 速率 = 缓冲文字总长 / 累积音频总时长（chars/sec）
+   */
+  function revealTick(): void {
+    if (textGateBuffer.length === 0 || accumulatedAudioDuration <= 0) return
+    // 有效时长 = max(已播放音频时长, 文字长度/最低语速)，防止初期速率爆炸
+    const minEstimatedDuration = textGateBuffer.length / MIN_SPEECH_RATE
+    const effectiveDuration = Math.max(accumulatedAudioDuration, minEstimatedDuration)
+    const charsPerSecond = textGateBuffer.length / effectiveDuration
+    const charsPerTick = charsPerSecond * (REVEAL_INTERVAL_MS / 1000)
+    fractionalChars += charsPerTick
+    const toReveal = Math.floor(fractionalChars)
+    if (toReveal <= 0) return
+    fractionalChars -= toReveal
+    const prevChars = revealedChars
+    revealedChars = Math.min(revealedChars + toReveal, textGateBuffer.length)
+    if (revealedChars !== prevChars) {
+      console.log('[TextGate] 释放文字, +', revealedChars - prevChars,
+        'chars, total=', revealedChars, '/', textGateBuffer.length,
+        'rate=', charsPerSecond.toFixed(1), 'chars/s',
+        'effectiveDur=', effectiveDuration.toFixed(1) + 's')
+    }
+    partialTranscript.value = {
+      text: textGateBuffer.substring(0, revealedChars),
+      isFinal: false,
+      role: 'interviewer'
+    }
+    // 文字流已结束且全部释放完 → 提交消息
+    if (isTextStreamDone && revealedChars >= textGateBuffer.length) {
+      console.log('[TextGate] 文字全部释放完, 提交消息')
+      commitInterviewerMessage()
+    }
+  }
+
+  /**
+   * 音频播放结束回调
+   * 立刻刷出所有剩余文字
+   */
+  function handlePlaybackEnd(): void {
+    if (!isFullVoice()) return
+    console.log('[TextGate] 音频播放结束, revealed=', revealedChars,
+      'bufferLen=', textGateBuffer.length, 'isTextStreamDone=', isTextStreamDone)
+    if (textGateBuffer.length > revealedChars) {
+      revealedChars = textGateBuffer.length
+      partialTranscript.value = {
+        text: textGateBuffer,
+        isFinal: false,
+        role: 'interviewer'
+      }
+    }
+    // 文字流已结束 → 提交消息
+    if (isTextStreamDone) {
+      commitInterviewerMessage()
+    }
+    stopRevealTimer()
+  }
+
+  /**
+   * 停止逐字释放定时器
+   */
+  function stopRevealTimer(): void {
+    if (revealTimer) {
+      clearInterval(revealTimer)
+      revealTimer = null
+    }
+    fractionalChars = 0
+  }
+
+  /**
+   * 提交面试官消息到消息列表，重置门控状态
+   */
+  function commitInterviewerMessage(): void {
+    if (interviewerAccumulatedText.trim()) {
+      const message: ConversationMessage = {
+        id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+        role: 'interviewer',
+        content: interviewerAccumulatedText,
+        timestamp: Date.now()
+      }
+      messages.value.push(message)
+    }
+    interviewerAccumulatedText = ''
+    partialTranscript.value = null
+    resetTextGate()
+  }
+
+  /**
+   * 重置所有门控状态
+   */
+  function resetTextGate(): void {
+    textGateBuffer = ''
+    revealedChars = 0
+    accumulatedAudioDuration = 0
+    isTextStreamDone = false
+    stopRevealTimer()
   }
 
   // ============================================================================
@@ -530,6 +692,7 @@ export function useInterviewVoice(sessionId: string) {
     stopTimer()
     stopHeartbeat()
     stopRecording()
+    stopRevealTimer()
     unregisterGuard('voice-interview')
 
     if (ws) {

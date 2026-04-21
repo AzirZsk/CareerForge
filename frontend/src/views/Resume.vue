@@ -681,11 +681,7 @@ async function handleSaveTailor(data: {
   }
 }
 
-// 打开定制弹窗（从简历列表点击）
-function openTailorModal(resumeId: string): void {
-  tailorResumeId.value = resumeId
-  showTailorModal.value = true
-}
+
 </script>
 
 <style lang="scss" scoped>
