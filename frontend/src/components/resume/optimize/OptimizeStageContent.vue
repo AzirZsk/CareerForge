@@ -259,12 +259,19 @@ const hasBeforeData = computed(() => {
   font-size: $text-sm;
 }
 
-// 变更摘要
+// 变更摘要 - sticky 跟随滚动
 .changes-summary {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: $spacing-sm;
+  padding: $spacing-xs 0;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: rgba(17, 17, 19, 0.92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .changes-summary-left {
