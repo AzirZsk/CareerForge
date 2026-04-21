@@ -155,7 +155,7 @@
                 :disabled="selectedCount === 0"
                 @click="handleSave"
               >
-                保存选中 ({{ selectedCount }})
+                保存准备清单 ({{ selectedCount }})
               </button>
             </template>
             <template v-else-if="state.isCompleted">
