@@ -22,12 +22,17 @@ public class SecurityUtils {
      * @throws BusinessException 用户未登录
      */
     public static String getCurrentUserId() {
+        // 优先从 UserContext 获取（异步线程通过 Schedulers hook 传播）
+        String userId = UserContext.getUserId();
+        if (userId != null) {
+            return userId;
+        }
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if (attributes == null) {
             throw new BusinessException("用户未登录");
         }
         HttpServletRequest request = attributes.getRequest();
-        String userId = (String) request.getAttribute("currentUserId");
+        userId = (String) request.getAttribute("currentUserId");
         if (userId == null) {
             throw new BusinessException("用户未登录");
         }

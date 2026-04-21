@@ -541,7 +541,7 @@ function getBarValue(item: WeeklyProgress): string | number {
   border: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
   flex-direction: column;
-  min-height: 320px;
+  min-height: 240px;
 }
 
 .chart-tabs {
@@ -577,8 +577,8 @@ function getBarValue(item: WeeklyProgress): string | number {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  height: 200px;
-  padding-top: $spacing-lg;
+  height: 140px;
+  padding-top: $spacing-md;
 }
 
 .bar-group {
@@ -594,7 +594,7 @@ function getBarValue(item: WeeklyProgress): string | number {
 
 .bar-wrapper {
   width: var(--bar-width, 40px);
-  height: 160px;
+  height: 110px;
   display: flex;
   align-items: flex-end;
 }
@@ -702,7 +702,8 @@ function getBarValue(item: WeeklyProgress): string | number {
   background: $gradient-card;
   border-radius: $radius-lg;
   border: 1px solid rgba(255, 255, 255, 0.05);
-  overflow: hidden;
+  max-height: 340px;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
 }

@@ -141,12 +141,15 @@ public class InterviewerAgentHandler {
      * @param sessionId 会话ID
      */
     public void initSession(String sessionId) {
-        log.info("[InterviewerAgent] 初始化会话资源, sessionId={}", sessionId);
+        log.info("[InterviewerAgent] 初始化会话资源, sessionId={}, voiceMode={}", sessionId,
+                isFullVoiceMode(sessionId) ? "full_voice" : "half_voice");
         ConversationContext context = getOrCreateContext(sessionId);
-        // 提前创建 TTS 连接
-        TTSService ttsService = createTTSServiceForSession(sessionId);
-        context.setTtsService(ttsService);
-        // 提前创建 ASR 连接
+        // half_voice 模式不需要 TTS，面试官只回复文字
+        if (isFullVoiceMode(sessionId)) {
+            TTSService ttsService = createTTSServiceForSession(sessionId);
+            context.setTtsService(ttsService);
+        }
+        // 提前创建 ASR 连接（两种模式都需要，用户语音输入）
         ASRService asrService = createASRServiceForSession(sessionId);
         context.setAsrService(asrService);
         log.info("[InterviewerAgent] 会话资源初始化完成, sessionId={}", sessionId);
@@ -388,7 +391,6 @@ public class InterviewerAgentHandler {
      */
     private void synthesizeAndSend(String sessionId, String text, boolean isFinal) {
         ConversationContext context = getOrCreateContext(sessionId);
-        TTSService tts = context.getOrCreateTTSService(() -> createTTSServiceForSession(sessionId));
         // 发送文本转录
         voiceGateway.sendResponse(sessionId, VoiceResponse.transcript(
                 VoiceResponse.TranscriptData.builder()
@@ -397,8 +399,11 @@ public class InterviewerAgentHandler {
                         .role(TranscriptRole.INTERVIEWER.getValue())
                         .build()
         ));
-        // 提交合成（非阻塞，音频通过 listener 异步推送）
-        tts.synthesize(text, true);
+        // full_voice 模式才合成语音
+        if (isFullVoiceMode(sessionId)) {
+            TTSService tts = context.getOrCreateTTSService(() -> createTTSServiceForSession(sessionId));
+            tts.synthesize(text, true);
+        }
         // 发送最终标记
         voiceGateway.sendResponse(sessionId, VoiceResponse.transcript(
                 VoiceResponse.TranscriptData.builder()
@@ -420,15 +425,19 @@ public class InterviewerAgentHandler {
     private void synthesizeStreamAndSend(String sessionId, Flux<String> textStream) {
         log.info("[InterviewerAgent] 开始流式合成, sessionId={}", sessionId);
         ConversationContext context = getOrCreateContext(sessionId);
-        TTSService tts = context.getOrCreateTTSService(() -> createTTSServiceForSession(sessionId));
+        boolean fullVoice = isFullVoiceMode(sessionId);
+        // full_voice 模式才创建 TTS 连接
+        TTSService tts = fullVoice ? context.getOrCreateTTSService(() -> createTTSServiceForSession(sessionId)) : null;
         StringBuilder fullText = new StringBuilder();
         textStream.subscribe(
                 delta -> {
-                    // 提交 delta 到 TTS（非阻塞，server_commit 自动合成）
-                    log.debug("[InterviewerAgent] 提交 delta, sessionId={}, delta={}", sessionId, delta);
-                    tts.synthesize(delta, false);
+                    // full_voice 模式提交 delta 到 TTS
+                    if (fullVoice && tts != null) {
+                        log.debug("[InterviewerAgent] 提交 delta, sessionId={}, delta={}", sessionId, delta);
+                        tts.synthesize(delta, false);
+                    }
                     fullText.append(delta);
-                    // 每个 delta 直接发送转录到客户端
+                    // 每个 delta 直接发送转录到客户端（两种模式都需要）
                     voiceGateway.sendResponse(sessionId, VoiceResponse.transcript(
                             VoiceResponse.TranscriptData.builder()
                                     .text(delta)
@@ -440,7 +449,9 @@ public class InterviewerAgentHandler {
                 error -> log.error("[InterviewerAgent] LLM流错误, sessionId={}", sessionId, error),
                 () -> {
                     // LLM 流结束，刷新 TTS 缓冲区中的残余文本
-                    tts.synthesize("", true);
+                    if (fullVoice && tts != null) {
+                        tts.synthesize("", true);
+                    }
                     // 发送 final 标记
                     voiceGateway.sendResponse(sessionId, VoiceResponse.transcript(
                             VoiceResponse.TranscriptData.builder()
@@ -457,6 +468,14 @@ public class InterviewerAgentHandler {
                     }
                 }
         );
+    }
+
+    /**
+     * 判断是否为全语音模式（面试官也播放语音）
+     */
+    private boolean isFullVoiceMode(String sessionId) {
+        SessionState state = voiceGateway.getInternalState(sessionId);
+        return state != null && "full_voice".equals(state.getVoiceMode());
     }
 
     /**

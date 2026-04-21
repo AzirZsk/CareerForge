@@ -39,4 +39,9 @@ public class ChatStreamRequest {
      * 上传的图片列表（最多10张）
      */
     private List<MultipartFile> images;
+
+    /**
+     * 当前用户ID（由控制器从请求属性注入，不由前端传递）
+     */
+    private String userId;
 }

@@ -7,6 +7,7 @@ import com.careerforge.chat.handler.AIChatHandler;
 import com.careerforge.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +38,12 @@ public class AIChatController {
     @PostMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter chatStream(
             @ModelAttribute ChatStreamRequest request,
+            HttpServletRequest httpRequest,
             HttpServletResponse response) {
+        // 从 JWT 过滤器设置的请求属性中提取用户ID
+        String userId = (String) httpRequest.getAttribute("currentUserId");
+        request.setUserId(userId);
+
         log.info("[AIChat] 收到聊天请求: resumeId={}, sessionId={}, imageCount={}",
                 request.getResumeId(),
                 request.getSessionId(),

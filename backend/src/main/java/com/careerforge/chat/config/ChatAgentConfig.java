@@ -14,13 +14,18 @@ import com.careerforge.chat.tools.GetSectionTool;
 import com.careerforge.chat.tools.SelectResumeTool;
 import com.careerforge.chat.tools.UpdateSectionTool;
 import com.careerforge.common.config.AIPromptProperties;
+import com.careerforge.common.util.UserContext;
 import com.careerforge.resume.handler.ResumeHandler;
+import io.micrometer.context.ContextRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import reactor.core.publisher.Hooks;
+
+import jakarta.annotation.PostConstruct;
 
 import java.util.List;
 
@@ -38,6 +43,23 @@ public class ChatAgentConfig {
     private final ChatModel chatModel;
     private final AIPromptProperties aiPromptProperties;
     private final ResumeHandler resumeHandler;
+
+    /**
+     * 初始化 Reactor 上下文传播机制
+     * 将 UserContext 注册到 context-propagation 库，Reactor 自动在所有线程切换时传播 userId
+     * 解决 Agent 内部 LLM 调用走 reactor-http-nio 线程导致 UserContext 丢失的问题
+     */
+    @PostConstruct
+    public void initContextPropagation() {
+        ContextRegistry.getInstance().registerThreadLocalAccessor(
+                "userId",
+                UserContext::getUserId,
+                UserContext::setUserId,
+                UserContext::clear
+        );
+        Hooks.enableAutomaticContextPropagation();
+        log.info("[ChatAgentConfig] 已启用 Reactor 自动上下文传播（context-propagation）");
+    }
 
     /**
      * 创建技能注册表

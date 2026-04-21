@@ -15,6 +15,7 @@ import com.careerforge.common.config.AIPromptProperties;
 import com.careerforge.common.enums.SectionType;
 import com.careerforge.common.service.FileToImageService;
 import com.careerforge.common.util.JsonParseHelper;
+import com.careerforge.common.util.UserContext;
 import com.careerforge.resume.dto.AddSectionRequest;
 import com.careerforge.resume.dto.ResumeDetailVO;
 import com.careerforge.resume.dto.UpdateSectionRequest;
@@ -62,6 +63,12 @@ public class AIChatService {
      */
     public Flux<ChatEvent> chat(ChatStreamRequest request) {
         try {
+            // 设置用户上下文，供 Schedulers.onScheduleHook 传播到异步线程
+            String userId = request.getUserId();
+            if (userId != null) {
+                UserContext.setUserId(userId);
+            }
+
             String resumeId = request.getResumeId();
             String sessionId = request.getSessionId();
 
@@ -175,7 +182,9 @@ public class AIChatService {
                     .onErrorResume(e -> {
                         log.error("[AIChat] Agent 对话异常", e);
                         return Flux.just(ChatEvent.error("对话处理失败: " + e.getMessage()));
-                    });
+                    })
+                    // 捕获当前线程的 UserContext 到 Reactor Context，配合 Hooks.enableAutomaticContextPropagation 自动传播
+                    .contextCapture();
 
         } catch (Exception e) {
             log.error("[AIChat] 处理请求失败", e);

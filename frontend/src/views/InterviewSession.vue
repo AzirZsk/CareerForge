@@ -151,16 +151,6 @@
                 <span class="message-time">{{ formatMessageTime(msg.timestamp) }}</span>
               </div>
             </div>
-            <div v-if="isAIResponding && !interviewerPartialText" class="message interviewer typing">
-              <div class="message-avatar">AI</div>
-              <div class="message-content">
-                <div class="typing-indicator">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-              </div>
-            </div>
             <!-- 实时转录显示 -->
             <div v-if="partialTranscript && !partialTranscript.isFinal" class="message partial-transcript" :class="partialTranscript.role">
               <div class="message-avatar">
@@ -310,15 +300,6 @@ const statusType = computed(() => {
   return 'idle'
 })
 
-// AI 响应状态（与音频播放状态同步）
-const isAIResponding = computed(() => voiceInterview.isPlaying.value)
-
-// 面试官实时文字（用于控制 typing indicator 的显示）
-const interviewerPartialText = computed(() =>
-  partialTranscript.value?.role === 'interviewer' && partialTranscript.value.text
-    ? partialTranscript.value.text
-    : ''
-)
 
 // 面试是否已开始（非 idle 状态时隐藏语音模式切换）
 const isInterviewStarted = computed(() => {
@@ -791,29 +772,6 @@ function goToQuestion(index: number): void {
 .message-time {
   font-size: $text-xs;
   color: $color-text-tertiary;
-}
-
-.typing-indicator {
-  display: flex;
-  gap: 4px;
-  padding: $spacing-md;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: $radius-md;
-  span {
-    width: 8px;
-    height: 8px;
-    background: $color-accent;
-    border-radius: 50%;
-    animation: bounce 1.4s ease-in-out infinite;
-    &:nth-child(1) { animation-delay: 0s; }
-    &:nth-child(2) { animation-delay: 0.2s; }
-    &:nth-child(3) { animation-delay: 0.4s; }
-  }
-}
-
-@keyframes bounce {
-  0%, 60%, 100% { transform: translateY(0); }
-  30% { transform: translateY(-8px); }
 }
 
 // 侧边面板

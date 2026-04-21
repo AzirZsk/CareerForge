@@ -164,10 +164,6 @@ public class StatisticsHandler {
      */
     private List<StatisticsVO.WeeklyProgressVO> buildSessionProgress() {
         List<StatisticsVO.WeeklyProgressVO> result = new ArrayList<>();
-        // 查询最近10次所有来源的面试（用于面试次数tab）
-        LambdaQueryWrapper<Interview> allWrapper = new LambdaQueryWrapper<>();
-        allWrapper.orderByAsc(Interview::getCreatedAt).last("LIMIT 10");
-        List<Interview> allInterviews = interviewService.list(allWrapper);
         // 查询最近10次有分数的面试（真实面试AI分析+模拟面试，用于得分趋势tab）
         LambdaQueryWrapper<Interview> scoreWrapper = new LambdaQueryWrapper<>();
         scoreWrapper.isNotNull(Interview::getScore)
@@ -175,6 +171,14 @@ public class StatisticsHandler {
                 .orderByAsc(Interview::getCreatedAt)
                 .last("LIMIT 10");
         List<Interview> scoredInterviews = interviewService.list(scoreWrapper);
+        // 没有有效分数数据时不返回进度图表
+        if (scoredInterviews.isEmpty()) {
+            return result;
+        }
+        // 查询最近10次所有来源的面试（用于面试次数tab）
+        LambdaQueryWrapper<Interview> allWrapper = new LambdaQueryWrapper<>();
+        allWrapper.orderByAsc(Interview::getCreatedAt).last("LIMIT 10");
+        List<Interview> allInterviews = interviewService.list(allWrapper);
         // 取两组数据中较多的数量作为柱子数
         int count = Math.max(allInterviews.size(), scoredInterviews.size());
         // 用日期标签，方便面试次数tab也有意义
