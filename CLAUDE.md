@@ -14,6 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | 日期 | 版本 | 变更内容 |
 |------|------|----------|
+| 2026-04-21 | 2.8.0 | **新增简历风格改写工作流**：后端新增 `resume/graph/rewrite/` 子模块（7 个 Java 文件、3 个 Node）、ResumeRewriteGraphController/Handler；前端新增 useResumeRewrite composable、resume-rewrite.ts 类型、RewriteResumeModal/RewriteStageItem 组件；**移除 job 模块**（被 jobposition 替代）；面试中心组件从 7 个扩展到 25 个；前端新增 statistics API、config API、request 工具、notification store；数据库新增 t_interview_ai_analysis 表；Java 文件 314→324 |
 | 2026-04-10 | 2.7.0 | **新增多用户登录注册系统**：后端新增 auth 模块（5 个 Java 文件）、AuthController；前端新增 auth.ts 类型、登录注册路由；SSE 从 Reactor 迁移至 Spring MVC SseEmitter；语音面试新增问题预生成与追问机制；删除 useAudioTranscribe composable；更新文件统计 |
 | 2026-04-08 | 2.6.0 | **复盘模块改名**：模块名「复盘笔记」→「面试复盘」、Tab 名「面试分析」→「AI 分析」、「我的笔记」→「复盘笔记」 |
 | 2026-04-07 | 2.5.0 | **新增异步任务模块**：后端新增 task 模块（10 个 Java 文件）、t_async_task 表、TaskController；前端新增 useAudioTranscribe/useMicrophonePermission composables、task.ts API、notification.ts 类型；更新文件统计 |
@@ -80,7 +81,6 @@ graph TD
     B --> B4["resume"]
     B --> B5["interview"]
     B --> B6["statistics"]
-    B --> B7["job"]
     B --> B8["chat"]
     B --> B9["company"]
     B --> B10["jobposition"]
@@ -90,8 +90,9 @@ graph TD
     B3a --> B3a2["tailor"]
 
     B4 --> B4a["graph"]
-    B4a --> B4a1["preparation"]
-    B4a --> B4a2["review"]
+    B4a --> B4a1["optimize"]
+    B4a --> B4a2["tailor"]
+    B4a --> B4a3["rewrite"]
     B4 --> B4b["voice"]
 
     C --> C1["views"]
@@ -130,12 +131,12 @@ graph TD
 | resume | `backend/.../resume/` | 简历CRUD、AI优化、导出 |
 | resume/graph/optimize | `backend/.../resume/graph/optimize/` | 简历优化工作流（StateGraph 状态机） |
 | resume/graph/tailor | `backend/.../resume/graph/tailor/` | 简历定制工作流（StateGraph 状态机） |
+| resume/graph/rewrite | `backend/.../resume/graph/rewrite/` | 简历风格改写工作流（参考简历风格改写） |
 | interview | `backend/.../interview/` | 模拟面试会话、题库、答题流程 |
 | **interview/voice** | `backend/.../interview/voice/` | **AI 语音面试（WebSocket + ASR/TTS + 求助系统）** |
 | interview/graph/preparation | `backend/.../interview/graph/preparation/` | 面试准备工作流（AI 生成准备清单） |
 | interview/graph/review | `backend/.../interview/graph/review/` | 复盘分析工作流（AI 分析面试表现） |
 | statistics | `backend/.../statistics/` | 数据统计与可视化 |
-| job | `backend/.../job/` | 职位推荐 |
 | **chat** | `backend/.../chat/` | **AI 对话式简历优化（ReactAgent + 技能系统）** |
 | **company** | `backend/.../company/` | **公司信息与调研** |
 | **jobposition** | `backend/.../jobposition/` | **职位信息与 JD 分析** |
@@ -445,6 +446,42 @@ AI 回复中文字和操作卡片按穿插顺序渲染，每条消息携带 `seg
 | `MatchResumeNode` | `resume/graph/tailor/` | 匹配简历与 JD，计算匹配度 |
 | `GenerateTailoredResumeNode` | `resume/graph/tailor/` | 根据匹配分析生成定制简历 |
 
+### 简历风格改写工作流 Graph（Resume Rewrite Workflow）
+
+简历风格改写功能基于参考简历的风格分析，对用户简历进行改写：
+
+```
++------------------------------------------------------------------------------+
+|                        ResumeRewriteGraph                                     |
++------------------------------------------------------------------------------+
+|                                                                              |
+|   START --> AnalyzeStyle --> GenerateStyleDiff --> RewriteSection --> END   |
+|              (分析风格)        (生成风格差异)         (应用改写)               |
+|                                                                              |
++------------------------------------------------------------------------------+
+```
+
+**流程说明**：用户上传一份参考简历 → AI 分析其风格特征 → 生成风格差异对比 → 按参考风格改写用户简历各区块。
+
+**关键组件：**
+
+| 组件 | 位置 | 职责 |
+|------|------|------|
+| `RewriteGraphConfig` | `resume/graph/rewrite/` | 定义工作流节点、边、状态策略 |
+| `RewriteGraphService` | `resume/graph/rewrite/` | 执行、恢复工作流 |
+| `RewriteGraphConstants` | `resume/graph/rewrite/` | 状态键、节点名称常量 |
+| `AnalyzeStyleNode` | `resume/graph/rewrite/` | 分析参考简历风格特征 |
+| `GenerateStyleDiffNode` | `resume/graph/rewrite/` | 生成用户简历与参考简历的风格差异 |
+| `RewriteSectionNode` | `resume/graph/rewrite/` | 按参考风格改写简历各区块 |
+| `ResumeRewriteGraphController` | `resume/controller/` | 上传参考简历、SSE 流式改写 |
+| `ResumeRewriteGraphHandler` | `resume/handler/` | 改写工作流业务编排 |
+
+**前端组件：**
+- `RewriteResumeModal` - 改写弹窗（上传参考简历、触发改写）
+- `RewriteStageItem` - 改写阶段进度展示
+- Composable：`useResumeRewrite.ts` - 改写状态管理
+- 类型：`types/resume-rewrite.ts`
+
 ### 面试中心模块（Interview Center）
 
 面试中心是**真实面试管理**模块，不同于模拟面试，用于管理实际面试全流程：
@@ -502,6 +539,7 @@ START --> AnalyzeTranscript --> AnalyzeInterview --> GenerateAdvice --> END
 
 | 组件 | 位置 | 职责 |
 |------|------|------|
+| `InterviewHeader` | `components/interview-center/` | 面试详情头部 |
 | `JobPositionCard` | `components/interview-center/` | 职位卡片展示 |
 | `CreateInterviewDialog` | `components/interview-center/` | 创建面试弹窗 |
 | `EditInterviewDialog` | `components/interview-center/` | 编辑面试弹窗 |
@@ -509,6 +547,23 @@ START --> AnalyzeTranscript --> AnalyzeInterview --> GenerateAdvice --> END
 | `ReviewNoteDialog` | `components/interview-center/` | 复盘笔记弹窗 |
 | `AddPreparationDialog` | `components/interview-center/` | 添加准备事项弹窗 |
 | `PreparationProgressModal` | `components/interview-center/` | AI 生成准备事项进度弹窗 |
+| `PreparationProgress` | `components/interview-center/` | 准备进度展示 |
+| `PreparationGroup` | `components/interview-center/` | 准备事项分组 |
+| `PreparationItem` | `components/interview-center/` | 单条准备事项 |
+| `ReviewAnalysisProgress` | `components/interview-center/` | 复盘分析进度 |
+| `AudioUploadArea` | `components/interview-center/` | 音频上传区域 |
+| `MicrophonePermissionDialog` | `components/interview-center/` | 麦克风权限弹窗 |
+| `MockInterviewConfigDialog` | `components/interview-center/` | 模拟面试配置弹窗 |
+| `MockHistorySection` | `components/interview-center/` | 模拟面试历史 |
+| `MockSessionDetailModal` | `components/interview-center/` | 模拟面试详情弹窗 |
+| `MeetingLinkBar` | `components/interview-center/` | 会议链接栏 |
+| `PositionStatusBadge` | `components/interview-center/` | 职位状态徽章 |
+| `CompanyResearchContent` | `components/interview-center/preparation/` | 公司调研内容 |
+| `JDAnalysisContent` | `components/interview-center/preparation/` | JD 分析内容 |
+| `PreparationItemsContent` | `components/interview-center/preparation/` | 准备事项内容 |
+| `TranscriptAnalysisContent` | `components/interview-center/review/` | 对话分析内容 |
+| `InterviewAnalysisContent` | `components/interview-center/review/` | 面试分析内容 |
+| `AdviceListContent` | `components/interview-center/review/` | 改进建议列表 |
 
 **前端 Composables：**
 
@@ -561,14 +616,12 @@ START --> AnalyzeTranscript --> AnalyzeInterview --> GenerateAdvice --> END
 |------|--------|------|
 | t_user | User | 用户信息 |
 | t_resume | Resume | 简历主表 |
-| t_resume_version | - | 简历历史版本（快照） |
 | t_resume_section | ResumeSection | 简历模块（区块） |
 | t_resume_suggestion | ResumeSuggestion | 简历优化建议 |
 | t_interview | Interview | 面试记录 |
 | t_interview_question | InterviewQuestion | 面试题库 |
 | t_interview_session | InterviewSession | 面试会话（含语音模式字段） |
 | t_conversation | Conversation | 面试对话 |
-| t_job | Job | 职位推荐 |
 | t_chat_message | ChatMessage | AI 聊天消息（含 actions、action_status、segments 字段） |
 | **t_assistant_conversation** | **AssistantConversation** | **助手对话记录（语音面试求助）** |
 | **t_interview_recording** | **InterviewRecording** | **面试录音片段** |
@@ -576,6 +629,7 @@ START --> AnalyzeTranscript --> AnalyzeInterview --> GenerateAdvice --> END
 | **t_company** | **Company** | **公司信息与调研** |
 | **t_job_position** | **JobPosition** | **职位信息与 JD 分析** |
 | t_interview_preparation | InterviewPreparation | 面试准备事项 |
+| **t_interview_ai_analysis** | **InterviewAiAnalysis** | **AI 面试分析结果** |
 | t_interview_review_note | InterviewReviewNote | 面试复盘笔记 |
 | **t_async_task** | **AsyncTask** | **异步任务（音频转录、简历优化、复盘分析）** |
 
@@ -628,6 +682,12 @@ START --> AnalyzeTranscript --> AnalyzeInterview --> GenerateAdvice --> END
 | PUT | /{id}/sections/{sectionId} | 更新简历模块 |
 | POST | /{id}/sections | 新增简历模块 |
 | DELETE | /{id}/sections/{sectionId} | 删除简历模块 |
+
+### 简历风格改写工作流 `/resumes`
+| 方法 | 路径 | 描述 |
+|------|------|------|
+| POST | /{id}/rewrite/parse-reference | 上传参考简历文件并解析（返回 tempKey） |
+| GET | /{id}/rewrite/stream | SSE 流式执行风格改写（需 tempKey 参数） |
 
 ### 简历优化工作流 `/resumes`
 | 方法 | 路径 | 描述 |
@@ -685,11 +745,6 @@ START --> AnalyzeTranscript --> AnalyzeInterview --> GenerateAdvice --> END
 |------|------|------|
 | GET | / | 获取统计数据 |
 
-### 职位模块 `/jobs`
-| 方法 | 路径 | 描述 |
-|------|------|------|
-| GET | /recommendations | 获取推荐职位 |
-
 ### 异步任务模块 `/tasks`
 | 方法 | 路径 | 描述 |
 |------|------|------|
@@ -725,7 +780,7 @@ START --> AnalyzeTranscript --> AnalyzeInterview --> GenerateAdvice --> END
 3. 新增数据库表需更新 `schema.sql`
 4. 新增简历区块类型需更新 `SectionType` 枚举和对应 DTO
 5. 新增工作流节点需：
-   - 在 `resume/graph/optimize/` 或 `resume/graph/tailor/` 下创建 Node 类（实现 AsyncNodeAction 接口）
+   - 在 `resume/graph/optimize/`、`resume/graph/tailor/` 或 `resume/graph/rewrite/` 下创建 Node 类（实现 AsyncNodeAction 接口）
    - 在对应 `*GraphConfig` 中注册节点和边
    - 在对应 `*GraphConstants` 中定义状态常量
    - 在 `resumeOptimizeKeyStrategyFactory` 或对应工厂中添加状态策略
@@ -762,7 +817,7 @@ START --> AnalyzeTranscript --> AnalyzeInterview --> GenerateAdvice --> END
 - **API 定义**：`backend/docs/openapi.yaml`
 - **数据库结构**：`backend/src/main/resources/schema.sql`
 - **技能定义**：`backend/src/main/resources/skills/`
-- **前端类型**：`frontend/src/types/`（index.ts、auth.ts、ai-chat.ts、resume-optimize.ts、resume-tailor.ts、interview-center.ts、interview-voice.ts、job-position.ts、notification.ts）
+- **前端类型**：`frontend/src/types/`（index.ts、auth.ts、ai-chat.ts、resume-optimize.ts、resume-tailor.ts、resume-rewrite.ts、interview-center.ts、interview-voice.ts、job-position.ts、notification.ts）
 - **设计系统**：`frontend/src/assets/styles/variables.scss`
 - **区块类型**：`backend/src/main/java/com/careerforge/common/enums/SectionType.java`
 - **Graph 公共常量**：`backend/src/main/java/com/careerforge/resume/graph/BaseGraphConstants.java`
@@ -788,18 +843,18 @@ START --> AnalyzeTranscript --> AnalyzeInterview --> GenerateAdvice --> END
 
 | 区域 | 文件数 | 说明 |
 |------|--------|------|
-| 后端 Java 文件 | 314 | 全部子模块（common/user/auth/resume/interview/statistics/job/chat/company/jobposition/voice/task） |
-| 后端 Controllers | 18 | UserController, **AuthController**, ResumeController, ResumeOptimizeGraphController, TailorResumeController, InterviewController, InterviewCenterController, InterviewVoiceController, AssistantController, RecordingController, InterviewPreparationController, InterviewReviewNoteController, ResumeSuggestionController, StatisticsController, JobController, JobPositionController, AIChatController, TaskController |
-| 后端 Handlers | 17 | 各模块 Handler + AIChatHandler + InterviewCenterHandler + InterviewerAgentHandler + AssistantAgentHandler |
-| 后端 Graph 节点 | 14+1 | 优化 3 + 定制 3 + 准备 5 + 复盘 3 + BaseGraphConstants |
+| 后端 Java 文件 | 324 | 全部子模块（common/user/auth/resume/interview/statistics/chat/company/jobposition/voice/task） |
+| 后端 Controllers | 17 | UserController, AuthController, ResumeController, ResumeOptimizeGraphController, **ResumeRewriteGraphController**, TailorResumeController, InterviewController, InterviewCenterController, InterviewVoiceController, AssistantController, RecordingController, InterviewPreparationController, InterviewReviewNoteController, ResumeSuggestionController, StatisticsController, JobPositionController, AIChatController, TaskController |
+| 后端 Handlers | 19 | 各模块 Handler + AIChatHandler + InterviewCenterHandler + InterviewerAgentHandler + AssistantAgentHandler + VoiceWebSocketHandler + ResumeRewriteGraphHandler |
+| 后端 Graph 节点 | 17+1 | 优化 3 + 定制 3 + **改写 3** + 准备 5 + 复盘 3 + BaseGraphConstants |
 | Chat 工具 | 8 | GetResume/GetSection/UpdateSection/AddSection/DeleteSection/CreateResume/GetResumeList/SelectResume |
-| 前端 Views | 14 | 页面组件（含 InterviewSession.vue、InterviewRecording.vue、InterviewDetail.vue） |
-| 前端 Components | 95 | chat(10) + common(5) + resume(51) + interview-center(7) + interview/voice(4) + interview/recording(2) + App.vue + 其他 |
-| 前端 Composables | 20 | useAIChat, useConfirm, useFormValidation, useMarkdown, useResumeOptimize, useResumeTailor, useSectionDiff, useSectionEdit, useSectionHelper, useStageEdit, useStageTimer, useToast, useInterviewPreparation, useReviewAnalysis, useInterviewVoice, useStreamingAudio, useStreamAssist, useAudioRecorder, useMicrophonePermission, usePageGuard |
-| 前端 Utils | 2 | stageHelpers, recording-helpers |
-| 前端 Types | 10 | index.ts, **auth.ts**, ai-chat.ts, resume-optimize.ts, resume-tailor.ts, interview-center.ts, interview-voice.ts, job-position.ts, notification.ts, marked.d.ts |
-| 前端 API | 7 | user.ts, **auth.ts**, resume.ts, aiChat.ts, interview-center.ts, interview-voice.ts, job-position.ts |
-| 数据库表 | 20 | 业务表 + t_chat_message + 面试中心相关表 + 语音面试相关表 + t_async_task |
+| 前端 Views | 14 | Home, Interview, InterviewRecording, InterviewSession, Login, Onboarding, Profile, Resume, ResumeDetail, interview-center(5) |
+| 前端 Components | 93 | chat(10) + common(7) + resume(44) + **interview-center(25)** + interview/voice(4) + interview/recording(2) + App.vue + 其他 |
+| 前端 Composables | 21 | useAIChat, useConfirm, useFormValidation, useMarkdown, useResumeOptimize, useResumeTailor, **useResumeRewrite**, useSectionDiff, useSectionEdit, useSectionHelper, useStageEdit, useStageTimer, useToast, useInterviewPreparation, useReviewAnalysis, useInterviewVoice, useStreamingAudio, useStreamAssist, useAudioRecorder, useMicrophonePermission, usePageGuard |
+| 前端 Utils | 3 | stageHelpers, recording-helpers, request |
+| 前端 Types | 11 | index.ts, auth.ts, ai-chat.ts, resume-optimize.ts, resume-tailor.ts, **resume-rewrite.ts**, interview-center.ts, interview-voice.ts, job-position.ts, notification.ts, marked.d.ts |
+| 前端 API | 10 | user.ts, auth.ts, resume.ts, aiChat.ts, interview-center.ts, interview-voice.ts, job-position.ts, statistics.ts, task.ts, config.ts |
+| 数据库表 | 18 | 业务表 + t_chat_message + 面试中心相关表 + 语音面试相关表 + t_async_task + t_interview_ai_analysis |
 | 测试文件 | 2 | ChangeFieldTranslatorTest.java, ResumeChangeApplierTest.java |
 
 ---
