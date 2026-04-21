@@ -83,7 +83,19 @@
               class="change-added"
             >
               <ol
-                v-if="isArray(change.afterValue)"
+                v-if="isArray(change.afterValue) && hasJsonItems(change.afterValue)"
+                class="change-value-list"
+              >
+                <li
+                  v-for="(item, vIdx) in parseArrayItems(change.afterValue)"
+                  :key="vIdx"
+                  class="structured-item"
+                >
+                  <StructuredItemRenderer :item="item" :field="change.field" />
+                </li>
+              </ol>
+              <ol
+                v-else-if="isArray(change.afterValue)"
                 class="change-value-list"
               >
                 <li
@@ -107,7 +119,19 @@
               >
                 <span class="change-label">前:</span>
                 <ol
-                  v-if="isArray(change.beforeValue)"
+                  v-if="isArray(change.beforeValue) && hasJsonItems(change.beforeValue)"
+                  class="change-value-list"
+                >
+                  <li
+                    v-for="(item, vIdx) in parseArrayItems(change.beforeValue)"
+                    :key="vIdx"
+                    class="structured-item"
+                  >
+                    <StructuredItemRenderer :item="item" :field="change.field" />
+                  </li>
+                </ol>
+                <ol
+                  v-else-if="isArray(change.beforeValue)"
                   class="change-value-list"
                 >
                   <li
@@ -128,7 +152,19 @@
               >
                 <span class="change-label">后:</span>
                 <ol
-                  v-if="isArray(change.afterValue)"
+                  v-if="isArray(change.afterValue) && hasJsonItems(change.afterValue)"
+                  class="change-value-list"
+                >
+                  <li
+                    v-for="(item, vIdx) in parseArrayItems(change.afterValue)"
+                    :key="vIdx"
+                    class="structured-item"
+                  >
+                    <StructuredItemRenderer :item="item" :field="change.field" />
+                  </li>
+                </ol>
+                <ol
+                  v-else-if="isArray(change.afterValue)"
                   class="change-value-list"
                 >
                   <li
@@ -177,7 +213,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { OptimizeSectionData } from '@/types/resume-optimize'
-import { isArray, hasValueToShow } from '@/utils/stageHelpers'
+import { isArray, hasValueToShow, isJsonObjectStr, tryParseJson } from '@/utils/stageHelpers'
+import StructuredItemRenderer from './StructuredItemRenderer.vue'
+
+interface ParsedItem {
+  raw: string
+  parsed: Record<string, any> | null
+}
 
 const props = defineProps<{
   data: OptimizeSectionData
@@ -186,6 +228,20 @@ const props = defineProps<{
 defineEmits<{
   showComparison: []
 }>()
+
+// 解析数组中的 JSON 对象
+function parseArrayItems(values: string[]): ParsedItem[] {
+  return values.map(v => ({
+    raw: v,
+    parsed: isJsonObjectStr(v) ? tryParseJson(v) : null
+  }))
+}
+
+// 判断数组是否包含 JSON 对象元素
+function hasJsonItems(values: string[] | null): boolean {
+  if (!values || !isArray(values)) return false
+  return values.length > 0 && isJsonObjectStr(values[0])
+}
 
 // 变更数量
 const changeCount = computed(() => {
@@ -367,6 +423,11 @@ const hasBeforeData = computed(() => {
       color: inherit;
       opacity: 0.6;
     }
+  }
+
+  // 结构化渲染项增加间距
+  li.structured-item {
+    padding: 4px 0;
   }
 }
 

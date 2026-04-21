@@ -62,13 +62,34 @@ export function isArray(value: unknown): value is string[] {
   return Array.isArray(value)
 }
 
+/** 检测字符串是否为 JSON 对象（以 { 开头且能 parse） */
+export function isJsonObjectStr(s: string): boolean {
+  if (typeof s !== 'string' || !s.startsWith('{')) return false
+  try {
+    const obj = JSON.parse(s)
+    return typeof obj === 'object' && obj !== null && !Array.isArray(obj)
+  } catch {
+    return false
+  }
+}
+
+/** 尝试解析 JSON 字符串，失败返回 null */
+export function tryParseJson(s: string): Record<string, any> | null {
+  try {
+    const obj = JSON.parse(s)
+    return (typeof obj === 'object' && obj !== null && !Array.isArray(obj)) ? obj : null
+  } catch {
+    return null
+  }
+}
+
 /**
  * 判断变更项是否有值需要展示
  * 删除类型不展示值，只展示原因；新增类型需要 afterValue，修改类型需要至少一个有值
  */
 export function hasValueToShow(change: ChangeItem): boolean {
   if (change.type === 'removed') {
-    return false  // 删除类型不展示值，只展示原因
+    return false
   }
   if (change.type === 'added') {
     return change.afterValue !== null
