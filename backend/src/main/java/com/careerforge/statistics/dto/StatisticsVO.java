@@ -24,6 +24,9 @@ public class StatisticsVO {
 
     private List<RecentActivityVO> recentActivity;
 
+    // 进度图表统计粒度: "session" | "day" | "week"
+    private String progressGranularity;
+
     /**
      * 统计概览VO
      */

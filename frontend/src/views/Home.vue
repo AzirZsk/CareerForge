@@ -14,7 +14,6 @@
         <div class="welcome-content">
           <h1 class="welcome-title">
             你好，{{ store.user.name || '求职者' }}
-            <span class="wave-emoji"><font-awesome-icon icon="fa-solid fa-hand" /></span>
           </h1>
           <p class="welcome-subtitle">
             今天是迈向理想工作的又一天，让我们继续努力吧！
@@ -122,6 +121,7 @@
               近期面试
             </h2>
             <div class="chart-tabs">
+              <span class="chart-badge">{{ timeBadge }}</span>
               <button
                 v-for="tab in chartTabs"
                 :key="tab.key"
@@ -134,12 +134,17 @@
             </div>
           </div>
           <div class="chart-container">
-            <div class="chart-bars">
+            <div v-if="chartData.length === 0" class="chart-empty">
+              <i class="fa-solid fa-chart-column empty-icon" />
+              <p>暂无面试数据</p>
+              <span>完成模拟面试后即可查看趋势</span>
+            </div>
+            <div v-else class="chart-bars">
               <div
                 v-for="(item, index) in chartData"
                 :key="item.week"
                 class="bar-group"
-                :style="{ '--index': index }"
+                :style="{ '--index': index, '--bar-width': barWidth + 'px' }"
               >
                 <div class="bar-wrapper">
                   <div
@@ -214,13 +219,30 @@ interface ChartTab {
 const store = useAppStore()
 const router = useRouter()
 
-const activeChartTab = ref<string>('score')
+const activeChartTab = ref<string>('count')
 const chartTabs: ChartTab[] = [
-  { key: 'score', label: '得分趋势' },
-  { key: 'count', label: '面试次数' }
+  { key: 'count', label: '面试次数' },
+  { key: 'score', label: '得分趋势' }
 ]
 
 const chartData = computed<WeeklyProgress[]>(() => store.stats.weeklyProgress)
+
+const timeBadge = computed(() => {
+  switch (store.stats.progressGranularity) {
+    case 'session': return '最近练习'
+    case 'day': return '近期'
+    default: return '近6周'
+  }
+})
+
+const barWidth = computed(() => {
+  const count = chartData.value.length
+  const granularity = store.stats.progressGranularity
+  if (granularity === 'session' && count <= 5) return 64
+  if (granularity === 'session') return 48
+  if (granularity === 'day') return 32
+  return 40
+})
 
 // 加载统计数据
 onMounted(async () => {
@@ -281,8 +303,9 @@ function getBarHeight(item: WeeklyProgress): number {
     // 分数范围 0-100，直接作为百分比
     return Math.max(item.score, 5)
   } else {
-    // 次数范围 0-10，放大到百分比（最大 10 次 = 100%）
-    return Math.max(item.interviews * 10, 5)
+    // 次数根据数据集中最大值动态计算比例
+    const maxInterviews = Math.max(...chartData.value.map(d => d.interviews), 1)
+    return Math.max((item.interviews / maxInterviews) * 100, item.interviews > 0 ? 8 : 5)
   }
 }
 
@@ -337,18 +360,6 @@ function getBarValue(item: WeeklyProgress): string | number {
   font-weight: $weight-semibold;
   color: $color-text-primary;
   margin-bottom: $spacing-sm;
-}
-
-.wave-emoji {
-  display: inline-block;
-  animation: wave 1.5s ease-in-out infinite;
-  transform-origin: 70% 70%;
-}
-
-@keyframes wave {
-  0%, 100% { transform: rotate(0deg); }
-  25% { transform: rotate(20deg); }
-  75% { transform: rotate(-15deg); }
 }
 
 .welcome-subtitle {
@@ -535,7 +546,16 @@ function getBarValue(item: WeeklyProgress): string | number {
 
 .chart-tabs {
   display: flex;
-  gap: $spacing-xs;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.chart-badge {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+  padding: 2px 8px;
+  border-radius: $radius-sm;
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .chart-tab {
@@ -573,7 +593,7 @@ function getBarValue(item: WeeklyProgress): string | number {
 }
 
 .bar-wrapper {
-  width: 40px;
+  width: var(--bar-width, 40px);
   height: 160px;
   display: flex;
   align-items: flex-end;
@@ -603,6 +623,29 @@ function getBarValue(item: WeeklyProgress): string | number {
 .bar-label {
   font-size: $text-xs;
   color: $color-text-tertiary;
+}
+
+.chart-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+  color: $color-text-tertiary;
+  .empty-icon {
+    font-size: 2rem;
+    opacity: 0.3;
+    margin-bottom: $spacing-sm;
+  }
+  p {
+    font-size: $text-base;
+    color: $color-text-secondary;
+    margin: 0;
+  }
+  span {
+    font-size: $text-sm;
+  }
 }
 
 // 技能列表

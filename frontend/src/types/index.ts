@@ -382,6 +382,7 @@ export interface Statistics {
   overview: StatisticsOverview
   weeklyProgress: WeeklyProgress[]
   recentActivity: RecentActivity[]
+  progressGranularity: 'session' | 'day' | 'week'
 }
 
 // 职位推荐

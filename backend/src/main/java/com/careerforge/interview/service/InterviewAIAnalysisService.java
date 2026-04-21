@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.careerforge.interview.entity.Interview;
 import com.careerforge.interview.entity.InterviewAIAnalysis;
 import com.careerforge.interview.graph.review.dto.AdviceItem;
 import com.careerforge.interview.graph.review.dto.InterviewAnalysisResult;
@@ -29,6 +30,7 @@ import java.util.List;
 public class InterviewAIAnalysisService extends ServiceImpl<InterviewAIAnalysisMapper, InterviewAIAnalysis> {
 
     private final ObjectMapper objectMapper;
+    private final InterviewService interviewService;
 
     /**
      * 根据面试ID获取 AI 分析结果
@@ -61,6 +63,8 @@ public class InterviewAIAnalysisService extends ServiceImpl<InterviewAIAnalysisM
 
         this.save(analysis);
         log.info("保存 AI 分析结果成功: interviewId={}", interviewId);
+        // 将 overallScore 写回 Interview.score，供统计查询使用
+        updateInterviewScore(interviewId, interviewAnalysisJson);
         return analysis;
     }
 
@@ -117,6 +121,29 @@ public class InterviewAIAnalysisService extends ServiceImpl<InterviewAIAnalysisM
         } catch (JsonProcessingException e) {
             log.error("解析面试分析结果失败", e);
             return null;
+        }
+    }
+
+    /**
+     * 将 AI 分析的 overallScore 写回 Interview.score
+     */
+    private void updateInterviewScore(String interviewId, String interviewAnalysisJson) {
+        if (interviewAnalysisJson == null || interviewAnalysisJson.isBlank() || "{}".equals(interviewAnalysisJson)) {
+            return;
+        }
+        try {
+            InterviewAnalysisResult result = objectMapper.readValue(interviewAnalysisJson, InterviewAnalysisResult.class);
+            if (result.getOverallScore() != null) {
+                Interview interview = interviewService.getById(interviewId);
+                if (interview != null) {
+                    interview.setScore(result.getOverallScore());
+                    interviewService.updateById(interview);
+                    log.info("面试评分已更新: interviewId={}, score={}", interviewId, result.getOverallScore());
+                }
+            }
+        } catch (Exception e) {
+            // 评分写回失败不影响主流程
+            log.error("面试评分写回失败: interviewId={}", interviewId, e);
         }
     }
 

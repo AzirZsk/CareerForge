@@ -67,7 +67,8 @@ export const useAppStore = defineStore('app', () => {
       preparationCompletionRate: 0
     },
     weeklyProgress: [],
-    recentActivity: []
+    recentActivity: [],
+    progressGranularity: 'week'
   })
 
   // 职位推荐

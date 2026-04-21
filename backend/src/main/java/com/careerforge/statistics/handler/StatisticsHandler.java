@@ -48,23 +48,27 @@ public class StatisticsHandler {
      *
      * @return 统计数据
      */
+    private static final DateTimeFormatter DAY_LABEL_FORMATTER = DateTimeFormatter.ofPattern("M/d");
+
     @Transactional(readOnly = true)
     public StatisticsVO getStatistics() {
         log.info("获取统计数据");
-
         // 1. 获取统计概览
         StatisticsVO.StatisticsOverviewVO overview = buildOverview();
-
-        // 2. 获取周进度数据（近6周）
-        List<StatisticsVO.WeeklyProgressVO> weeklyProgress = buildWeeklyProgress();
-
+        // 2. 自适应粒度获取进度数据
+        String granularity = determineGranularity();
+        List<StatisticsVO.WeeklyProgressVO> progress = switch (granularity) {
+            case "session" -> buildSessionProgress();
+            case "day" -> buildDailyProgress();
+            default -> buildWeeklyProgress();
+        };
         // 3. 获取最近活动（综合多表）
         List<StatisticsVO.RecentActivityVO> recentActivity = buildRecentActivity();
-
         return StatisticsVO.builder()
                 .overview(overview)
-                .weeklyProgress(weeklyProgress)
+                .weeklyProgress(progress)
                 .recentActivity(recentActivity)
+                .progressGranularity(granularity)
                 .build();
     }
 
@@ -113,20 +117,132 @@ public class StatisticsHandler {
             LocalDateTime weekStart = now.minusWeeks(i).with(java.time.DayOfWeek.MONDAY).truncatedTo(ChronoUnit.DAYS);
             LocalDateTime weekEnd = weekStart.plusWeeks(1);
 
+            // 统计该周所有面试数量
             LambdaQueryWrapper<Interview> wrapper = new LambdaQueryWrapper<>();
             wrapper.ge(Interview::getCreatedAt, weekStart)
                     .lt(Interview::getCreatedAt, weekEnd);
             long count = interviewService.count(wrapper);
 
+            // 计算该周模拟面试的平均分
+            int avgScore = calculateWeeklyAvgScore(weekStart, weekEnd);
+
             String weekLabel = weekStart.format(WEEK_LABEL_FORMATTER);
             result.add(StatisticsVO.WeeklyProgressVO.builder()
                     .week(weekLabel)
                     .interviews((int) count)
-                    .score(0)
+                    .score(avgScore)
                     .build());
         }
 
         return result;
+    }
+
+    /**
+     * 根据用户最早面试记录判断统计粒度
+     * <= 3天: session（按次）, 4-14天: day（按天）, >14天: week（按周）
+     */
+    private String determineGranularity() {
+        LambdaQueryWrapper<Interview> wrapper = new LambdaQueryWrapper<>();
+        wrapper.orderByAsc(Interview::getCreatedAt).last("LIMIT 1");
+        Interview earliest = interviewService.getOne(wrapper, false);
+        if (earliest == null || earliest.getCreatedAt() == null) {
+            return "week";
+        }
+        long daysDiff = ChronoUnit.DAYS.between(earliest.getCreatedAt(), LocalDateTime.now());
+        if (daysDiff <= 3) {
+            return "session";
+        }
+        if (daysDiff <= 14) {
+            return "day";
+        }
+        return "week";
+    }
+
+    /**
+     * 按次统计进度（用于使用时长 <=3天的用户）
+     * 每根柱子代表一次面试，展示最近最多10次
+     */
+    private List<StatisticsVO.WeeklyProgressVO> buildSessionProgress() {
+        List<StatisticsVO.WeeklyProgressVO> result = new ArrayList<>();
+        // 得分趋势：最近10次模拟面试
+        LambdaQueryWrapper<Interview> scoreWrapper = new LambdaQueryWrapper<>();
+        scoreWrapper.eq(Interview::getSource, "mock")
+                .isNotNull(Interview::getScore)
+                .gt(Interview::getScore, 0)
+                .orderByAsc(Interview::getCreatedAt)
+                .last("LIMIT 10");
+        List<Interview> scoredInterviews = interviewService.list(scoreWrapper);
+        for (int i = 0; i < scoredInterviews.size(); i++) {
+            Interview interview = scoredInterviews.get(i);
+            // 统计同一天所有来源的面试次数
+            LocalDateTime dayStart = interview.getCreatedAt().truncatedTo(ChronoUnit.DAYS);
+            LocalDateTime dayEnd = dayStart.plusDays(1);
+            LambdaQueryWrapper<Interview> countWrapper = new LambdaQueryWrapper<>();
+            countWrapper.ge(Interview::getCreatedAt, dayStart).lt(Interview::getCreatedAt, dayEnd);
+            long dayCount = interviewService.count(countWrapper);
+            result.add(StatisticsVO.WeeklyProgressVO.builder()
+                    .week("第" + (i + 1) + "次")
+                    .score(interview.getScore())
+                    .interviews((int) dayCount)
+                    .build());
+        }
+        return result;
+    }
+
+    /**
+     * 按天统计进度（用于使用时长 4-14天的用户）
+     * 最多展示14天数据
+     */
+    private List<StatisticsVO.WeeklyProgressVO> buildDailyProgress() {
+        List<StatisticsVO.WeeklyProgressVO> result = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+        // 计算实际需要展示的天数
+        LambdaQueryWrapper<Interview> earliestWrapper = new LambdaQueryWrapper<>();
+        earliestWrapper.orderByAsc(Interview::getCreatedAt).last("LIMIT 1");
+        Interview earliest = interviewService.getOne(earliestWrapper, false);
+        int days = 7;
+        if (earliest != null && earliest.getCreatedAt() != null) {
+            long daysDiff = ChronoUnit.DAYS.between(earliest.getCreatedAt(), now);
+            days = (int) Math.min(daysDiff + 1, 14);
+        }
+        for (int i = days - 1; i >= 0; i--) {
+            LocalDateTime dayStart = now.minusDays(i).truncatedTo(ChronoUnit.DAYS);
+            LocalDateTime dayEnd = dayStart.plusDays(1);
+            // 统计该天所有面试数量
+            LambdaQueryWrapper<Interview> wrapper = new LambdaQueryWrapper<>();
+            wrapper.ge(Interview::getCreatedAt, dayStart).lt(Interview::getCreatedAt, dayEnd);
+            long count = interviewService.count(wrapper);
+            // 计算该天模拟面试平均分
+            int avgScore = calculateWeeklyAvgScore(dayStart, dayEnd);
+            String dayLabel = dayStart.format(DAY_LABEL_FORMATTER);
+            result.add(StatisticsVO.WeeklyProgressVO.builder()
+                    .week(dayLabel)
+                    .interviews((int) count)
+                    .score(avgScore)
+                    .build());
+        }
+        return result;
+    }
+
+    /**
+     * 计算指定时间范围内模拟面试的平均分
+     */
+    private int calculateWeeklyAvgScore(LocalDateTime weekStart, LocalDateTime weekEnd) {
+        LambdaQueryWrapper<Interview> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(Interview::getScore)
+                .ge(Interview::getCreatedAt, weekStart)
+                .lt(Interview::getCreatedAt, weekEnd)
+                .eq(Interview::getSource, "mock")
+                .isNotNull(Interview::getScore)
+                .gt(Interview::getScore, 0);
+        List<Interview> scoredInterviews = interviewService.list(wrapper);
+        if (scoredInterviews.isEmpty()) {
+            return 0;
+        }
+        return (int) scoredInterviews.stream()
+                .mapToInt(Interview::getScore)
+                .average()
+                .orElse(0);
     }
 
     /**
