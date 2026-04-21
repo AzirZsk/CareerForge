@@ -1,0 +1,298 @@
+/* CareerForge 设计系统覆盖 VitePress 默认变量 */
+
+:root {
+  /* 背景色 */
+  --vp-c-bg:          #0a0a0b;
+  --vp-c-bg-alt:      #111113;
+  --vp-c-bg-elv:      #1a1a1d;
+  --vp-c-bg-soft:     #1a1a1d;
+
+  /* 文字色 */
+  --vp-c-text-1:      #f4f4f5;
+  --vp-c-text-2:      #a1a1aa;
+  --vp-c-text-3:      #71717a;
+
+  /* 边框与分割线 */
+  --vp-c-border:      rgba(255, 255, 255, 0.15);
+  --vp-c-divider:     rgba(255, 255, 255, 0.08);
+  --vp-c-gutter:      #0a0a0b;
+
+  /* 品牌色 - 琥珀金 */
+  --vp-c-brand-1:     #e8c47a;
+  --vp-c-brand-2:     #d4a853;
+  --vp-c-brand-3:     #d4a853;
+  --vp-c-brand-soft:  rgba(212, 168, 83, 0.14);
+
+  /* 品牌按钮 */
+  --vp-button-brand-bg:          #d4a853;
+  --vp-button-brand-hover-bg:    #e8c47a;
+  --vp-button-brand-text:        #0a0a0b;
+  --vp-button-brand-hover-text:  #0a0a0b;
+  --vp-button-brand-border:      transparent;
+
+  /* 首页 Hero 标题渐变 */
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(135deg, #d4a853 0%, #e8c47a 50%, #d4a853 100%);
+
+  /* Hero 图片区域光晕 */
+  --vp-home-hero-image-background-image: radial-gradient(
+    ellipse at 50% 0%,
+    rgba(212, 168, 83, 0.12) 0%,
+    transparent 70%
+  );
+  --vp-home-hero-image-filter: blur(0px);
+
+  /* 字体 */
+  --vp-font-family-base: 'Outfit', -apple-system, system-ui, sans-serif;
+
+  /* 导航栏 */
+  --vp-nav-bg-color: rgba(10, 10, 11, 0.85);
+}
+
+/* Hero 标题字体 */
+.VPHero .name {
+  font-family: 'Crimson Pro', Georgia, serif !important;
+  font-size: 5rem !important;
+}
+
+.VPHero .text {
+  font-family: 'Outfit', -apple-system, sans-serif;
+  letter-spacing: 0.02em;
+}
+
+/* Features 卡片深色风格 */
+.VPFeature .box {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.VPFeature .box:hover {
+  border-color: rgba(212, 168, 83, 0.3);
+  box-shadow: 0 0 30px rgba(212, 168, 83, 0.08);
+  transform: translateY(-4px);
+}
+
+/* 选择高亮 */
+::selection {
+  background: rgba(212, 168, 83, 0.3);
+  color: #f4f4f5;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #111113;
+}
+::-webkit-scrollbar-thumb {
+  background: #232328;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2a2a30;
+}
+
+/* Footer */
+.VPFooter {
+  background: #0a0a0b !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Home 自定义区块容器 */
+.home-section {
+  max-width: 1152px;
+  margin: 0 auto;
+  padding: 64px 24px;
+}
+
+.home-section-title {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.home-section-title h2 {
+  font-family: 'Crimson Pro', Georgia, serif;
+  font-size: 2rem;
+  font-weight: 600;
+  color: #f4f4f5;
+  margin: 0 0 8px;
+}
+
+.home-section-title p {
+  color: #a1a1aa;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+/* 统计数字区块 */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-top: 32px;
+}
+
+.stat-card {
+  text-align: center;
+  padding: 32px 16px;
+  background: #1a1a1d;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  border-color: rgba(212, 168, 83, 0.3);
+  box-shadow: 0 0 20px rgba(212, 168, 83, 0.06);
+}
+
+.stat-number {
+  font-family: 'Crimson Pro', Georgia, serif;
+  font-size: 3rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #d4a853, #e8c47a);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.2;
+}
+
+.stat-label {
+  color: #a1a1aa;
+  font-size: 0.95rem;
+  margin-top: 8px;
+}
+
+/* 技术标签云 */
+.tech-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.tech-tag {
+  padding: 8px 20px;
+  background: #232328;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 9999px;
+  color: #a1a1aa;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.25s ease;
+}
+
+.tech-tag:hover {
+  border-color: rgba(212, 168, 83, 0.3);
+  color: #e8c47a;
+}
+
+/* 架构图 */
+.arch-diagram {
+  margin-top: 40px;
+  display: flex;
+  justify-content: center;
+}
+
+.arch-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* 快速开始 */
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+  margin-top: 32px;
+}
+
+.step-card {
+  background: #1a1a1d;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 32px 24px;
+}
+
+.step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #d4a853, #e8c47a);
+  color: #0a0a0b;
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-bottom: 16px;
+}
+
+.step-card h3 {
+  color: #f4f4f5;
+  font-size: 1.1rem;
+  margin: 0 0 12px;
+}
+
+.code-block {
+  background: #0a0a0b;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 12px;
+  position: relative;
+  overflow-x: auto;
+}
+
+.code-block code {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.85rem;
+  color: #a1a1aa;
+  line-height: 1.6;
+}
+
+.code-block .copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #232328;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: #a1a1aa;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.code-block .copy-btn:hover {
+  background: #2a2a30;
+  color: #e8c47a;
+}
+
+.code-block .copy-btn.copied {
+  color: #34d399;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .steps-grid {
+    grid-template-columns: 1fr;
+  }
+  .VPHero .name {
+    font-size: 3rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
