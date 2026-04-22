@@ -93,9 +93,16 @@ export async function authFetch(url: string, options: RequestInit = {}, timeout:
       }
     }
 
+    // 合并外部 signal 和超时 signal
+    const signals = [controller.signal]
+    if (options.signal) {
+      signals.push(options.signal)
+    }
+    const combinedSignal = signals.length > 1 ? AbortSignal.any(signals) : signals[0]
+
     const response = await fetch(url, {
       ...options,
-      signal: controller.signal
+      signal: combinedSignal
     })
 
     clearTimeout(timeoutId)

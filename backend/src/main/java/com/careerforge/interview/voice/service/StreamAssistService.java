@@ -1,6 +1,7 @@
 package com.careerforge.interview.voice.service;
 
 import com.careerforge.interview.voice.dto.AssistSSEEvent;
+import com.careerforge.interview.voice.dto.SessionState;
 import com.careerforge.interview.voice.gateway.InterviewVoiceGateway;
 import com.careerforge.interview.voice.handler.AssistantAgentHandler;
 import lombok.RequiredArgsConstructor;
@@ -62,6 +63,13 @@ public class StreamAssistService {
         // 冻结面试
         voiceGateway.freezeInterview(sessionId);
 
+        // 扣减求助次数
+        SessionState state = voiceGateway.getInternalState(sessionId);
+        if (state != null) {
+            state.setAssistRemaining(state.getAssistRemaining() - 1);
+            log.info("[StreamAssist] 求助次数已扣减, sessionId={}, remaining={}", sessionId, state.getAssistRemaining());
+        }
+
         // 调用助手处理器，事件通过回调直接推送
         assistantAgentHandler.handleAssist(sessionId, assistType, question, candidateDraft,
                 event -> {
@@ -95,8 +103,8 @@ public class StreamAssistService {
      * @return 剩余次数
      */
     public int getAssistRemaining(String sessionId) {
-        var state = voiceGateway.getSessionState(sessionId);
-        return state.getAssistRemaining();
+        SessionState state = voiceGateway.getInternalState(sessionId);
+        return state != null ? state.getAssistRemaining() : 0;
     }
 
     /**
@@ -106,9 +114,8 @@ public class StreamAssistService {
      * @return 上限
      */
     public int getAssistLimit(String sessionId) {
-        var state = voiceGateway.getSessionState(sessionId);
-        // 如果状态中没有设置，返回默认值
-        return state.getTotalQuestions() > 0 ? DEFAULT_ASSIST_LIMIT : DEFAULT_ASSIST_LIMIT;
+        SessionState state = voiceGateway.getInternalState(sessionId);
+        return state != null ? state.getAssistLimit() : DEFAULT_ASSIST_LIMIT;
     }
 
     /**
@@ -118,7 +125,6 @@ public class StreamAssistService {
      * @return true 表示可以求助
      */
     public boolean canAssist(String sessionId) {
-        int remaining = getAssistRemaining(sessionId);
-        return remaining > 0;
+        return getAssistRemaining(sessionId) > 0;
     }
 }

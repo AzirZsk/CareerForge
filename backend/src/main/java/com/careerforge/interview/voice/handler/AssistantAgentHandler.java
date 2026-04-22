@@ -93,9 +93,10 @@ public class AssistantAgentHandler {
      * 构建系统提示词
      */
     private String buildSystemPrompt(String assistType, SessionState sessionState) {
+        String type = assistType != null ? assistType.toUpperCase() : "";
         String currentQuestion = sessionState != null ? String.valueOf(sessionState.getCurrentQuestion()) : "未知";
 
-        return switch (assistType) {
+        return switch (type) {
             case "GIVE_HINTS" -> """
                 你是一位耐心的技术面试辅导助手。
 
@@ -154,9 +155,10 @@ public class AssistantAgentHandler {
             String candidateDraft,
             SessionState sessionState) {
 
+        String type = assistType != null ? assistType.toUpperCase() : "";
         String currentQuestion = sessionState != null ? String.valueOf(sessionState.getCurrentQuestion()) : "未知";
 
-        return switch (assistType) {
+        return switch (type) {
             case "GIVE_HINTS" -> "请为问题 \"" + currentQuestion + "\" 给我思路提示。";
             case "EXPLAIN_CONCEPT" -> userQuestion != null ? userQuestion : "请解释这个问题涉及的核心概念。";
             case "POLISH_ANSWER" -> candidateDraft != null ?

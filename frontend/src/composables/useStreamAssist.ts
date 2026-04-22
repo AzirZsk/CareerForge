@@ -83,8 +83,8 @@ export function useStreamAssist(sessionId: string) {
       })
       const url = `/careerforge/interviews/sessions/${sessionId}/assist/stream?${params}`
 
-      // 使用 authFetch 发起请求
-      const response = await authFetch(url, {}, 60000) // 1分钟超时
+      // 使用 authFetch 发起请求（传入 signal 支持中断）
+      const response = await authFetch(url, { signal: abortController.signal }, 60000)
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
