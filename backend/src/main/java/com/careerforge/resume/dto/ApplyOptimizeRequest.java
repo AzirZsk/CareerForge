@@ -26,6 +26,12 @@ public class ApplyOptimizeRequest {
     @Valid
     private List<SectionDataItem> afterSection;
 
+    // 是否跳过AI评分（用户未编辑优化内容时为true）
+    private Boolean skipScoring;
+
+    // 跳过评分时的估算分数（原分数 + 提升分数）
+    private Integer estimatedOverallScore;
+
     /**
      * 区块数据项
      */

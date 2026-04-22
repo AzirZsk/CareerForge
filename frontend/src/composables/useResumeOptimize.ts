@@ -417,8 +417,9 @@ export function useResumeOptimize() {
    * 获取优化后的区块数据
    * 从 optimize_section 阶段的数据中提取 beforeSection 和 afterSection
    * @param editedAfterSection 编辑后的 afterSection 数据（优先使用）
+   * @param hasEdits 用户是否编辑过优化内容（未编辑时跳过AI评分）
    */
-  function getOptimizedData(editedAfterSection?: ResumeSection[]): { beforeSection: SectionDataItem[]; afterSection: SectionDataItem[] } | null {
+  function getOptimizedData(editedAfterSection?: ResumeSection[], hasEdits?: boolean) {
     const optimizeStage = state.stageHistory.find(h => h.stage === 'optimize_section')
     if (!optimizeStage?.data) {
       return null
@@ -432,8 +433,12 @@ export function useResumeOptimize() {
     // 优先使用传入的编辑后数据，否则使用原始数据
     const finalAfterSection = editedAfterSection || afterSection
 
-    // 转换为 API 需要的格式
-    return {
+    const result: {
+      beforeSection: SectionDataItem[]
+      afterSection: SectionDataItem[]
+      skipScoring?: boolean
+      estimatedOverallScore?: number
+    } = {
       beforeSection: beforeSection.map((s: ResumeSection) => ({
         id: s.id,
         type: s.type,
@@ -447,15 +452,27 @@ export function useResumeOptimize() {
         content: s.content || ''
       }))
     }
+
+    // 用户未编辑时跳过AI评分，使用估算分数
+    if (!hasEdits) {
+      result.skipScoring = true
+      const diagnoseStage = state.stageHistory.find(h => h.stage === 'diagnose_quick')
+      const overallScore = diagnoseStage?.data?.overallScore ?? 0
+      const improvementScore = optimizeStage.data.improvementScore ?? 0
+      result.estimatedOverallScore = Math.min(overallScore + improvementScore, 100)
+    }
+
+    return result
   }
 
   /**
    * 应用优化变更
    * 调用后端批量 API 更新所有区块
    * @param editedAfterSection 编辑后的 afterSection 数据（优先使用）
+   * @param hasEdits 用户是否编辑过优化内容
    */
-  async function applyChanges(editedAfterSection?: ResumeSection[]): Promise<boolean> {
-    const optimizedData = getOptimizedData(editedAfterSection)
+  async function applyChanges(editedAfterSection?: ResumeSection[], hasEdits?: boolean): Promise<boolean> {
+    const optimizedData = getOptimizedData(editedAfterSection, hasEdits)
     if (!optimizedData || !state.resumeId) {
       console.error('[Optimize] 无法应用变更：缺少优化数据或简历ID')
       return false

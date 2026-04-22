@@ -405,8 +405,14 @@ public class ResumeHandler {
         resumeSuggestionService.deleteByResumeId(resumeId);
         log.info("已清除简历的优化建议: resumeId={}", resumeId);
 
-        // 4. 调用诊断节点重新计算评分（AI 诊断）
-        triggerDiagnosis(resumeId);
+        // 4. 评分更新：用户未编辑时跳过AI评分，使用估算分数
+        boolean shouldSkipScoring = Boolean.TRUE.equals(request.getSkipScoring());
+        if (shouldSkipScoring && request.getEstimatedOverallScore() != null) {
+            log.info("跳过AI评分，使用估算分数: resumeId={}, estimatedScore={}", resumeId, request.getEstimatedOverallScore());
+            resumeService.updateOverallScore(resumeId, request.getEstimatedOverallScore());
+        } else {
+            triggerDiagnosis(resumeId);
+        }
 
         // 5. 重新计算简历完整度
         recalculateResumeCompleteness(resumeId);

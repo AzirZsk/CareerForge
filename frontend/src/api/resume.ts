@@ -193,7 +193,12 @@ export interface SectionDataItem {
  */
 export async function applyOptimizeChanges(
   resumeId: string,
-  data: { beforeSection: SectionDataItem[]; afterSection: SectionDataItem[] }
+  data: {
+    beforeSection: SectionDataItem[]
+    afterSection: SectionDataItem[]
+    skipScoring?: boolean
+    estimatedOverallScore?: number
+  }
 ): Promise<ResumeDetail> {
   return request({
     url: `/resumes/${resumeId}/optimize/apply`,
