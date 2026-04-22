@@ -19,6 +19,13 @@ import lombok.NoArgsConstructor;
 public class FollowUpJudgeResponse {
 
     /**
+     * 对候选人回答的简短反应/确认文本
+     * 10-30字，口语化，作为追问或换题前的过渡
+     */
+    @SchemaField(value = "对候选人回答的简短反应，10-30字口语化表达，用于在追问或换题前做过渡，必须生成", required = true)
+    private String replyReaction;
+
+    /**
      * 是否需要追问
      */
     @SchemaField(value = "是否需要追问", required = true)

@@ -235,6 +235,10 @@ public class InterviewerAgentHandler {
         } else if (phase == InterviewPhaseEnum.FOLLOW_UP) {
             log.info("[InterviewerAgent] 追问回答完成，进入下一题, sessionId={}", sessionId);
             state.setPhase(InterviewPhaseEnum.ASKING_QUESTIONS);
+            // 发送过渡回复后推进到下一题
+            String transition = buildFollowUpTransition(sessionId);
+            recordInterviewerMessage(sessionId, transition);
+            synthesizeAndSend(sessionId, transition, false);
             advanceToNextQuestion(sessionId, state);
         } else if (phase == InterviewPhaseEnum.COMPLETED) {
             log.debug("[InterviewerAgent] 面试已结束，忽略候选人输入, sessionId={}", sessionId);
@@ -304,22 +308,13 @@ public class InterviewerAgentHandler {
     }
 
     /**
-     * 生成面试官回复（LLM 语义追问判断）
+     * 生成面试官回复（LLM 语义追问判断 + 反应生成）
      */
     private void generateInterviewerReply(String sessionId, String candidateAnswer) {
         log.debug("[InterviewerAgent] 生成面试官回复, sessionId={}", sessionId);
         SessionState state = requireSession(sessionId);
         ConversationContext context = getOrCreateContext(sessionId);
-
-        // 快速预检：追问次数达上限或回答过短，直接跳过 LLM 判断
-        if (state.getFollowUpCount() >= SessionState.MAX_FOLLOW_UP
-                || candidateAnswer == null || candidateAnswer.length() < 10) {
-            log.info("[InterviewerAgent] 跳过追问判断（预检不通过）, sessionId={}", sessionId);
-            advanceToNextQuestion(sessionId, state);
-            return;
-        }
-
-        // LLM 语义判断 + 追问生成（单次调用）
+        // LLM 语义判断 + 反应生成 + 追问生成（单次调用）
         FollowUpJudgeResponse judgeResponse = questionPreGenerateService.judgeAndGenerateFollowUp(
                 sessionId,
                 state.getLastQuestion(),
@@ -330,16 +325,23 @@ public class InterviewerAgentHandler {
         );
 
         if (judgeResponse.isNeedFollowUp() && judgeResponse.getFollowUpQuestion() != null) {
-            String followUp = judgeResponse.getFollowUpQuestion();
+            // 追问路径：拼接反应 + 追问，一次性发送
+            String fullReply = buildReplyWithReaction(judgeResponse.getReplyReaction(), judgeResponse.getFollowUpQuestion());
             log.info("[InterviewerAgent] 触发追问（LLM判断）, sessionId={}, followUpCount={}, reason={}",
                     sessionId, state.getFollowUpCount(), judgeResponse.getReason());
             state.setFollowUpCount(state.getFollowUpCount() + 1);
             state.setPhase(InterviewPhaseEnum.FOLLOW_UP);
-            recordInterviewerMessage(sessionId, followUp);
-            synthesizeAndSend(sessionId, followUp, false);
+            recordInterviewerMessage(sessionId, fullReply);
+            synthesizeAndSend(sessionId, fullReply, false);
         } else {
+            // 不追问路径：先发送反应，再推进到下一题
+            String reaction = judgeResponse.getReplyReaction();
             log.info("[InterviewerAgent] 不追问（LLM判断）, sessionId={}, reason={}",
                     sessionId, judgeResponse.getReason());
+            if (reaction != null && !reaction.isBlank()) {
+                recordInterviewerMessage(sessionId, reaction);
+                synthesizeAndSend(sessionId, reaction, false);
+            }
             advanceToNextQuestion(sessionId, state);
         }
     }
@@ -586,6 +588,36 @@ public class InterviewerAgentHandler {
         log.info("[InterviewerAgent] 面试结束: {}, sessionId={}", closingText, sessionId);
         recordInterviewerMessage(sessionId, closingText);
         synthesizeAndSend(sessionId, closingText, true);
+    }
+
+    /**
+     * 拼接反应文本和追问问题
+     * 反应文本末尾如果不是标点符号，自动补逗号
+     */
+    private String buildReplyWithReaction(String reaction, String followUp) {
+        if (reaction == null || reaction.isBlank()) {
+            return followUp;
+        }
+        char last = reaction.charAt(reaction.length() - 1);
+        if (last == '。' || last == '，' || last == '？' || last == '、') {
+            return reaction + followUp;
+        }
+        return reaction + "，" + followUp;
+    }
+
+    /**
+     * 构建追问后的过渡回复（根据面试官风格）
+     */
+    private String buildFollowUpTransition(String sessionId) {
+        SessionState state = requireSession(sessionId);
+        String style = state.getInterviewerStyle();
+        if ("friendly".equals(style)) {
+            return "好的，这部分聊得很清楚。我们换个话题吧。";
+        } else if ("challenging".equals(style)) {
+            return "嗯，好。继续下一个问题。";
+        }
+        // professional（默认）
+        return "好的，了解了。我们继续下一个话题。";
     }
 
     /**
