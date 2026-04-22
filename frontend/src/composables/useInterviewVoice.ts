@@ -289,6 +289,8 @@ export function useInterviewVoice(sessionId: string) {
    */
   function handleTranscriptMessage(data: TranscriptData): void {
     if (data.role === 'interviewer') {
+      // 收到面试官回复，关闭等待状态
+      isWaitingForAI.value = false
       // 面试官 transcript：累积文字（后端按句分块发送）
       if (!data.isFinal) {
         if (data.text) {
@@ -325,6 +327,8 @@ export function useInterviewVoice(sessionId: string) {
           timestamp: Date.now()
         }
         messages.value.push(message)
+        // 候选人说完话，开始等待AI回复
+        isWaitingForAI.value = true
       }
       // 更新实时转录状态（非最终结果）
       partialTranscript.value = data.isFinal ? null : data
@@ -333,6 +337,9 @@ export function useInterviewVoice(sessionId: string) {
 
   /** 实时转录（非最终结果） */
   const partialTranscript = ref<TranscriptData | null>(null)
+
+  /** 等待AI面试官回复 */
+  const isWaitingForAI = ref(false)
 
   /** 面试官文字累积（后端按句分块发送，前端需要拼接完整回复） */
   let interviewerAccumulatedText = ''
@@ -713,6 +720,7 @@ export function useInterviewVoice(sessionId: string) {
     error,
     partialTranscript,
     reconnectAttempts,
+    isWaitingForAI,
 
     // 计算属性
     isInterviewing,

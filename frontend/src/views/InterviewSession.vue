@@ -150,6 +150,15 @@
                 <span class="message-time">{{ formatMessageTime(msg.timestamp) }}</span>
               </div>
             </div>
+            <!-- AI思考中 -->
+            <div v-if="isWaitingForAI" class="message interviewer thinking-indicator">
+              <div class="message-avatar"><span>AI</span></div>
+              <div class="message-content">
+                <div class="typing-dots">
+                  <span /><span /><span />
+                </div>
+              </div>
+            </div>
             <!-- 实时转录显示 -->
             <div v-if="partialTranscript && !partialTranscript.isFinal" class="message partial-transcript" :class="partialTranscript.role">
               <div class="message-avatar">
@@ -283,11 +292,13 @@ const messages = voiceInterview.messages
 const assistRemaining = voiceInterview.assistRemaining
 const assistLimit = voiceInterview.assistLimit
 const partialTranscript = voiceInterview.partialTranscript
+const isWaitingForAI = voiceInterview.isWaitingForAI
 
 // 处理状态（基于实时转录状态）
 const isProcessing = computed(() => !!partialTranscript.value && !partialTranscript.value.isFinal)
 const statusText = computed(() => {
   if (voiceInterview.isPlaying.value) return 'AI 正在说话...'
+  if (isWaitingForAI.value) return 'AI 正在思考...'
   if (isRecording.value) return '正在录音...'
   if (isProcessing.value) return '正在识别...'
   if (voiceInterview.error.value) return '连接错误'
@@ -916,6 +927,37 @@ function goToQuestion(index: number): void {
     background: rgba(212, 168, 83, 0.1);
     border: 1px dashed rgba(212, 168, 83, 0.3);
   }
+}
+
+// AI思考中点点点动画
+.thinking-indicator {
+  .message-content {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+  }
+}
+
+.typing-dots {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+
+  span {
+    width: 6px;
+    height: 6px;
+    background: $color-accent;
+    border-radius: 50%;
+    animation: typing-bounce 1.4s infinite ease-in-out;
+
+    &:nth-child(1) { animation-delay: -0.32s; }
+    &:nth-child(2) { animation-delay: -0.16s; }
+  }
+}
+
+@keyframes typing-bounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
 }
 
 .cursor-blink {
