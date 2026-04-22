@@ -93,7 +93,7 @@ public class StatisticsHandler {
         // 简历数量
         long resumeCount = resumeService.count();
 
-        // 准备完成率
+        // 面试准备完成率
         long totalPreparations = interviewPreparationService.count();
         LambdaQueryWrapper<InterviewPreparation> completedWrapper = new LambdaQueryWrapper<>();
         completedWrapper.eq(InterviewPreparation::getCompleted, true);

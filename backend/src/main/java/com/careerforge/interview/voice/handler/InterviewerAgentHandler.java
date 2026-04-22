@@ -557,6 +557,8 @@ public class InterviewerAgentHandler {
     private void advanceToNextQuestion(String sessionId, SessionState state) {
         state.setFollowUpCount(0);
         state.setCurrentQuestion(state.getCurrentQuestion() + 1);
+        // 通知前端题号更新
+        voiceGateway.sendCurrentState(sessionId, InterviewSessionState.INTERVIEWING.getCode());
         if (state.getCurrentQuestion() < state.getTotalQuestions()) {
             log.info("[InterviewerAgent] 进入下一个问题, sessionId={}, index={}", sessionId, state.getCurrentQuestion());
             generateNextQuestion(sessionId);

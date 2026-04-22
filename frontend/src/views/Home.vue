@@ -103,7 +103,7 @@
             </div>
             <div class="stat-content">
               <span class="stat-value">{{ store.stats.overview.preparationCompletionRate }}%</span>
-              <span class="stat-label">准备完成率</span>
+              <span class="stat-label">面试准备完成率</span>
             </div>
           </div>
         </div>
