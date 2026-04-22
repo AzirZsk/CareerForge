@@ -1,13 +1,12 @@
 /**
  * SSE 流式求助 Composable
- * 处理语音面试中的快捷求助功能
+ * 处理语音面试中的快捷求助功能（纯文字回复）
  *
  * @author Azir
  */
 
 import { ref, computed, onUnmounted } from 'vue'
-import { useStreamingAudio } from './useStreamingAudio'
-import type { AssistRequest, TextEventData, AudioEventData, DoneEventData, ErrorEventData } from '@/types/interview-voice'
+import type { AssistRequest, TextEventData, DoneEventData, ErrorEventData } from '@/types/interview-voice'
 import { authFetch } from '@/utils/request'
 
 /**
@@ -18,9 +17,6 @@ export function useStreamAssist(sessionId: string) {
   // ============================================================================
   // 状态
   // ============================================================================
-
-  /** 流式音频播放器 */
-  const audioPlayer = useStreamingAudio()
 
   /** 是否正在请求 */
   const isRequesting = ref(false)
@@ -75,9 +71,6 @@ export function useStreamAssist(sessionId: string) {
     deltaText.value = ''
     error.value = null
 
-    // 初始化音频播放器
-    await audioPlayer.initAudioContext(16000)
-
     // 创建 AbortController
     abortController = new AbortController()
 
@@ -131,8 +124,6 @@ export function useStreamAssist(sessionId: string) {
               // 根据事件类型分发
               if (event.type === 'text') {
                 handleTextEventData(event.data)
-              } else if (event.type === 'audio') {
-                await handleAudioEventData(event.data)
               } else if (event.type === 'done') {
                 handleDoneEventData(event.data)
               } else if (event.type === 'error') {
@@ -158,14 +149,6 @@ export function useStreamAssist(sessionId: string) {
    */
   function stopAssist(): void {
     cleanup()
-    audioPlayer.stop()
-  }
-
-  /**
-   * 注入外部 AudioContext（共享模式，由 useInterviewVoice 调用）
-   */
-  function setExternalAudioContext(ctx: AudioContext): void {
-    audioPlayer.setExternalAudioContext(ctx)
   }
 
   /**
@@ -194,20 +177,6 @@ export function useStreamAssist(sessionId: string) {
     } else {
       // 完整文本，替换显示
       textContent.value = data.content
-    }
-
-    // 同步到音频播放器的文本显示
-    audioPlayer.appendText(data.content, !data.isDelta)
-  }
-
-  /**
-   * 处理音频事件数据
-   */
-  async function handleAudioEventData(data: AudioEventData): Promise<void> {
-    try {
-      await audioPlayer.playAudioChunk(data.audio, data.format)
-    } catch (e) {
-      console.error('[useStreamAssist] 处理音频事件失败:', e)
     }
   }
 
@@ -269,7 +238,6 @@ export function useStreamAssist(sessionId: string) {
   // 组件卸载时清理
   onUnmounted(() => {
     cleanup()
-    audioPlayer.dispose()
   })
 
   // ============================================================================
@@ -286,23 +254,12 @@ export function useStreamAssist(sessionId: string) {
     error,
     hasRemaining,
 
-    // 音频播放器状态
-    isPlaying: audioPlayer.isPlaying,
-    playbackState: audioPlayer.playbackState,
-
     // 方法
     requestAssist,
     stopAssist,
-    setExternalAudioContext,
     giveHints,
     explainConcept,
     polishAnswer,
-    freeQuestion,
-
-    // 音频控制
-    pause: audioPlayer.pause,
-    resume: audioPlayer.resume,
-    setVolume: audioPlayer.setVolume,
-    toggleMute: audioPlayer.toggleMute
+    freeQuestion
   }
 }

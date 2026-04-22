@@ -1,13 +1,8 @@
 package com.careerforge.interview.voice.handler;
 
-import com.careerforge.common.config.VoiceProperties;
 import com.careerforge.interview.voice.dto.*;
 import com.careerforge.interview.voice.dto.SessionState;
-import com.careerforge.interview.voice.enums.VoiceRole;
 import com.careerforge.interview.voice.gateway.InterviewVoiceGateway;
-import com.careerforge.interview.voice.service.TTSListener;
-import com.careerforge.interview.voice.service.TTSService;
-import com.careerforge.interview.voice.service.VoiceServiceFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -15,13 +10,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import java.util.Base64;
 import java.util.function.Consumer;
 
 /**
  * AI 助手 Agent 处理器
- * 处理面试过程中的快捷求助功能
- * 每次求助请求创建独立的 TTS 连接，结束后关闭
+ * 处理面试过程中的快捷求助功能，仅返回文字回复
  *
  * @author Azir
  */
@@ -30,19 +23,15 @@ import java.util.function.Consumer;
 @RequiredArgsConstructor
 public class AssistantAgentHandler {
 
-    private final VoiceServiceFactory voiceServiceFactory;
-    private final VoiceProperties voiceProperties;
     private final ChatClient chatClient;
 
     @Autowired
     @Lazy
     private InterviewVoiceGateway voiceGateway;
 
-    private static final String SENTENCE_END_CHARS = "。！？.!;；\n";
-
     /**
      * 处理快捷求助
-     * 订阅 LLM 流式输出，按句子分割后通过 TTS 合成音频，所有事件通过 consumer 推送
+     * 订阅 LLM 流式输出，文本增量通过 consumer 推送
      *
      * @param sessionId      会话 ID
      * @param assistType     求助类型
@@ -62,34 +51,7 @@ public class AssistantAgentHandler {
         // 构建提示词
         String systemPrompt = buildSystemPrompt(assistType, sessionState);
         String userPrompt = buildUserPrompt(assistType, userQuestion, candidateDraft, sessionState);
-        // 每次请求创建独立的 TTS 连接
-        VoiceProperties.AliyunConfig.TTSConfig ttsProps = voiceProperties.getAliyun().getTts();
-        TTSService tts = voiceServiceFactory.createTTSService(VoiceRole.ASSISTANT);
-        tts.connect(new TTSListener() {
-            @Override
-            public void onAudio(byte[] audioData) {
-                eventConsumer.accept(AssistSSEEvent.audio(
-                        AssistSSEEvent.AudioEventData.builder()
-                                .audio(Base64.getEncoder().encodeToString(audioData))
-                                .format(ttsProps.getFormat())
-                                .sampleRate(ttsProps.getSampleRate())
-                                .build()
-                ));
-            }
-
-            @Override
-            public void onError(Exception e) {
-                log.error("[AssistantAgent] TTS错误, sessionId={}", sessionId, e);
-            }
-
-            @Override
-            public void onComplete() {
-                // 连接关闭时触发
-            }
-        });
-        // 文本缓冲区
-        StringBuilder textBuffer = new StringBuilder();
-        // 调用 LLM 流式生成，按句子分割后 TTS 合成
+        // 调用 LLM 流式生成
         chatClient
                 .prompt()
                 .system(systemPrompt)
@@ -98,7 +60,6 @@ public class AssistantAgentHandler {
                 .content()
                 .subscribe(
                         delta -> {
-                            textBuffer.append(delta);
                             // 发送文本增量事件
                             eventConsumer.accept(AssistSSEEvent.text(
                                     AssistSSEEvent.TextEventData.builder()
@@ -106,12 +67,6 @@ public class AssistantAgentHandler {
                                             .isDelta(true)
                                             .build()
                             ));
-                            // 句子结束时提交 TTS 合成
-                            if (isSentenceEnd(delta)) {
-                                String sentence = textBuffer.toString();
-                                textBuffer.setLength(0);
-                                tts.synthesize(sentence, false);
-                            }
                         },
                         error -> {
                             log.error("[AssistantAgent] 处理求助出错", error);
@@ -121,15 +76,8 @@ public class AssistantAgentHandler {
                                             .message(error.getMessage())
                                             .build()
                             ));
-                            tts.close();
                         },
                         () -> {
-                            // 处理剩余文本
-                            if (textBuffer.length() > 0) {
-                                String lastText = textBuffer.toString();
-                                textBuffer.setLength(0);
-                                tts.synthesize(lastText, true);
-                            }
                             // 发送完成事件
                             eventConsumer.accept(AssistSSEEvent.done(
                                     AssistSSEEvent.DoneEventData.builder()
@@ -137,7 +85,6 @@ public class AssistantAgentHandler {
                                             .totalDurationMs(0)
                                             .build()
                             ));
-                            tts.close();
                         }
                 );
     }
@@ -217,16 +164,5 @@ public class AssistantAgentHandler {
             case "FREE_QUESTION" -> userQuestion != null ? userQuestion : "请问你有什么问题？";
             default -> "请告诉我你需要什么帮助。";
         };
-    }
-
-    /**
-     * 判断是否句子结束
-     */
-    private boolean isSentenceEnd(String text) {
-        if (text == null || text.isEmpty()) {
-            return false;
-        }
-        char lastChar = text.charAt(text.length() - 1);
-        return SENTENCE_END_CHARS.indexOf(lastChar) >= 0;
     }
 }

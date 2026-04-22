@@ -82,12 +82,12 @@ export interface TTSChunk {
 // ============================================================================
 
 /** SSE 事件类型 */
-export type SSEEventType = 'text' | 'audio' | 'done' | 'error'
+export type SSEEventType = 'text' | 'done' | 'error'
 
 /** SSE 事件基础接口 */
 export interface AssistSSEEvent {
   type: SSEEventType
-  data: TextEventData | AudioEventData | DoneEventData | ErrorEventData
+  data: TextEventData | DoneEventData | ErrorEventData
 }
 
 /** 文本事件数据 */
@@ -96,16 +96,6 @@ export interface TextEventData {
   content: string
   /** 是否增量文本 */
   isDelta: boolean
-}
-
-/** 音频事件数据 */
-export interface AudioEventData {
-  /** Base64 编码音频 */
-  audio: string
-  /** 格式 */
-  format: 'pcm' | 'wav'
-  /** 采样率 */
-  sampleRate: number
 }
 
 /** 完成事件数据 */

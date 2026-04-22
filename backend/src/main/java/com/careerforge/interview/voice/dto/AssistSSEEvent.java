@@ -18,7 +18,7 @@ import lombok.NoArgsConstructor;
 public class AssistSSEEvent {
 
     /**
-     * 事件类型：text, audio, done, error
+     * 事件类型：text, done, error
      */
     private String type;
 
@@ -32,13 +32,6 @@ public class AssistSSEEvent {
      */
     public static AssistSSEEvent text(TextEventData data) {
         return AssistSSEEvent.builder().type("text").data(data).build();
-    }
-
-    /**
-     * 创建音频事件
-     */
-    public static AssistSSEEvent audio(AudioEventData data) {
-        return AssistSSEEvent.builder().type("audio").data(data).build();
     }
 
     /**
@@ -72,30 +65,6 @@ public class AssistSSEEvent {
          * 是否增量（true=增量，false=完整）
          */
         private Boolean isDelta;
-    }
-
-    /**
-     * 音频事件数据
-     */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class AudioEventData {
-        /**
-         * Base64 编码的音频数据
-         */
-        private String audio;
-
-        /**
-         * 音频格式：wav, pcm
-         */
-        private String format;
-
-        /**
-         * 采样率
-         */
-        private Integer sampleRate;
     }
 
     /**

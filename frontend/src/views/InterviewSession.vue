@@ -414,12 +414,6 @@ async function handleAssist(type: AssistType, question?: string) {
   isAssistLoading.value = true
   assistantContent.value = ''
 
-  // 注入共享 AudioContext，避免创建多余的 AudioContext 实例
-  const ctx = voiceInterview.getAudioContext()
-  if (ctx) {
-    streamAssist.setExternalAudioContext(ctx)
-  }
-
   try {
     await streamAssist.requestAssist({
       type,
