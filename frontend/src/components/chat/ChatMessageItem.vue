@@ -20,21 +20,7 @@
       class="message-avatar"
     >
       <template v-if="message.role === 'user'">
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-          <circle
-            cx="12"
-            cy="7"
-            r="4"
-          />
-        </svg>
+        <span class="avatar-initial">{{ userInitial }}</span>
       </template>
       <template v-else>
         <AIIcon :size="20" />
@@ -162,8 +148,12 @@
 import { computed } from 'vue'
 import type { ChatMessage } from '@/types/ai-chat'
 import { useMarkdown } from '@/composables/useMarkdown'
+import { useAppStore } from '@/stores'
 import AIIcon from '@/components/common/AIIcon.vue'
 import SectionChangeCard from './suggestion-cards/SectionChangeCard.vue'
+
+const store = useAppStore()
+const userInitial = computed(() => store.user.name ? store.user.name.charAt(0) : 'U')
 
 interface Props {
   message: ChatMessage
@@ -289,6 +279,12 @@ function formatTime(timestamp: number): string {
   justify-content: center;
   flex-shrink: 0;
   color: $color-text-primary;
+
+  .avatar-initial {
+    font-size: 14px;
+    font-weight: 600;
+    color: $color-accent;
+  }
 }
 
 .message-body {
