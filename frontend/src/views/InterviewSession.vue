@@ -135,11 +135,10 @@
 
           <div class="messages-container" ref="messagesContainer">
             <div
-              v-for="(msg, index) in messages"
+              v-for="msg in messages"
               :key="msg.id"
               class="message"
               :class="msg.role"
-              :style="{ '--index': index }"
             >
               <div class="message-avatar">
                 <span v-if="msg.role === 'interviewer'">AI</span>
@@ -161,6 +160,8 @@
                 <p class="message-text">{{ partialTranscript.text }}<span class="cursor-blink">|</span></p>
               </div>
             </div>
+            <!-- 滚动锚点 -->
+            <div ref="scrollAnchor"></div>
           </div>
 
           <!-- 轻量蒙层（不阻断交互，可滚动查看历史） -->
@@ -338,6 +339,7 @@ const isAssistLoading = ref(false)
 
 const showEndModal = ref(false)
 const messagesContainer = ref<HTMLElement | null>(null)
+const scrollAnchor = ref<HTMLElement | null>(null)
 
 // 倒计时相关
 const showCountdown = ref(false)
@@ -380,14 +382,16 @@ onUnmounted(() => {
   voiceInterview.dispose()
 })
 
-// 监听消息变化，自动滚动到底部
-watch(() => messages.value.length, () => {
+// 自动滚动到底部
+function scrollToBottom() {
   nextTick(() => {
-    if (messagesContainer.value) {
-      messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
-    }
+    scrollAnchor.value?.scrollIntoView({ behavior: 'smooth' })
   })
-})
+}
+// 新消息触发滚动
+watch(() => messages.value.length, () => { scrollToBottom() })
+// 实时转录更新触发滚动
+watch(() => partialTranscript.value?.text, () => { scrollToBottom() })
 
 // ============================================================================
 // 助手相关
@@ -713,9 +717,6 @@ function goToQuestion(index: number): void {
   display: flex;
   gap: $spacing-md;
   max-width: 80%;
-  animation: slideUp 0.3s ease forwards;
-  animation-delay: calc(var(--index) * 0.05s);
-  opacity: 0;
   &.interviewer {
     align-self: flex-start;
     .message-avatar {

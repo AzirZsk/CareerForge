@@ -297,8 +297,6 @@ export function useInterviewVoice(sessionId: string) {
         if (isFullVoice()) {
           // full_voice 模式：始终缓冲，等音频播放时再释放
           textGateBuffer = interviewerAccumulatedText
-          console.log('[TextGate] 文字缓冲, bufferLen=', textGateBuffer.length,
-            'revealedChars=', revealedChars, 'audioDur=', accumulatedAudioDuration)
         } else {
           // half_voice 模式：立即显示
           partialTranscript.value = { ...data, text: interviewerAccumulatedText }
@@ -312,8 +310,6 @@ export function useInterviewVoice(sessionId: string) {
           // full_voice 且文字还没释放完：标记流结束，等门控追上来再提交
           textGateBuffer = interviewerAccumulatedText
           isTextStreamDone = true
-          console.log('[TextGate] isFinal, 文字流结束, 等门控追上, bufferLen=',
-            textGateBuffer.length, 'revealed=', revealedChars)
         } else {
           // half_voice 或文字已全部释放：立即提交
           commitInterviewerMessage()
@@ -444,12 +440,8 @@ export function useInterviewVoice(sessionId: string) {
   function handleChunkStart(chunkDuration: number): void {
     if (!isFullVoice()) return
     accumulatedAudioDuration += chunkDuration
-    console.log('[TextGate] 音频chunk开始, duration=', chunkDuration.toFixed(3),
-      'accumulated=', accumulatedAudioDuration.toFixed(3),
-      'bufferLen=', textGateBuffer.length, 'revealedChars=', revealedChars)
     // 第一个音频 chunk 到达且缓冲有文字时，启动释放定时器
     if (!revealTimer && textGateBuffer.length > 0) {
-      console.log('[TextGate] 启动释放定时器')
       revealTimer = window.setInterval(revealTick, REVEAL_INTERVAL_MS)
     }
   }
@@ -471,12 +463,7 @@ export function useInterviewVoice(sessionId: string) {
     fractionalChars -= toReveal
     const prevChars = revealedChars
     revealedChars = Math.min(revealedChars + toReveal, textGateBuffer.length)
-    if (revealedChars !== prevChars) {
-      console.log('[TextGate] 释放文字, +', revealedChars - prevChars,
-        'chars, total=', revealedChars, '/', textGateBuffer.length,
-        'rate=', charsPerSecond.toFixed(1), 'chars/s',
-        'effectiveDur=', effectiveDuration.toFixed(1) + 's')
-    }
+    if (revealedChars === prevChars) return
     partialTranscript.value = {
       text: textGateBuffer.substring(0, revealedChars),
       isFinal: false,
@@ -484,7 +471,6 @@ export function useInterviewVoice(sessionId: string) {
     }
     // 文字流已结束且全部释放完 → 提交消息
     if (isTextStreamDone && revealedChars >= textGateBuffer.length) {
-      console.log('[TextGate] 文字全部释放完, 提交消息')
       commitInterviewerMessage()
     }
   }
@@ -495,8 +481,6 @@ export function useInterviewVoice(sessionId: string) {
    */
   function handlePlaybackEnd(): void {
     if (!isFullVoice()) return
-    console.log('[TextGate] 音频播放结束, revealed=', revealedChars,
-      'bufferLen=', textGateBuffer.length, 'isTextStreamDone=', isTextStreamDone)
     if (textGateBuffer.length > revealedChars) {
       revealedChars = textGateBuffer.length
       partialTranscript.value = {
