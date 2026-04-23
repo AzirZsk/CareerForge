@@ -273,7 +273,9 @@ const sessionId = computed(() => {
 // ============================================================================
 
 // 语音模式（默认半语音）
-const voiceMode = ref<VoiceMode>('half_voice')
+const voiceMode = ref<VoiceMode>(
+  (route.query.voiceMode as VoiceMode) || 'half_voice'
+)
 
 // 语音面试 composable
 const voiceInterview = useInterviewVoice(sessionId.value)
@@ -386,7 +388,7 @@ const sessionBadgeText = computed(() => {
 onMounted(() => {
   // 直接初始化语音面试（WebSocket 连接后会自动进入 preparing 状态）
   // 后端预生成完成后会推送 ready 事件，前端显示"准备就绪"状态
-  voiceInterview.init()
+  voiceInterview.init(voiceMode.value)
 })
 
 onUnmounted(() => {
