@@ -508,6 +508,20 @@ public class InterviewVoiceGateway {
     }
 
     /**
+     * 推送当前会话状态到前端（题号、总题数、求助剩余等）
+     *
+     * @param sessionId 会话ID
+     * @param stateCode 状态码
+     */
+    public void sendCurrentState(String sessionId, String stateCode) {
+        SessionState state = sessionStates.get(sessionId);
+        if (state == null) {
+            return;
+        }
+        sendResponse(sessionId, VoiceResponse.state(buildStateData(stateCode, state)));
+    }
+
+    /**
      * 处理音频请求
      * 解析 Base64 编码的音频数据并转发给面试官 Agent 处理
      *

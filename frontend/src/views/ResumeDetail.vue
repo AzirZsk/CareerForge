@@ -584,15 +584,15 @@ async function handleOptimizeComplete(): Promise<void> {
 }
 
 // 应用优化变更
-async function handleApplyChanges(editedAfterSection?: ResumeSection[] | null): Promise<void> {
+async function handleApplyChanges(editedAfterSection?: ResumeSection[] | null, hasEdits?: boolean): Promise<void> {
   if (!resumeId.value) return
 
-  const success = await applyChanges(editedAfterSection ?? undefined)
+  const success = await applyChanges(editedAfterSection ?? undefined, hasEdits)
   if (success) {
     // 应用成功，刷新简历详情并关闭弹窗
     await store.fetchResumeDetail(resumeId.value)
     showOptimizeModal.value = false
-    toast.success('变更已应用，评分已更新')
+    toast.success(hasEdits ? '变更已应用，评分已更新' : '变更已应用')
   } else {
     // 应用失败，显示错误提示（弹窗保持打开状态）
     console.error('应用变更失败:', optimizeState.applyError)

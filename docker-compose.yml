@@ -20,9 +20,9 @@ services:
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com}
       - AI_MODEL=${AI_MODEL:-gpt-4o}
       # ==================== 阿里云语音服务 ====================
-      - ALIYUN_ACCESS_KEY_ID=${ALIYUN_ACCESS_KEY_ID}
-      - ALIYUN_ACCESS_KEY_SECRET=${ALIYUN_ACCESS_KEY_SECRET}
-      - ALIYUN_VOICE_APP_KEY=${ALIYUN_VOICE_APP_KEY}
+      - ALIYUN_API_KEY=${ALIYUN_API_KEY}
+      # ==================== JWT 认证 ====================
+      - JWT_SECRET=${JWT_SECRET:-careerforge-dev-secret-key-for-jwt-token-generation-2026}
       # ==================== JVM 参数 ====================
       - JAVA_OPTS=-Xmx512m -Xms256m
     volumes:

@@ -7,6 +7,7 @@ import com.careerforge.chat.dto.ChatStreamRequest;
 import com.careerforge.chat.dto.SectionChange;
 import com.careerforge.chat.service.AIChatService;
 import com.careerforge.chat.service.ChatMessageService;
+import com.careerforge.common.util.UserContext;
 import com.careerforge.resume.util.GraphSseHelper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -58,6 +59,7 @@ public class AIChatHandler {
                 event -> sendSseEvent(emitter, event),
                 error -> {
                     log.error("[AIChat] 流异常", error);
+                    UserContext.clear();
                     try {
                         emitter.send(SseEmitter.event()
                                 .name("message")
@@ -69,9 +71,13 @@ public class AIChatHandler {
                 },
                 () -> {
                     log.info("[AIChat] 流完成");
+                    UserContext.clear();
                     emitter.complete();
                 }
         );
+
+        // subscribe() 同步返回后，servlet 线程的 UserContext 已被 hook 捕获，安全清理
+        UserContext.clear();
 
         // 设置超时回调
         emitter.onTimeout(() -> {

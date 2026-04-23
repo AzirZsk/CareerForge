@@ -135,11 +135,10 @@
 
           <div class="messages-container" ref="messagesContainer">
             <div
-              v-for="(msg, index) in messages"
+              v-for="msg in messages"
               :key="msg.id"
               class="message"
               :class="msg.role"
-              :style="{ '--index': index }"
             >
               <div class="message-avatar">
                 <span v-if="msg.role === 'interviewer'">AI</span>
@@ -151,13 +150,12 @@
                 <span class="message-time">{{ formatMessageTime(msg.timestamp) }}</span>
               </div>
             </div>
-            <div v-if="isAIResponding && !interviewerPartialText" class="message interviewer typing">
-              <div class="message-avatar">AI</div>
+            <!-- AI思考中 -->
+            <div v-if="isWaitingForAI" class="message interviewer thinking-indicator">
+              <div class="message-avatar"><span>AI</span></div>
               <div class="message-content">
-                <div class="typing-indicator">
-                  <span></span>
-                  <span></span>
-                  <span></span>
+                <div class="typing-dots">
+                  <span /><span /><span />
                 </div>
               </div>
             </div>
@@ -171,6 +169,8 @@
                 <p class="message-text">{{ partialTranscript.text }}<span class="cursor-blink">|</span></p>
               </div>
             </div>
+            <!-- 滚动锚点 -->
+            <div ref="scrollAnchor"></div>
           </div>
 
           <!-- 轻量蒙层（不阻断交互，可滚动查看历史） -->
@@ -292,11 +292,13 @@ const messages = voiceInterview.messages
 const assistRemaining = voiceInterview.assistRemaining
 const assistLimit = voiceInterview.assistLimit
 const partialTranscript = voiceInterview.partialTranscript
+const isWaitingForAI = voiceInterview.isWaitingForAI
 
 // 处理状态（基于实时转录状态）
 const isProcessing = computed(() => !!partialTranscript.value && !partialTranscript.value.isFinal)
 const statusText = computed(() => {
   if (voiceInterview.isPlaying.value) return 'AI 正在说话...'
+  if (isWaitingForAI.value) return 'AI 正在思考...'
   if (isRecording.value) return '正在录音...'
   if (isProcessing.value) return '正在识别...'
   if (voiceInterview.error.value) return '连接错误'
@@ -310,15 +312,6 @@ const statusType = computed(() => {
   return 'idle'
 })
 
-// AI 响应状态（与音频播放状态同步）
-const isAIResponding = computed(() => voiceInterview.isPlaying.value)
-
-// 面试官实时文字（用于控制 typing indicator 的显示）
-const interviewerPartialText = computed(() =>
-  partialTranscript.value?.role === 'interviewer' && partialTranscript.value.text
-    ? partialTranscript.value.text
-    : ''
-)
 
 // 面试是否已开始（非 idle 状态时隐藏语音模式切换）
 const isInterviewStarted = computed(() => {
@@ -357,6 +350,7 @@ const isAssistLoading = ref(false)
 
 const showEndModal = ref(false)
 const messagesContainer = ref<HTMLElement | null>(null)
+const scrollAnchor = ref<HTMLElement | null>(null)
 
 // 倒计时相关
 const showCountdown = ref(false)
@@ -399,14 +393,16 @@ onUnmounted(() => {
   voiceInterview.dispose()
 })
 
-// 监听消息变化，自动滚动到底部
-watch(() => messages.value.length, () => {
+// 自动滚动到底部
+function scrollToBottom() {
   nextTick(() => {
-    if (messagesContainer.value) {
-      messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
-    }
+    scrollAnchor.value?.scrollIntoView({ behavior: 'smooth' })
   })
-})
+}
+// 新消息触发滚动
+watch(() => messages.value.length, () => { scrollToBottom() })
+// 实时转录更新触发滚动
+watch(() => partialTranscript.value?.text, () => { scrollToBottom() })
 
 // ============================================================================
 // 助手相关
@@ -417,12 +413,6 @@ async function handleAssist(type: AssistType, question?: string) {
   voiceInterview.freeze()
   isAssistLoading.value = true
   assistantContent.value = ''
-
-  // 注入共享 AudioContext，避免创建多余的 AudioContext 实例
-  const ctx = voiceInterview.getAudioContext()
-  if (ctx) {
-    streamAssist.setExternalAudioContext(ctx)
-  }
 
   try {
     await streamAssist.requestAssist({
@@ -732,9 +722,6 @@ function goToQuestion(index: number): void {
   display: flex;
   gap: $spacing-md;
   max-width: 80%;
-  animation: slideUp 0.3s ease forwards;
-  animation-delay: calc(var(--index) * 0.05s);
-  opacity: 0;
   &.interviewer {
     align-self: flex-start;
     .message-avatar {
@@ -791,29 +778,6 @@ function goToQuestion(index: number): void {
 .message-time {
   font-size: $text-xs;
   color: $color-text-tertiary;
-}
-
-.typing-indicator {
-  display: flex;
-  gap: 4px;
-  padding: $spacing-md;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: $radius-md;
-  span {
-    width: 8px;
-    height: 8px;
-    background: $color-accent;
-    border-radius: 50%;
-    animation: bounce 1.4s ease-in-out infinite;
-    &:nth-child(1) { animation-delay: 0s; }
-    &:nth-child(2) { animation-delay: 0.2s; }
-    &:nth-child(3) { animation-delay: 0.4s; }
-  }
-}
-
-@keyframes bounce {
-  0%, 60%, 100% { transform: translateY(0); }
-  30% { transform: translateY(-8px); }
 }
 
 // 侧边面板
@@ -957,6 +921,37 @@ function goToQuestion(index: number): void {
     background: rgba(212, 168, 83, 0.1);
     border: 1px dashed rgba(212, 168, 83, 0.3);
   }
+}
+
+// AI思考中点点点动画
+.thinking-indicator {
+  .message-content {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+  }
+}
+
+.typing-dots {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+
+  span {
+    width: 6px;
+    height: 6px;
+    background: $color-accent;
+    border-radius: 50%;
+    animation: typing-bounce 1.4s infinite ease-in-out;
+
+    &:nth-child(1) { animation-delay: -0.32s; }
+    &:nth-child(2) { animation-delay: -0.16s; }
+  }
+}
+
+@keyframes typing-bounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
 }
 
 .cursor-blink {

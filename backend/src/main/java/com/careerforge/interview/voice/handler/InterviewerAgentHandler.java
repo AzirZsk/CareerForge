@@ -141,12 +141,15 @@ public class InterviewerAgentHandler {
      * @param sessionId 会话ID
      */
     public void initSession(String sessionId) {
-        log.info("[InterviewerAgent] 初始化会话资源, sessionId={}", sessionId);
+        log.info("[InterviewerAgent] 初始化会话资源, sessionId={}, voiceMode={}", sessionId,
+                isFullVoiceMode(sessionId) ? "full_voice" : "half_voice");
         ConversationContext context = getOrCreateContext(sessionId);
-        // 提前创建 TTS 连接
-        TTSService ttsService = createTTSServiceForSession(sessionId);
-        context.setTtsService(ttsService);
-        // 提前创建 ASR 连接
+        // half_voice 模式不需要 TTS，面试官只回复文字
+        if (isFullVoiceMode(sessionId)) {
+            TTSService ttsService = createTTSServiceForSession(sessionId);
+            context.setTtsService(ttsService);
+        }
+        // 提前创建 ASR 连接（两种模式都需要，用户语音输入）
         ASRService asrService = createASRServiceForSession(sessionId);
         context.setAsrService(asrService);
         log.info("[InterviewerAgent] 会话资源初始化完成, sessionId={}", sessionId);
@@ -232,6 +235,10 @@ public class InterviewerAgentHandler {
         } else if (phase == InterviewPhaseEnum.FOLLOW_UP) {
             log.info("[InterviewerAgent] 追问回答完成，进入下一题, sessionId={}", sessionId);
             state.setPhase(InterviewPhaseEnum.ASKING_QUESTIONS);
+            // 发送过渡回复后推进到下一题
+            String transition = buildFollowUpTransition(sessionId);
+            recordInterviewerMessage(sessionId, transition);
+            synthesizeAndSend(sessionId, transition, false);
             advanceToNextQuestion(sessionId, state);
         } else if (phase == InterviewPhaseEnum.COMPLETED) {
             log.debug("[InterviewerAgent] 面试已结束，忽略候选人输入, sessionId={}", sessionId);
@@ -301,22 +308,13 @@ public class InterviewerAgentHandler {
     }
 
     /**
-     * 生成面试官回复（LLM 语义追问判断）
+     * 生成面试官回复（LLM 语义追问判断 + 反应生成）
      */
     private void generateInterviewerReply(String sessionId, String candidateAnswer) {
         log.debug("[InterviewerAgent] 生成面试官回复, sessionId={}", sessionId);
         SessionState state = requireSession(sessionId);
         ConversationContext context = getOrCreateContext(sessionId);
-
-        // 快速预检：追问次数达上限或回答过短，直接跳过 LLM 判断
-        if (state.getFollowUpCount() >= SessionState.MAX_FOLLOW_UP
-                || candidateAnswer == null || candidateAnswer.length() < 10) {
-            log.info("[InterviewerAgent] 跳过追问判断（预检不通过）, sessionId={}", sessionId);
-            advanceToNextQuestion(sessionId, state);
-            return;
-        }
-
-        // LLM 语义判断 + 追问生成（单次调用）
+        // LLM 语义判断 + 反应生成 + 追问生成（单次调用）
         FollowUpJudgeResponse judgeResponse = questionPreGenerateService.judgeAndGenerateFollowUp(
                 sessionId,
                 state.getLastQuestion(),
@@ -327,16 +325,23 @@ public class InterviewerAgentHandler {
         );
 
         if (judgeResponse.isNeedFollowUp() && judgeResponse.getFollowUpQuestion() != null) {
-            String followUp = judgeResponse.getFollowUpQuestion();
+            // 追问路径：拼接反应 + 追问，一次性发送
+            String fullReply = buildReplyWithReaction(judgeResponse.getReplyReaction(), judgeResponse.getFollowUpQuestion());
             log.info("[InterviewerAgent] 触发追问（LLM判断）, sessionId={}, followUpCount={}, reason={}",
                     sessionId, state.getFollowUpCount(), judgeResponse.getReason());
             state.setFollowUpCount(state.getFollowUpCount() + 1);
             state.setPhase(InterviewPhaseEnum.FOLLOW_UP);
-            recordInterviewerMessage(sessionId, followUp);
-            synthesizeAndSend(sessionId, followUp, false);
+            recordInterviewerMessage(sessionId, fullReply);
+            synthesizeAndSend(sessionId, fullReply, false);
         } else {
+            // 不追问路径：先发送反应，再推进到下一题
+            String reaction = judgeResponse.getReplyReaction();
             log.info("[InterviewerAgent] 不追问（LLM判断）, sessionId={}, reason={}",
                     sessionId, judgeResponse.getReason());
+            if (reaction != null && !reaction.isBlank()) {
+                recordInterviewerMessage(sessionId, reaction);
+                synthesizeAndSend(sessionId, reaction, false);
+            }
             advanceToNextQuestion(sessionId, state);
         }
     }
@@ -388,7 +393,6 @@ public class InterviewerAgentHandler {
      */
     private void synthesizeAndSend(String sessionId, String text, boolean isFinal) {
         ConversationContext context = getOrCreateContext(sessionId);
-        TTSService tts = context.getOrCreateTTSService(() -> createTTSServiceForSession(sessionId));
         // 发送文本转录
         voiceGateway.sendResponse(sessionId, VoiceResponse.transcript(
                 VoiceResponse.TranscriptData.builder()
@@ -397,8 +401,11 @@ public class InterviewerAgentHandler {
                         .role(TranscriptRole.INTERVIEWER.getValue())
                         .build()
         ));
-        // 提交合成（非阻塞，音频通过 listener 异步推送）
-        tts.synthesize(text, true);
+        // full_voice 模式才合成语音
+        if (isFullVoiceMode(sessionId)) {
+            TTSService tts = context.getOrCreateTTSService(() -> createTTSServiceForSession(sessionId));
+            tts.synthesize(text, true);
+        }
         // 发送最终标记
         voiceGateway.sendResponse(sessionId, VoiceResponse.transcript(
                 VoiceResponse.TranscriptData.builder()
@@ -420,15 +427,19 @@ public class InterviewerAgentHandler {
     private void synthesizeStreamAndSend(String sessionId, Flux<String> textStream) {
         log.info("[InterviewerAgent] 开始流式合成, sessionId={}", sessionId);
         ConversationContext context = getOrCreateContext(sessionId);
-        TTSService tts = context.getOrCreateTTSService(() -> createTTSServiceForSession(sessionId));
+        boolean fullVoice = isFullVoiceMode(sessionId);
+        // full_voice 模式才创建 TTS 连接
+        TTSService tts = fullVoice ? context.getOrCreateTTSService(() -> createTTSServiceForSession(sessionId)) : null;
         StringBuilder fullText = new StringBuilder();
         textStream.subscribe(
                 delta -> {
-                    // 提交 delta 到 TTS（非阻塞，server_commit 自动合成）
-                    log.debug("[InterviewerAgent] 提交 delta, sessionId={}, delta={}", sessionId, delta);
-                    tts.synthesize(delta, false);
+                    // full_voice 模式提交 delta 到 TTS
+                    if (fullVoice && tts != null) {
+                        log.debug("[InterviewerAgent] 提交 delta, sessionId={}, delta={}", sessionId, delta);
+                        tts.synthesize(delta, false);
+                    }
                     fullText.append(delta);
-                    // 每个 delta 直接发送转录到客户端
+                    // 每个 delta 直接发送转录到客户端（两种模式都需要）
                     voiceGateway.sendResponse(sessionId, VoiceResponse.transcript(
                             VoiceResponse.TranscriptData.builder()
                                     .text(delta)
@@ -440,7 +451,9 @@ public class InterviewerAgentHandler {
                 error -> log.error("[InterviewerAgent] LLM流错误, sessionId={}", sessionId, error),
                 () -> {
                     // LLM 流结束，刷新 TTS 缓冲区中的残余文本
-                    tts.synthesize("", true);
+                    if (fullVoice && tts != null) {
+                        tts.synthesize("", true);
+                    }
                     // 发送 final 标记
                     voiceGateway.sendResponse(sessionId, VoiceResponse.transcript(
                             VoiceResponse.TranscriptData.builder()
@@ -457,6 +470,14 @@ public class InterviewerAgentHandler {
                     }
                 }
         );
+    }
+
+    /**
+     * 判断是否为全语音模式（面试官也播放语音）
+     */
+    private boolean isFullVoiceMode(String sessionId) {
+        SessionState state = voiceGateway.getInternalState(sessionId);
+        return state != null && "full_voice".equals(state.getVoiceMode());
     }
 
     /**
@@ -538,6 +559,8 @@ public class InterviewerAgentHandler {
     private void advanceToNextQuestion(String sessionId, SessionState state) {
         state.setFollowUpCount(0);
         state.setCurrentQuestion(state.getCurrentQuestion() + 1);
+        // 通知前端题号更新
+        voiceGateway.sendCurrentState(sessionId, InterviewSessionState.INTERVIEWING.getCode());
         if (state.getCurrentQuestion() < state.getTotalQuestions()) {
             log.info("[InterviewerAgent] 进入下一个问题, sessionId={}, index={}", sessionId, state.getCurrentQuestion());
             generateNextQuestion(sessionId);
@@ -565,6 +588,36 @@ public class InterviewerAgentHandler {
         log.info("[InterviewerAgent] 面试结束: {}, sessionId={}", closingText, sessionId);
         recordInterviewerMessage(sessionId, closingText);
         synthesizeAndSend(sessionId, closingText, true);
+    }
+
+    /**
+     * 拼接反应文本和追问问题
+     * 反应文本末尾如果不是标点符号，自动补逗号
+     */
+    private String buildReplyWithReaction(String reaction, String followUp) {
+        if (reaction == null || reaction.isBlank()) {
+            return followUp;
+        }
+        char last = reaction.charAt(reaction.length() - 1);
+        if (last == '。' || last == '，' || last == '？' || last == '、') {
+            return reaction + followUp;
+        }
+        return reaction + "，" + followUp;
+    }
+
+    /**
+     * 构建追问后的过渡回复（根据面试官风格）
+     */
+    private String buildFollowUpTransition(String sessionId) {
+        SessionState state = requireSession(sessionId);
+        String style = state.getInterviewerStyle();
+        if ("friendly".equals(style)) {
+            return "好的，这部分聊得很清楚。我们换个话题吧。";
+        } else if ("challenging".equals(style)) {
+            return "嗯，好。继续下一个问题。";
+        }
+        // professional（默认）
+        return "好的，了解了。我们继续下一个话题。";
     }
 
     /**

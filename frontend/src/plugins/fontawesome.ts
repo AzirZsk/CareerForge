@@ -116,6 +116,11 @@ import {
   faPencilSquare // 默认
 } from '@fortawesome/free-solid-svg-icons'
 
+// 导入 Regular 图标
+import {
+  faClock // 时钟
+} from '@fortawesome/free-regular-svg-icons'
+
 // 导入 emoji 替换需要的额外图标
 import {
   faHand, // 挥手
@@ -134,7 +139,8 @@ import {
   faPaperPlane, // 发送/投递
   faChampagneGlasses, // 庆祝/Offer
   faArrowRotateLeft, // 撤回
-  faBookmark // 书签/收藏
+  faBookmark, // 书签/收藏
+  faListOl // 有序列表
 } from '@fortawesome/free-solid-svg-icons'
 
 // 注册图标到库
@@ -217,6 +223,8 @@ library.add(
   faPenFancy,
   faComment,
   faPencilSquare,
+  // Regular 图标
+  faClock,
   // Emoji 替换图标
   faHand,
   faFlask,
@@ -234,7 +242,9 @@ library.add(
   faPaperPlane,
   faChampagneGlasses,
   faArrowRotateLeft,
-  faBookmark
+  faBookmark,
+  // 有序列表
+  faListOl
 )
 
 // 导出组件供全局注册

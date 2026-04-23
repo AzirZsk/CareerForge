@@ -465,11 +465,20 @@ export function useAIChat() {
     state.isWindowOpen = !state.isWindowOpen
   }
 
-  function openWindow(): void {
+  async function openWindow(): Promise<void> {
     state.isWindowOpen = true
     // 窗口打开时加载历史（只在消息为空时加载，避免重复加载）
     if (state.sessionId && state.messages.length === 0) {
-      loadHistory(state.sessionId)
+      await loadHistory(state.sessionId)
+    }
+    // 没有历史消息时显示欢迎提示
+    if (state.messages.length === 0) {
+      state.messages.push({
+        id: generateId(),
+        role: 'system',
+        content: '欢迎使用 CareerForge 求职助手！我可以帮您解答求职相关问题，优化简历，或提供面试建议。您可以直接告诉我您想做什么。',
+        timestamp: Date.now()
+      })
     }
   }
 

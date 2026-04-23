@@ -8,6 +8,7 @@
 
 | 日期 | 版本 | 变更内容 |
 |------|------|----------|
+| 2026-04-21 | 2.7.0 | **新增简历风格改写前端**：useResumeRewrite composable、resume-rewrite.ts 类型、RewriteResumeModal/RewriteStageItem 组件；面试中心组件从 7 个扩展到 25 个；新增 statistics/config/task API、request 工具、notification store；Composables 20→21、API 7→10、Types 10→11 |
 | 2026-04-14 | 2.6.0 | **新增页面离开保护**：新增 usePageGuard composable（全局保护锁注册表 + beforeunload）；工作流运行/AI聊天流式/语音面试/弹窗打开时阻止关闭页面；Composables 数量 19→20 |
 | 2026-04-10 | 2.5.0 | **新增多用户登录注册系统**：新增 Login.vue 视图、auth.ts API/Types、路由守卫更新；删除 useAudioTranscribe composable；更新文件统计 |
 | 2026-04-07 | 2.4.0 | **清理老版本复盘模块**：删除 Review.vue/ReviewDetail.vue 视图、currentReview 状态、interviewReview Mock 数据；复盘功能通过面试中心详情页实现 |
@@ -31,6 +32,7 @@
 - 简历管理与编辑
 - 简历优化进度展示（SSE 实时）
 - 简历定制工作流展示
+- **简历风格改写**（上传参考简历，AI 改写风格）
 - AI 对话式简历优化（悬浮球全屏聊天）
 - **AI 语音模拟面试**（实时语音对话 + 求助系统 + 录音回放）
 - 面试复盘查看
@@ -78,6 +80,9 @@ VITE_API_TARGET=http://localhost:8080
 | interview-center | `api/interview-center.ts` | 面试中心管理、准备工作流、复盘分析 |
 | **interview-voice** | `api/interview-voice.ts` | **语音面试录音回放、求助次数、SSE 求助** |
 | job-position | `api/job-position.ts` | 职位信息管理 |
+| **statistics** | `api/statistics.ts` | **数据统计** |
+| **task** | `api/task.ts` | **异步任务管理** |
+| **config** | `api/config.ts` | **系统配置** |
 
 ### 页面路由
 | 路径 | 组件 | 标题 | 描述 | 权限 |
@@ -167,6 +172,7 @@ export default defineConfig(({ mode }) => {
 | `types/ai-chat.ts` | AI 聊天类型定义（ChatMessage、SectionChange、AIChatState 等） |
 | `types/resume-optimize.ts` | 简历优化工作流类型定义 |
 | `types/resume-tailor.ts` | 简历定制工作流类型定义 |
+| `types/resume-rewrite.ts` | 简历风格改写工作流类型定义 |
 | `types/interview-center.ts` | 面试中心类型定义 |
 | `types/interview-voice.ts` | 语音面试类型定义 |
 | `types/job-position.ts` | 职位信息类型定义 |
@@ -496,6 +502,23 @@ const {
 - JD 分析、匹配、生成定制简历阶段
 - 错误处理
 
+### useResumeRewrite (composables/useResumeRewrite.ts)
+简历风格改写工作流的组合式函数:
+```typescript
+const {
+  state,
+  stageHistory,
+  currentData,
+  startRewrite,
+  resetState
+} = useResumeRewrite()
+```
+**功能**：
+- 上传参考简历并解析
+- SSE 流式改写进度追踪
+- 风格分析、差异生成、内容改写阶段
+- 错误处理
+
 ### useInterviewPreparation (composables/useInterviewPreparation.ts)
 面试准备工作流的组合式函数:
 ```typescript
@@ -734,9 +757,10 @@ $radius-full: 9999px;
 | RecordingPlayer.vue | 录音播放器（合并音频播放、进度控制） |
 | TranscriptViewer.vue | 文字记录查看器（片段列表、点击跳转） |
 
-### 面试中心组件 (components/interview-center/) - 7 个
+### 面试中心组件 (components/interview-center/) - 25 个
 | 组件 | 功能 |
 |------|------|
+| InterviewHeader.vue | 面试详情头部 |
 | JobPositionCard.vue | 职位卡片展示 |
 | CreateInterviewDialog.vue | 创建面试弹窗 |
 | EditInterviewDialog.vue | 编辑面试弹窗 |
@@ -744,8 +768,25 @@ $radius-full: 9999px;
 | ReviewNoteDialog.vue | 复盘笔记弹窗 |
 | AddPreparationDialog.vue | 添加准备事项弹窗 |
 | PreparationProgressModal.vue | AI 生成准备事项进度弹窗 |
+| PreparationProgress.vue | 准备进度展示 |
+| PreparationGroup.vue | 准备事项分组 |
+| PreparationItem.vue | 单条准备事项 |
+| ReviewAnalysisProgress.vue | 复盘分析进度 |
+| AudioUploadArea.vue | 音频上传区域 |
+| MicrophonePermissionDialog.vue | 麦克风权限弹窗 |
+| MockInterviewConfigDialog.vue | 模拟面试配置弹窗 |
+| MockHistorySection.vue | 模拟面试历史 |
+| MockSessionDetailModal.vue | 模拟面试详情弹窗 |
+| MeetingLinkBar.vue | 会议链接栏 |
+| PositionStatusBadge.vue | 职位状态徽章 |
+| preparation/CompanyResearchContent.vue | 公司调研内容 |
+| preparation/JDAnalysisContent.vue | JD 分析内容 |
+| preparation/PreparationItemsContent.vue | 准备事项内容 |
+| review/TranscriptAnalysisContent.vue | 对话分析内容 |
+| review/InterviewAnalysisContent.vue | 面试分析内容 |
+| review/AdviceListContent.vue | 改进建议列表 |
 
-### 简历组件 (components/resume/) - 12 个
+### 简历组件 (components/resume/) - 14 个
 | 组件 | 功能 |
 |------|------|
 | EditSectionModal.vue | 编辑简历模块弹窗 |
@@ -754,6 +795,7 @@ $radius-full: 9999px;
 | ResumeComparison.vue | 简历优化前后对比 |
 | OptimizeProgressModal.vue | 优化进度弹窗（SSE 实时展示,主容器组件） |
 | TailorResumeModal.vue | 定制简历弹窗 |
+| **RewriteResumeModal.vue** | **风格改写弹窗（上传参考简历、触发改写）** |
 | ResumeHeader.vue | 简历头部信息 |
 | MetricsSection.vue | 指标展示区域 |
 | SectionContent.vue | 区块内容渲染 |
@@ -816,6 +858,11 @@ $radius-full: 9999px;
 | AnalyzeJDStageContent.vue | JD 分析阶段内容 |
 | MatchResumeStageContent.vue | 简历匹配阶段内容 |
 | GenerateTailoredStageContent.vue | 生成定制简历阶段内容 |
+
+### 改写简历组件 (components/resume/rewrite/) - 1 个
+| 组件 | 功能 |
+|------|------|
+| RewriteStageItem.vue | 改写阶段进度展示 |
 
 ---
 
@@ -990,12 +1037,14 @@ frontend/
 │   ├── router/
 │   │   └── index.ts             # 路由配置
 │   ├── stores/
-│   │   └── index.ts             # Pinia Store
+│   │   ├── index.ts             # Pinia Store
+│   │   └── notification.ts      # 通知 Store
 │   ├── types/
 │   │   ├── index.ts             # 通用类型定义
 │   │   ├── ai-chat.ts           # AI 聊天类型
 │   │   ├── resume-optimize.ts   # 简历优化类型
 │   │   ├── resume-tailor.ts     # 简历定制类型
+│   │   ├── resume-rewrite.ts    # 简历风格改写类型
 │   │   ├── interview-center.ts  # 面试中心类型
 │   │   ├── interview-voice.ts   # 语音面试类型
 │   │   ├── job-position.ts      # 职位信息类型
@@ -1006,11 +1055,15 @@ frontend/
 │   │   ├── aiChat.ts            # AI 聊天 API
 │   │   ├── interview-center.ts  # 面试中心 API
 │   │   ├── interview-voice.ts   # 语音面试 API
-│   │   └── job-position.ts      # 职位信息 API
+│   │   ├── job-position.ts      # 职位信息 API
+│   │   ├── statistics.ts        # 数据统计 API
+│   │   ├── task.ts              # 异步任务 API
+│   │   └── config.ts            # 系统配置 API
 │   ├── utils/
 │   │   ├── stageHelpers.ts      # 阶段辅助工具函数
-│   │   └── recording-helpers.ts # 录音回放辅助工具函数
-│   ├── composables/             # 20 个 Composables
+│   │   ├── recording-helpers.ts # 录音回放辅助工具函数
+│   │   └── request.ts           # HTTP 请求工具
+│   ├── composables/             # 21 个 Composables
 │   │   ├── useAIChat.ts         # AI 聊天
 │   │   ├── useInterviewVoice.ts # AI 语音面试
 │   │   ├── useStreamingAudio.ts # 流式音频播放
@@ -1018,6 +1071,7 @@ frontend/
 │   │   ├── useAudioRecorder.ts  # 音频录制器
 │   │   ├── useResumeOptimize.ts # 简历优化
 │   │   ├── useResumeTailor.ts   # 简历定制
+│   │   ├── useResumeRewrite.ts  # 简历风格改写
 │   │   ├── useInterviewPreparation.ts # 面试准备
 │   │   ├── useReviewAnalysis.ts # 复盘分析
 │   │   ├── useSectionEdit.ts    # 区块编辑
@@ -1074,14 +1128,7 @@ frontend/
 │   │   │   └── recording/        # 录音回放组件（2 个）
 │   │   │       ├── RecordingPlayer.vue
 │   │   │       └── TranscriptViewer.vue
-│   │   ├── interview-center/    # 面试中心组件（7 个）
-│   │   │   ├── JobPositionCard.vue
-│   │   │   ├── CreateInterviewDialog.vue
-│   │   │   ├── EditInterviewDialog.vue
-│   │   │   ├── EditPositionDialog.vue
-│   │   │   ├── ReviewNoteDialog.vue
-│   │   │   ├── AddPreparationDialog.vue
-│   │   │   └── PreparationProgressModal.vue
+│   │   ├── interview-center/    # 面试中心组件（25 个）
 │   │   └── resume/
 │   │       ├── EditSectionModal.vue
 │   │       ├── AddSectionModal.vue

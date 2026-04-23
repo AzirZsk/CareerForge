@@ -137,7 +137,8 @@
               查看详情
             </button>
             <div class="action-btn-wrapper">
-              <button
+              <!-- 定制简历入口暂时隐藏 -->
+              <!-- <button
                 class="action-btn secondary"
                 :disabled="!store.primaryResume.analyzed"
                 @click="showTailorModal = true"
@@ -167,7 +168,7 @@
                   <polyline points="10 9 9 9 8 9" />
                 </svg>
                 定制简历
-              </button>
+              </button> -->
               <div
                 v-if="store.primaryResume.analyzed"
                 class="action-tooltip"
@@ -275,8 +276,8 @@
                 {{ resume.updatedAt }}
               </span>
               <div class="card-actions">
-                <!-- 定制简历按钮（已优化的简历才显示） -->
-                <div
+                <!-- 定制简历入口暂时隐藏 -->
+                <!-- <div
                   v-if="resume.status === 'optimized' && !resume.isPrimary"
                   class="icon-action-wrapper"
                 >
@@ -311,7 +312,7 @@
                   <div class="icon-tooltip">
                     根据目标岗位JD定制简历
                   </div>
-                </div>
+                </div> -->
                 <button
                   v-if="!resume.isPrimary"
                   class="icon-action"
@@ -680,11 +681,7 @@ async function handleSaveTailor(data: {
   }
 }
 
-// 打开定制弹窗（从简历列表点击）
-function openTailorModal(resumeId: string): void {
-  tailorResumeId.value = resumeId
-  showTailorModal.value = true
-}
+
 </script>
 
 <style lang="scss" scoped>

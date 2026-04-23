@@ -52,7 +52,7 @@ public class StatisticsVO {
         private Integer resumeCount;
 
         /**
-         * 准备完成率（百分比 0-100）
+         * 面试准备完成率（百分比 0-100）
          */
         private Integer preparationCompletionRate;
 

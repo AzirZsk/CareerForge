@@ -83,6 +83,12 @@ public class AliyunTTSService implements TTSService {
                             AliyunTTSService.this.listener.onAudio(audioData);
                         }
                         break;
+                    case "response.content_part.added":
+                        log.info("[AliyunTTS] 新内容部分开始输出, {}", message);
+                        break;
+                    case "response.output_item.added":
+                        log.info("[AliyunTTS] 新item部分更新输出, {}", message);
+                        break;
                     case "response.done":
                         log.trace("[AliyunTTS] 服务端处理完成");
                         break;

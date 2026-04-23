@@ -8,6 +8,7 @@
 
 | 日期 | 版本 | 变更内容 |
 |------|------|----------|
+| 2026-04-21 | 2.6.0 | **新增简历风格改写工作流**：新增 `resume/graph/rewrite/` 子模块（7 个 Java 文件、3 个 Node）、ResumeRewriteGraphController/Handler；**移除 job 模块**；Java 文件 314→324 |
 | 2026-04-13 | 2.5.0 | **文档同步更新**：新增 task 异步任务模块文档（10 个 Java 文件） |
 | 2026-04-10 | 2.4.0 | **新增多用户登录注册系统**：新增 auth 模块（5 个 Java 文件）、AuthController；SSE 从 Reactor 迁移至 Spring MVC SseEmitter；语音面试新增问题预生成与追问机制；更新文件统计 |
 | 2026-04-07 | 2.3.0 | **清理老版本复盘模块**：删除 `review/` 目录（13 个 Java 文件），复盘功能统一使用 `interview/graph/review/` 工作流 + `InterviewReviewNote` |
@@ -29,14 +30,13 @@
 - **用户认证**（登录注册、JWT Token、登出）
 - 用户信息管理
 - 简历管理、优化、导出
-- 简历优化/定制工作流（StateGraph 状态机）
+- 简历优化/定制/改写工作流（StateGraph 状态机）
 - AI 对话式简历优化（ReactAgent + 技能系统）
 - 面试会话与答题流程
 - **AI 语音模拟面试**（WebSocket 实时对话 + 求助系统 + 录音回放 + 问题预生成）
 - 面试复盘与分析
 - 数据统计
 - **异步任务管理**（音频转录、简历优化、复盘分析）
-- 职位推荐
 - **公司信息与调研**
 - **职位信息与 JD 分析**
 
@@ -67,8 +67,7 @@ export OPENAI_BASE_URL=https://api.openai.com
 export AI_MODEL=gpt-4o
 
 # 必需：阿里云语音服务（用于语音面试）
-export ALIYUN_ACCESS_KEY_ID=your_access_key_id
-export ALIYUN_ACCESS_KEY_SECRET=your_access_key_secret
+export ALIYUN_API_KEY=your_aliyun_api_key
 ```
 
 ### 访问地址
@@ -88,6 +87,7 @@ export ALIYUN_ACCESS_KEY_SECRET=your_access_key_secret
 | resume | `/resumes` | ResumeController | 简历CRUD与优化 |
 | resume-workflow | `/resumes` | ResumeOptimizeGraphController | 简历优化工作流 |
 | resume-tailor | `/resumes` | TailorResumeController | 简历定制工作流 |
+| **resume-rewrite** | `/resumes` | **ResumeRewriteGraphController** | **简历风格改写工作流** |
 | resume-suggestion | `/resumes` | ResumeSuggestionController | 简历建议管理 |
 | **chat** | `/chat` | **AIChatController** | **AI 对话式简历优化** |
 | interview | `/interviews` | InterviewController | 面试会话管理 |
@@ -98,7 +98,6 @@ export ALIYUN_ACCESS_KEY_SECRET=your_access_key_secret
 | **assistant** | `/interviews` | **AssistantController** | **语音面试求助系统** |
 | **recording** | `/recordings` | **RecordingController** | **录音回放管理** |
 | statistics | `/statistics` | StatisticsController | 数据统计 |
-| job | `/jobs` | JobController | 职位推荐 |
 | **job-position** | `/job-positions` | **JobPositionController** | **职位信息与 JD 分析** |
 | **task** | `/tasks` | **TaskController** | **异步任务管理** |
 
@@ -159,9 +158,7 @@ spring:
 # 阿里云语音服务配置
 aliyun:
   voice:
-    access-key-id: ${ALIYUN_ACCESS_KEY_ID:}
-    access-key-secret: ${ALIYUN_ACCESS_KEY_SECRET:}
-    app-key: ${ALIYUN_VOICE_APP_KEY:}
+    api-key: ${ALIYUN_API_KEY:}
 
 mybatis-plus:
   global-config:
@@ -430,14 +427,12 @@ AI 功能通过 `AIPromptProperties` 配置类管理提示词：
 |------|--------|------|
 | t_user | User | 用户信息 |
 | t_resume | Resume | 简历主表（含评分字段） |
-| t_resume_version | ResumeVersion | 简历历史版本（快照） |
 | t_resume_section | ResumeSection | 简历模块（区块） |
 | t_resume_suggestion | ResumeSuggestion | 简历优化建议 |
 | t_interview | Interview | 面试记录 |
 | t_interview_question | InterviewQuestion | 面试题库 |
 | t_interview_session | InterviewSession | 面试会话 |
 | t_conversation | Conversation | 面试对话 |
-| t_job | Job | 职位推荐 |
 | t_chat_message | ChatMessage | AI 聊天消息（含 actions、action_status、segments 字段） |
 | **t_company** | **Company** | **公司信息与调研** |
 | **t_job_position** | **JobPosition** | **职位信息与 JD 分析** |
@@ -525,10 +520,10 @@ public abstract class BaseEntity {
 
 ### resume - 简历模块
 - **路径**：`src/main/java/com/careerforge/resume/`
-- **文件统计**：64 个 Java 文件（含 graph 子模块）
+- **文件统计**：71 个 Java 文件（含 graph 子模块）
 - **实体**：Resume, ResumeSection, ResumeSuggestion, ResumeVersion
-- **控制器**：ResumeController, ResumeOptimizeGraphController, TailorResumeController, ResumeSuggestionController
-- **Handler**：ResumeHandler, ResumeOptimizeGraphHandler, TailorResumeGraphHandler, ResumeSuggestionHandler
+- **控制器**：ResumeController, ResumeOptimizeGraphController, TailorResumeController, **ResumeRewriteGraphController**, ResumeSuggestionController
+- **Handler**：ResumeHandler, ResumeOptimizeGraphHandler, TailorResumeGraphHandler, **ResumeRewriteGraphHandler**, ResumeSuggestionHandler
 - **工具类**：ChangeFieldTranslator, ResumeChangeApplier, ResumeSectionShortener, TailoredResumeToSectionConverter, GraphSseHelper
 - **核心功能**：
   - 简历 CRUD
@@ -540,10 +535,11 @@ public abstract class BaseEntity {
 
 ### resume/graph - 简历工作流
 - **路径**：`src/main/java/com/careerforge/resume/graph/`
-- **文件统计**：13 个 Java 文件
+- **文件统计**：20 个 Java 文件
 - **公共**：BaseGraphConstants（常量基类）
 - **optimize 子包**：DiagnoseResumeNode, GenerateSuggestionsNode, OptimizeSectionNode, ResumeOptimizeGraphConfig, ResumeOptimizeGraphConstants, ResumeOptimizeGraphService
 - **tailor 子包**：AnalyzeJDNode, MatchResumeNode, GenerateTailoredResumeNode, TailorResumeGraphConfig, TailorResumeGraphConstants, TailorResumeGraphService
+- **rewrite 子包**：AnalyzeStyleNode, GenerateStyleDiffNode, RewriteSectionNode, RewriteGraphConfig, RewriteGraphConstants, RewriteGraphService, StyleAnalysisResponse
 
 ### chat - AI 聊天模块
 - **路径**：`src/main/java/com/careerforge/chat/`
@@ -615,14 +611,6 @@ public abstract class BaseEntity {
   - 技能雷达图
   - 最近活动
 
-### job - 职位推荐模块
-- **路径**：`src/main/java/com/careerforge/job/`
-- **文件统计**：4 个 Java 文件
-- **实体**：Job
-- **核心功能**：
-  - 职位推荐
-  - 匹配度计算
-
 ### task - 异步任务模块
 - **路径**：`src/main/java/com/careerforge/task/`
 - **文件统计**：10 个 Java 文件
@@ -649,7 +637,7 @@ A: `backend/data/careerforge.db`（相对于 backend 目录）
 A: 设置环境变量 `OPENAI_API_KEY`，或在 `application.yml` 中配置 `spring.ai.openai.api-key`
 
 ### Q: 如何配置阿里云语音服务？
-A: 设置环境变量 `ALIYUN_ACCESS_KEY_ID` 和 `ALIYUN_ACCESS_KEY_SECRET`，或在 `application.yml` 中配置 `aliyun.voice.*`
+A: 设置环境变量 `ALIYUN_API_KEY`，或在 `application.yml` 中配置 `careerforge.voice.aliyun.api-key`
 
 ### Q: 如何添加新的简历区块类型？
 A:
@@ -715,16 +703,17 @@ backend/
 │   │   │   ├── service/                 # 公共服务（AI、文件、搜索）
 │   │   │   └── util/                    # 工具类
 │   │   ├── user/                        # 用户模块（11 个文件）
-│   │   ├── resume/                      # 简历模块（64 个文件）
-│   │   │   ├── controller/              # 控制器（4 个）
+│   │   ├── resume/                      # 简历模块（71 个文件）
+│   │   │   ├── controller/              # 控制器（5 个）
 │   │   │   ├── convertor/               # 转换器
 │   │   │   ├── dto/                     # 数据传输对象
 │   │   │   ├── entity/                  # 实体类
-│   │   │   ├── graph/                   # 工作流（13 个文件）
+│   │   │   ├── graph/                   # 工作流（20 个文件）
 │   │   │   │   ├── BaseGraphConstants.java    # 公共常量基类
 │   │   │   │   ├── optimize/            # 优化工作流子包
-│   │   │   │   └── tailor/              # 定制工作流子包
-│   │   │   ├── handler/                 # 业务处理器（4 个）
+│   │   │   │   ├── tailor/              # 定制工作流子包
+│   │   │   │   └── rewrite/             # 改写工作流子包
+│   │   │   ├── handler/                 # 业务处理器（5 个）
 │   │   │   ├── mapper/                  # 数据访问
 │   │   │   ├── service/                 # 服务层
 │   │   │   └── util/                    # 工具类（5 个）
@@ -761,7 +750,6 @@ backend/
 │   │   ├── jobposition/                 # 职位模块（11 个文件）
 │   │   ├── task/                        # 异步任务模块（10 个文件）
 │   │   ├── statistics/                  # 统计模块（4 个文件）
-│   │   └── job/                         # 职位模块（4 个文件）
 │   └── resources/
 │       ├── application.yml              # 应用配置
 │       ├── logback-spring.xml           # 日志配置

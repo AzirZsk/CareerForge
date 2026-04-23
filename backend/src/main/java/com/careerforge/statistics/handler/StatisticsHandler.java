@@ -1,6 +1,8 @@
 package com.careerforge.statistics.handler;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.careerforge.common.enums.InterviewSource;
+import com.careerforge.common.enums.InterviewStatus;
 import com.careerforge.interview.entity.Interview;
 import com.careerforge.interview.entity.InterviewPreparation;
 import com.careerforge.interview.entity.InterviewReviewNote;
@@ -76,20 +78,22 @@ public class StatisticsHandler {
      * 构建统计概览
      */
     private StatisticsVO.StatisticsOverviewVO buildOverview() {
-        // 真实面试次数
+        // 真实面试次数（只统计已完成的）
         LambdaQueryWrapper<Interview> realWrapper = new LambdaQueryWrapper<>();
-        realWrapper.eq(Interview::getSource, "real");
+        realWrapper.eq(Interview::getSource, InterviewSource.REAL.getCode())
+                .eq(Interview::getStatus, InterviewStatus.COMPLETED.getValue());
         long realInterviews = interviewService.count(realWrapper);
 
-        // 模拟面试次数
+        // 模拟面试次数（只统计已完成的）
         LambdaQueryWrapper<Interview> mockWrapper = new LambdaQueryWrapper<>();
-        mockWrapper.eq(Interview::getSource, "mock");
+        mockWrapper.eq(Interview::getSource, InterviewSource.MOCK.getCode())
+                .eq(Interview::getStatus, InterviewStatus.COMPLETED.getValue());
         long mockInterviews = interviewService.count(mockWrapper);
 
         // 简历数量
         long resumeCount = resumeService.count();
 
-        // 准备完成率
+        // 面试准备完成率
         long totalPreparations = interviewPreparationService.count();
         LambdaQueryWrapper<InterviewPreparation> completedWrapper = new LambdaQueryWrapper<>();
         completedWrapper.eq(InterviewPreparation::getCompleted, true);
@@ -117,10 +121,11 @@ public class StatisticsHandler {
             LocalDateTime weekStart = now.minusWeeks(i).with(java.time.DayOfWeek.MONDAY).truncatedTo(ChronoUnit.DAYS);
             LocalDateTime weekEnd = weekStart.plusWeeks(1);
 
-            // 统计该周所有面试数量
+            // 统计该周已完成的面试数量
             LambdaQueryWrapper<Interview> wrapper = new LambdaQueryWrapper<>();
             wrapper.ge(Interview::getCreatedAt, weekStart)
-                    .lt(Interview::getCreatedAt, weekEnd);
+                    .lt(Interview::getCreatedAt, weekEnd)
+                    .eq(Interview::getStatus, InterviewStatus.COMPLETED.getValue());
             long count = interviewService.count(wrapper);
 
             // 计算该周模拟面试的平均分
@@ -164,17 +169,23 @@ public class StatisticsHandler {
      */
     private List<StatisticsVO.WeeklyProgressVO> buildSessionProgress() {
         List<StatisticsVO.WeeklyProgressVO> result = new ArrayList<>();
-        // 查询最近10次所有来源的面试（用于面试次数tab）
-        LambdaQueryWrapper<Interview> allWrapper = new LambdaQueryWrapper<>();
-        allWrapper.orderByAsc(Interview::getCreatedAt).last("LIMIT 10");
-        List<Interview> allInterviews = interviewService.list(allWrapper);
-        // 查询最近10次有分数的面试（真实面试AI分析+模拟面试，用于得分趋势tab）
+        // 查询最近10次有分数的已完成面试（用于得分趋势tab）
         LambdaQueryWrapper<Interview> scoreWrapper = new LambdaQueryWrapper<>();
         scoreWrapper.isNotNull(Interview::getScore)
                 .gt(Interview::getScore, 0)
+                .eq(Interview::getStatus, InterviewStatus.COMPLETED.getValue())
                 .orderByAsc(Interview::getCreatedAt)
                 .last("LIMIT 10");
         List<Interview> scoredInterviews = interviewService.list(scoreWrapper);
+        // 没有有效分数数据时不返回进度图表
+        if (scoredInterviews.isEmpty()) {
+            return result;
+        }
+        // 查询最近10次已完成的面试（用于面试次数tab）
+        LambdaQueryWrapper<Interview> allWrapper = new LambdaQueryWrapper<>();
+        allWrapper.eq(Interview::getStatus, InterviewStatus.COMPLETED.getValue())
+                .orderByAsc(Interview::getCreatedAt).last("LIMIT 10");
+        List<Interview> allInterviews = interviewService.list(allWrapper);
         // 取两组数据中较多的数量作为柱子数
         int count = Math.max(allInterviews.size(), scoredInterviews.size());
         // 用日期标签，方便面试次数tab也有意义
@@ -221,9 +232,11 @@ public class StatisticsHandler {
         for (int i = days - 1; i >= 0; i--) {
             LocalDateTime dayStart = now.minusDays(i).truncatedTo(ChronoUnit.DAYS);
             LocalDateTime dayEnd = dayStart.plusDays(1);
-            // 统计该天所有面试数量
+            // 统计该天已完成的面试数量
             LambdaQueryWrapper<Interview> wrapper = new LambdaQueryWrapper<>();
-            wrapper.ge(Interview::getCreatedAt, dayStart).lt(Interview::getCreatedAt, dayEnd);
+            wrapper.ge(Interview::getCreatedAt, dayStart)
+                    .lt(Interview::getCreatedAt, dayEnd)
+                    .eq(Interview::getStatus, InterviewStatus.COMPLETED.getValue());
             long count = interviewService.count(wrapper);
             // 计算该天模拟面试平均分
             int avgScore = calculateWeeklyAvgScore(dayStart, dayEnd);
@@ -265,17 +278,17 @@ public class StatisticsHandler {
         List<ActivityEntry> entries = new ArrayList<>();
         LocalDateTime now = LocalDateTime.now();
 
-        // 获取最近的面试记录
+        // 获取最近的已完成面试记录
         LambdaQueryWrapper<Interview> interviewWrapper = new LambdaQueryWrapper<>();
-        interviewWrapper.orderByDesc(Interview::getCreatedAt)
+        interviewWrapper.eq(Interview::getStatus, InterviewStatus.COMPLETED.getValue())
+                .orderByDesc(Interview::getCreatedAt)
                 .last("LIMIT 5");
         List<Interview> recentInterviews = interviewService.list(interviewWrapper);
 
         for (Interview interview : recentInterviews) {
-            String type = "real".equals(interview.getSource()) ? "interview" : "practice";
-            String content = "real".equals(interview.getSource())
-                    ? "完成面试"
-                    : "完成模拟面试";
+            boolean isReal = InterviewSource.REAL.getCode().equals(interview.getSource());
+            String type = isReal ? "interview" : "practice";
+            String content = isReal ? "完成面试" : "完成模拟面试";
             entries.add(new ActivityEntry(
                     type, content, interview.getScore(),
                     interview.getId().toString(), interview.getCreatedAt()

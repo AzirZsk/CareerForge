@@ -1,7 +1,10 @@
 <template>
   <div class="interview-list-page">
     <header class="page-header">
-      <h1 class="page-title">面试中心</h1>
+      <div>
+        <h1 class="page-title">面试中心</h1>
+        <p class="page-desc">规划面试、充分准备、深度复盘，助你拿下每一场面试</p>
+      </div>
       <div class="header-actions">
         <button class="btn btn-primary" @click="showCreateDialog = true">
           <font-awesome-icon icon="fa-solid fa-plus" />
@@ -136,7 +139,7 @@ onMounted(() => {
 <style scoped lang="scss">
 .interview-list-page {
   padding: $spacing-xl;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -151,6 +154,12 @@ onMounted(() => {
   font-size: 2rem;
   font-weight: 700;
   color: $color-text-primary;
+  margin-bottom: $spacing-xs;
+}
+
+.page-desc {
+  font-size: $text-base;
+  color: $color-text-secondary;
 }
 
 .position-list {

@@ -91,7 +91,7 @@
               <template v-else>
                 <!-- 应用变更提示 -->
                 <div
-                  v-if="hasOptimizedSections && !state.isApplying"
+                  v-if="hasOptimizedSections && !state.isApplying && hasEdits"
                   class="apply-hint"
                 >
                   <font-awesome-icon icon="fa-solid fa-circle-info" />
@@ -122,7 +122,7 @@
                     icon="fa-solid fa-spinner"
                     spin
                   />
-                  {{ state.isApplying ? '评分中...' : '应用变更' }}
+                  {{ state.isApplying && hasEdits ? '评分中...' : state.isApplying ? '应用中...' : '应用变更' }}
                 </button>
               </template>
             </template>
@@ -269,7 +269,7 @@ const emit = defineEmits<{
   'cancel': []
   'retry': []
   'complete': []
-  'apply': [editedAfterSection: ResumeSection[] | null]
+  'apply': [editedAfterSection: ResumeSection[] | null, hasEdits: boolean]
   'toggleExpand': [stage: OptimizeStage]
 }>()
 
@@ -305,7 +305,7 @@ function handleApply() {
   // 获取当前编辑后的数据
   const optimizeStage = props.state.stageHistory.find(h => h.stage === 'optimize_section')
   const editedData = getDisplayAfterSection(optimizeStage || { data: {} })
-  emit('apply', editedData || null)
+  emit('apply', editedData || null, hasEdits.value)
 }
 
 function handleToggleExpand(stage: OptimizeStage) {

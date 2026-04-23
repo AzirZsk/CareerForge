@@ -14,6 +14,12 @@ const DEFAULT_SAMPLE_RATE = 16000
 /** 默认音量 */
 const DEFAULT_VOLUME = 0.8
 
+/** 播放时序回调接口，供消费者监听 chunk 播放开始/结束 */
+interface PlaybackCallbacks {
+  onChunkStart?: (duration: number) => void
+  onPlaybackEnd?: () => void
+}
+
 /**
  * 流式音频播放器
  * 支持队列播放，自动衔接多个音频片段
@@ -64,6 +70,9 @@ export function useStreamingAudio() {
 
   /** 错误信息 */
   const error = ref<string | null>(null)
+
+  /** 播放时序回调 */
+  let playbackCallbacks: PlaybackCallbacks = {}
 
   // ============================================================================
   // 计算属性
@@ -216,6 +225,7 @@ export function useStreamingAudio() {
     if (audioQueue.length === 0 || !audioContext || !gainNode) {
       isPlaying.value = false
       playbackState.value = 'idle'
+      playbackCallbacks.onPlaybackEnd?.()
       return
     }
 
@@ -228,6 +238,8 @@ export function useStreamingAudio() {
     currentSource.connect(gainNode)
 
     updateGain()
+
+    playbackCallbacks.onChunkStart?.(buffer.duration)
 
     currentSource.onended = () => {
       duration.value += buffer.duration
@@ -287,6 +299,7 @@ export function useStreamingAudio() {
    * 停止播放并清空队列
    */
   function stop(): void {
+    const wasPlaying = isPlaying.value
     if (currentSource) {
       currentSource.stop()
       currentSource = null
@@ -296,6 +309,9 @@ export function useStreamingAudio() {
     playbackState.value = 'idle'
     currentTime.value = 0
     duration.value = 0
+    if (wasPlaying) {
+      playbackCallbacks.onPlaybackEnd?.()
+    }
   }
 
   /**
@@ -312,6 +328,13 @@ export function useStreamingAudio() {
   function toggleMute(): void {
     muted.value = !muted.value
     updateGain()
+  }
+
+  /**
+   * 设置播放时序回调
+   */
+  function setPlaybackCallbacks(cbs: PlaybackCallbacks): void {
+    playbackCallbacks = { ...cbs }
   }
 
   /**
@@ -359,6 +382,7 @@ export function useStreamingAudio() {
     stop,
     setVolume,
     toggleMute,
+    setPlaybackCallbacks,
     dispose
   }
 }

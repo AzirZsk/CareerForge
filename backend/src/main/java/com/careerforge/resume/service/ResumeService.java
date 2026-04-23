@@ -456,6 +456,24 @@ public class ResumeService extends ServiceImpl<ResumeMapper, Resume> {
     }
 
     /**
+     * 仅更新简历综合评分（跳过AI评分时使用估算分数）
+     *
+     * @param resumeId     简历ID
+     * @param overallScore 估算的综合评分
+     */
+    public void updateOverallScore(String resumeId, Integer overallScore) {
+        Resume resume = getById(resumeId);
+        if (resume == null) {
+            log.warn("简历不存在，无法更新评分: resumeId={}", resumeId);
+            return;
+        }
+        resume.setOverallScore(overallScore);
+        resume.setScore(overallScore);
+        updateById(resume);
+        log.info("简历估算评分已更新: resumeId={}, overallScore={}", resumeId, overallScore);
+    }
+
+    /**
      * 批量更新简历模块评分
      *
      * @param resumeId      简历ID
