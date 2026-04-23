@@ -28,10 +28,10 @@ features:
     details: 真实面试管理、AI 准备工作流（公司调研 + JD 分析）、AI 复盘分析
   - icon: 🔄
     title: 简历优化工作流
-    details: 快速诊断 → 生成建议 → 内容优化，三步完成，SSE 实时进度推送
-  - icon: 👥
-    title: 多用户系统
-    details: 注册登录、JWT 认证、数据隔离、一键 Docker 部署
+    details: 快速诊断 → 生成建议 → 内容优化，三步完成，实时进度推送
+  - icon: 🎨
+    title: 简历风格改写
+    details: 上传参考简历，AI 分析写作风格并按相同风格改写你的简历
 ---
 
 <div class="home-section">
@@ -41,11 +41,11 @@ features:
   </div>
   <div class="stats-grid">
     <div class="stat-card">
-      <div class="stat-number">325+</div>
+      <div class="stat-number">324+</div>
       <div class="stat-label">Java 文件</div>
     </div>
     <div class="stat-card">
-      <div class="stat-number">90+</div>
+      <div class="stat-number">101+</div>
       <div class="stat-label">Vue 组件</div>
     </div>
     <div class="stat-card">
@@ -59,101 +59,96 @@ features:
   </div>
 </div>
 
-<div class="home-section">
-  <div class="home-section-title">
-    <h2>技术架构</h2>
-    <p>基于 Spring Boot + Vue 3 的现代全栈架构</p>
-  </div>
-  <div class="arch-diagram">
-    <svg viewBox="0 0 800 320" xmlns="http://www.w3.org/2000/svg">
-      <rect x="20" y="40" width="200" height="120" rx="12" fill="#1a1a1d" stroke="#d4a853" stroke-width="1.5"/>
-      <text x="120" y="75" text-anchor="middle" fill="#f4f4f5" font-family="Outfit, sans-serif" font-size="16" font-weight="600">Frontend</text>
-      <text x="120" y="100" text-anchor="middle" fill="#a1a1aa" font-family="Outfit, sans-serif" font-size="12">Vue 3 + TypeScript</text>
-      <text x="120" y="120" text-anchor="middle" fill="#a1a1aa" font-family="Outfit, sans-serif" font-size="12">Vite 5 + Pinia</text>
-      <text x="120" y="140" text-anchor="middle" fill="#71717a" font-family="Outfit, sans-serif" font-size="11">SPA + WebSocket</text>
-      <rect x="300" y="40" width="200" height="120" rx="12" fill="#1a1a1d" stroke="#d4a853" stroke-width="1.5"/>
-      <text x="400" y="75" text-anchor="middle" fill="#f4f4f5" font-family="Outfit, sans-serif" font-size="16" font-weight="600">Backend</text>
-      <text x="400" y="100" text-anchor="middle" fill="#a1a1aa" font-family="Outfit, sans-serif" font-size="12">Spring Boot 3.5</text>
-      <text x="400" y="120" text-anchor="middle" fill="#a1a1aa" font-family="Outfit, sans-serif" font-size="12">MyBatis-Plus + AI</text>
-      <text x="400" y="140" text-anchor="middle" fill="#71717a" font-family="Outfit, sans-serif" font-size="11">REST + SSE + WebSocket</text>
-      <rect x="580" y="40" width="200" height="120" rx="12" fill="#1a1a1d" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
-      <text x="680" y="75" text-anchor="middle" fill="#f4f4f5" font-family="Outfit, sans-serif" font-size="16" font-weight="600">Database</text>
-      <text x="680" y="100" text-anchor="middle" fill="#a1a1aa" font-family="Outfit, sans-serif" font-size="12">SQLite</text>
-      <text x="680" y="120" text-anchor="middle" fill="#a1a1aa" font-family="Outfit, sans-serif" font-size="12">MyBatis-Plus ORM</text>
-      <text x="680" y="140" text-anchor="middle" fill="#71717a" font-family="Outfit, sans-serif" font-size="11">Snowflake ID</text>
-      <rect x="200" y="220" width="400" height="80" rx="12" fill="#1a1a1d" stroke="rgba(212,168,83,0.3)" stroke-width="1"/>
-      <text x="400" y="255" text-anchor="middle" fill="#e8c47a" font-family="Outfit, sans-serif" font-size="15" font-weight="600">AI Services</text>
-      <text x="400" y="278" text-anchor="middle" fill="#a1a1aa" font-family="Outfit, sans-serif" font-size="12">OpenAI Protocol · Aliyun ASR/TTS · Spring AI Agent Framework</text>
-      <line x1="220" y1="100" x2="300" y2="100" stroke="#71717a" stroke-width="1.5" stroke-dasharray="4 4"/>
-      <text x="260" y="93" text-anchor="middle" fill="#71717a" font-family="Outfit, sans-serif" font-size="10">HTTP/WS</text>
-      <line x1="500" y1="100" x2="580" y2="100" stroke="#71717a" stroke-width="1.5" stroke-dasharray="4 4"/>
-      <text x="540" y="93" text-anchor="middle" fill="#71717a" font-family="Outfit, sans-serif" font-size="10">ORM</text>
-      <line x1="400" y1="160" x2="400" y2="220" stroke="#71717a" stroke-width="1.5" stroke-dasharray="4 4"/>
-      <text x="415" y="195" fill="#71717a" font-family="Outfit, sans-serif" font-size="10">API</text>
-    </svg>
-  </div>
-  <div class="tech-tags">
-    <span class="tech-tag">Spring Boot 3.5</span>
-    <span class="tech-tag">Java 17</span>
-    <span class="tech-tag">Vue 3.4</span>
-    <span class="tech-tag">TypeScript</span>
-    <span class="tech-tag">Vite 5</span>
-    <span class="tech-tag">Pinia</span>
-    <span class="tech-tag">MyBatis-Plus</span>
-    <span class="tech-tag">SQLite</span>
-    <span class="tech-tag">Spring AI</span>
-    <span class="tech-tag">OpenAI</span>
-    <span class="tech-tag">WebSocket</span>
-    <span class="tech-tag">SSE</span>
-    <span class="tech-tag">ReactAgent</span>
-    <span class="tech-tag">阿里云 ASR/TTS</span>
-    <span class="tech-tag">StateGraph</span>
-    <span class="tech-tag">Docker</span>
-  </div>
-</div>
-
 <div id="quick-start" class="home-section">
   <div class="home-section-title">
     <h2>快速开始</h2>
-    <p>三步启动，即刻体验</p>
+    <p>选择你喜欢的方式部署</p>
   </div>
-  <div class="steps-grid">
-    <div class="step-card">
-      <div class="step-number">1</div>
-      <h3>克隆仓库</h3>
-      <p style="color: #a1a1aa; font-size: 0.9rem; margin: 0 0 8px;">从 GitHub 拉取项目代码</p>
-      <div class="code-block">
-        <button class="copy-btn" onclick="copyCode(this, 'git clone https://github.com/AzirZsk/Landit.git && cd Landit')">复制</button>
-        <code>git clone https://github.com/AzirZsk/Landit.git && cd Landit</code>
+  <div class="deploy-tabs">
+    <button :class="['deploy-tab', activeTab === 'claude' && 'active']" @click="activeTab = 'claude'">Claude Code 部署</button>
+    <button :class="['deploy-tab', activeTab === 'docker' && 'active']" @click="activeTab = 'docker'">Docker 部署</button>
+  </div>
+
+  <div v-if="activeTab === 'docker'" class="tab-content">
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-number">1</div>
+        <h3>克隆仓库</h3>
+        <p style="color: #a1a1aa; font-size: 0.9rem; margin: 0 0 8px;">从 GitHub 拉取项目代码</p>
+        <div class="code-block">
+          <button class="copy-btn" @click="copyCode($event, 'git clone https://github.com/AzirZsk/Landit.git && cd Landit')">复制</button>
+          <code>git clone https://github.com/AzirZsk/Landit.git && cd Landit</code>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-number">2</div>
+        <h3>配置环境</h3>
+        <p style="color: #a1a1aa; font-size: 0.9rem; margin: 0 0 8px;">设置 AI 模型的 API Key</p>
+        <div class="code-block">
+          <button class="copy-btn" @click="copyCode($event, 'export OPENAI_API_KEY=your_api_key')">复制</button>
+          <code>export OPENAI_API_KEY=your_api_key</code>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-number">3</div>
+        <h3>启动服务</h3>
+        <p style="color: #a1a1aa; font-size: 0.9rem; margin: 0 0 8px;">Docker 一键启动（前端 + 后端）</p>
+        <div class="code-block">
+          <button class="copy-btn" @click="copyCode($event, 'docker-compose up -d')">复制</button>
+          <code>docker-compose up -d</code>
+        </div>
       </div>
     </div>
-    <div class="step-card">
-      <div class="step-number">2</div>
-      <h3>配置环境</h3>
-      <p style="color: #a1a1aa; font-size: 0.9rem; margin: 0 0 8px;">设置 AI 模型的 API Key</p>
-      <div class="code-block">
-        <button class="copy-btn" onclick="copyCode(this, 'export OPENAI_API_KEY=your_api_key')">复制</button>
-        <code>export OPENAI_API_KEY=your_api_key</code>
-      </div>
-    </div>
-    <div class="step-card">
-      <div class="step-number">3</div>
-      <h3>启动服务</h3>
-      <p style="color: #a1a1aa; font-size: 0.9rem; margin: 0 0 8px;">Docker 一键启动（前端 + 后端）</p>
-      <div class="code-block">
-        <button class="copy-btn" onclick="copyCode(this, 'docker-compose up -d')">复制</button>
-        <code>docker-compose up -d</code>
-      </div>
+    <div style="text-align: center; margin-top: 40px;">
+      <p style="color: #71717a; font-size: 0.9rem;">需要配置环境变量：<code style="color: #e8c47a;">OPENAI_API_KEY</code></p>
+      <p style="color: #71717a; font-size: 0.85rem; margin-top: 4px;">可选：阿里云语音服务 <code style="color: #a1a1aa;">ALIYUN_API_KEY</code></p>
     </div>
   </div>
-  <div style="text-align: center; margin-top: 40px;">
-    <p style="color: #71717a; font-size: 0.9rem;">需要配置环境变量：<code style="color: #e8c47a;">OPENAI_API_KEY</code></p>
-    <p style="color: #71717a; font-size: 0.85rem; margin-top: 4px;">可选：阿里云语音服务 <code style="color: #a1a1aa;">ALIYUN_API_KEY</code></p>
+
+  <div v-if="activeTab === 'claude'" class="tab-content">
+    <div class="claude-deploy-card">
+      <div class="claude-deploy-icon">🤖</div>
+      <h3>一句话部署</h3>
+      <p style="color: #a1a1aa; font-size: 0.95rem; margin: 8px 0 24px;">把部署指令发给 Claude Code，让它帮你搞定一切</p>
+      <div class="code-block" style="max-width: 640px; margin: 0 auto; text-align: left;">
+        <button class="copy-btn" @click="copyCode($event, '请按照 https://github.com/AzirZsk/Landit/blob/main/deploy-guide.md 的指引，帮我部署 CareerForge 项目')">复制</button>
+        <code style="font-size: 0.85rem; line-height: 1.6;">请按照 https://github.com/AzirZsk/Landit/blob/main/deploy-guide.md 的指引，帮我部署 CareerForge 项目</code>
+      </div>
+      <div style="margin-top: 32px; text-align: left; max-width: 640px; margin-left: auto; margin-right: auto;">
+        <p style="color: #a1a1aa; font-size: 0.9rem; margin-bottom: 12px;">Claude Code 会自动完成：</p>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="color: #d4a853;">✓</span>
+            <span style="color: #a1a1aa; font-size: 0.88rem;">检查 Docker、Git 等前置依赖</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="color: #d4a853;">✓</span>
+            <span style="color: #a1a1aa; font-size: 0.88rem;">引导你配置 API Key 等环境变量</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="color: #d4a853;">✓</span>
+            <span style="color: #a1a1aa; font-size: 0.88rem;">自动构建镜像并启动服务</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="color: #d4a853;">✓</span>
+            <span style="color: #a1a1aa; font-size: 0.88rem;">健康检查确认部署成功</span>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06);">
+        <p style="color: #71717a; font-size: 0.85rem;">前提：已安装 <a href="https://claude.ai/code" target="_blank" style="color: #d4a853; text-decoration: none;">Claude Code</a> 和 Docker</p>
+      </div>
+    </div>
   </div>
 </div>
 
 <script setup>
-function copyCode(btn, text) {
+import { ref } from 'vue'
+
+const activeTab = ref('claude')
+
+function copyCode(event, text) {
+  const btn = event.currentTarget
   navigator.clipboard.writeText(text).then(() => {
     btn.textContent = '已复制'
     btn.classList.add('copied')
@@ -164,3 +159,57 @@ function copyCode(btn, text) {
   })
 }
 </script>
+
+<style>
+.deploy-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 32px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+  padding: 4px;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.deploy-tab {
+  padding: 10px 28px;
+  border: none;
+  background: transparent;
+  color: #a1a1aa;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.25s ease;
+  font-family: inherit;
+}
+
+.deploy-tab:hover {
+  color: #f4f4f5;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.deploy-tab.active {
+  color: #1a1a1d;
+  background: #d4a853;
+  font-weight: 600;
+}
+
+.claude-deploy-card {
+  text-align: center;
+  padding: 40px 32px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.claude-deploy-icon {
+  font-size: 2.5rem;
+  margin-bottom: 8px;
+}
+</style>

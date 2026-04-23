@@ -25,36 +25,26 @@ export default defineConfig({
 
     nav: [
       { text: '首页', link: '/' },
-      { text: '功能', link: '/features' },
-      { text: '部署', link: '/deployment' },
+      { text: '文档', link: '/guide/resume' },
       { text: 'GitHub', link: 'https://github.com/AzirZsk/CareerForge' },
       { text: '立即试用', link: 'https://careerforge.cc/' },
     ],
 
     sidebar: {
-      '/features': [
+      '/guide/': [
         {
-          text: '功能详情',
+          text: '功能',
           items: [
-            { text: '智能简历管理', link: '/features#resume' },
-            { text: 'AI 对话式优化', link: '/features#ai-chat' },
-            { text: 'AI 语音模拟面试', link: '/features#voice' },
-            { text: '面试中心', link: '/features#interview-center' },
-            { text: '简历优化工作流', link: '/features#optimize' },
-            { text: '简历定制工作流', link: '/features#tailor' },
-            { text: '简历风格改写', link: '/features#rewrite' },
+            { text: '简历管理', link: '/guide/resume' },
+            { text: '面试中心', link: '/guide/interview' },
           ]
-        }
-      ],
-      '/deployment': [
+        },
         {
           text: '部署指南',
           items: [
-            { text: 'Docker 部署', link: '/deployment#docker' },
-            { text: '环境变量', link: '/deployment#env' },
-            { text: '传统部署', link: '/deployment#manual' },
-            { text: 'Nginx 配置', link: '/deployment#nginx' },
-            { text: '故障排除', link: '/deployment#troubleshooting' },
+            { text: 'Claude Code 部署（推荐）', link: '/guide/claude-code' },
+            { text: 'Docker 部署', link: '/guide/docker' },
+            { text: '传统部署', link: '/guide/manual' },
           ]
         }
       ],
@@ -69,6 +59,8 @@ export default defineConfig({
       copyright: 'Copyright 2024-present CareerForge'
     },
   },
+
+  vite: {},
 
   ignoreDeadLinks: true,
 })
