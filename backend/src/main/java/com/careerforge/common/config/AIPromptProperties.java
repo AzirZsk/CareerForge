@@ -3412,6 +3412,131 @@ public class AIPromptProperties {
                 default -> professional;
             };
         }
+
+        /**
+         * 助手求助提示词配置
+         */
+        private AssistantPromptConfig assistant = createAssistantConfig();
+
+        private AssistantPromptConfig createAssistantConfig() {
+            AssistantPromptConfig config = new AssistantPromptConfig();
+            config.setHintsSystemPrompt("""
+                    你是一位耐心的技术面试辅导助手。
+
+                    当前面试问题：{currentQuestion}
+
+                    {conversationHistory}
+
+                    请给出回答思路提示，要求：
+                    1. 不要直接给出答案
+                    2. 提供思考框架和方法论
+                    3. 列出关键知识点
+                    4. 给出回答结构建议
+                    5. 语言简洁，控制在 100 字以内
+                    """);
+            config.setHintsUserPrompt("请为问题 \"{currentQuestion}\" 给我思路提示。");
+            config.setExplainSystemPrompt("""
+                    你是一位技术概念讲解专家。
+
+                    当前面试问题：{currentQuestion}
+
+                    {conversationHistory}
+
+                    请用简洁易懂的语言解释技术概念，要求：
+                    1. 先给出概念定义
+                    2. 用类比帮助理解
+                    3. 说明应用场景
+                    4. 给出代码示例（如果适用）
+                    5. 控制在 150 字以内
+                    """);
+            config.setExplainUserPrompt("请解释这个问题涉及的核心概念。");
+            config.setPolishSystemPrompt("""
+                    你是一位专业的面试回答润色专家。
+
+                    当前面试问题：{currentQuestion}
+
+                    {conversationHistory}
+
+                    请润色候选人的回答，要求：
+                    1. 保持原意，提升表达
+                    2. 使语言更专业流畅
+                    3. 补充关键细节
+                    4. 控制篇幅增长在 30% 以内
+                    5. 指出改进点
+                    """);
+            config.setPolishUserPrompt("请润色我的回答：{candidateDraft}");
+            config.setFreeQuestionSystemPrompt("""
+                    你是一位技术面试顾问。
+
+                    当前面试问题：{currentQuestion}
+
+                    {conversationHistory}
+
+                    请回答候选人的问题，要求：
+                    1. 直接回答问题
+                    2. 提供具体建议
+                    3. 如果是技术问题，给出代码示例
+                    4. 控制在 200 字以内
+                    """);
+            config.setFreeQuestionUserPrompt("{userQuestion}");
+            return config;
+        }
+    }
+
+    /**
+     * 助手求助提示词配置
+     * 用于语音面试过程中的快捷求助（提示/解释/润色/自由提问）
+     *
+     * @author Azir
+     */
+    @Data
+    public static class AssistantPromptConfig {
+        /**
+         * 提示思路 - 系统提示词
+         * 占位符: {currentQuestion}, {conversationHistory}
+         */
+        private String hintsSystemPrompt;
+
+        /**
+         * 提示思路 - 用户提示词
+         * 占位符: {currentQuestion}
+         */
+        private String hintsUserPrompt;
+
+        /**
+         * 解释概念 - 系统提示词
+         * 占位符: {currentQuestion}, {conversationHistory}
+         */
+        private String explainSystemPrompt;
+
+        /**
+         * 解释概念 - 用户提示词
+         */
+        private String explainUserPrompt;
+
+        /**
+         * 润色答案 - 系统提示词
+         * 占位符: {currentQuestion}, {conversationHistory}
+         */
+        private String polishSystemPrompt;
+
+        /**
+         * 润色答案 - 用户提示词
+         * 占位符: {candidateDraft}
+         */
+        private String polishUserPrompt;
+
+        /**
+         * 自由提问 - 系统提示词
+         * 占位符: {currentQuestion}, {conversationHistory}
+         */
+        private String freeQuestionSystemPrompt;
+
+        /**
+         * 自由提问 - 用户提示词
+         * 占位符: {userQuestion}
+         */
+        private String freeQuestionUserPrompt;
     }
 
     /**

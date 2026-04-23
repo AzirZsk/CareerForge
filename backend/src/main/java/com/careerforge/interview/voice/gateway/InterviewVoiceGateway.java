@@ -352,14 +352,8 @@ public class InterviewVoiceGateway {
             return;
         }
 
-        // 如果会话已冻结，忽略音频数据
-        if (state.isFrozen()) {
-            log.debug("[VoiceGateway] 会话已冻结，忽略音频, sessionId={}", sessionId);
-            return;
-        }
-
         // 转发给面试官 Agent 处理（ASR识别 -> AI生成回复 -> TTS合成）
-        // 结果通过回调直接推送，无需 subscribe
+        // 冻结期间前端发送静音帧保持 ASR 连接，静音不会产生有效识别结果
         interviewerAgentHandler.handleCandidateAudio(sessionId, audioData);
     }
 
@@ -648,5 +642,16 @@ public class InterviewVoiceGateway {
      */
     public SessionState getInternalState(String sessionId) {
         return sessionStates.get(sessionId);
+    }
+
+    /**
+     * 获取会话的对话历史摘要
+     * 用于求助功能获取面试上下文
+     *
+     * @param sessionId 会话ID
+     * @return 对话历史文本，不存在则返回空字符串
+     */
+    public String getConversationSummary(String sessionId) {
+        return interviewerAgentHandler.getFullConversationHistory(sessionId);
     }
 }

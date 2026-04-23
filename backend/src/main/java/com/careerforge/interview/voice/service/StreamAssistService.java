@@ -1,5 +1,6 @@
 package com.careerforge.interview.voice.service;
 
+import com.careerforge.common.enums.AssistType;
 import com.careerforge.interview.voice.dto.AssistSSEEvent;
 import com.careerforge.interview.voice.dto.SessionState;
 import com.careerforge.interview.voice.gateway.InterviewVoiceGateway;
@@ -71,7 +72,8 @@ public class StreamAssistService {
         }
 
         // 调用助手处理器，事件通过回调直接推送
-        assistantAgentHandler.handleAssist(sessionId, assistType, question, candidateDraft,
+        AssistType type = AssistType.fromCode(assistType);
+        assistantAgentHandler.handleAssist(sessionId, type, question, candidateDraft,
                 event -> {
                     sendEvent(emitter, event);
                     // 检测终止事件

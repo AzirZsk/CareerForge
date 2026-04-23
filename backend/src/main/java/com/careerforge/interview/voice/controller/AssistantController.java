@@ -49,9 +49,9 @@ public class AssistantController {
      * 支持快捷求助（给我思路/解释概念/帮我润色）和自由提问
      *
      * @param sessionId      面试会话 ID
-     * @param type           求助类型：GIVE_HINTS, EXPLAIN_CONCEPT, POLISH_ANSWER, FREE_QUESTION
-     * @param question       自由提问内容（FREE_QUESTION 时必填）
-     * @param candidateDraft 候选人草稿（POLISH_ANSWER 时使用）
+     * @param type           求助类型：give_hints, explain_concept, polish_answer, free_question
+     * @param question       自由提问内容（free_question 时必填）
+     * @param candidateDraft 候选人草稿（polish_answer 时使用）
      * @return SSE 发射器
      */
     @GetMapping(value = "/{sessionId}/assist/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)

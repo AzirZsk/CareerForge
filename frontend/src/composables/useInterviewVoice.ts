@@ -71,6 +71,9 @@ export function useInterviewVoice(sessionId: string) {
   /** 计时器 */
   let elapsedTimer: number | null = null
 
+  /** 冻结期间发送静音帧的定时器 */
+  let silenceFrameTimer: number | null = null
+
   /** WebSocket 连接 */
   let ws: WebSocket | null = null
 
@@ -652,6 +655,28 @@ export function useInterviewVoice(sessionId: string) {
     }
   }
 
+  /**
+   * 启动静音帧发送定时器
+   * 冻结期间每 256ms 发送一帧静音 PCM，保持 ASR 连接活跃
+   */
+  function startSilenceFrameSender(): void {
+    stopSilenceFrameSender()
+    const silenceFrame = new Int16Array(4096)
+    silenceFrameTimer = window.setInterval(() => {
+      sendAudioData(silenceFrame)
+    }, 256)
+  }
+
+  /**
+   * 停止静音帧发送定时器
+   */
+  function stopSilenceFrameSender(): void {
+    if (silenceFrameTimer) {
+      clearInterval(silenceFrameTimer)
+      silenceFrameTimer = null
+    }
+  }
+
   // ============================================================================
   // 录音控制
   // ============================================================================
@@ -684,6 +709,7 @@ export function useInterviewVoice(sessionId: string) {
       sessionState.value = 'frozen'
       stopRecording()
       stopTimer()
+      startSilenceFrameSender()
     }
   }
 
@@ -694,6 +720,7 @@ export function useInterviewVoice(sessionId: string) {
     if (isFrozen.value) {
       sessionState.value = 'interviewing'
       startTimer()
+      stopSilenceFrameSender()
     }
   }
 
@@ -754,6 +781,7 @@ export function useInterviewVoice(sessionId: string) {
     stopRecording()
     stopRevealTimer()
     clearTextFallbackTimer()
+    stopSilenceFrameSender()
     unregisterGuard('voice-interview')
 
     if (ws) {
