@@ -41,19 +41,19 @@ features:
   </div>
   <div class="stats-grid">
     <div class="stat-card">
-      <div class="stat-number">314+</div>
+      <div class="stat-number">325+</div>
       <div class="stat-label">Java 文件</div>
     </div>
     <div class="stat-card">
-      <div class="stat-number">95+</div>
+      <div class="stat-number">90+</div>
       <div class="stat-label">Vue 组件</div>
     </div>
     <div class="stat-card">
-      <div class="stat-number">50+</div>
+      <div class="stat-number">110+</div>
       <div class="stat-label">API 接口</div>
     </div>
     <div class="stat-card">
-      <div class="stat-number">20</div>
+      <div class="stat-number">18</div>
       <div class="stat-label">数据表</div>
     </div>
   </div>
@@ -148,7 +148,7 @@ features:
   </div>
   <div style="text-align: center; margin-top: 40px;">
     <p style="color: #71717a; font-size: 0.9rem;">需要配置环境变量：<code style="color: #e8c47a;">OPENAI_API_KEY</code></p>
-    <p style="color: #71717a; font-size: 0.85rem; margin-top: 4px;">可选：阿里云语音服务 <code style="color: #a1a1aa;">ALIYUN_ACCESS_KEY_ID</code> / <code style="color: #a1a1aa;">ALIYUN_ACCESS_KEY_SECRET</code></p>
+    <p style="color: #71717a; font-size: 0.85rem; margin-top: 4px;">可选：阿里云语音服务 <code style="color: #a1a1aa;">ALIYUN_API_KEY</code></p>
   </div>
 </div>
 

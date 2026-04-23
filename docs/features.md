@@ -173,3 +173,26 @@ START → AnalyzeJD → MatchResume → GenerateTailored → END
 | GenerateTailoredResume | 根据匹配分析生成定制简历 |
 
 **使用限制：** 仅支持从已优化简历派生，确保定制质量。
+
+---
+
+## 简历风格改写工作流 {#rewrite}
+
+用户上传参考简历，AI 分析其写作风格特征，并按参考风格改写当前简历各区块内容。
+
+**工作流程：**
+
+```
+START → AnalyzeStyle → GenerateStyleDiff → RewriteSection → END
+         (分析风格)      (生成风格差异)       (改写区块)
+```
+
+**各节点说明：**
+
+| 节点 | 职责 |
+|------|------|
+| AnalyzeStyle | 分析参考简历的写作风格特征（用词、句式、语气等） |
+| GenerateStyleDiff | 对比当前简历与参考风格的差异，生成改写方向 |
+| RewriteSection | 按参考风格逐个改写各区块内容 |
+
+**使用方式：** 上传参考简历 → AI 解析风格 → SSE 流式改写各区块。

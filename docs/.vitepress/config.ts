@@ -5,7 +5,7 @@ export default defineConfig({
   title: 'CareerForge',
   description: 'AI 驱动的全流程智能求职助手',
 
-  base: '/Landit/',
+  base: '/',
   appearance: 'force-dark',
   cleanUrls: false,
 
@@ -27,7 +27,8 @@ export default defineConfig({
       { text: '首页', link: '/' },
       { text: '功能', link: '/features' },
       { text: '部署', link: '/deployment' },
-      { text: 'GitHub', link: 'https://github.com/AzirZsk/Landit' },
+      { text: 'GitHub', link: 'https://github.com/AzirZsk/CareerForge' },
+      { text: '立即试用', link: 'https://careerforge.cc/' },
     ],
 
     sidebar: {
@@ -41,6 +42,7 @@ export default defineConfig({
             { text: '面试中心', link: '/features#interview-center' },
             { text: '简历优化工作流', link: '/features#optimize' },
             { text: '简历定制工作流', link: '/features#tailor' },
+            { text: '简历风格改写', link: '/features#rewrite' },
           ]
         }
       ],
@@ -59,7 +61,7 @@ export default defineConfig({
     },
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/AzirZsk/Landit' },
+      { icon: 'github', link: 'https://github.com/AzirZsk/CareerForge' },
     ],
 
     footer: {

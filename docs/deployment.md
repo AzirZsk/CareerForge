@@ -71,9 +71,7 @@ docker exec -it careerforge sh
 | `OPENAI_API_KEY` | 是 | - | AI 模型 API Key（支持 OpenAI 协议的模型） |
 | `OPENAI_BASE_URL` | 否 | `https://api.openai.com` | API 基础 URL（可替换为兼容接口） |
 | `AI_MODEL` | 否 | `gpt-4o` | AI 模型名称 |
-| `ALIYUN_ACCESS_KEY_ID` | 否 | - | 阿里云语音服务 AccessKey ID |
-| `ALIYUN_ACCESS_KEY_SECRET` | 否 | - | 阿里云语音服务 AccessKey Secret |
-| `ALIYUN_VOICE_APP_KEY` | 否 | - | 阿里云语音服务 AppKey |
+| `ALIYUN_API_KEY` | 否 | - | 阿里云 DashScope API Key（语音服务） |
 
 ::: tip
 阿里云语音服务仅 AI 语音模拟面试功能需要，不使用该功能可不配置。
