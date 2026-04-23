@@ -67,8 +67,7 @@ export OPENAI_BASE_URL=https://api.openai.com
 export AI_MODEL=gpt-4o
 
 # 必需：阿里云语音服务（用于语音面试）
-export ALIYUN_ACCESS_KEY_ID=your_access_key_id
-export ALIYUN_ACCESS_KEY_SECRET=your_access_key_secret
+export ALIYUN_API_KEY=your_aliyun_api_key
 ```
 
 ### 访问地址
@@ -159,9 +158,7 @@ spring:
 # 阿里云语音服务配置
 aliyun:
   voice:
-    access-key-id: ${ALIYUN_ACCESS_KEY_ID:}
-    access-key-secret: ${ALIYUN_ACCESS_KEY_SECRET:}
-    app-key: ${ALIYUN_VOICE_APP_KEY:}
+    api-key: ${ALIYUN_API_KEY:}
 
 mybatis-plus:
   global-config:
@@ -640,7 +637,7 @@ A: `backend/data/careerforge.db`（相对于 backend 目录）
 A: 设置环境变量 `OPENAI_API_KEY`，或在 `application.yml` 中配置 `spring.ai.openai.api-key`
 
 ### Q: 如何配置阿里云语音服务？
-A: 设置环境变量 `ALIYUN_ACCESS_KEY_ID` 和 `ALIYUN_ACCESS_KEY_SECRET`，或在 `application.yml` 中配置 `aliyun.voice.*`
+A: 设置环境变量 `ALIYUN_API_KEY`，或在 `application.yml` 中配置 `careerforge.voice.aliyun.api-key`
 
 ### Q: 如何添加新的简历区块类型？
 A:

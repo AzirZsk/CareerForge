@@ -132,8 +132,7 @@ cd backend
 
 # 配置环境变量（必需）
 export OPENAI_API_KEY=your_api_key
-export ALIYUN_ACCESS_KEY_ID=your_access_key_id
-export ALIYUN_ACCESS_KEY_SECRET=your_access_key_secret
+export ALIYUN_API_KEY=your_access_key_id
 
 # 可选环境变量
 export OPENAI_BASE_URL=https://api.openai.com
@@ -326,21 +325,25 @@ START → 分析参考简历风格 → 生成风格差异 → 按风格改写各
 
 #### 环境变量配置
 
-**必需项（3 个）：**
+**必需项（2 个）：**
 
 | 变量名 | 说明 | 示例值 |
 |--------|------|--------|
 | `OPENAI_API_KEY` | OpenAI API Key | `sk-proj-xxx...` |
-| `ALIYUN_ACCESS_KEY_ID` | 阿里云 Access Key ID | `LTAI5t...` |
-| `ALIYUN_ACCESS_KEY_SECRET` | 阿里云 Access Key Secret | `your-secret-key` |
+| `ALIYUN_API_KEY` | 阿里云 API Key（语音面试功能） | `LTAI5t...` |
 
-**可选项（4 个）：**
+**生产环境必须修改（1 个）：**
+
+| 变量名 | 说明 | 默认值 |
+|--------|------|--------|
+| `JWT_SECRET` | JWT 认证密钥，生产环境务必替换为随机长字符串 | `careerforge-dev-...` |
+
+**可选项（3 个）：**
 
 | 变量名 | 说明 | 默认值 |
 |--------|------|------|
 | `OPENAI_BASE_URL` | OpenAI API 基础 URL | `https://api.openai.com` |
 | `AI_MODEL` | AI 模型选择 | `gpt-4o` |
-| `ALIYUN_VOICE_APP_KEY` | 阿里云语音 App Key | - |
 | `JAVA_OPTS` | JVM 参数 | `-Xmx512m -Xms256m` |
 
 #### 快速开始
@@ -414,8 +417,8 @@ java -jar target/careerforge-backend.jar
 | 变量名 | 必需 | 说明 |
 |--------|------|------|
 | OPENAI_API_KEY | ✅ | AI 模型 API Key |
-| ALIYUN_ACCESS_KEY_ID | ✅ | 阿里云 Access Key ID |
-| ALIYUN_ACCESS_KEY_SECRET | ✅ | 阿里云 Access Key Secret |
+| ALIYUN_API_KEY | ✅ | 阿里云 API Key（语音面试功能） |
+| JWT_SECRET | ⚠️ | JWT 认证密钥（生产环境必须修改） |
 | OPENAI_BASE_URL | ❌ | OpenAI API 基础 URL（默认 https://api.openai.com） |
 | AI_MODEL | ❌ | AI 模型选择（默认 gpt-4o） |
 

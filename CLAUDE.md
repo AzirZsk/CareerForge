@@ -128,8 +128,7 @@ npm run build                # 构建生产包（含类型检查）
 ### 环境变量
 ```bash
 export OPENAI_API_KEY=your_api_key
-export ALIYUN_ACCESS_KEY_ID=your_access_key_id
-export ALIYUN_ACCESS_KEY_SECRET=your_access_key_secret
+export ALIYUN_API_KEY=your_aliyun_api_key
 ```
 
 ---

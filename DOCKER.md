@@ -48,8 +48,10 @@ vim .env
 
 必填项：
 - `OPENAI_API_KEY` - OpenAI API Key
-- `ALIYUN_ACCESS_KEY_ID` - 阿里云 Access Key ID
-- `ALIYUN_ACCESS_KEY_SECRET` - 阿里云 Access Key Secret
+- `ALIYUN_API_KEY` - 阿里云 API Key（语音面试功能）
+
+生产环境强烈建议修改：
+- `JWT_SECRET` - JWT 密钥（默认使用开发密钥，生产环境务必替换为随机长字符串）
 
 ### 2. 启动服务
 
