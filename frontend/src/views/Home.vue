@@ -541,6 +541,7 @@ function getBarValue(item: WeeklyProgress): string | number {
   border: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
   flex-direction: column;
+  justify-content: center;
   min-height: 240px;
 }
 

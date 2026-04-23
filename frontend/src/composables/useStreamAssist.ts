@@ -55,12 +55,18 @@ export function useStreamAssist(sessionId: string) {
    * @param request 求助请求
    */
   async function requestAssist(request: AssistRequest): Promise<void> {
+    console.log('[useStreamAssist] ===== 开始请求 =====')
+    console.log('[useStreamAssist] sessionId:', sessionId)
+    console.log('[useStreamAssist] 请求参数:', JSON.stringify(request))
+    console.log('[useStreamAssist] 当前状态 - isRequesting:', isRequesting.value, 'hasRemaining:', hasRemaining.value, 'assistRemaining:', assistRemaining.value)
+
     if (isRequesting.value) {
-      console.warn('[useStreamAssist] 已有请求进行中')
+      console.warn('[useStreamAssist] 已有请求进行中，跳过')
       return
     }
 
     if (!hasRemaining.value) {
+      console.warn('[useStreamAssist] 求助次数已用完')
       error.value = '求助次数已用完'
       return
     }
@@ -82,34 +88,49 @@ export function useStreamAssist(sessionId: string) {
         candidateDraft: request.candidateDraft || ''
       })
       const url = `/careerforge/interviews/sessions/${sessionId}/assist/stream?${params}`
+      console.log('[useStreamAssist] 请求URL:', url)
+
+      const requestStartTime = Date.now()
+      console.log('[useStreamAssist] 发起fetch请求...')
 
       // 使用 authFetch 发起请求（传入 signal 支持中断）
       const response = await authFetch(url, { signal: abortController.signal }, 60000)
 
+      console.log('[useStreamAssist] 收到响应 - status:', response.status, response.statusText)
+      console.log('[useStreamAssist] 响应头 Content-Type:', response.headers.get('content-type'))
+      console.log('[useStreamAssist] 响应耗时:', Date.now() - requestStartTime, 'ms')
+
       if (!response.ok) {
+        console.error('[useStreamAssist] 响应异常 - HTTP', response.status, response.statusText)
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
 
       // 获取 ReadableStream
       const reader = response.body?.getReader()
       if (!reader) {
+        console.error('[useStreamAssist] response.body 为空，无法获取 ReadableStream')
         throw new Error('无法读取响应流')
       }
+      console.log('[useStreamAssist] ReadableStream 获取成功，开始读取流...')
 
       const decoder = new TextDecoder()
       let buffer = ''
+      let eventCount = 0
 
       // 读取流
       while (isRequesting.value) {
         const { done, value } = await reader.read()
 
         if (done) {
-          console.log('[useStreamAssist] 流结束')
+          console.log('[useStreamAssist] 流结束 - 总事件数:', eventCount, '总耗时:', Date.now() - requestStartTime, 'ms')
           break
         }
 
         // 解码并处理数据
-        buffer += decoder.decode(value, { stream: true })
+        const chunk = decoder.decode(value, { stream: true })
+        buffer += chunk
+        console.log('[useStreamAssist] 收到chunk - 长度:', chunk.length, '内容预览:', chunk.substring(0, 200))
+
         const lines = buffer.split('\n')
         buffer = lines.pop() || ''
 
@@ -120,25 +141,35 @@ export function useStreamAssist(sessionId: string) {
               if (!json) continue
 
               const event = JSON.parse(json)
+              eventCount++
+              console.log('[useStreamAssist] SSE事件 #' + eventCount + ' - type:', event.type, 'data预览:', JSON.stringify(event.data).substring(0, 300))
 
               // 根据事件类型分发
               if (event.type === 'text') {
                 handleTextEventData(event.data)
               } else if (event.type === 'done') {
+                console.log('[useStreamAssist] 收到done事件 - assistRemaining:', event.data?.assistRemaining, 'totalDurationMs:', event.data?.totalDurationMs)
                 handleDoneEventData(event.data)
               } else if (event.type === 'error') {
+                console.error('[useStreamAssist] 收到error事件 - code:', event.data?.code, 'message:', event.data?.message)
                 handleErrorEventData(event.data)
+              } else {
+                console.warn('[useStreamAssist] 未知事件类型:', event.type)
               }
             } catch (e) {
-              console.error('[useStreamAssist] 解析事件失败:', e, line)
+              console.error('[useStreamAssist] 解析事件失败 - 原始行:', line, '错误:', e)
             }
           }
         }
       }
 
       reader.releaseLock()
+      console.log('[useStreamAssist] ===== 请求完成 ===== 最终textContent长度:', textContent.value.length)
     } catch (e) {
-      console.error('[useStreamAssist] 请求失败:', e)
+      console.error('[useStreamAssist] 请求失败 - 错误类型:', e?.constructor?.name, '错误信息:', e instanceof Error ? e.message : String(e))
+      if (e instanceof Error && 'cause' in e) {
+        console.error('[useStreamAssist] 错误cause:', e.cause)
+      }
       error.value = e instanceof Error ? e.message : '请求失败'
       cleanup()
     }
