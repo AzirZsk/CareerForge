@@ -303,7 +303,17 @@ START → 分析参考简历风格 → 生成风格差异 → 按风格改写各
 
 ## 部署说明
 
-### Docker 部署（推荐）
+### Claude Code 一键部署（推荐）
+
+将以下内容复制给你的 Claude Code，即可自动部署 CareerForge：
+
+> 帮我根据这个文件的内容部署服务：https://raw.githubusercontent.com/{{USER}}/{{REPO}}/main/deploy-guide.md
+
+Claude 会引导你完成配置，你只需要准备好：
+- **OpenAI API Key**（必填，用于 AI 功能）
+- **阿里云 API Key**（可选，用于语音面试功能）
+
+### Docker 部署
 
 项目采用**单镜像双服务**架构，使用 Supervisor 同时运行 Nginx（前端）和 Spring Boot（后端）。
 
