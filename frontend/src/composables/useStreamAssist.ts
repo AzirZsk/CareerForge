@@ -81,8 +81,7 @@ export function useStreamAssist(sessionId: string) {
       // 构建 SSE URL
       const params = new URLSearchParams({
         type: request.type,
-        question: request.question || '',
-        candidateDraft: request.candidateDraft || ''
+        question: request.question || ''
       })
       const url = `/careerforge/interviews/sessions/${sessionId}/assist/stream?${params}`
       console.log('[useStreamAssist] 请求URL:', url)
@@ -242,13 +241,6 @@ export function useStreamAssist(sessionId: string) {
   }
 
   /**
-   * 帮我润色
-   */
-  function polishAnswer(candidateDraft: string): Promise<void> {
-    return requestAssist({ type: 'polish_answer', candidateDraft })
-  }
-
-  /**
    * 自由提问
    */
   function freeQuestion(question: string): Promise<void> {
@@ -279,7 +271,6 @@ export function useStreamAssist(sessionId: string) {
     stopAssist,
     giveHints,
     explainConcept,
-    polishAnswer,
     freeQuestion
   }
 }

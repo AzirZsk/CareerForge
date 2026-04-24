@@ -24,7 +24,6 @@
       <div v-else-if="structuredData" class="response-content">
         <AssistHintsContent v-if="assistType === 'give_hints'" :data="structuredData.content" />
         <AssistExplainContent v-else-if="assistType === 'explain_concept'" :data="structuredData.content" />
-        <AssistPolishContent v-else-if="assistType === 'polish_answer'" :data="structuredData.content" />
         <AssistFreeQuestionContent v-else-if="assistType === 'free_question'" :data="structuredData.content" />
       </div>
 
@@ -57,7 +56,6 @@ import { computed } from 'vue'
 import QuickAssistButtons from './QuickAssistButtons.vue'
 import AssistHintsContent from './assist/AssistHintsContent.vue'
 import AssistExplainContent from './assist/AssistExplainContent.vue'
-import AssistPolishContent from './assist/AssistPolishContent.vue'
 import AssistFreeQuestionContent from './assist/AssistFreeQuestionContent.vue'
 import type { AssistType, StructuredEventData } from '@/types/interview-voice'
 
@@ -72,7 +70,6 @@ interface HeaderConfig {
 const HEADER_MAP: Record<string, HeaderConfig> = {
   give_hints: { icon: 'fa-solid fa-lightbulb', title: '思路提示', desc: '帮你梳理答题方向', color: '#60a5fa' },
   explain_concept: { icon: 'fa-solid fa-book-open', title: '概念解析', desc: '用通俗语言解释术语', color: '#34d399' },
-  polish_answer: { icon: 'fa-solid fa-pen-fancy', title: '回答润色', desc: '优化你的表达方式', color: '#d4a853' },
   free_question: { icon: 'fa-solid fa-comments', title: 'AI 回答', desc: '为你解答疑问', color: '#a1a1aa' }
 }
 
@@ -81,7 +78,6 @@ const DEFAULT_HEADER: HeaderConfig = { icon: 'fa-solid fa-robot', title: 'AI 助
 const LOADING_TEXT_MAP: Record<string, string> = {
   give_hints: '正在分析问题，整理思路...',
   explain_concept: '正在解析概念...',
-  polish_answer: '正在润色你的回答...',
   free_question: '正在思考回答...'
 }
 

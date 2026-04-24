@@ -36,14 +36,12 @@ public class StreamAssistService {
      * @param sessionId      会话 ID
      * @param assistType     求助类型
      * @param question       自由提问内容
-     * @param candidateDraft 候选人草稿
      * @param emitter        SSE 发射器
      */
     public void streamAssist(
             String sessionId,
             String assistType,
             String question,
-            String candidateDraft,
             SseEmitter emitter) {
 
         log.info("[StreamAssist] 处理求助请求, sessionId={}, type={}", sessionId, assistType);
@@ -73,7 +71,7 @@ public class StreamAssistService {
 
         // 调用助手处理器，事件通过回调直接推送
         AssistType type = AssistType.fromCode(assistType);
-        assistantAgentHandler.handleAssist(sessionId, type, question, candidateDraft,
+        assistantAgentHandler.handleAssist(sessionId, type, question,
                 event -> {
                     sendEvent(emitter, event);
                     // 检测终止事件，仅关闭 SSE 连接，不自动恢复面试（用户手动退出）

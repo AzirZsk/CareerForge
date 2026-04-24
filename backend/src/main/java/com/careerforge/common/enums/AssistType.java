@@ -14,7 +14,6 @@ public enum AssistType implements BaseEnum {
 
     GIVE_HINTS("give_hints", "提示思路"),
     EXPLAIN_CONCEPT("explain_concept", "解释概念"),
-    POLISH_ANSWER("polish_answer", "润色答案"),
     FREE_QUESTION("free_question", "自由提问");
 
     private final String code;

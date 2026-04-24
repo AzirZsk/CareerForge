@@ -15,7 +15,7 @@ export type VoiceMode = 'half_voice' | 'full_voice'
 export type SessionState = 'idle' | 'preparing' | 'ready' | 'interviewing' | 'frozen' | 'completed'
 
 /** 求助类型 */
-export type AssistType = 'give_hints' | 'explain_concept' | 'polish_answer' | 'free_question'
+export type AssistType = 'give_hints' | 'explain_concept' | 'free_question'
 
 /** 对话角色 */
 export type ConversationRole = 'interviewer' | 'candidate' | 'assistant'
@@ -152,16 +152,6 @@ export interface ExplainData {
   summary: string
 }
 
-/** 润色答案数据 */
-export interface PolishData {
-  /** 润色后的回答 */
-  polishedAnswer: string
-  /** 改进要点 */
-  improvements: Array<{ point: string; before: string; after: string }>
-  /** 面试建议 */
-  tips: string[]
-}
-
 /** 自由提问数据 */
 export interface FreeQuestionData {
   /** AI 回答 */
@@ -250,8 +240,6 @@ export interface AssistRequest {
   type: AssistType
   /** 用户问题（自由提问时） */
   question?: string
-  /** 候选人草稿（润色时使用） */
-  candidateDraft?: string
 }
 
 /** 面试会话状态 */

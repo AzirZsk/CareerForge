@@ -29,7 +29,7 @@
               <option :value="10">10 次</option>
             </select>
             <p class="form-hint">
-              面试中可向 AI 助手求助的次数，用于获取提示、解释概念或润色回答
+              面试中可向 AI 助手求助的次数，用于获取提示、解释概念或自由提问
             </p>
           </div>
 

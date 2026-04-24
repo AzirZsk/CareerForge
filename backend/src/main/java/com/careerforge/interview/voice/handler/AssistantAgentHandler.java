@@ -51,14 +51,12 @@ public class AssistantAgentHandler {
      * @param sessionId      会话 ID
      * @param assistType     求助类型
      * @param userQuestion   用户问题（自由提问时使用）
-     * @param candidateDraft 候选人草稿（润色时使用）
      * @param eventConsumer  SSE 事件消费者
      */
     public void handleAssist(
             String sessionId,
             AssistType assistType,
             String userQuestion,
-            String candidateDraft,
             Consumer<AssistSSEEvent> eventConsumer) {
 
         log.info("[AssistantAgent] 处理求助请求, sessionId={}, type={}", sessionId, assistType);
@@ -71,7 +69,7 @@ public class AssistantAgentHandler {
         String contextBlock = buildConversationContext(conversationHistory);
         // 构建提示词
         String systemPrompt = buildSystemPrompt(assistType);
-        String userPrompt = buildUserPrompt(assistType, currentQuestion, contextBlock, userQuestion, candidateDraft);
+        String userPrompt = buildUserPrompt(assistType, currentQuestion, contextBlock, userQuestion);
         // 收集完整文本
         StringBuilder fullText = new StringBuilder();
         // 调用 LLM 流式生成
@@ -179,8 +177,7 @@ public class AssistantAgentHandler {
             AssistType assistType,
             String currentQuestion,
             String conversationHistory,
-            String userQuestion,
-            String candidateDraft) {
+            String userQuestion) {
 
         VoiceInterviewPromptProperties.AssistantPromptConfig config = voicePromptProperties.getAssistant();
         if (assistType == null) {
@@ -190,7 +187,6 @@ public class AssistantAgentHandler {
         return promptConfig.getUserPromptTemplate()
                 .replace("{currentQuestion}", currentQuestion)
                 .replace("{conversationHistory}", conversationHistory != null ? conversationHistory : "")
-                .replace("{candidateDraft}", candidateDraft != null ? candidateDraft : "请告诉我你目前的回答内容。")
                 .replace("{userQuestion}", userQuestion != null ? userQuestion : "请问你有什么问题？");
     }
 
@@ -201,7 +197,6 @@ public class AssistantAgentHandler {
         return switch (assistType) {
             case GIVE_HINTS -> config.getHints();
             case EXPLAIN_CONCEPT -> config.getExplain();
-            case POLISH_ANSWER -> config.getPolish();
             case FREE_QUESTION -> config.getFreeQuestion();
         };
     }

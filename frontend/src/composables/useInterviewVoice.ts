@@ -11,6 +11,7 @@ import { useAudioRecorder } from './useAudioRecorder'
 import { usePageGuard } from './usePageGuard'
 import type {
   SessionState,
+  VoiceMode,
   VoiceSettings,
   WSMessage,
   AudioData,

@@ -65,7 +65,6 @@ const emit = defineEmits<{
 const assistButtons: Array<{ type: AssistType; icon: string; label: string; desc: string }> = [
   { type: 'give_hints', icon: 'fa-solid fa-bullseye', label: '给我思路', desc: 'AI 帮你梳理答题方向' },
   { type: 'explain_concept', icon: 'fa-solid fa-book-open', label: '解释概念', desc: 'AI 为你解释专业术语' },
-  { type: 'polish_answer', icon: 'fa-solid fa-pen-fancy', label: '帮我润色', desc: 'AI 优化你的回答表达' },
   { type: 'free_question', icon: 'fa-solid fa-comment', label: '自由提问', desc: '输入问题，AI 为你解答' }
 ]
 

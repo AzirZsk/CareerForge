@@ -123,7 +123,7 @@ public class AssistSSEEvent {
     @AllArgsConstructor
     public static class StructuredEventData {
         /**
-         * 求助类型 code（give_hints/explain_concept/polish_answer/free_question）
+         * 求助类型 code（give_hints/explain_concept/free_question）
          */
         private String assistType;
 
