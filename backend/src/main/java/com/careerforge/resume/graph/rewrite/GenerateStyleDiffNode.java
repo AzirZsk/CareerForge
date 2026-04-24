@@ -2,7 +2,8 @@ package com.careerforge.resume.graph.rewrite;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.careerforge.common.config.AIPromptProperties;
+import com.careerforge.common.config.prompt.RewritePromptProperties;
+import com.careerforge.common.config.prompt.PromptConfig;
 import com.careerforge.common.schema.GraphSchemaRegistry;
 import com.careerforge.common.util.ChatClientHelper;
 import com.careerforge.common.util.JsonParseHelper;
@@ -31,7 +32,7 @@ import static com.careerforge.resume.graph.rewrite.RewriteGraphConstants.*;
 public class GenerateStyleDiffNode implements NodeAction {
 
     private final ChatClient chatClient;
-    private final AIPromptProperties aiPromptProperties;
+    private final RewritePromptProperties promptProperties;
 
     @Override
     public Map<String, Object> apply(OverAllState state) {
@@ -45,7 +46,7 @@ public class GenerateStyleDiffNode implements NodeAction {
         ResumeSectionShortener.ShortenResult shortenResult = ResumeSectionShortener.shorten(resumeDetail);
         String resumeSections = shortenResult.getShortenedContent();
         // 调用AI生成风格差异策略
-        AIPromptProperties.PromptConfig promptConfig = aiPromptProperties.getRewriteGraph().getGenerateStyleDiffConfig();
+        PromptConfig promptConfig = promptProperties.getGenerateStyleDiffConfig();
         String systemPrompt = promptConfig.getSystemPrompt();
         String userPrompt = ChatClientHelper.renderTemplate(
                 promptConfig.getUserPromptTemplate(),

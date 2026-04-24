@@ -11,6 +11,7 @@ import { useAudioRecorder } from './useAudioRecorder'
 import { usePageGuard } from './usePageGuard'
 import type {
   SessionState,
+  VoiceMode,
   VoiceSettings,
   WSMessage,
   AudioData,
@@ -70,6 +71,9 @@ export function useInterviewVoice(sessionId: string) {
 
   /** 计时器 */
   let elapsedTimer: number | null = null
+
+  /** 冻结期间发送静音帧的定时器 */
+  let silenceFrameTimer: number | null = null
 
   /** WebSocket 连接 */
   let ws: WebSocket | null = null
@@ -132,8 +136,12 @@ export function useInterviewVoice(sessionId: string) {
   /**
    * 初始化语音面试
    */
-  async function init(): Promise<void> {
+  async function init(voiceMode?: VoiceMode): Promise<void> {
     try {
+      // 如果调用方传入了 voiceMode，覆盖默认设置
+      if (voiceMode) {
+        settings.value.mode = voiceMode
+      }
       // 创建共享 AudioContext
       sharedAudioContext = new AudioContext({ sampleRate: settings.value.sampleRate })
       if (sharedAudioContext.state === 'suspended') {
@@ -289,8 +297,11 @@ export function useInterviewVoice(sessionId: string) {
    */
   function handleTranscriptMessage(data: TranscriptData): void {
     if (data.role === 'interviewer') {
-      // 收到面试官回复，关闭等待状态
-      isWaitingForAI.value = false
+      // half_voice 模式：收到 transcript 就关闭等待（文字立即显示）
+      // full_voice 模式：保持等待状态，直到文字真正开始显示（revealTick 触发时关闭）
+      if (!isFullVoice()) {
+        isWaitingForAI.value = false
+      }
       // 面试官 transcript：累积文字（后端按句分块发送）
       if (!data.isFinal) {
         if (data.text) {
@@ -312,6 +323,8 @@ export function useInterviewVoice(sessionId: string) {
           // full_voice 且文字还没释放完：标记流结束，等门控追上来再提交
           textGateBuffer = interviewerAccumulatedText
           isTextStreamDone = true
+          // 启动安全回退定时器：如果 TTS 失败没有音频到达，3 秒后强制显示文字
+          startTextFallbackTimer()
         } else {
           // half_voice 或文字已全部释放：立即提交
           commitInterviewerMessage()
@@ -370,6 +383,46 @@ export function useInterviewVoice(sessionId: string) {
   /** 中文最低语速估算（字/秒），用于防止初期释放速率过高 */
   const MIN_SPEECH_RATE = 5
 
+  /** TTS 安全回退定时器：如果 TTS 失败没有音频到达，强制显示文字 */
+  let textFallbackTimer: number | null = null
+
+  /** TTS 安全回退超时时间（毫秒） */
+  const TEXT_FALLBACK_TIMEOUT_MS = 3000
+
+  /**
+   * 启动安全回退定时器
+   * 如果 TTS 失败没有音频到达，超时后强制显示所有已缓冲文字
+   */
+  function startTextFallbackTimer(): void {
+    clearTextFallbackTimer()
+    textFallbackTimer = window.setTimeout(() => {
+      console.warn('[useInterviewVoice] TTS 回退定时器触发，强制显示文字')
+      isWaitingForAI.value = false
+      if (textGateBuffer.length > 0 && revealedChars < textGateBuffer.length) {
+        revealedChars = textGateBuffer.length
+        partialTranscript.value = {
+          text: textGateBuffer,
+          isFinal: false,
+          role: 'interviewer'
+        }
+      }
+      if (interviewerAccumulatedText.trim()) {
+        commitInterviewerMessage()
+      }
+      textFallbackTimer = null
+    }, TEXT_FALLBACK_TIMEOUT_MS)
+  }
+
+  /**
+   * 清除安全回退定时器
+   */
+  function clearTextFallbackTimer(): void {
+    if (textFallbackTimer) {
+      clearTimeout(textFallbackTimer)
+      textFallbackTimer = null
+    }
+  }
+
   /**
    * 处理音频消息
    */
@@ -419,7 +472,8 @@ export function useInterviewVoice(sessionId: string) {
       return
     }
 
-    // 发送开始控制消息
+    // 面试开始后立即显示"AI思考中"动画，等待面试官第一个问题
+    isWaitingForAI.value = true
     sendControlMessage('start')
   }
 
@@ -428,6 +482,9 @@ export function useInterviewVoice(sessionId: string) {
    */
   function handleErrorMessage(data: { code: string; message: string }): void {
     error.value = data.message
+    // 错误发生时关闭三点动画，防止永远 loading
+    isWaitingForAI.value = false
+    clearTextFallbackTimer()
     console.error('[useInterviewVoice] 服务端错误:', data.code, data.message)
   }
 
@@ -476,6 +533,11 @@ export function useInterviewVoice(sessionId: string) {
       isFinal: false,
       role: 'interviewer'
     }
+    // 文字开始出现时关闭三点动画，消除割裂感（三点消失和文字出现在同一帧）
+    if (isWaitingForAI.value) {
+      isWaitingForAI.value = false
+      clearTextFallbackTimer()
+    }
     // 文字流已结束且全部释放完 → 提交消息
     if (isTextStreamDone && revealedChars >= textGateBuffer.length) {
       commitInterviewerMessage()
@@ -488,6 +550,11 @@ export function useInterviewVoice(sessionId: string) {
    */
   function handlePlaybackEnd(): void {
     if (!isFullVoice()) return
+    // 安全兜底：确保三点动画关闭
+    if (isWaitingForAI.value) {
+      isWaitingForAI.value = false
+    }
+    clearTextFallbackTimer()
     if (textGateBuffer.length > revealedChars) {
       revealedChars = textGateBuffer.length
       partialTranscript.value = {
@@ -541,6 +608,7 @@ export function useInterviewVoice(sessionId: string) {
     accumulatedAudioDuration = 0
     isTextStreamDone = false
     stopRevealTimer()
+    clearTextFallbackTimer()
   }
 
   // ============================================================================
@@ -578,9 +646,36 @@ export function useInterviewVoice(sessionId: string) {
 
   /**
    * 处理录音数据
+   * AI 说话期间发送静音帧，避免回声/噪音污染 ASR 识别
    */
   function handleAudioData(data: Int16Array): void {
-    sendAudioData(data)
+    if (audioPlayer.isPlaying.value) {
+      sendAudioData(new Int16Array(data.length))
+    } else {
+      sendAudioData(data)
+    }
+  }
+
+  /**
+   * 启动静音帧发送定时器
+   * 冻结期间每 256ms 发送一帧静音 PCM，保持 ASR 连接活跃
+   */
+  function startSilenceFrameSender(): void {
+    stopSilenceFrameSender()
+    const silenceFrame = new Int16Array(4096)
+    silenceFrameTimer = window.setInterval(() => {
+      sendAudioData(silenceFrame)
+    }, 256)
+  }
+
+  /**
+   * 停止静音帧发送定时器
+   */
+  function stopSilenceFrameSender(): void {
+    if (silenceFrameTimer) {
+      clearInterval(silenceFrameTimer)
+      silenceFrameTimer = null
+    }
   }
 
   // ============================================================================
@@ -615,6 +710,7 @@ export function useInterviewVoice(sessionId: string) {
       sessionState.value = 'frozen'
       stopRecording()
       stopTimer()
+      startSilenceFrameSender()
     }
   }
 
@@ -625,6 +721,8 @@ export function useInterviewVoice(sessionId: string) {
     if (isFrozen.value) {
       sessionState.value = 'interviewing'
       startTimer()
+      stopSilenceFrameSender()
+      startRecording()
     }
   }
 
@@ -684,6 +782,8 @@ export function useInterviewVoice(sessionId: string) {
     stopHeartbeat()
     stopRecording()
     stopRevealTimer()
+    clearTextFallbackTimer()
+    stopSilenceFrameSender()
     unregisterGuard('voice-interview')
 
     if (ws) {

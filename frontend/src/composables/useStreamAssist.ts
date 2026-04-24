@@ -1,12 +1,12 @@
 /**
  * SSE 流式求助 Composable
- * 处理语音面试中的快捷求助功能（纯文字回复）
+ * 处理语音面试中的快捷求助功能（结构化 JSON 响应）
  *
  * @author Azir
  */
 
 import { ref, computed, onUnmounted } from 'vue'
-import type { AssistRequest, TextEventData, DoneEventData, ErrorEventData } from '@/types/interview-voice'
+import type { AssistRequest, TextEventData, StructuredEventData, DoneEventData, ErrorEventData, AssistType } from '@/types/interview-voice'
 import { authFetch } from '@/utils/request'
 
 /**
@@ -21,12 +21,6 @@ export function useStreamAssist(sessionId: string) {
   /** 是否正在请求 */
   const isRequesting = ref(false)
 
-  /** 文本内容 */
-  const textContent = ref('')
-
-  /** 增量文本（用于实时显示） */
-  const deltaText = ref('')
-
   /** 剩余求助次数 */
   const assistRemaining = ref(5)
 
@@ -35,6 +29,12 @@ export function useStreamAssist(sessionId: string) {
 
   /** 错误信息 */
   const error = ref<string | null>(null)
+
+  /** 当前求助类型 */
+  const currentAssistType = ref<AssistType | null>(null)
+
+  /** 结构化数据（AI 完成后设置） */
+  const structuredData = ref<StructuredEventData | null>(null)
 
   /** AbortController 用于中断请求 */
   let abortController: AbortController | null = null
@@ -55,21 +55,24 @@ export function useStreamAssist(sessionId: string) {
    * @param request 求助请求
    */
   async function requestAssist(request: AssistRequest): Promise<void> {
+    console.log('[useStreamAssist] 开始请求, type:', request.type)
+
     if (isRequesting.value) {
-      console.warn('[useStreamAssist] 已有请求进行中')
+      console.warn('[useStreamAssist] 已有请求进行中，跳过')
       return
     }
 
     if (!hasRemaining.value) {
+      console.warn('[useStreamAssist] 求助次数已用完')
       error.value = '求助次数已用完'
       return
     }
 
     // 重置状态
     isRequesting.value = true
-    textContent.value = ''
-    deltaText.value = ''
     error.value = null
+    structuredData.value = null
+    currentAssistType.value = request.type
 
     // 创建 AbortController
     abortController = new AbortController()
@@ -78,12 +81,12 @@ export function useStreamAssist(sessionId: string) {
       // 构建 SSE URL
       const params = new URLSearchParams({
         type: request.type,
-        question: request.question || '',
-        candidateDraft: request.candidateDraft || ''
+        question: request.question || ''
       })
       const url = `/careerforge/interviews/sessions/${sessionId}/assist/stream?${params}`
+      console.log('[useStreamAssist] 请求URL:', url)
 
-      // 使用 authFetch 发起请求（传入 signal 支持中断）
+      const requestStartTime = Date.now()
       const response = await authFetch(url, { signal: abortController.signal }, 60000)
 
       if (!response.ok) {
@@ -98,18 +101,21 @@ export function useStreamAssist(sessionId: string) {
 
       const decoder = new TextDecoder()
       let buffer = ''
+      let eventCount = 0
 
       // 读取流
       while (isRequesting.value) {
         const { done, value } = await reader.read()
 
         if (done) {
-          console.log('[useStreamAssist] 流结束')
+          console.log('[useStreamAssist] 流结束, 事件数:', eventCount, '耗时:', Date.now() - requestStartTime, 'ms')
           break
         }
 
         // 解码并处理数据
-        buffer += decoder.decode(value, { stream: true })
+        const chunk = decoder.decode(value, { stream: true })
+        buffer += chunk
+
         const lines = buffer.split('\n')
         buffer = lines.pop() || ''
 
@@ -120,17 +126,23 @@ export function useStreamAssist(sessionId: string) {
               if (!json) continue
 
               const event = JSON.parse(json)
+              eventCount++
 
               // 根据事件类型分发
               if (event.type === 'text') {
                 handleTextEventData(event.data)
+              } else if (event.type === 'structured') {
+                console.log('[useStreamAssist] 收到 structured 事件, assistType:', event.data?.assistType)
+                handleStructuredEventData(event.data)
               } else if (event.type === 'done') {
+                console.log('[useStreamAssist] 收到 done 事件, remaining:', event.data?.assistRemaining)
                 handleDoneEventData(event.data)
               } else if (event.type === 'error') {
+                console.error('[useStreamAssist] 收到 error 事件:', event.data?.code, event.data?.message)
                 handleErrorEventData(event.data)
               }
             } catch (e) {
-              console.error('[useStreamAssist] 解析事件失败:', e, line)
+              console.error('[useStreamAssist] 解析事件失败:', line, e)
             }
           }
         }
@@ -167,16 +179,23 @@ export function useStreamAssist(sessionId: string) {
   // ============================================================================
 
   /**
-   * 处理文本事件数据
+   * 处理文本事件数据（结构化模式下忽略）
    */
-  function handleTextEventData(data: TextEventData): void {
-    if (data.isDelta) {
-      // 增量文本，追加显示
-      deltaText.value = data.content
-      textContent.value += data.content
-    } else {
-      // 完整文本，替换显示
-      textContent.value = data.content
+  function handleTextEventData(_data: TextEventData): void {
+    console.debug('[useStreamAssist] 忽略 text 事件（结构化模式）')
+  }
+
+  /**
+   * 处理结构化事件数据
+   */
+  function handleStructuredEventData(data: StructuredEventData): void {
+    try {
+      structuredData.value = data
+      if (data.assistType) {
+        currentAssistType.value = data.assistType
+      }
+    } catch (e) {
+      console.error('[useStreamAssist] 处理结构化数据失败:', e)
     }
   }
 
@@ -222,13 +241,6 @@ export function useStreamAssist(sessionId: string) {
   }
 
   /**
-   * 帮我润色
-   */
-  function polishAnswer(candidateDraft: string): Promise<void> {
-    return requestAssist({ type: 'polish_answer', candidateDraft })
-  }
-
-  /**
    * 自由提问
    */
   function freeQuestion(question: string): Promise<void> {
@@ -247,19 +259,18 @@ export function useStreamAssist(sessionId: string) {
   return {
     // 状态
     isRequesting,
-    textContent,
-    deltaText,
     assistRemaining,
     totalDurationMs,
     error,
     hasRemaining,
+    currentAssistType,
+    structuredData,
 
     // 方法
     requestAssist,
     stopAssist,
     giveHints,
     explainConcept,
-    polishAnswer,
     freeQuestion
   }
 }

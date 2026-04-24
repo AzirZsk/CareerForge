@@ -2,7 +2,8 @@ package com.careerforge.interview.graph.preparation;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.careerforge.common.config.AIPromptProperties;
+import com.careerforge.common.config.prompt.PreparationPromptProperties;
+import com.careerforge.common.config.prompt.PromptConfig;
 import com.careerforge.common.util.ChatClientHelper;
 import com.careerforge.common.util.JsonParseHelper;
 import com.careerforge.jobposition.dto.JDAnalysisResult;
@@ -32,7 +33,7 @@ import static com.careerforge.interview.graph.preparation.InterviewPreparationGr
 public class JDAnalysisNode implements NodeAction {
 
     private final ChatClient chatClient;
-    private final AIPromptProperties aiPromptProperties;
+    private final PreparationPromptProperties promptProperties;
     private final JobPositionService jobPositionService;
     private final PreparationContextBuilder contextBuilder;
 
@@ -70,7 +71,7 @@ public class JDAnalysisNode implements NodeAction {
      */
     private Map<String, Object> executeAIAnalysis(String companyId, String positionTitle, String jdContent, JobPosition existingPosition) {
         // 获取AI提示词配置
-        AIPromptProperties.PromptConfig config = aiPromptProperties.getPreparationGraph().getJdAnalysisConfig();
+        PromptConfig config = promptProperties.getJdAnalysisConfig();
         String systemPrompt = config.getSystemPrompt();
         String userPrompt = config.getUserPromptTemplate()
                 .replace("{positionTitle}", positionTitle)

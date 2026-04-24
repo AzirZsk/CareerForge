@@ -192,11 +192,10 @@ public class AliyunASRService implements ASRService {
                 .apiKey(voiceProperties.getAliyun().getApiKey())
                 .format(config.getFormat())
                 .sampleRate(config.getSampleRate())
+                // 启用心跳
+                .parameter("heartbeat", true)
                 // 语言提示
                 .parameter("language_hints", new String[]{config.getLanguage()})
-                // 标点预测
-                .parameter("punctuation_prediction_enabled",
-                        config.getEnablePunctuation() != null ? config.getEnablePunctuation() : true)
                 .build();
     }
 

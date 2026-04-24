@@ -15,7 +15,7 @@ export type VoiceMode = 'half_voice' | 'full_voice'
 export type SessionState = 'idle' | 'preparing' | 'ready' | 'interviewing' | 'frozen' | 'completed'
 
 /** 求助类型 */
-export type AssistType = 'give_hints' | 'explain_concept' | 'polish_answer' | 'free_question'
+export type AssistType = 'give_hints' | 'explain_concept' | 'free_question'
 
 /** 对话角色 */
 export type ConversationRole = 'interviewer' | 'candidate' | 'assistant'
@@ -82,12 +82,12 @@ export interface TTSChunk {
 // ============================================================================
 
 /** SSE 事件类型 */
-export type SSEEventType = 'text' | 'done' | 'error'
+export type SSEEventType = 'text' | 'structured' | 'done' | 'error'
 
 /** SSE 事件基础接口 */
 export interface AssistSSEEvent {
   type: SSEEventType
-  data: TextEventData | DoneEventData | ErrorEventData
+  data: TextEventData | StructuredEventData | DoneEventData | ErrorEventData
 }
 
 /** 文本事件数据 */
@@ -96,6 +96,14 @@ export interface TextEventData {
   content: string
   /** 是否增量文本 */
   isDelta: boolean
+}
+
+/** 结构化事件数据 */
+export interface StructuredEventData {
+  /** 求助类型 code */
+  assistType: AssistType
+  /** 结构化内容（按类型不同，实际类型由 assistType 决定） */
+  content: Record<string, any>
 }
 
 /** 完成事件数据 */
@@ -112,6 +120,52 @@ export interface ErrorEventData {
   code: string
   /** 错误信息 */
   message: string
+}
+
+// ============================================================================
+// 求助结构化数据
+// ============================================================================
+
+/** 提示思路数据 */
+export interface HintsData {
+  /** 思路总结 */
+  summary: string
+  /** 思考步骤 */
+  thinkingSteps: string[]
+  /** 关键知识点 */
+  keyPoints: string[]
+  /** 建议的回答结构 */
+  answerStructure: string
+}
+
+/** 解释概念数据 */
+export interface ExplainData {
+  /** 概念定义 */
+  definition: string
+  /** 类比理解 */
+  analogy: string
+  /** 应用场景 */
+  applications: string[]
+  /** 代码示例（可选） */
+  codeExample?: string
+  /** 总结 */
+  summary: string
+}
+
+/** 自由提问数据 */
+export interface FreeQuestionData {
+  /** AI 回答 */
+  answer: string
+  /** 建议 */
+  suggestions: string[]
+  /** 相关话题 */
+  relatedTopics?: string[]
+}
+
+/** 降级纯文本数据 */
+export interface FallbackData {
+  /** 降级文本 */
+  fallbackText: string
 }
 
 // ============================================================================
@@ -186,8 +240,6 @@ export interface AssistRequest {
   type: AssistType
   /** 用户问题（自由提问时） */
   question?: string
-  /** 候选人草稿（润色时使用） */
-  candidateDraft?: string
 }
 
 /** 面试会话状态 */

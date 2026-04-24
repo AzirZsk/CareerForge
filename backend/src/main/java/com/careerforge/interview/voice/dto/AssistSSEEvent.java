@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Map;
+
 /**
  * SSE 求助事件
  * 用于流式返回助手回复
@@ -18,7 +20,7 @@ import lombok.NoArgsConstructor;
 public class AssistSSEEvent {
 
     /**
-     * 事件类型：text, done, error
+     * 事件类型：text, structured, done, error
      */
     private String type;
 
@@ -32,6 +34,13 @@ public class AssistSSEEvent {
      */
     public static AssistSSEEvent text(TextEventData data) {
         return AssistSSEEvent.builder().type("text").data(data).build();
+    }
+
+    /**
+     * 创建结构化事件（解析后的求助内容）
+     */
+    public static AssistSSEEvent structured(StructuredEventData data) {
+        return AssistSSEEvent.builder().type("structured").data(data).build();
     }
 
     /**
@@ -103,5 +112,24 @@ public class AssistSSEEvent {
          * 错误消息
          */
         private String message;
+    }
+
+    /**
+     * 结构化事件数据（AI 返回的 JSON 解析结果）
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class StructuredEventData {
+        /**
+         * 求助类型 code（give_hints/explain_concept/free_question）
+         */
+        private String assistType;
+
+        /**
+         * 结构化内容（解析后的 JSON 数据）
+         */
+        private Map<String, Object> content;
     }
 }

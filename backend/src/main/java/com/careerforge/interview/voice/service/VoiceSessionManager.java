@@ -10,6 +10,7 @@ import org.springframework.web.socket.WebSocketSession;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * WebSocket 会话管理器
@@ -24,6 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class VoiceSessionManager {
     private final ObjectMapper objectMapper;
     private final ConcurrentHashMap<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
+    // 每个 session 一把锁，防止多线程并发写入 WebSocket 状态机冲突
+    private final ConcurrentHashMap<String, ReentrantLock> sessionLocks = new ConcurrentHashMap<>();
 
     /**
      * 注册 WebSocket 会话
@@ -43,6 +46,7 @@ public class VoiceSessionManager {
      */
     public void unregisterSession(String wsSessionId) {
         sessions.remove(wsSessionId);
+        sessionLocks.remove(wsSessionId);
         log.debug("[VoiceSessionManager] 会话已注销, wsSessionId={}", wsSessionId);
     }
 
@@ -67,11 +71,18 @@ public class VoiceSessionManager {
             log.warn("[VoiceSessionManager] 会话为空或已关闭，无法发送响应");
             return;
         }
+        String sessionId = session.getId();
+        ReentrantLock lock = sessionLocks.computeIfAbsent(sessionId, k -> new ReentrantLock());
+        lock.lock();
         try {
-            String json = objectMapper.writeValueAsString(response);
-            session.sendMessage(new TextMessage(json));
+            if (session.isOpen()) {
+                String json = objectMapper.writeValueAsString(response);
+                session.sendMessage(new TextMessage(json));
+            }
         } catch (IOException e) {
             log.error("[VoiceSessionManager] 发送响应失败", e);
+        } finally {
+            lock.unlock();
         }
     }
 

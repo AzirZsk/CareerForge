@@ -227,7 +227,7 @@ CREATE TABLE IF NOT EXISTS t_assistant_conversation (
     id VARCHAR(64) PRIMARY KEY,              -- 主键ID（雪花ID字符串）
     session_id VARCHAR(64) NOT NULL,          -- 关联的面试会话ID
     freeze_index INT NOT NULL,                -- 冻结时的问题序号
-    assist_type VARCHAR(30) NOT NULL,         -- 求助类型：GIVE_HINTS, EXPLAIN_CONCEPT, POLISH_ANSWER, FREE_QUESTION
+    assist_type VARCHAR(30) NOT NULL,         -- 求助类型：GIVE_HINTS, EXPLAIN_CONCEPT, FREE_QUESTION
     user_question TEXT,                       -- 用户问题（自由提问时）
     assistant_response TEXT NOT NULL,         -- 助手回复
     audio_url VARCHAR(500),                   -- 音频存储路径

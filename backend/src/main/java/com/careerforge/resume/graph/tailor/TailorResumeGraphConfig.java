@@ -11,7 +11,8 @@ import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import com.careerforge.common.config.AIPromptProperties;
+import com.careerforge.common.config.prompt.TailorResumePromptProperties;
+import com.careerforge.common.config.prompt.PromptConfig;
 import com.careerforge.resume.util.TailoredResumeToSectionConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,7 +43,7 @@ import static com.careerforge.resume.graph.tailor.TailorResumeGraphConstants.*;
 public class TailorResumeGraphConfig {
 
     private final ChatClient chatClient;
-    private final AIPromptProperties aiPromptProperties;
+    private final TailorResumePromptProperties promptProperties;
     private final TailoredResumeToSectionConverter sectionConverter;
 
     /**
@@ -95,10 +96,10 @@ public class TailorResumeGraphConfig {
             throws GraphStateException {
 
         // 创建节点
-        AnalyzeJDNode analyzeJDNode = new AnalyzeJDNode(chatClient, aiPromptProperties);
-        MatchResumeNode matchResumeNode = new MatchResumeNode(chatClient, aiPromptProperties);
+        AnalyzeJDNode analyzeJDNode = new AnalyzeJDNode(chatClient, promptProperties);
+        MatchResumeNode matchResumeNode = new MatchResumeNode(chatClient, promptProperties);
         GenerateTailoredResumeNode generateTailoredNode = new GenerateTailoredResumeNode(
-                chatClient, aiPromptProperties, sectionConverter);
+                chatClient, promptProperties, sectionConverter);
 
         // 构建工作流图
         StateGraph workflow = new StateGraph(GRAPH_TAILOR_RESUME, tailorResumeKeyStrategyFactory)

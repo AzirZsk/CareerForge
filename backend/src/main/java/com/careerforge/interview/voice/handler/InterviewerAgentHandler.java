@@ -1,6 +1,6 @@
 package com.careerforge.interview.voice.handler;
 
-import com.careerforge.common.config.AIPromptProperties;
+import com.careerforge.common.config.prompt.VoiceInterviewPromptProperties;
 import com.careerforge.common.config.VoiceProperties;
 import com.careerforge.common.exception.BusinessException;
 import com.careerforge.interview.voice.dto.*;
@@ -50,7 +50,7 @@ public class InterviewerAgentHandler {
     private final VoiceProperties voiceProperties;
     private final ChatClient chatClient;
     private final RecordingService recordingService;
-    private final AIPromptProperties aiPromptProperties;
+    private final VoiceInterviewPromptProperties voicePromptProperties;
     private final QuestionPreGenerateService questionPreGenerateService;
 
     @Autowired
@@ -254,8 +254,8 @@ public class InterviewerAgentHandler {
         log.debug("[InterviewerAgent] 请求自我介绍, sessionId={}", sessionId);
         ConversationContext context = getOrCreateContext(sessionId);
         SessionState state = requireSession(sessionId);
-        AIPromptProperties.InterviewerStyleConfig styleConfig =
-                aiPromptProperties.getVoice().getByStyle(state.getInterviewerStyle());
+        VoiceInterviewPromptProperties.InterviewerStyleConfig styleConfig =
+                voicePromptProperties.getByStyle(state.getInterviewerStyle());
         String systemPrompt = styleConfig.getSystemPrompt();
         String userPrompt = styleConfig.getSelfIntroPromptTemplate()
                 .replace("{position}", context.getPosition())
@@ -289,7 +289,7 @@ public class InterviewerAgentHandler {
         }
         // 根据面试官风格获取提示词配置
         String style = state.getInterviewerStyle();
-        AIPromptProperties.InterviewerStyleConfig styleConfig = aiPromptProperties.getVoice().getByStyle(style);
+        VoiceInterviewPromptProperties.InterviewerStyleConfig styleConfig = voicePromptProperties.getByStyle(style);
         // 构建提示词（注入预设问题 + 面试上下文）
         String systemPrompt = styleConfig.getSystemPrompt();
         String userPrompt = styleConfig.getQuestionPromptTemplate()
@@ -302,9 +302,14 @@ public class InterviewerAgentHandler {
                 .replace("{askedQuestions}", formatAskedQuestions(context.getConversationSummary()))
                 .replace("{conversationSummary}", context.getConversationSummary())
                 .replace("{preGeneratedQuestion}", preGeneratedText);
-        // 调用 LLM 流式生成
+        // 调用 LLM 流式生成，完成后记录当前问题到 lastQuestion
         Flux<String> llmStream = callLLMStream(systemPrompt, userPrompt);
-        synthesizeStreamAndSend(sessionId, llmStream);
+        synthesizeStreamAndSend(sessionId, llmStream, text -> {
+            if (text != null && !text.isBlank()) {
+                state.setLastQuestion(text);
+                log.debug("[InterviewerAgent] 更新lastQuestion, sessionId={}, length={}", sessionId, text.length());
+            }
+        });
     }
 
     /**
@@ -331,6 +336,7 @@ public class InterviewerAgentHandler {
                     sessionId, state.getFollowUpCount(), judgeResponse.getReason());
             state.setFollowUpCount(state.getFollowUpCount() + 1);
             state.setPhase(InterviewPhaseEnum.FOLLOW_UP);
+            state.setLastQuestion(judgeResponse.getFollowUpQuestion());
             recordInterviewerMessage(sessionId, fullReply);
             synthesizeAndSend(sessionId, fullReply, false);
         } else {
@@ -425,6 +431,10 @@ public class InterviewerAgentHandler {
      * @param textStream LLM 文本流
      */
     private void synthesizeStreamAndSend(String sessionId, Flux<String> textStream) {
+        synthesizeStreamAndSend(sessionId, textStream, null);
+    }
+
+    private void synthesizeStreamAndSend(String sessionId, Flux<String> textStream, java.util.function.Consumer<String> onCompleteCallback) {
         log.info("[InterviewerAgent] 开始流式合成, sessionId={}", sessionId);
         ConversationContext context = getOrCreateContext(sessionId);
         boolean fullVoice = isFullVoiceMode(sessionId);
@@ -465,6 +475,10 @@ public class InterviewerAgentHandler {
                     if (!fullText.isEmpty()) {
                         log.info("[InterviewerAgent] 流式合成完成, sessionId={}, textLength={}", sessionId, fullText.length());
                         context.addInterviewerMessage(fullText.toString());
+                        // 完成回调（用于记录 lastQuestion 等）
+                        if (onCompleteCallback != null) {
+                            onCompleteCallback.accept(fullText.toString());
+                        }
                     } else {
                         log.warn("[InterviewerAgent] 流式合成完成但文本为空, sessionId={}", sessionId);
                     }

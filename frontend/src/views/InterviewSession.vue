@@ -6,10 +6,10 @@
 =====================================================-->
 
 <template>
-  <!-- 倒计时遮罩层（仅在面试开始时显示） -->
+  <!-- 倒计时遮罩层 -->
   <div v-if="showCountdown" class="countdown-overlay">
     <div class="countdown-content">
-      <div class="countdown-title">面试即将开始</div>
+      <div class="countdown-title">{{ isFrozen ? '面试即将继续' : '面试即将开始' }}</div>
       <div class="countdown-number">{{ countdown }}</div>
       <div class="countdown-hint">请准备好麦克风</div>
     </div>
@@ -192,10 +192,12 @@
           <!-- 助手面板（冻结状态时显示） -->
           <AssistantPanel
             v-if="isFrozen"
-            :content="assistantContent"
+            :structured-data="streamAssist.structuredData.value"
+            :assist-type="streamAssist.currentAssistType.value"
             :is-loading="isAssistLoading"
             :assist-remaining="assistRemaining"
             :assist-limit="assistLimit"
+            :error-message="streamAssist.error.value"
             @return="handleResumeInterview"
             @assist="handleAssist"
           />
@@ -273,7 +275,9 @@ const sessionId = computed(() => {
 // ============================================================================
 
 // 语音模式（默认半语音）
-const voiceMode = ref<VoiceMode>('half_voice')
+const voiceMode = ref<VoiceMode>(
+  (route.query.voiceMode as VoiceMode) || 'half_voice'
+)
 
 // 语音面试 composable
 const voiceInterview = useInterviewVoice(sessionId.value)
@@ -341,7 +345,6 @@ const interviewerStyleLabel = computed(() => {
 // 助手相关
 // ============================================================================
 
-const assistantContent = ref('')
 const isAssistLoading = ref(false)
 
 // ============================================================================
@@ -386,7 +389,7 @@ const sessionBadgeText = computed(() => {
 onMounted(() => {
   // 直接初始化语音面试（WebSocket 连接后会自动进入 preparing 状态）
   // 后端预生成完成后会推送 ready 事件，前端显示"准备就绪"状态
-  voiceInterview.init()
+  voiceInterview.init(voiceMode.value)
 })
 
 onUnmounted(() => {
@@ -412,7 +415,6 @@ async function handleAssist(type: AssistType, question?: string) {
   // 冻结面试
   voiceInterview.freeze()
   isAssistLoading.value = true
-  assistantContent.value = ''
 
   try {
     await streamAssist.requestAssist({
@@ -426,14 +428,18 @@ async function handleAssist(type: AssistType, question?: string) {
   }
 }
 
-// 监听助手内容变化
-watch(() => streamAssist.textContent.value, (content) => {
-  assistantContent.value = content
-})
-
 function handleResumeInterview() {
-  voiceInterview.resumeInterview()
-  assistantContent.value = ''
+  showCountdown.value = true
+  countdown.value = 3
+
+  const timer = setInterval(() => {
+    countdown.value--
+    if (countdown.value <= 0) {
+      clearInterval(timer)
+      showCountdown.value = false
+      voiceInterview.resumeInterview()
+    }
+  }, 1000)
 }
 
 /**

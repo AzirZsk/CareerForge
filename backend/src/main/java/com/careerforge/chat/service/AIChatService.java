@@ -11,7 +11,7 @@ import com.careerforge.chat.dto.ChatStreamRequest;
 import com.careerforge.chat.dto.SectionChange;
 import com.careerforge.chat.dto.tool.SelectResumeResponse;
 import com.careerforge.chat.dto.tool.SectionSuggestionResponse;
-import com.careerforge.common.config.AIPromptProperties;
+import com.careerforge.common.config.prompt.ChatPromptProperties;
 import com.careerforge.common.enums.SectionType;
 import com.careerforge.common.service.FileToImageService;
 import com.careerforge.common.util.JsonParseHelper;
@@ -50,7 +50,7 @@ public class AIChatService {
     private final ReactAgent chatAgent;
     private final ResumeHandler resumeHandler;
     private final FileToImageService fileToImageService;
-    private final AIPromptProperties aiPromptProperties;
+    private final ChatPromptProperties chatPromptProperties;
     private final ChatMessageService chatMessageService;
     private final MemorySaver chatMemorySaver;
 
@@ -241,7 +241,7 @@ public class AIChatService {
         if (resumeId != null && !resumeId.isEmpty()) {
             // 简历模式：注入简历上下文
             String resumeContext = loadResumeContext(resumeId);
-            String template = aiPromptProperties.getChat().getAdvisorConfig().getUserPromptTemplate();
+            String template = chatPromptProperties.getAdvisorConfig().getUserPromptTemplate();
             instruction.append(template.replace("{resumeContext}", resumeContext));
         } else {
             // 通用聊天模式：注入通用提示词
@@ -256,7 +256,7 @@ public class AIChatService {
      * 构建通用聊天模式的提示词（从配置文件读取）
      */
     private String buildGeneralContext() {
-        String systemPrompt = aiPromptProperties.getChat().getGeneralConfig().getSystemPrompt();
+        String systemPrompt = chatPromptProperties.getGeneralConfig().getSystemPrompt();
         if (systemPrompt == null || systemPrompt.isBlank()) {
             // 兜底默认值
             return """

@@ -2,7 +2,8 @@ package com.careerforge.interview.graph.review;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.careerforge.common.config.AIPromptProperties;
+import com.careerforge.common.config.prompt.ReviewPromptProperties;
+import com.careerforge.common.config.prompt.PromptConfig;
 import com.careerforge.common.util.ChatClientHelper;
 import com.careerforge.common.util.JsonParseHelper;
 import com.careerforge.interview.entity.Interview;
@@ -34,7 +35,7 @@ import static com.careerforge.interview.graph.review.ReviewAnalysisGraphConstant
 public class AnalyzeInterviewNode implements NodeAction {
 
     private final ChatClient chatClient;
-    private final AIPromptProperties aiPromptProperties;
+    private final ReviewPromptProperties promptProperties;
     private final InterviewCenterService interviewService;
     private final InterviewReviewNoteService reviewNoteService;
     private final ReviewContextBuilder contextBuilder;
@@ -83,7 +84,7 @@ public class AnalyzeInterviewNode implements NodeAction {
 
         // ==================== 第二步：AI分析 ====================
         log.info("=== 开始AI分析面试表现 ===");
-        AIPromptProperties.PromptConfig config = aiPromptProperties.getReviewGraph().getAnalyzeInterviewConfig();
+        PromptConfig config = promptProperties.getAnalyzeInterviewConfig();
         String systemPrompt = config.getSystemPrompt();
         String userPrompt = config.getUserPromptTemplate().replace("{collectedData}", collectedDataJson);
         // 使用结构化 DTO 接收响应

@@ -31,7 +31,7 @@ public class AssistantConversation extends BaseEntity {
     private Integer freezeIndex;
 
     /**
-     * 求助类型：GIVE_HINTS, EXPLAIN_CONCEPT, POLISH_ANSWER, FREE_QUESTION
+     * 求助类型：GIVE_HINTS, EXPLAIN_CONCEPT, FREE_QUESTION
      */
     private String assistType;
 

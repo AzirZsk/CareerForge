@@ -1,8 +1,13 @@
 package com.careerforge.interview.voice.handler;
 
-import com.careerforge.interview.voice.dto.*;
+import com.careerforge.common.config.prompt.PromptConfig;
+import com.careerforge.common.config.prompt.VoiceInterviewPromptProperties;
+import com.careerforge.common.enums.AssistType;
+import com.careerforge.interview.voice.dto.AssistSSEEvent;
 import com.careerforge.interview.voice.dto.SessionState;
 import com.careerforge.interview.voice.gateway.InterviewVoiceGateway;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -10,11 +15,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * AI 助手 Agent 处理器
- * 处理面试过程中的快捷求助功能，仅返回文字回复
+ * 处理面试过程中的快捷求助功能，返回结构化 JSON 数据
  *
  * @author Azir
  */
@@ -24,33 +32,46 @@ import java.util.function.Consumer;
 public class AssistantAgentHandler {
 
     private final ChatClient chatClient;
+    private final VoiceInterviewPromptProperties voicePromptProperties;
+    private final ObjectMapper objectMapper;
 
     @Autowired
     @Lazy
     private InterviewVoiceGateway voiceGateway;
 
     /**
+     * AI 返回文本中提取 JSON 的正则
+     */
+    private static final Pattern JSON_PATTERN = Pattern.compile("\\{[\\s\\S]*\\}", Pattern.DOTALL);
+
+    /**
      * 处理快捷求助
-     * 订阅 LLM 流式输出，文本增量通过 consumer 推送
+     * 收集 LLM 完整输出，解析 JSON 后推送 structured 事件
      *
      * @param sessionId      会话 ID
      * @param assistType     求助类型
      * @param userQuestion   用户问题（自由提问时使用）
-     * @param candidateDraft 候选人草稿（润色时使用）
      * @param eventConsumer  SSE 事件消费者
      */
     public void handleAssist(
             String sessionId,
-            String assistType,
+            AssistType assistType,
             String userQuestion,
-            String candidateDraft,
             Consumer<AssistSSEEvent> eventConsumer) {
 
         log.info("[AssistantAgent] 处理求助请求, sessionId={}, type={}", sessionId, assistType);
         SessionState sessionState = voiceGateway.getInternalState(sessionId);
+        // 获取当前问题文本
+        String currentQuestion = sessionState != null && sessionState.getLastQuestion() != null
+                ? sessionState.getLastQuestion() : "未知";
+        // 获取对话历史
+        String conversationHistory = voiceGateway.getConversationSummary(sessionId);
+        String contextBlock = buildConversationContext(conversationHistory);
         // 构建提示词
-        String systemPrompt = buildSystemPrompt(assistType, sessionState);
-        String userPrompt = buildUserPrompt(assistType, userQuestion, candidateDraft, sessionState);
+        String systemPrompt = buildSystemPrompt(assistType);
+        String userPrompt = buildUserPrompt(assistType, currentQuestion, contextBlock, userQuestion);
+        // 收集完整文本
+        StringBuilder fullText = new StringBuilder();
         // 调用 LLM 流式生成
         chatClient
                 .prompt()
@@ -60,13 +81,8 @@ public class AssistantAgentHandler {
                 .content()
                 .subscribe(
                         delta -> {
-                            // 发送文本增量事件
-                            eventConsumer.accept(AssistSSEEvent.text(
-                                    AssistSSEEvent.TextEventData.builder()
-                                            .content(delta)
-                                            .isDelta(true)
-                                            .build()
-                            ));
+                            // 只收集文本，不推送 text 事件
+                            fullText.append(delta);
                         },
                         error -> {
                             log.error("[AssistantAgent] 处理求助出错", error);
@@ -78,7 +94,18 @@ public class AssistantAgentHandler {
                             ));
                         },
                         () -> {
-                            // 发送完成事件
+                            // AI 完成：解析 JSON 并推送 structured 事件
+                            String rawText = fullText.toString().trim();
+                            log.info("[AssistantAgent] AI输出完成, length={}, preview={}", rawText.length(),
+                                    rawText.length() > 200 ? rawText.substring(0, 200) : rawText);
+                            Map<String, Object> structuredContent = parseJsonResponse(rawText);
+                            eventConsumer.accept(AssistSSEEvent.structured(
+                                    AssistSSEEvent.StructuredEventData.builder()
+                                            .assistType(assistType.getCode())
+                                            .content(structuredContent)
+                                            .build()
+                            ));
+                            // 推送 done 事件
                             eventConsumer.accept(AssistSSEEvent.done(
                                     AssistSSEEvent.DoneEventData.builder()
                                             .assistRemaining(sessionState != null ? sessionState.getAssistRemaining() : 0)
@@ -90,81 +117,87 @@ public class AssistantAgentHandler {
     }
 
     /**
-     * 构建系统提示词
+     * 解析 AI 返回的 JSON 文本
+     * 含降级逻辑：先直接解析，失败则正则提取，再失败则包装为 fallbackText
      */
-    private String buildSystemPrompt(String assistType, SessionState sessionState) {
-        String type = assistType != null ? assistType.toUpperCase() : "";
-        String currentQuestion = sessionState != null ? String.valueOf(sessionState.getCurrentQuestion()) : "未知";
-
-        return switch (type) {
-            case "GIVE_HINTS" -> """
-                你是一位耐心的技术面试辅导助手。
-
-                当前面试问题：%s
-
-                请给出回答思路提示，要求：
-                1. 不要直接给出答案
-                2. 提供思考框架和方法论
-                3. 列出关键知识点
-                4. 给出回答结构建议
-                5. 语言简洁，控制在 100 字以内
-                """.formatted(currentQuestion);
-
-            case "EXPLAIN_CONCEPT" -> """
-                你是一位技术概念讲解专家。
-
-                请用简洁易懂的语言解释技术概念，要求：
-                1. 先给出概念定义
-                2. 用类比帮助理解
-                3. 说明应用场景
-                4. 给出代码示例（如果适用）
-                5. 控制在 150 字以内
-                """;
-
-            case "POLISH_ANSWER" -> """
-                你是一位专业的面试回答润色专家。
-
-                请润色候选人的回答，要求：
-                1. 保持原意，提升表达
-                2. 使语言更专业流畅
-                3. 补充关键细节
-                4. 控制篇幅增长在 30% 以内
-                5. 指出改进点
-                """;
-
-            case "FREE_QUESTION" -> """
-                你是一位技术面试顾问。
-
-                请回答候选人的问题，要求：
-                1. 直接回答问题
-                2. 提供具体建议
-                3. 如果是技术问题，给出代码示例
-                4. 控制在 200 字以内
-                """;
-
-            default -> "你是一位友好的技术面试助手。";
-        };
+    private Map<String, Object> parseJsonResponse(String text) {
+        if (text == null || text.isBlank()) {
+            return Map.of("fallbackText", "AI 未返回有效内容");
+        }
+        // 第一步：直接解析
+        try {
+            return objectMapper.readValue(text, new TypeReference<Map<String, Object>>() {});
+        } catch (Exception e) {
+            log.debug("[AssistantAgent] 直接JSON解析失败, 尝试正则提取");
+        }
+        // 第二步：正则提取 JSON 部分
+        Matcher matcher = JSON_PATTERN.matcher(text);
+        if (matcher.find()) {
+            try {
+                return objectMapper.readValue(matcher.group(), new TypeReference<Map<String, Object>>() {});
+            } catch (Exception e) {
+                log.debug("[AssistantAgent] 正则提取后JSON解析失败");
+            }
+        }
+        // 第三步：降级为纯文本
+        log.warn("[AssistantAgent] JSON解析全部失败, 降级为纯文本, 原文: {}", text.length() > 100 ? text.substring(0, 100) : text);
+        return Map.of("fallbackText", text);
     }
 
     /**
-     * 构建用户提示词
+     * 构建对话上下文文本块
+     * 截取最近2000字符，避免过长
+     */
+    private String buildConversationContext(String conversationHistory) {
+        if (conversationHistory == null || conversationHistory.isBlank()) {
+            return "";
+        }
+        String recent = conversationHistory.length() > 2000
+                ? conversationHistory.substring(conversationHistory.length() - 2000)
+                : conversationHistory;
+        return "以下是面试官与候选人最近的对话：\n" + recent;
+    }
+
+    /**
+     * 构建系统提示词（纯静态内容，不含动态变量，支持前缀缓存）
+     */
+    private String buildSystemPrompt(AssistType assistType) {
+        VoiceInterviewPromptProperties.AssistantPromptConfig config = voicePromptProperties.getAssistant();
+        if (assistType == null) {
+            return "你是一位友好的技术面试助手。";
+        }
+        PromptConfig promptConfig = resolvePromptConfig(config, assistType);
+        return promptConfig.getSystemPrompt();
+    }
+
+    /**
+     * 构建用户提示词（所有动态变量统一在此替换）
      */
     private String buildUserPrompt(
-            String assistType,
-            String userQuestion,
-            String candidateDraft,
-            SessionState sessionState) {
+            AssistType assistType,
+            String currentQuestion,
+            String conversationHistory,
+            String userQuestion) {
 
-        String type = assistType != null ? assistType.toUpperCase() : "";
-        String currentQuestion = sessionState != null ? String.valueOf(sessionState.getCurrentQuestion()) : "未知";
+        VoiceInterviewPromptProperties.AssistantPromptConfig config = voicePromptProperties.getAssistant();
+        if (assistType == null) {
+            return "请告诉我你需要什么帮助。";
+        }
+        PromptConfig promptConfig = resolvePromptConfig(config, assistType);
+        return promptConfig.getUserPromptTemplate()
+                .replace("{currentQuestion}", currentQuestion)
+                .replace("{conversationHistory}", conversationHistory != null ? conversationHistory : "")
+                .replace("{userQuestion}", userQuestion != null ? userQuestion : "请问你有什么问题？");
+    }
 
-        return switch (type) {
-            case "GIVE_HINTS" -> "请为问题 \"" + currentQuestion + "\" 给我思路提示。";
-            case "EXPLAIN_CONCEPT" -> userQuestion != null ? userQuestion : "请解释这个问题涉及的核心概念。";
-            case "POLISH_ANSWER" -> candidateDraft != null ?
-                    "请润色我的回答：" + candidateDraft : "请告诉我你目前的回答内容。";
-            case "FREE_QUESTION" -> userQuestion != null ? userQuestion : "请问你有什么问题？";
-            default -> "请告诉我你需要什么帮助。";
+    /**
+     * 根据求助类型解析对应的 PromptConfig
+     */
+    private PromptConfig resolvePromptConfig(VoiceInterviewPromptProperties.AssistantPromptConfig config, AssistType assistType) {
+        return switch (assistType) {
+            case GIVE_HINTS -> config.getHints();
+            case EXPLAIN_CONCEPT -> config.getExplain();
+            case FREE_QUESTION -> config.getFreeQuestion();
         };
     }
 }
