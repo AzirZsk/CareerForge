@@ -3,7 +3,8 @@ package com.careerforge.interview.voice.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.careerforge.common.config.AIPromptProperties;
+import com.careerforge.common.config.prompt.VoiceInterviewPromptProperties;
+import com.careerforge.common.config.prompt.PromptConfig;
 import com.careerforge.common.util.ChatClientHelper;
 import com.careerforge.interview.entity.InterviewSession;
 import com.careerforge.interview.service.InterviewSessionService;
@@ -39,7 +40,7 @@ import java.util.stream.Collectors;
 public class QuestionPreGenerateService {
 
     private final ChatClient chatClient;
-    private final AIPromptProperties aiPromptProperties;
+    private final VoiceInterviewPromptProperties voicePromptProperties;
     private final InterviewSessionService interviewSessionService;
     private final ObjectMapper objectMapper;
 
@@ -65,7 +66,7 @@ public class QuestionPreGenerateService {
         log.info("[PreGenerate] 开始预生成所有问题, sessionId={}, total={}", sessionId, totalQuestions);
 
         // 获取预生成提示词配置
-        AIPromptProperties.PromptConfig preGenerateConfig = aiPromptProperties.getQuestionPreGenerate();
+        PromptConfig preGenerateConfig = voicePromptProperties.getQuestionPreGenerate();
         String systemPrompt = preGenerateConfig.getSystemPrompt();
 
         // 构建批量生成提示词
@@ -162,8 +163,8 @@ public class QuestionPreGenerateService {
                     .build();
         }
 
-        AIPromptProperties.InterviewerStyleConfig styleConfig =
-                aiPromptProperties.getVoice().getByStyle(state.getInterviewerStyle());
+        VoiceInterviewPromptProperties.InterviewerStyleConfig styleConfig =
+                voicePromptProperties.getByStyle(state.getInterviewerStyle());
 
         String systemPrompt = styleConfig.getSystemPrompt();
         String userPrompt = buildFollowUpJudgePrompt(

@@ -2,7 +2,8 @@ package com.careerforge.resume.graph.optimize;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.careerforge.common.config.AIPromptProperties;
+import com.careerforge.common.config.prompt.ResumeOptimizePromptProperties;
+import com.careerforge.common.config.prompt.PromptConfig;
 import com.careerforge.common.util.ChatClientHelper;
 import cn.hutool.core.util.StrUtil;
 import com.careerforge.common.util.JsonParseHelper;
@@ -35,7 +36,7 @@ import static com.careerforge.resume.graph.optimize.ResumeOptimizeGraphConstants
 public class DiagnoseResumeNode implements NodeAction {
 
     private final ChatClient chatClient;
-    private final AIPromptProperties aiPromptProperties;
+    private final ResumeOptimizePromptProperties promptProperties;
     private final ResumeService resumeService;
 
     @Override
@@ -49,7 +50,7 @@ public class DiagnoseResumeNode implements NodeAction {
                 : DEFAULT_TARGET_POSITION;
 
         // 使用拆分提示词调用（前缀缓存优化）
-        AIPromptProperties.PromptConfig promptConfig = aiPromptProperties.getGraph().getDiagnoseQuickConfig();
+        PromptConfig promptConfig = promptProperties.getDiagnoseQuickConfig();
         String systemPrompt = promptConfig.getSystemPrompt();
         // 获取简历 Markdown 文本
         String resumeMarkdown = resumeDetail.getMarkdownContent() != null

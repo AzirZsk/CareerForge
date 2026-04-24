@@ -11,7 +11,8 @@ import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import com.careerforge.common.config.AIPromptProperties;
+import com.careerforge.common.config.prompt.ResumeOptimizePromptProperties;
+import com.careerforge.common.config.prompt.PromptConfig;
 import com.careerforge.resume.service.ResumeService;
 import com.careerforge.resume.service.ResumeSuggestionService;
 import lombok.RequiredArgsConstructor;
@@ -45,7 +46,7 @@ import static com.careerforge.resume.graph.optimize.ResumeOptimizeGraphConstants
 public class ResumeOptimizeGraphConfig {
 
     private final ChatClient chatClient;
-    private final AIPromptProperties aiPromptProperties;
+    private final ResumeOptimizePromptProperties promptProperties;
     private final ResumeService resumeService;
     private final ResumeSuggestionService resumeSuggestionService;
     private final DiagnoseResumeNode diagnoseResumeNode;
@@ -98,8 +99,8 @@ public class ResumeOptimizeGraphConfig {
             throws GraphStateException {
 
         // 创建节点（注入已配置的 ChatClient Bean）
-        GenerateSuggestionsNode generateSuggestionsNode = new GenerateSuggestionsNode(chatClient, aiPromptProperties, resumeSuggestionService);
-        OptimizeSectionNode optimizeSectionNode = new OptimizeSectionNode(chatClient, aiPromptProperties);
+        GenerateSuggestionsNode generateSuggestionsNode = new GenerateSuggestionsNode(chatClient, promptProperties, resumeSuggestionService);
+        OptimizeSectionNode optimizeSectionNode = new OptimizeSectionNode(chatClient, promptProperties);
 
         // 构建工作流图
         StateGraph workflow = new StateGraph(GRAPH_RESUME_OPTIMIZE, resumeOptimizeKeyStrategyFactory)

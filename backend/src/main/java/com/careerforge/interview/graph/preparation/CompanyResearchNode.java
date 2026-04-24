@@ -2,7 +2,8 @@ package com.careerforge.interview.graph.preparation;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.careerforge.common.config.AIPromptProperties;
+import com.careerforge.common.config.prompt.PreparationPromptProperties;
+import com.careerforge.common.config.prompt.PromptConfig;
 import com.careerforge.common.util.ChatClientHelper;
 import com.careerforge.common.util.JsonParseHelper;
 import com.careerforge.company.dto.CompanyResearchResult;
@@ -32,7 +33,7 @@ import static com.careerforge.interview.graph.preparation.InterviewPreparationGr
 public class CompanyResearchNode implements NodeAction {
 
     private final ChatClient chatClient;
-    private final AIPromptProperties aiPromptProperties;
+    private final PreparationPromptProperties promptProperties;
     private final CompanyService companyService;
     private final PreparationContextBuilder contextBuilder;
 
@@ -67,7 +68,7 @@ public class CompanyResearchNode implements NodeAction {
      */
     private Map<String, Object> executeAIRresearch(String companyName) {
         // 获取AI提示词配置
-        AIPromptProperties.PromptConfig config = aiPromptProperties.getPreparationGraph().getCompanyResearchConfig();
+        PromptConfig config = promptProperties.getCompanyResearchConfig();
         String systemPrompt = config.getSystemPrompt();
         String userPrompt = config.getUserPromptTemplate().replace("{companyName}", companyName);
 

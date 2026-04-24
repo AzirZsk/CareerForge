@@ -2,7 +2,8 @@ package com.careerforge.resume.graph.tailor;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.careerforge.common.config.AIPromptProperties;
+import com.careerforge.common.config.prompt.TailorResumePromptProperties;
+import com.careerforge.common.config.prompt.PromptConfig;
 import com.careerforge.common.util.ChatClientHelper;
 import com.careerforge.common.util.JsonParseHelper;
 import com.careerforge.resume.dto.JobRequirements;
@@ -30,7 +31,7 @@ import static com.careerforge.resume.graph.tailor.TailorResumeGraphConstants.*;
 public class MatchResumeNode implements NodeAction {
 
     private final ChatClient chatClient;
-    private final AIPromptProperties aiPromptProperties;
+    private final TailorResumePromptProperties promptProperties;
 
     @Override
     public Map<String, Object> apply(OverAllState state) {
@@ -52,7 +53,7 @@ public class MatchResumeNode implements NodeAction {
         );
 
         // 使用拆分提示词调用
-        AIPromptProperties.PromptConfig promptConfig = aiPromptProperties.getTailorGraph().getMatchResumeConfig();
+        PromptConfig promptConfig = promptProperties.getMatchResumeConfig();
         String systemPrompt = promptConfig.getSystemPrompt();
         String userPrompt = ChatClientHelper.renderTemplate(
                 promptConfig.getUserPromptTemplate(),

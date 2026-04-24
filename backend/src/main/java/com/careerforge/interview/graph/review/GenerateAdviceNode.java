@@ -2,7 +2,8 @@ package com.careerforge.interview.graph.review;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.careerforge.common.config.AIPromptProperties;
+import com.careerforge.common.config.prompt.ReviewPromptProperties;
+import com.careerforge.common.config.prompt.PromptConfig;
 import com.careerforge.common.util.ChatClientHelper;
 import com.careerforge.common.util.JsonParseHelper;
 import com.careerforge.interview.graph.review.dto.AdviceItem;
@@ -30,14 +31,14 @@ import static com.careerforge.interview.graph.review.ReviewAnalysisGraphConstant
 public class GenerateAdviceNode implements NodeAction {
 
     private final ChatClient chatClient;
-    private final AIPromptProperties aiPromptProperties;
+    private final ReviewPromptProperties promptProperties;
     private final InterviewAIAnalysisService aiAnalysisService;
 
     @Override
     public Map<String, Object> apply(OverAllState state) {
         log.info("=== 开始生成改进建议 ===");
         String analysisResult = (String) state.value(STATE_ANALYSIS_RESULT).orElse("{}");
-        AIPromptProperties.PromptConfig config = aiPromptProperties.getReviewGraph().getGenerateAdviceConfig();
+        PromptConfig config = promptProperties.getGenerateAdviceConfig();
         String systemPrompt = config.getSystemPrompt();
         String userPrompt = config.getUserPromptTemplate().replace("{analysisResult}", analysisResult);
         // 使用结构化 DTO 接收响应（JSON Schema 约束）

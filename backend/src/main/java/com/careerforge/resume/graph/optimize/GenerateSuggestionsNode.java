@@ -2,7 +2,8 @@ package com.careerforge.resume.graph.optimize;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.careerforge.common.config.AIPromptProperties;
+import com.careerforge.common.config.prompt.ResumeOptimizePromptProperties;
+import com.careerforge.common.config.prompt.PromptConfig;
 import com.careerforge.common.schema.GraphSchemaRegistry;
 import com.careerforge.common.util.ChatClientHelper;
 import com.careerforge.common.util.JsonParseHelper;
@@ -32,7 +33,7 @@ import static com.careerforge.resume.graph.optimize.ResumeOptimizeGraphConstants
 public class GenerateSuggestionsNode implements NodeAction {
 
     private final ChatClient chatClient;
-    private final AIPromptProperties aiPromptProperties;
+    private final ResumeOptimizePromptProperties promptProperties;
     private final ResumeSuggestionService resumeSuggestionService;
 
     @Override
@@ -49,7 +50,7 @@ public class GenerateSuggestionsNode implements NodeAction {
                 : DEFAULT_EMPTY_JSON;
 
         // 使用拆分提示词调用（前缀缓存优化）
-        AIPromptProperties.PromptConfig promptConfig = aiPromptProperties.getGraph().getGenerateSuggestionsConfig();
+        PromptConfig promptConfig = promptProperties.getGenerateSuggestionsConfig();
         String systemPrompt = promptConfig.getSystemPrompt();
         String userPrompt = ChatClientHelper.renderTemplate(
                 promptConfig.getUserPromptTemplate(),

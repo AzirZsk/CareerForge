@@ -1,6 +1,6 @@
 package com.careerforge.common.service;
 
-import com.careerforge.common.config.AIPromptProperties;
+import com.careerforge.common.config.prompt.ResumePromptProperties;
 import com.careerforge.common.util.ChatClientHelper;
 import com.careerforge.common.util.JsonParseHelper;
 import com.careerforge.resume.dto.ResumeStructuredData;
@@ -26,7 +26,7 @@ public class AIService {
 
     private final ChatClient chatClient;
     private final FileToImageService fileToImageService;
-    private final AIPromptProperties promptProperties;
+    private final ResumePromptProperties promptProperties;
 
     // ==================== 简历解析相关方法 ====================
 
@@ -43,7 +43,7 @@ public class AIService {
         // 将文件转换为Media列表
         List<Media> mediaList = fileToImageService.convertToMedia(file);
         // 从配置中获取解析提示词
-        String parsePrompt = promptProperties.getResume().getParse();
+        String parsePrompt = promptProperties.getParse();
         // 统一调用大模型（多模态版本）
         ResumeStructuredData result = ChatClientHelper.callAndParse(
                 chatClient, null, parsePrompt, mediaList, ResumeStructuredData.class);

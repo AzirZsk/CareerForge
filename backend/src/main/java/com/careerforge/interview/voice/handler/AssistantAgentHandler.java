@@ -1,6 +1,6 @@
 package com.careerforge.interview.voice.handler;
 
-import com.careerforge.common.config.AIPromptProperties;
+import com.careerforge.common.config.prompt.VoiceInterviewPromptProperties;
 import com.careerforge.common.enums.AssistType;
 import com.careerforge.interview.voice.dto.AssistSSEEvent;
 import com.careerforge.interview.voice.dto.SessionState;
@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 public class AssistantAgentHandler {
 
     private final ChatClient chatClient;
-    private final AIPromptProperties aiPromptProperties;
+    private final VoiceInterviewPromptProperties voicePromptProperties;
 
     @Autowired
     @Lazy
@@ -116,7 +116,7 @@ public class AssistantAgentHandler {
      * 构建系统提示词
      */
     private String buildSystemPrompt(AssistType assistType, String currentQuestion, String contextBlock) {
-        AIPromptProperties.AssistantPromptConfig config = aiPromptProperties.getVoice().getAssistant();
+        VoiceInterviewPromptProperties.AssistantPromptConfig config = voicePromptProperties.getAssistant();
         if (assistType == null) {
             return "你是一位友好的技术面试助手。";
         }
@@ -145,7 +145,7 @@ public class AssistantAgentHandler {
             String userQuestion,
             String candidateDraft) {
 
-        AIPromptProperties.AssistantPromptConfig config = aiPromptProperties.getVoice().getAssistant();
+        VoiceInterviewPromptProperties.AssistantPromptConfig config = voicePromptProperties.getAssistant();
         if (assistType == null) {
             return "请告诉我你需要什么帮助。";
         }

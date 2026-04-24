@@ -13,7 +13,7 @@ import com.careerforge.chat.tools.GetResumeTool;
 import com.careerforge.chat.tools.GetSectionTool;
 import com.careerforge.chat.tools.SelectResumeTool;
 import com.careerforge.chat.tools.UpdateSectionTool;
-import com.careerforge.common.config.AIPromptProperties;
+import com.careerforge.common.config.prompt.ChatPromptProperties;
 import com.careerforge.common.util.UserContext;
 import com.careerforge.resume.handler.ResumeHandler;
 import io.micrometer.context.ContextRegistry;
@@ -41,7 +41,7 @@ import java.util.List;
 public class ChatAgentConfig {
 
     private final ChatModel chatModel;
-    private final AIPromptProperties aiPromptProperties;
+    private final ChatPromptProperties chatPromptProperties;
     private final ResumeHandler resumeHandler;
 
     /**
@@ -124,8 +124,7 @@ public class ChatAgentConfig {
      */
     @Bean
     public ReactAgent chatAgent(SkillsAgentHook skillsAgentHook, MemorySaver chatMemorySaver) {
-        String systemPrompt = aiPromptProperties.getChat()
-                .getAdvisorConfig()
+        String systemPrompt = chatPromptProperties.getAdvisorConfig()
                 .getSystemPrompt();
 
         // 在方法内部创建工具，避免循环依赖

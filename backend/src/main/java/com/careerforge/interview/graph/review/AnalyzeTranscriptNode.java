@@ -2,7 +2,8 @@ package com.careerforge.interview.graph.review;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.careerforge.common.config.AIPromptProperties;
+import com.careerforge.common.config.prompt.ReviewPromptProperties;
+import com.careerforge.common.config.prompt.PromptConfig;
 import com.careerforge.common.util.ChatClientHelper;
 import com.careerforge.common.util.JsonParseHelper;
 import com.careerforge.interview.graph.review.dto.TranscriptAnalysisResult;
@@ -27,7 +28,7 @@ import static com.careerforge.interview.graph.review.ReviewAnalysisGraphConstant
 public class AnalyzeTranscriptNode implements NodeAction {
 
     private final ChatClient chatClient;
-    private final AIPromptProperties aiPromptProperties;
+    private final ReviewPromptProperties promptProperties;
     private final ReviewContextBuilder contextBuilder;
 
     @Override
@@ -44,7 +45,7 @@ public class AnalyzeTranscriptNode implements NodeAction {
                     "{}", STATE_TRANSCRIPT_ANALYSIS, "{}");
         }
         // 渲染提示词模板
-        AIPromptProperties.PromptConfig config = aiPromptProperties.getReviewGraph().getAnalyzeTranscriptConfig();
+        PromptConfig config = promptProperties.getAnalyzeTranscriptConfig();
         String systemPrompt = config.getSystemPrompt();
         Map<String, String> variables = Map.of(
                 "companyName", context.companyName().isEmpty() ? "未知公司" : context.companyName(),

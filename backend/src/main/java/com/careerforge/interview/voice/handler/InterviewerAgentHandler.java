@@ -1,6 +1,6 @@
 package com.careerforge.interview.voice.handler;
 
-import com.careerforge.common.config.AIPromptProperties;
+import com.careerforge.common.config.prompt.VoiceInterviewPromptProperties;
 import com.careerforge.common.config.VoiceProperties;
 import com.careerforge.common.exception.BusinessException;
 import com.careerforge.interview.voice.dto.*;
@@ -50,7 +50,7 @@ public class InterviewerAgentHandler {
     private final VoiceProperties voiceProperties;
     private final ChatClient chatClient;
     private final RecordingService recordingService;
-    private final AIPromptProperties aiPromptProperties;
+    private final VoiceInterviewPromptProperties voicePromptProperties;
     private final QuestionPreGenerateService questionPreGenerateService;
 
     @Autowired
@@ -254,8 +254,8 @@ public class InterviewerAgentHandler {
         log.debug("[InterviewerAgent] 请求自我介绍, sessionId={}", sessionId);
         ConversationContext context = getOrCreateContext(sessionId);
         SessionState state = requireSession(sessionId);
-        AIPromptProperties.InterviewerStyleConfig styleConfig =
-                aiPromptProperties.getVoice().getByStyle(state.getInterviewerStyle());
+        VoiceInterviewPromptProperties.InterviewerStyleConfig styleConfig =
+                voicePromptProperties.getByStyle(state.getInterviewerStyle());
         String systemPrompt = styleConfig.getSystemPrompt();
         String userPrompt = styleConfig.getSelfIntroPromptTemplate()
                 .replace("{position}", context.getPosition())
@@ -289,7 +289,7 @@ public class InterviewerAgentHandler {
         }
         // 根据面试官风格获取提示词配置
         String style = state.getInterviewerStyle();
-        AIPromptProperties.InterviewerStyleConfig styleConfig = aiPromptProperties.getVoice().getByStyle(style);
+        VoiceInterviewPromptProperties.InterviewerStyleConfig styleConfig = voicePromptProperties.getByStyle(style);
         // 构建提示词（注入预设问题 + 面试上下文）
         String systemPrompt = styleConfig.getSystemPrompt();
         String userPrompt = styleConfig.getQuestionPromptTemplate()

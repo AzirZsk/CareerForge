@@ -2,7 +2,8 @@ package com.careerforge.interview.graph.preparation;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.careerforge.common.config.AIPromptProperties;
+import com.careerforge.common.config.prompt.PreparationPromptProperties;
+import com.careerforge.common.config.prompt.PromptConfig;
 import com.careerforge.common.util.ChatClientHelper;
 import com.careerforge.interview.dto.GeneratePreparationResult;
 import com.careerforge.interview.dto.PreparationItemResult;
@@ -29,7 +30,7 @@ import static com.careerforge.interview.graph.preparation.InterviewPreparationGr
 public class GeneratePreparationNode implements NodeAction {
 
     private final ChatClient chatClient;
-    private final AIPromptProperties aiPromptProperties;
+    private final PreparationPromptProperties promptProperties;
     private final PreparationContextBuilder preparationContextBuilder;
 
     @Override
@@ -51,7 +52,7 @@ public class GeneratePreparationNode implements NodeAction {
         String companyResearch = (String) state.value(STATE_COMPANY_RESEARCH_RESULT).orElse("{}");
         String jdAnalysis = (String) state.value(STATE_JD_ANALYSIS_RESULT).orElse("{}");
         // 获取AI提示词配置并构建用户提示词
-        AIPromptProperties.PromptConfig config = aiPromptProperties.getPreparationGraph().getGeneratePreparationConfig();
+        PromptConfig config = promptProperties.getGeneratePreparationConfig();
         String userPrompt = config.getUserPromptTemplate()
                 .replace("{companyName}", companyName)
                 .replace("{positionTitle}", positionTitle)

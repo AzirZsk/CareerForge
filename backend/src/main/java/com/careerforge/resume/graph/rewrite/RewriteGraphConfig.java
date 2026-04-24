@@ -11,7 +11,8 @@ import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import com.careerforge.common.config.AIPromptProperties;
+import com.careerforge.common.config.prompt.RewritePromptProperties;
+import com.careerforge.common.config.prompt.PromptConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -41,7 +42,7 @@ import static com.careerforge.resume.graph.rewrite.RewriteGraphConstants.*;
 public class RewriteGraphConfig {
 
     private final ChatClient chatClient;
-    private final AIPromptProperties aiPromptProperties;
+    private final RewritePromptProperties promptProperties;
 
     /**
      * 定义状态键策略
@@ -79,9 +80,9 @@ public class RewriteGraphConfig {
     public CompiledGraph resumeRewriteGraph(KeyStrategyFactory resumeRewriteKeyStrategyFactory)
             throws GraphStateException {
         // 创建节点
-        AnalyzeStyleNode analyzeStyleNode = new AnalyzeStyleNode(chatClient, aiPromptProperties);
-        GenerateStyleDiffNode generateStyleDiffNode = new GenerateStyleDiffNode(chatClient, aiPromptProperties);
-        RewriteSectionNode rewriteSectionNode = new RewriteSectionNode(chatClient, aiPromptProperties);
+        AnalyzeStyleNode analyzeStyleNode = new AnalyzeStyleNode(chatClient, promptProperties);
+        GenerateStyleDiffNode generateStyleDiffNode = new GenerateStyleDiffNode(chatClient, promptProperties);
+        RewriteSectionNode rewriteSectionNode = new RewriteSectionNode(chatClient, promptProperties);
         // 构建工作流图
         StateGraph workflow = new StateGraph(GRAPH_RESUME_REWRITE, resumeRewriteKeyStrategyFactory)
                 .addNode(NODE_ANALYZE_STYLE, AsyncNodeAction.node_async(analyzeStyleNode))

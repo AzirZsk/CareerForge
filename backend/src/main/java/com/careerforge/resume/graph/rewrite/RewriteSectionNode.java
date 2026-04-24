@@ -3,7 +3,8 @@ package com.careerforge.resume.graph.rewrite;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.careerforge.common.config.AIPromptProperties;
+import com.careerforge.common.config.prompt.RewritePromptProperties;
+import com.careerforge.common.config.prompt.PromptConfig;
 import com.careerforge.common.schema.GraphSchemaRegistry;
 import com.careerforge.common.util.ChatClientHelper;
 import com.careerforge.common.util.JsonParseHelper;
@@ -36,7 +37,7 @@ import static com.careerforge.resume.graph.rewrite.RewriteGraphConstants.*;
 public class RewriteSectionNode implements NodeAction {
 
     private final ChatClient chatClient;
-    private final AIPromptProperties aiPromptProperties;
+    private final RewritePromptProperties promptProperties;
 
     @Override
     public Map<String, Object> apply(OverAllState state) {
@@ -60,7 +61,7 @@ public class RewriteSectionNode implements NodeAction {
                 shortIdToRealIdMap
         );
         // 调用AI进行风格改写
-        AIPromptProperties.PromptConfig promptConfig = aiPromptProperties.getRewriteGraph().getRewriteSectionConfig();
+        PromptConfig promptConfig = promptProperties.getRewriteSectionConfig();
         String systemPrompt = promptConfig.getSystemPrompt();
         String userPrompt = ChatClientHelper.renderTemplate(
                 promptConfig.getUserPromptTemplate(),
