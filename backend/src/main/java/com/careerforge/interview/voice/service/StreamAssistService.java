@@ -76,9 +76,8 @@ public class StreamAssistService {
         assistantAgentHandler.handleAssist(sessionId, type, question, candidateDraft,
                 event -> {
                     sendEvent(emitter, event);
-                    // 检测终止事件
+                    // 检测终止事件，仅关闭 SSE 连接，不自动恢复面试（用户手动退出）
                     if ("done".equals(event.getType()) || "error".equals(event.getType())) {
-                        voiceGateway.resumeInterview(sessionId);
                         emitter.complete();
                     }
                 });

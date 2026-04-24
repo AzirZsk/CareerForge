@@ -721,6 +721,7 @@ export function useInterviewVoice(sessionId: string) {
       sessionState.value = 'interviewing'
       startTimer()
       stopSilenceFrameSender()
+      startRecording()
     }
   }
 

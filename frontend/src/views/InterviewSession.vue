@@ -6,10 +6,10 @@
 =====================================================-->
 
 <template>
-  <!-- 倒计时遮罩层（仅在面试开始时显示） -->
+  <!-- 倒计时遮罩层 -->
   <div v-if="showCountdown" class="countdown-overlay">
     <div class="countdown-content">
-      <div class="countdown-title">面试即将开始</div>
+      <div class="countdown-title">{{ isFrozen ? '面试即将继续' : '面试即将开始' }}</div>
       <div class="countdown-number">{{ countdown }}</div>
       <div class="countdown-hint">请准备好麦克风</div>
     </div>
@@ -429,7 +429,17 @@ async function handleAssist(type: AssistType, question?: string) {
 }
 
 function handleResumeInterview() {
-  voiceInterview.resumeInterview()
+  showCountdown.value = true
+  countdown.value = 3
+
+  const timer = setInterval(() => {
+    countdown.value--
+    if (countdown.value <= 0) {
+      clearInterval(timer)
+      showCountdown.value = false
+      voiceInterview.resumeInterview()
+    }
+  }, 1000)
 }
 
 /**
