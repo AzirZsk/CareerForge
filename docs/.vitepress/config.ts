@@ -23,6 +23,10 @@ export default defineConfig({
   themeConfig: {
     logo: '/logo.svg',
 
+    search: {
+      provider: 'local'
+    },
+
     nav: [
       { text: '首页', link: '/' },
       { text: '文档', link: '/guide/resume' },
@@ -35,6 +39,7 @@ export default defineConfig({
         {
           text: '功能',
           items: [
+            { text: '项目介绍', link: '/guide/introduction' },
             { text: '简历管理', link: '/guide/resume' },
             { text: '面试中心', link: '/guide/interview' },
           ]
