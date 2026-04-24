@@ -42,7 +42,7 @@ export default defineConfig({
         {
           text: '部署指南',
           items: [
-            { text: 'Claude Code 部署（推荐）', link: '/guide/claude-code' },
+            { text: 'AI 辅助部署（推荐）', link: '/guide/claude-code' },
             { text: 'Docker 部署', link: '/guide/docker' },
             { text: '传统部署', link: '/guide/manual' },
           ]

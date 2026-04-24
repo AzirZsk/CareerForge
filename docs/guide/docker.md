@@ -23,8 +23,8 @@
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/AzirZsk/Landit.git
-cd Landit
+git clone https://github.com/AzirZsk/CareerForge.git
+cd CareerForge
 
 # 2. 配置环境变量
 cp .env.example .env

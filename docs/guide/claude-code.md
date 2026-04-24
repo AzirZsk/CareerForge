@@ -1,6 +1,8 @@
-# Claude Code 部署（推荐）
+# AI 辅助部署（推荐）
 
-> 将部署指令文件 URL 发送给 Claude Code，即可自动完成 CareerForge 的全流程部署。
+> 将部署指令文件 URL 发送给你的 AI 编程工具，即可自动完成 CareerForge 的全流程部署。
+
+适用于 **Claude Code、OpenClaw** 等 AI 工具。
 
 ## 前置条件
 
@@ -20,13 +22,13 @@ ss -tlnp | grep ':80 ' || echo "Port 80 available"
 
 ## 一键部署
 
-将以下 URL 发送给 Claude Code：
+将以下指令发送给你的 AI 工具：
 
 ```
-https://github.com/AzirZsk/CareerForge/blob/main/deploy-guide.md
+请按照 https://github.com/AzirZsk/CareerForge/blob/main/deploy-guide.md 的指引，帮我部署 CareerForge 项目
 ```
 
-Claude Code 会按以下流程自动执行：
+AI 会按以下流程自动执行：
 
 1. **克隆仓库** — 拉取最新代码
 2. **配置环境变量** — 交互式收集 API Key 等配置
@@ -35,7 +37,7 @@ Claude Code 会按以下流程自动执行：
 
 ## 环境变量
 
-Claude Code 会逐项询问以下配置：
+AI 会逐项询问以下配置：
 
 | 变量 | 必填 | 说明 | 默认值 |
 |------|------|------|--------|

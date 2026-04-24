@@ -11,7 +11,7 @@ hero:
       link: /#quick-start
     - theme: alt
       text: GitHub
-      link: https://github.com/AzirZsk/Landit
+      link: https://github.com/AzirZsk/CareerForge
 
 features:
   - icon: 📄
@@ -33,39 +33,13 @@ features:
     title: 简历风格改写
     details: 上传参考简历，AI 分析写作风格并按相同风格改写你的简历
 ---
-
-<div class="home-section">
-  <div class="home-section-title">
-    <h2>项目规模</h2>
-    <p>全栈工程化，从后端到前端，从 AI 到语音</p>
-  </div>
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-number">324+</div>
-      <div class="stat-label">Java 文件</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-number">101+</div>
-      <div class="stat-label">Vue 组件</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-number">110+</div>
-      <div class="stat-label">API 接口</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-number">18</div>
-      <div class="stat-label">数据表</div>
-    </div>
-  </div>
-</div>
-
 <div id="quick-start" class="home-section">
   <div class="home-section-title">
     <h2>快速开始</h2>
     <p>选择你喜欢的方式部署</p>
   </div>
   <div class="deploy-tabs">
-    <button :class="['deploy-tab', activeTab === 'claude' && 'active']" @click="activeTab = 'claude'">Claude Code 部署</button>
+    <button :class="['deploy-tab', activeTab === 'claude' && 'active']" @click="activeTab = 'claude'">AI 辅助部署</button>
     <button :class="['deploy-tab', activeTab === 'docker' && 'active']" @click="activeTab = 'docker'">Docker 部署</button>
   </div>
 
@@ -76,8 +50,8 @@ features:
         <h3>克隆仓库</h3>
         <p style="color: #a1a1aa; font-size: 0.9rem; margin: 0 0 8px;">从 GitHub 拉取项目代码</p>
         <div class="code-block">
-          <button class="copy-btn" @click="copyCode($event, 'git clone https://github.com/AzirZsk/Landit.git && cd Landit')">复制</button>
-          <code>git clone https://github.com/AzirZsk/Landit.git && cd Landit</code>
+          <button class="copy-btn" @click="copyCode($event, 'git clone https://github.com/AzirZsk/CareerForge.git && cd CareerForge')">复制</button>
+          <code>git clone https://github.com/AzirZsk/CareerForge.git && cd CareerForge</code>
         </div>
       </div>
       <div class="step-card">
@@ -109,13 +83,13 @@ features:
     <div class="claude-deploy-card">
       <div class="claude-deploy-icon">🤖</div>
       <h3>一句话部署</h3>
-      <p style="color: #a1a1aa; font-size: 0.95rem; margin: 8px 0 24px;">把部署指令发给 Claude Code，让它帮你搞定一切</p>
+      <p style="color: #a1a1aa; font-size: 0.95rem; margin: 8px 0 24px;">把部署指令发给你的 AI 工具（Claude Code / OpenClaw 等），让它帮你搞定一切</p>
       <div class="code-block" style="max-width: 640px; margin: 0 auto; text-align: left;">
-        <button class="copy-btn" @click="copyCode($event, '请按照 https://github.com/AzirZsk/Landit/blob/main/deploy-guide.md 的指引，帮我部署 CareerForge 项目')">复制</button>
-        <code style="font-size: 0.85rem; line-height: 1.6;">请按照 https://github.com/AzirZsk/Landit/blob/main/deploy-guide.md 的指引，帮我部署 CareerForge 项目</code>
+        <button class="copy-btn" @click="copyCode($event, '请按照 https://github.com/AzirZsk/CareerForge/blob/main/deploy-guide.md 的指引，帮我部署 CareerForge 项目')">复制</button>
+        <code style="font-size: 0.85rem; line-height: 1.6;">请按照 https://github.com/AzirZsk/CareerForge/blob/main/deploy-guide.md 的指引，帮我部署 CareerForge 项目</code>
       </div>
       <div style="margin-top: 32px; text-align: left; max-width: 640px; margin-left: auto; margin-right: auto;">
-        <p style="color: #a1a1aa; font-size: 0.9rem; margin-bottom: 12px;">Claude Code 会自动完成：</p>
+        <p style="color: #a1a1aa; font-size: 0.9rem; margin-bottom: 12px;">AI 会自动完成：</p>
         <div style="display: flex; flex-direction: column; gap: 8px;">
           <div style="display: flex; align-items: center; gap: 8px;">
             <span style="color: #d4a853;">✓</span>
@@ -136,7 +110,7 @@ features:
         </div>
       </div>
       <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06);">
-        <p style="color: #71717a; font-size: 0.85rem;">前提：已安装 <a href="https://claude.ai/code" target="_blank" style="color: #d4a853; text-decoration: none;">Claude Code</a> 和 Docker</p>
+        <p style="color: #71717a; font-size: 0.85rem;">前提：已安装 AI 工具（如 <a href="https://claude.ai/code" target="_blank" style="color: #d4a853; text-decoration: none;">Claude Code</a>）和 Docker</p>
       </div>
     </div>
   </div>
