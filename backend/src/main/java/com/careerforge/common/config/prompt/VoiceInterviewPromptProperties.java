@@ -620,7 +620,9 @@ public InterviewerStyleConfig getByStyle(String styleCode) {
 }
 private AssistantPromptConfig createAssistantConfig() {
     AssistantPromptConfig config = new AssistantPromptConfig();
-    config.setHintsSystemPrompt("""
+
+    PromptConfig hintsPrompt = new PromptConfig();
+    hintsPrompt.setSystemPrompt("""
             你是一位耐心的技术面试辅导助手。
 
             当前面试问题：{currentQuestion}
@@ -634,8 +636,11 @@ private AssistantPromptConfig createAssistantConfig() {
             4. 给出回答结构建议
             5. 语言简洁，控制在 100 字以内
             """);
-    config.setHintsUserPrompt("请为问题 \"{currentQuestion}\" 给我思路提示。");
-    config.setExplainSystemPrompt("""
+    hintsPrompt.setUserPromptTemplate("请为问题 \"{currentQuestion}\" 给我思路提示。");
+    config.setHints(hintsPrompt);
+
+    PromptConfig explainPrompt = new PromptConfig();
+    explainPrompt.setSystemPrompt("""
             你是一位技术概念讲解专家。
 
             当前面试问题：{currentQuestion}
@@ -649,8 +654,11 @@ private AssistantPromptConfig createAssistantConfig() {
             4. 给出代码示例（如果适用）
             5. 控制在 150 字以内
             """);
-    config.setExplainUserPrompt("请解释这个问题涉及的核心概念。");
-    config.setPolishSystemPrompt("""
+    explainPrompt.setUserPromptTemplate("请解释这个问题涉及的核心概念。");
+    config.setExplain(explainPrompt);
+
+    PromptConfig polishPrompt = new PromptConfig();
+    polishPrompt.setSystemPrompt("""
             你是一位专业的面试回答润色专家。
 
             当前面试问题：{currentQuestion}
@@ -664,8 +672,11 @@ private AssistantPromptConfig createAssistantConfig() {
             4. 控制篇幅增长在 30% 以内
             5. 指出改进点
             """);
-    config.setPolishUserPrompt("请润色我的回答：{candidateDraft}");
-    config.setFreeQuestionSystemPrompt("""
+    polishPrompt.setUserPromptTemplate("请润色我的回答：{candidateDraft}");
+    config.setPolish(polishPrompt);
+
+    PromptConfig freeQuestionPrompt = new PromptConfig();
+    freeQuestionPrompt.setSystemPrompt("""
             你是一位技术面试顾问。
 
             当前面试问题：{currentQuestion}
@@ -678,7 +689,9 @@ private AssistantPromptConfig createAssistantConfig() {
             3. 如果是技术问题，给出代码示例
             4. 控制在 200 字以内
             """);
-    config.setFreeQuestionUserPrompt("{userQuestion}");
+    freeQuestionPrompt.setUserPromptTemplate("{userQuestion}");
+    config.setFreeQuestion(freeQuestionPrompt);
+
     return config;
 }
     private PromptConfig createQuestionPreGenerateConfig() {
@@ -787,58 +800,38 @@ return config;
 
     /**
      * 助手求助提示词配置
-     * 用于语音面试过程中的快捷求助（提示/解释/润色/自由提问）
+     * 每种求助类型各对应一个 PromptConfig（systemPrompt + userPromptTemplate）
      *
      * @author Azir
      */
     @Data
     public static class AssistantPromptConfig {
         /**
-         * 提示思路 - 系统提示词
-         * 占位符: {currentQuestion}, {conversationHistory}
+         * 提示思路提示词
+         * systemPrompt 占位符: {currentQuestion}, {conversationHistory}
+         * userPromptTemplate 占位符: {currentQuestion}
          */
-        private String hintsSystemPrompt;
+        private PromptConfig hints;
 
         /**
-         * 提示思路 - 用户提示词
-         * 占位符: {currentQuestion}
+         * 解释概念提示词
+         * systemPrompt 占位符: {currentQuestion}, {conversationHistory}
          */
-        private String hintsUserPrompt;
+        private PromptConfig explain;
 
         /**
-         * 解释概念 - 系统提示词
-         * 占位符: {currentQuestion}, {conversationHistory}
+         * 润色答案提示词
+         * systemPrompt 占位符: {currentQuestion}, {conversationHistory}
+         * userPromptTemplate 占位符: {candidateDraft}
          */
-        private String explainSystemPrompt;
+        private PromptConfig polish;
 
         /**
-         * 解释概念 - 用户提示词
+         * 自由提问提示词
+         * systemPrompt 占位符: {currentQuestion}, {conversationHistory}
+         * userPromptTemplate 占位符: {userQuestion}
          */
-        private String explainUserPrompt;
-
-        /**
-         * 润色答案 - 系统提示词
-         * 占位符: {currentQuestion}, {conversationHistory}
-         */
-        private String polishSystemPrompt;
-
-        /**
-         * 润色答案 - 用户提示词
-         * 占位符: {candidateDraft}
-         */
-        private String polishUserPrompt;
-
-        /**
-         * 自由提问 - 系统提示词
-         * 占位符: {currentQuestion}, {conversationHistory}
-         */
-        private String freeQuestionSystemPrompt;
-
-        /**
-         * 自由提问 - 用户提示词
-         * 占位符: {userQuestion}
-         */
-        private String freeQuestionUserPrompt;
+        private PromptConfig freeQuestion;
     }
 
     /**

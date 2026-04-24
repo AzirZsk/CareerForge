@@ -1,5 +1,6 @@
 package com.careerforge.interview.voice.handler;
 
+import com.careerforge.common.config.prompt.PromptConfig;
 import com.careerforge.common.config.prompt.VoiceInterviewPromptProperties;
 import com.careerforge.common.enums.AssistType;
 import com.careerforge.interview.voice.dto.AssistSSEEvent;
@@ -120,20 +121,10 @@ public class AssistantAgentHandler {
         if (assistType == null) {
             return "你是一位友好的技术面试助手。";
         }
-        return switch (assistType) {
-            case GIVE_HINTS -> config.getHintsSystemPrompt()
-                    .replace("{currentQuestion}", currentQuestion)
-                    .replace("{conversationHistory}", contextBlock);
-            case EXPLAIN_CONCEPT -> config.getExplainSystemPrompt()
-                    .replace("{currentQuestion}", currentQuestion)
-                    .replace("{conversationHistory}", contextBlock);
-            case POLISH_ANSWER -> config.getPolishSystemPrompt()
-                    .replace("{currentQuestion}", currentQuestion)
-                    .replace("{conversationHistory}", contextBlock);
-            case FREE_QUESTION -> config.getFreeQuestionSystemPrompt()
-                    .replace("{currentQuestion}", currentQuestion)
-                    .replace("{conversationHistory}", contextBlock);
-        };
+        PromptConfig promptConfig = resolvePromptConfig(config, assistType);
+        return promptConfig.getSystemPrompt()
+                .replace("{currentQuestion}", currentQuestion)
+                .replace("{conversationHistory}", contextBlock);
     }
 
     /**
@@ -149,14 +140,22 @@ public class AssistantAgentHandler {
         if (assistType == null) {
             return "请告诉我你需要什么帮助。";
         }
+        PromptConfig promptConfig = resolvePromptConfig(config, assistType);
+        return promptConfig.getUserPromptTemplate()
+                .replace("{currentQuestion}", currentQuestion)
+                .replace("{candidateDraft}", candidateDraft != null ? candidateDraft : "请告诉我你目前的回答内容。")
+                .replace("{userQuestion}", userQuestion != null ? userQuestion : "请问你有什么问题？");
+    }
+
+    /**
+     * 根据求助类型解析对应的 PromptConfig
+     */
+    private PromptConfig resolvePromptConfig(VoiceInterviewPromptProperties.AssistantPromptConfig config, AssistType assistType) {
         return switch (assistType) {
-            case GIVE_HINTS -> config.getHintsUserPrompt()
-                    .replace("{currentQuestion}", currentQuestion);
-            case EXPLAIN_CONCEPT -> config.getExplainUserPrompt();
-            case POLISH_ANSWER -> config.getPolishUserPrompt()
-                    .replace("{candidateDraft}", candidateDraft != null ? candidateDraft : "请告诉我你目前的回答内容。");
-            case FREE_QUESTION -> config.getFreeQuestionUserPrompt()
-                    .replace("{userQuestion}", userQuestion != null ? userQuestion : "请问你有什么问题？");
+            case GIVE_HINTS -> config.getHints();
+            case EXPLAIN_CONCEPT -> config.getExplain();
+            case POLISH_ANSWER -> config.getPolish();
+            case FREE_QUESTION -> config.getFreeQuestion();
         };
     }
 }
