@@ -59,15 +59,15 @@ public class StreamAssistService {
             return;
         }
 
-        // 冻结面试
-        voiceGateway.freezeInterview(sessionId);
-
-        // 扣减求助次数
+        // 先扣减求助次数，再冻结面试（冻结时会推送 WebSocket state，确保前端拿到扣减后的值）
         SessionState state = voiceGateway.getInternalState(sessionId);
         if (state != null) {
             state.setAssistRemaining(state.getAssistRemaining() - 1);
             log.info("[StreamAssist] 求助次数已扣减, sessionId={}, remaining={}", sessionId, state.getAssistRemaining());
         }
+
+        // 冻结面试（推送 WebSocket state，携带已扣减的 assistRemaining）
+        voiceGateway.freezeInterview(sessionId);
 
         // 调用助手处理器，事件通过回调直接推送
         AssistType type = AssistType.fromCode(assistType);

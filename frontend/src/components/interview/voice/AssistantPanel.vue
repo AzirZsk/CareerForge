@@ -137,7 +137,8 @@ function handleAssist(type: AssistType, question?: string) {
 .assistant-panel {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   background: $gradient-card;
   border-radius: $radius-lg;
   border: 1px solid rgba(255, 255, 255, 0.05);
