@@ -29,6 +29,8 @@ public class PromptConfig {
     public static PromptConfig ensureDefaults(PromptConfig config, String defaultSystem, String defaultTemplate) {
         if (config.getSystemPrompt() == null || config.getSystemPrompt().isBlank()) {
             config.setSystemPrompt(defaultSystem);
+        }
+        if (config.getUserPromptTemplate() == null || config.getUserPromptTemplate().isBlank()) {
             config.setUserPromptTemplate(defaultTemplate);
         }
         return config;

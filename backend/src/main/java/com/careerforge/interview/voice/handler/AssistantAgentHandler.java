@@ -6,6 +6,8 @@ import com.careerforge.common.enums.AssistType;
 import com.careerforge.interview.voice.dto.AssistSSEEvent;
 import com.careerforge.interview.voice.dto.SessionState;
 import com.careerforge.interview.voice.gateway.InterviewVoiceGateway;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -13,11 +15,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * AI 助手 Agent 处理器
- * 处理面试过程中的快捷求助功能，仅返回文字回复
+ * 处理面试过程中的快捷求助功能，返回结构化 JSON 数据
  *
  * @author Azir
  */
@@ -28,14 +33,20 @@ public class AssistantAgentHandler {
 
     private final ChatClient chatClient;
     private final VoiceInterviewPromptProperties voicePromptProperties;
+    private final ObjectMapper objectMapper;
 
     @Autowired
     @Lazy
     private InterviewVoiceGateway voiceGateway;
 
     /**
+     * AI 返回文本中提取 JSON 的正则
+     */
+    private static final Pattern JSON_PATTERN = Pattern.compile("\\{[\\s\\S]*\\}", Pattern.DOTALL);
+
+    /**
      * 处理快捷求助
-     * 订阅 LLM 流式输出，文本增量通过 consumer 推送
+     * 收集 LLM 完整输出，解析 JSON 后推送 structured 事件
      *
      * @param sessionId      会话 ID
      * @param assistType     求助类型
@@ -59,8 +70,10 @@ public class AssistantAgentHandler {
         String conversationHistory = voiceGateway.getConversationSummary(sessionId);
         String contextBlock = buildConversationContext(conversationHistory);
         // 构建提示词
-        String systemPrompt = buildSystemPrompt(assistType, currentQuestion, contextBlock);
-        String userPrompt = buildUserPrompt(assistType, currentQuestion, userQuestion, candidateDraft);
+        String systemPrompt = buildSystemPrompt(assistType);
+        String userPrompt = buildUserPrompt(assistType, currentQuestion, contextBlock, userQuestion, candidateDraft);
+        // 收集完整文本
+        StringBuilder fullText = new StringBuilder();
         // 调用 LLM 流式生成
         chatClient
                 .prompt()
@@ -70,13 +83,8 @@ public class AssistantAgentHandler {
                 .content()
                 .subscribe(
                         delta -> {
-                            // 发送文本增量事件
-                            eventConsumer.accept(AssistSSEEvent.text(
-                                    AssistSSEEvent.TextEventData.builder()
-                                            .content(delta)
-                                            .isDelta(true)
-                                            .build()
-                            ));
+                            // 只收集文本，不推送 text 事件
+                            fullText.append(delta);
                         },
                         error -> {
                             log.error("[AssistantAgent] 处理求助出错", error);
@@ -88,7 +96,18 @@ public class AssistantAgentHandler {
                             ));
                         },
                         () -> {
-                            // 发送完成事件
+                            // AI 完成：解析 JSON 并推送 structured 事件
+                            String rawText = fullText.toString().trim();
+                            log.info("[AssistantAgent] AI输出完成, length={}, preview={}", rawText.length(),
+                                    rawText.length() > 200 ? rawText.substring(0, 200) : rawText);
+                            Map<String, Object> structuredContent = parseJsonResponse(rawText);
+                            eventConsumer.accept(AssistSSEEvent.structured(
+                                    AssistSSEEvent.StructuredEventData.builder()
+                                            .assistType(assistType.getCode())
+                                            .content(structuredContent)
+                                            .build()
+                            ));
+                            // 推送 done 事件
                             eventConsumer.accept(AssistSSEEvent.done(
                                     AssistSSEEvent.DoneEventData.builder()
                                             .assistRemaining(sessionState != null ? sessionState.getAssistRemaining() : 0)
@@ -97,6 +116,34 @@ public class AssistantAgentHandler {
                             ));
                         }
                 );
+    }
+
+    /**
+     * 解析 AI 返回的 JSON 文本
+     * 含降级逻辑：先直接解析，失败则正则提取，再失败则包装为 fallbackText
+     */
+    private Map<String, Object> parseJsonResponse(String text) {
+        if (text == null || text.isBlank()) {
+            return Map.of("fallbackText", "AI 未返回有效内容");
+        }
+        // 第一步：直接解析
+        try {
+            return objectMapper.readValue(text, new TypeReference<Map<String, Object>>() {});
+        } catch (Exception e) {
+            log.debug("[AssistantAgent] 直接JSON解析失败, 尝试正则提取");
+        }
+        // 第二步：正则提取 JSON 部分
+        Matcher matcher = JSON_PATTERN.matcher(text);
+        if (matcher.find()) {
+            try {
+                return objectMapper.readValue(matcher.group(), new TypeReference<Map<String, Object>>() {});
+            } catch (Exception e) {
+                log.debug("[AssistantAgent] 正则提取后JSON解析失败");
+            }
+        }
+        // 第三步：降级为纯文本
+        log.warn("[AssistantAgent] JSON解析全部失败, 降级为纯文本, 原文: {}", text.length() > 100 ? text.substring(0, 100) : text);
+        return Map.of("fallbackText", text);
     }
 
     /**
@@ -114,25 +161,24 @@ public class AssistantAgentHandler {
     }
 
     /**
-     * 构建系统提示词
+     * 构建系统提示词（纯静态内容，不含动态变量，支持前缀缓存）
      */
-    private String buildSystemPrompt(AssistType assistType, String currentQuestion, String contextBlock) {
+    private String buildSystemPrompt(AssistType assistType) {
         VoiceInterviewPromptProperties.AssistantPromptConfig config = voicePromptProperties.getAssistant();
         if (assistType == null) {
             return "你是一位友好的技术面试助手。";
         }
         PromptConfig promptConfig = resolvePromptConfig(config, assistType);
-        return promptConfig.getSystemPrompt()
-                .replace("{currentQuestion}", currentQuestion)
-                .replace("{conversationHistory}", contextBlock);
+        return promptConfig.getSystemPrompt();
     }
 
     /**
-     * 构建用户提示词
+     * 构建用户提示词（所有动态变量统一在此替换）
      */
     private String buildUserPrompt(
             AssistType assistType,
             String currentQuestion,
+            String conversationHistory,
             String userQuestion,
             String candidateDraft) {
 
@@ -143,6 +189,7 @@ public class AssistantAgentHandler {
         PromptConfig promptConfig = resolvePromptConfig(config, assistType);
         return promptConfig.getUserPromptTemplate()
                 .replace("{currentQuestion}", currentQuestion)
+                .replace("{conversationHistory}", conversationHistory != null ? conversationHistory : "")
                 .replace("{candidateDraft}", candidateDraft != null ? candidateDraft : "请告诉我你目前的回答内容。")
                 .replace("{userQuestion}", userQuestion != null ? userQuestion : "请问你有什么问题？");
     }

@@ -1,12 +1,12 @@
 /**
  * SSE 流式求助 Composable
- * 处理语音面试中的快捷求助功能（纯文字回复）
+ * 处理语音面试中的快捷求助功能（结构化 JSON 响应）
  *
  * @author Azir
  */
 
 import { ref, computed, onUnmounted } from 'vue'
-import type { AssistRequest, TextEventData, DoneEventData, ErrorEventData } from '@/types/interview-voice'
+import type { AssistRequest, TextEventData, StructuredEventData, DoneEventData, ErrorEventData, AssistType } from '@/types/interview-voice'
 import { authFetch } from '@/utils/request'
 
 /**
@@ -21,12 +21,6 @@ export function useStreamAssist(sessionId: string) {
   /** 是否正在请求 */
   const isRequesting = ref(false)
 
-  /** 文本内容 */
-  const textContent = ref('')
-
-  /** 增量文本（用于实时显示） */
-  const deltaText = ref('')
-
   /** 剩余求助次数 */
   const assistRemaining = ref(5)
 
@@ -35,6 +29,12 @@ export function useStreamAssist(sessionId: string) {
 
   /** 错误信息 */
   const error = ref<string | null>(null)
+
+  /** 当前求助类型 */
+  const currentAssistType = ref<AssistType | null>(null)
+
+  /** 结构化数据（AI 完成后设置） */
+  const structuredData = ref<StructuredEventData | null>(null)
 
   /** AbortController 用于中断请求 */
   let abortController: AbortController | null = null
@@ -55,10 +55,7 @@ export function useStreamAssist(sessionId: string) {
    * @param request 求助请求
    */
   async function requestAssist(request: AssistRequest): Promise<void> {
-    console.log('[useStreamAssist] ===== 开始请求 =====')
-    console.log('[useStreamAssist] sessionId:', sessionId)
-    console.log('[useStreamAssist] 请求参数:', JSON.stringify(request))
-    console.log('[useStreamAssist] 当前状态 - isRequesting:', isRequesting.value, 'hasRemaining:', hasRemaining.value, 'assistRemaining:', assistRemaining.value)
+    console.log('[useStreamAssist] 开始请求, type:', request.type)
 
     if (isRequesting.value) {
       console.warn('[useStreamAssist] 已有请求进行中，跳过')
@@ -73,9 +70,9 @@ export function useStreamAssist(sessionId: string) {
 
     // 重置状态
     isRequesting.value = true
-    textContent.value = ''
-    deltaText.value = ''
     error.value = null
+    structuredData.value = null
+    currentAssistType.value = request.type
 
     // 创建 AbortController
     abortController = new AbortController()
@@ -91,27 +88,17 @@ export function useStreamAssist(sessionId: string) {
       console.log('[useStreamAssist] 请求URL:', url)
 
       const requestStartTime = Date.now()
-      console.log('[useStreamAssist] 发起fetch请求...')
-
-      // 使用 authFetch 发起请求（传入 signal 支持中断）
       const response = await authFetch(url, { signal: abortController.signal }, 60000)
 
-      console.log('[useStreamAssist] 收到响应 - status:', response.status, response.statusText)
-      console.log('[useStreamAssist] 响应头 Content-Type:', response.headers.get('content-type'))
-      console.log('[useStreamAssist] 响应耗时:', Date.now() - requestStartTime, 'ms')
-
       if (!response.ok) {
-        console.error('[useStreamAssist] 响应异常 - HTTP', response.status, response.statusText)
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
 
       // 获取 ReadableStream
       const reader = response.body?.getReader()
       if (!reader) {
-        console.error('[useStreamAssist] response.body 为空，无法获取 ReadableStream')
         throw new Error('无法读取响应流')
       }
-      console.log('[useStreamAssist] ReadableStream 获取成功，开始读取流...')
 
       const decoder = new TextDecoder()
       let buffer = ''
@@ -122,14 +109,13 @@ export function useStreamAssist(sessionId: string) {
         const { done, value } = await reader.read()
 
         if (done) {
-          console.log('[useStreamAssist] 流结束 - 总事件数:', eventCount, '总耗时:', Date.now() - requestStartTime, 'ms')
+          console.log('[useStreamAssist] 流结束, 事件数:', eventCount, '耗时:', Date.now() - requestStartTime, 'ms')
           break
         }
 
         // 解码并处理数据
         const chunk = decoder.decode(value, { stream: true })
         buffer += chunk
-        console.log('[useStreamAssist] 收到chunk - 长度:', chunk.length, '内容预览:', chunk.substring(0, 200))
 
         const lines = buffer.split('\n')
         buffer = lines.pop() || ''
@@ -142,34 +128,30 @@ export function useStreamAssist(sessionId: string) {
 
               const event = JSON.parse(json)
               eventCount++
-              console.log('[useStreamAssist] SSE事件 #' + eventCount + ' - type:', event.type, 'data预览:', JSON.stringify(event.data).substring(0, 300))
 
               // 根据事件类型分发
               if (event.type === 'text') {
                 handleTextEventData(event.data)
+              } else if (event.type === 'structured') {
+                console.log('[useStreamAssist] 收到 structured 事件, assistType:', event.data?.assistType)
+                handleStructuredEventData(event.data)
               } else if (event.type === 'done') {
-                console.log('[useStreamAssist] 收到done事件 - assistRemaining:', event.data?.assistRemaining, 'totalDurationMs:', event.data?.totalDurationMs)
+                console.log('[useStreamAssist] 收到 done 事件, remaining:', event.data?.assistRemaining)
                 handleDoneEventData(event.data)
               } else if (event.type === 'error') {
-                console.error('[useStreamAssist] 收到error事件 - code:', event.data?.code, 'message:', event.data?.message)
+                console.error('[useStreamAssist] 收到 error 事件:', event.data?.code, event.data?.message)
                 handleErrorEventData(event.data)
-              } else {
-                console.warn('[useStreamAssist] 未知事件类型:', event.type)
               }
             } catch (e) {
-              console.error('[useStreamAssist] 解析事件失败 - 原始行:', line, '错误:', e)
+              console.error('[useStreamAssist] 解析事件失败:', line, e)
             }
           }
         }
       }
 
       reader.releaseLock()
-      console.log('[useStreamAssist] ===== 请求完成 ===== 最终textContent长度:', textContent.value.length)
     } catch (e) {
-      console.error('[useStreamAssist] 请求失败 - 错误类型:', e?.constructor?.name, '错误信息:', e instanceof Error ? e.message : String(e))
-      if (e instanceof Error && 'cause' in e) {
-        console.error('[useStreamAssist] 错误cause:', e.cause)
-      }
+      console.error('[useStreamAssist] 请求失败:', e)
       error.value = e instanceof Error ? e.message : '请求失败'
       cleanup()
     }
@@ -198,16 +180,23 @@ export function useStreamAssist(sessionId: string) {
   // ============================================================================
 
   /**
-   * 处理文本事件数据
+   * 处理文本事件数据（结构化模式下忽略）
    */
-  function handleTextEventData(data: TextEventData): void {
-    if (data.isDelta) {
-      // 增量文本，追加显示
-      deltaText.value = data.content
-      textContent.value += data.content
-    } else {
-      // 完整文本，替换显示
-      textContent.value = data.content
+  function handleTextEventData(_data: TextEventData): void {
+    console.debug('[useStreamAssist] 忽略 text 事件（结构化模式）')
+  }
+
+  /**
+   * 处理结构化事件数据
+   */
+  function handleStructuredEventData(data: StructuredEventData): void {
+    try {
+      structuredData.value = data
+      if (data.assistType) {
+        currentAssistType.value = data.assistType
+      }
+    } catch (e) {
+      console.error('[useStreamAssist] 处理结构化数据失败:', e)
     }
   }
 
@@ -278,12 +267,12 @@ export function useStreamAssist(sessionId: string) {
   return {
     // 状态
     isRequesting,
-    textContent,
-    deltaText,
     assistRemaining,
     totalDurationMs,
     error,
     hasRemaining,
+    currentAssistType,
+    structuredData,
 
     // 方法
     requestAssist,

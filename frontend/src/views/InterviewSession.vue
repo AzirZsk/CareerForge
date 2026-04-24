@@ -192,10 +192,12 @@
           <!-- 助手面板（冻结状态时显示） -->
           <AssistantPanel
             v-if="isFrozen"
-            :content="assistantContent"
+            :structured-data="streamAssist.structuredData.value"
+            :assist-type="streamAssist.currentAssistType.value"
             :is-loading="isAssistLoading"
             :assist-remaining="assistRemaining"
             :assist-limit="assistLimit"
+            :error-message="streamAssist.error.value"
             @return="handleResumeInterview"
             @assist="handleAssist"
           />
@@ -343,7 +345,6 @@ const interviewerStyleLabel = computed(() => {
 // 助手相关
 // ============================================================================
 
-const assistantContent = ref('')
 const isAssistLoading = ref(false)
 
 // ============================================================================
@@ -414,7 +415,6 @@ async function handleAssist(type: AssistType, question?: string) {
   // 冻结面试
   voiceInterview.freeze()
   isAssistLoading.value = true
-  assistantContent.value = ''
 
   try {
     await streamAssist.requestAssist({
@@ -428,14 +428,8 @@ async function handleAssist(type: AssistType, question?: string) {
   }
 }
 
-// 监听助手内容变化
-watch(() => streamAssist.textContent.value, (content) => {
-  assistantContent.value = content
-})
-
 function handleResumeInterview() {
   voiceInterview.resumeInterview()
-  assistantContent.value = ''
 }
 
 /**

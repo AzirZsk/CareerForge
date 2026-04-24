@@ -63,7 +63,7 @@ public class PreparationPromptProperties {
         | culture | string | 是 | 企业文化（价值观、工作氛围） | 50-100字 |
         | techStack | array | 是 | 技术栈列表（根据公司业务推断） | 5-10条 |
         | interviewCharacteristics | array | 是 | 面试特点（面试风格、流程特点） | 3-5条 |
-        | recentNews | array | 是 | 最新动态（近期新闻、发展方向） | 2-3条 |
+        | recentNews | array | 否 | 最新动态（近期新闻、发展方向） | 2-3条 |
 
         ---
 

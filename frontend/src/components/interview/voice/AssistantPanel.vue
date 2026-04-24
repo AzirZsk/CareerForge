@@ -3,8 +3,11 @@
     <!-- 面板头部 -->
     <div class="panel-header">
       <div class="header-left">
-        <font-awesome-icon icon="fa-solid fa-robot" class="icon" />
-        <span class="title">AI 助手</span>
+        <font-awesome-icon :icon="headerConfig.icon" class="icon" :style="{ color: headerConfig.color }" />
+        <div class="header-text">
+          <span class="title">{{ headerConfig.title }}</span>
+          <span class="desc">{{ headerConfig.desc }}</span>
+        </div>
       </div>
       <button class="close-btn" @click="handleReturn">返回面试</button>
     </div>
@@ -14,12 +17,21 @@
       <!-- 加载状态 -->
       <div v-if="isLoading" class="loading-state">
         <div class="spinner"></div>
-        <p>正在思考中...</p>
+        <p>{{ loadingText }}</p>
       </div>
 
-      <!-- 回复内容 -->
-      <div v-else-if="content" class="response-content">
-        <div class="text-content" v-html="formattedContent"></div>
+      <!-- 结构化内容 -->
+      <div v-else-if="structuredData" class="response-content">
+        <AssistHintsContent v-if="assistType === 'give_hints'" :data="structuredData.content" />
+        <AssistExplainContent v-else-if="assistType === 'explain_concept'" :data="structuredData.content" />
+        <AssistPolishContent v-else-if="assistType === 'polish_answer'" :data="structuredData.content" />
+        <AssistFreeQuestionContent v-else-if="assistType === 'free_question'" :data="structuredData.content" />
+      </div>
+
+      <!-- 错误状态 -->
+      <div v-else-if="errorMessage" class="error-state">
+        <font-awesome-icon icon="fa-solid fa-circle-exclamation" class="error-icon" />
+        <p>{{ errorMessage }}</p>
       </div>
 
       <!-- 空状态 -->
@@ -43,21 +55,53 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import QuickAssistButtons from './QuickAssistButtons.vue'
-import type { AssistType } from '@/types/interview-voice'
+import AssistHintsContent from './assist/AssistHintsContent.vue'
+import AssistExplainContent from './assist/AssistExplainContent.vue'
+import AssistPolishContent from './assist/AssistPolishContent.vue'
+import AssistFreeQuestionContent from './assist/AssistFreeQuestionContent.vue'
+import type { AssistType, StructuredEventData } from '@/types/interview-voice'
+
+// 类型头部配置
+interface HeaderConfig {
+  icon: string
+  title: string
+  desc: string
+  color: string
+}
+
+const HEADER_MAP: Record<string, HeaderConfig> = {
+  give_hints: { icon: 'fa-solid fa-lightbulb', title: '思路提示', desc: '帮你梳理答题方向', color: '#60a5fa' },
+  explain_concept: { icon: 'fa-solid fa-book-open', title: '概念解析', desc: '用通俗语言解释术语', color: '#34d399' },
+  polish_answer: { icon: 'fa-solid fa-pen-fancy', title: '回答润色', desc: '优化你的表达方式', color: '#d4a853' },
+  free_question: { icon: 'fa-solid fa-comments', title: 'AI 回答', desc: '为你解答疑问', color: '#a1a1aa' }
+}
+
+const DEFAULT_HEADER: HeaderConfig = { icon: 'fa-solid fa-robot', title: 'AI 助手', desc: '', color: '#a1a1aa' }
+
+const LOADING_TEXT_MAP: Record<string, string> = {
+  give_hints: '正在分析问题，整理思路...',
+  explain_concept: '正在解析概念...',
+  polish_answer: '正在润色你的回答...',
+  free_question: '正在思考回答...'
+}
 
 // Props
 interface Props {
-  content?: string
+  structuredData?: StructuredEventData | null
+  assistType?: AssistType | null
   isLoading?: boolean
   assistRemaining?: number
   assistLimit?: number
+  errorMessage?: string | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  content: '',
+  structuredData: null,
+  assistType: null,
   isLoading: false,
   assistRemaining: 5,
-  assistLimit: 5
+  assistLimit: 5,
+  errorMessage: null
 })
 
 // Emits
@@ -66,13 +110,20 @@ const emit = defineEmits<{
   assist: [type: AssistType, question?: string]
 }>()
 
-// 格式化内容（支持 Markdown）
-const formattedContent = computed(() => {
-  if (!props.content) return ''
-  return props.content
-    .split('\n')
-    .map(line => `<p>${line}</p>`)
-    .join('')
+// 头部配置
+const headerConfig = computed(() => {
+  if (props.assistType && HEADER_MAP[props.assistType]) {
+    return HEADER_MAP[props.assistType]
+  }
+  return DEFAULT_HEADER
+})
+
+// loading 文案
+const loadingText = computed(() => {
+  if (props.assistType && LOADING_TEXT_MAP[props.assistType]) {
+    return LOADING_TEXT_MAP[props.assistType]
+  }
+  return '正在思考中...'
 })
 
 // 返回面试
@@ -114,10 +165,21 @@ function handleAssist(type: AssistType, question?: string) {
       font-size: 1.25rem;
     }
 
+    .header-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
     .title {
       font-weight: $weight-semibold;
       font-size: $text-base;
       color: $color-text-primary;
+    }
+
+    .desc {
+      font-size: 12px;
+      color: $color-text-tertiary;
     }
   }
 
@@ -131,6 +193,7 @@ function handleAssist(type: AssistType, question?: string) {
     font-size: $text-sm;
     font-weight: $weight-medium;
     transition: all $transition-fast;
+    flex-shrink: 0;
 
     &:hover {
       opacity: 0.9;
@@ -168,14 +231,26 @@ function handleAssist(type: AssistType, question?: string) {
   }
 
   .response-content {
-    .text-content {
-      line-height: $leading-relaxed;
-      color: $color-text-primary;
-      font-size: $text-sm;
+    // 结构化组件自带样式
+  }
 
-      p {
-        margin-bottom: $spacing-md;
-      }
+  .error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: $spacing-sm;
+    color: $color-error;
+
+    .error-icon {
+      font-size: 2rem;
+      opacity: 0.6;
+    }
+
+    p {
+      font-size: $text-sm;
+      color: $color-text-secondary;
     }
   }
 

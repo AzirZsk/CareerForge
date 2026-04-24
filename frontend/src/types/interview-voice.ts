@@ -82,12 +82,12 @@ export interface TTSChunk {
 // ============================================================================
 
 /** SSE 事件类型 */
-export type SSEEventType = 'text' | 'done' | 'error'
+export type SSEEventType = 'text' | 'structured' | 'done' | 'error'
 
 /** SSE 事件基础接口 */
 export interface AssistSSEEvent {
   type: SSEEventType
-  data: TextEventData | DoneEventData | ErrorEventData
+  data: TextEventData | StructuredEventData | DoneEventData | ErrorEventData
 }
 
 /** 文本事件数据 */
@@ -96,6 +96,14 @@ export interface TextEventData {
   content: string
   /** 是否增量文本 */
   isDelta: boolean
+}
+
+/** 结构化事件数据 */
+export interface StructuredEventData {
+  /** 求助类型 code */
+  assistType: AssistType
+  /** 结构化内容（按类型不同，实际类型由 assistType 决定） */
+  content: Record<string, any>
 }
 
 /** 完成事件数据 */
@@ -112,6 +120,62 @@ export interface ErrorEventData {
   code: string
   /** 错误信息 */
   message: string
+}
+
+// ============================================================================
+// 求助结构化数据
+// ============================================================================
+
+/** 提示思路数据 */
+export interface HintsData {
+  /** 思路总结 */
+  summary: string
+  /** 思考步骤 */
+  thinkingSteps: string[]
+  /** 关键知识点 */
+  keyPoints: string[]
+  /** 建议的回答结构 */
+  answerStructure: string
+}
+
+/** 解释概念数据 */
+export interface ExplainData {
+  /** 概念定义 */
+  definition: string
+  /** 类比理解 */
+  analogy: string
+  /** 应用场景 */
+  applications: string[]
+  /** 代码示例（可选） */
+  codeExample?: string
+  /** 总结 */
+  summary: string
+}
+
+/** 润色答案数据 */
+export interface PolishData {
+  /** 润色后的回答 */
+  polishedAnswer: string
+  /** 改进要点 */
+  improvements: Array<{ point: string; before: string; after: string }>
+  /** 面试建议 */
+  tips: string[]
+}
+
+/** 自由提问数据 */
+export interface FreeQuestionData {
+  /** AI 回答 */
+  answer: string
+  /** 建议 */
+  suggestions: string[]
+  /** 相关话题 */
+  relatedTopics?: string[]
+}
+
+/** 降级纯文本数据 */
+export interface FallbackData {
+  /** 降级文本 */
+  fallbackText: string
 }
 
 // ============================================================================
