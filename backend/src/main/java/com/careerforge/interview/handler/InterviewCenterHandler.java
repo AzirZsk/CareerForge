@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.careerforge.common.enums.InterviewSource;
 import com.careerforge.common.enums.InterviewStatus;
 import com.careerforge.common.exception.BusinessException;
+import com.careerforge.common.util.SecurityUtils;
 import com.careerforge.common.response.PageResponse;
 import com.careerforge.company.entity.Company;
 import com.careerforge.company.service.CompanyService;
@@ -116,6 +117,7 @@ public class InterviewCenterHandler {
             jobPositionId = findOrCreateJobPosition(request.getCompanyName(), request.getPosition(), request.getJdContent());
         }
         Interview interview = new Interview();
+        interview.setUserId(SecurityUtils.getCurrentUserId());
         interview.setSource(InterviewSource.REAL.getCode());
         interview.setStatus("preparing");
         // company 和 position 通过 jobPositionId 关联查询，不再冗余存储

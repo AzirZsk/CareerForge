@@ -226,9 +226,12 @@ public class InterviewerAgentHandler {
         }
         InterviewPhaseEnum phase = state.getPhase();
         if (phase == InterviewPhaseEnum.WAITING_SELF_INTRODUCTION) {
-            log.info("[InterviewerAgent] 自我介绍完成，进入提问阶段, sessionId={}", sessionId);
-            state.setPhase(InterviewPhaseEnum.ASKING_QUESTIONS);
-            generateNextQuestion(sessionId);
+            log.info("[InterviewerAgent] 自我介绍完成，进入回应阶段, sessionId={}", sessionId);
+            state.setPhase(InterviewPhaseEnum.SELF_INTRO_RESPONSE);
+            generateSelfIntroResponse(sessionId, text);
+        } else if (phase == InterviewPhaseEnum.SELF_INTRO_RESPONSE) {
+            // AI正在回应自我介绍，忽略候选人输入
+            log.debug("[InterviewerAgent] 自我介绍回应中，忽略候选人输入, sessionId={}", sessionId);
         } else if (phase == InterviewPhaseEnum.ASKING_QUESTIONS) {
             log.debug("[InterviewerAgent] 提问阶段，处理候选人回答, sessionId={}", sessionId);
             generateInterviewerReply(sessionId, text);
@@ -264,6 +267,35 @@ public class InterviewerAgentHandler {
         log.info("[InterviewerAgent] 使用 LLM 动态生成自我介绍开场白, sessionId={}", sessionId);
         Flux<String> llmStream = callLLMStream(systemPrompt, userPrompt);
         synthesizeStreamAndSend(sessionId, llmStream);
+    }
+
+    /**
+     * 生成自我介绍后的个性化回应（流式），回应完成后自然过渡到第一个问题
+     */
+    private void generateSelfIntroResponse(String sessionId, String selfIntroText) {
+        log.debug("[InterviewerAgent] 生成自我介绍回应, sessionId={}", sessionId);
+        ConversationContext context = getOrCreateContext(sessionId);
+        SessionState state = requireSession(sessionId);
+        VoiceInterviewPromptProperties.InterviewerStyleConfig styleConfig =
+                voicePromptProperties.getByStyle(state.getInterviewerStyle());
+        String systemPrompt = styleConfig.getSystemPrompt();
+        String userPrompt = styleConfig.getSelfIntroResponsePromptTemplate()
+                .replace("{position}", context.getPosition())
+                .replace("{jdRequirements}", formatJDRequirements(context.getJdContent()))
+                .replace("{resumeSummary}", formatResumeSummary(context.getResumeContent()))
+                .replace("{candidateSelfIntro}", selfIntroText);
+        try {
+            Flux<String> llmStream = callLLMStream(systemPrompt, userPrompt);
+            synthesizeStreamAndSend(sessionId, llmStream, fullText -> {
+                log.info("[InterviewerAgent] 自我介绍回应完成，进入提问阶段, sessionId={}", sessionId);
+                state.setPhase(InterviewPhaseEnum.ASKING_QUESTIONS);
+                generateNextQuestion(sessionId);
+            });
+        } catch (Exception e) {
+            log.error("[InterviewerAgent] 自我介绍回应生成失败，直接进入提问, sessionId={}", sessionId, e);
+            state.setPhase(InterviewPhaseEnum.ASKING_QUESTIONS);
+            generateNextQuestion(sessionId);
+        }
     }
 
     /**
