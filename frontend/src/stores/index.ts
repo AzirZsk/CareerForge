@@ -4,7 +4,7 @@
 // =====================================================
 
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import * as userApi from '@/api/user'
 import * as resumeApi from '@/api/resume'
 import * as statisticsApi from '@/api/statistics'
@@ -17,9 +17,6 @@ import type {
   ResumeDetail,
   ResumeSuggestion,
   ResumeSuggestionsGroup,
-  Interview,
-  InterviewQuestions,
-  InterviewDetail,
   Statistics,
   Job,
   UserUpdateInfo,
@@ -49,15 +46,6 @@ export const useAppStore = defineStore('app', () => {
   const suggestionsByResume = ref<ResumeSuggestionsGroup[]>([])
   const primaryResume = ref<PrimaryResumeVO | null>(null)
 
-  // 面试相关
-  const interviews = ref<Interview[]>([])
-  const questions = ref<InterviewQuestions>({ technical: [], behavioral: [] })
-  const currentInterview = ref<InterviewDetail>({
-    id: '', type: 'technical', position: '', company: '',
-    date: '', duration: 0, score: 0, conversation: [],
-    analysis: { strengths: [], weaknesses: [], overallFeedback: '' }
-  })
-
   // 统计数据
   const stats = ref<Statistics>({
     overview: {
@@ -81,16 +69,6 @@ export const useAppStore = defineStore('app', () => {
   const sidebarCollapsed = ref<boolean>(false)
 
   // 计算属性
-  const recentInterviews = computed(() => {
-    return interviews.value.slice(0, 3)
-  })
-
-  const averageInterviewScore = computed(() => {
-    if (interviews.value.length === 0) return 0
-    const sum = interviews.value.reduce((acc: number, i: Interview) => acc + i.score, 0)
-    return Math.round(sum / interviews.value.length)
-  })
-
   // 方法
   function setActiveNav(nav: string): void {
     activeNav.value = nav
@@ -103,10 +81,6 @@ export const useAppStore = defineStore('app', () => {
   function updateUserInfo(info: UserUpdateInfo): void {
     user.value = { ...user.value, ...info }
     localStorage.setItem('user', JSON.stringify(user.value))
-  }
-
-  function addInterview(interview: Interview): void {
-    interviews.value.unshift(interview)
   }
 
   // 检查用户是否存在
@@ -551,21 +525,14 @@ export const useAppStore = defineStore('app', () => {
     suggestions,
     suggestionsByResume,
     primaryResume,
-    interviews,
-    questions,
-    currentInterview,
     stats,
     jobs,
     activeNav,
     sidebarCollapsed,
-    // 计算属性
-    recentInterviews,
-    averageInterviewScore,
     // 方法
     setActiveNav,
     toggleSidebar,
     updateUserInfo,
-    addInterview,
     checkUserExists,
     initUser,
     fetchPrimaryResume,

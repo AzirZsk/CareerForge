@@ -26,13 +26,12 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
-import java.io.ByteArrayOutputStream;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 /**
  * 面试官 Agent 处理器
@@ -467,7 +466,7 @@ public class InterviewerAgentHandler {
         synthesizeStreamAndSend(sessionId, textStream, null);
     }
 
-    private void synthesizeStreamAndSend(String sessionId, Flux<String> textStream, java.util.function.Consumer<String> onCompleteCallback) {
+    private void synthesizeStreamAndSend(String sessionId, Flux<String> textStream, Consumer<String> onCompleteCallback) {
         log.info("[InterviewerAgent] 开始流式合成, sessionId={}", sessionId);
         ConversationContext context = getOrCreateContext(sessionId);
         boolean fullVoice = isFullVoiceMode(sessionId);

@@ -75,15 +75,6 @@ const routes: RouteRecordRaw[] = [
       },
     ]
   },
-  // ==================== 旧路由重定向（兼容性） ====================
-  {
-    path: '/interview',
-    redirect: '/interview-center'
-  },
-  {
-    path: '/interview/:id',
-    redirect: '/interview-center/:id'
-  },
   // ==================== 个人中心 ====================
   {
     path: '/profile',

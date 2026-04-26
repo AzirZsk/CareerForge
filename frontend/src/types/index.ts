@@ -277,79 +277,6 @@ export interface ResumeSuggestionsGroup {
   suggestions: ResumeSuggestion[]
 }
 
-// 面试类型
-export type InterviewType = 'technical' | 'behavioral'
-
-// 面试状态
-export type InterviewStatus = 'completed' | 'in_progress'
-
-// 面试记录
-export interface Interview {
-  id: string
-  type: InterviewType
-  position: string
-  company: string
-  date: string
-  duration: number
-  score: number
-  status: InterviewStatus
-  questions: number
-  correctAnswers: number
-}
-
-// 面试问题难度
-export type QuestionDifficulty = 'easy' | 'medium' | 'hard'
-
-// 面试题目
-export interface InterviewQuestion {
-  id: string
-  category: string
-  difficulty: QuestionDifficulty
-  question: string
-  followUp: string
-  keyPoints: string[]
-  sampleAnswer: string
-}
-
-// 面试问题分类
-export interface InterviewQuestions {
-  technical: InterviewQuestion[]
-  behavioral: InterviewQuestion[]
-}
-
-// 对话角色
-export type ConversationRole = 'interviewer' | 'candidate'
-
-// 面试对话
-export interface Conversation {
-  id: string
-  role: ConversationRole
-  content: string
-  timestamp: string
-  score?: number
-  feedback?: string
-}
-
-// 面试分析
-export interface InterviewAnalysis {
-  strengths: string[]
-  weaknesses: string[]
-  overallFeedback: string
-}
-
-// 面试详情
-export interface InterviewDetail {
-  id: string
-  type: InterviewType
-  position: string
-  company: string
-  date: string
-  duration: number
-  score: number
-  conversation: Conversation[]
-  analysis: InterviewAnalysis
-}
-
 // 周进度
 export interface WeeklyProgress {
   week: string
@@ -408,31 +335,6 @@ export interface NavItem {
   path: string
   icon: string
   badge?: string
-}
-
-// 面试设置
-export interface InterviewSettings {
-  position: string
-  difficulty: QuestionDifficulty
-  questionCount: number
-}
-
-// 会话问题
-export interface SessionQuestion {
-  id: string
-  category: string
-  question: string
-  keyPoints: string[]
-}
-
-// 会话消息
-export interface SessionMessage {
-  id: string
-  role: ConversationRole
-  content: string
-  timestamp: Date
-  score?: number
-  feedback?: string
 }
 
 // 用户信息更新
