@@ -22,6 +22,11 @@ public class SessionState {
     private String position;
 
     /**
+     * 面试公司名称
+     */
+    private String companyName;
+
+    /**
      * 职位描述（JD）内容
      */
     private String jdContent;

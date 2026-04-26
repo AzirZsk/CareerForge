@@ -23,6 +23,11 @@ public class PreGenerateContext {
     private String position;
 
     /**
+     * 面试公司名称
+     */
+    private String companyName;
+
+    /**
      * JD 内容
      */
     private String jdContent;

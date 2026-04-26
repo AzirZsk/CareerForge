@@ -261,6 +261,7 @@ public class InterviewerAgentHandler {
                 voicePromptProperties.getByStyle(state.getInterviewerStyle());
         String systemPrompt = styleConfig.getSystemPrompt();
         String userPrompt = styleConfig.getSelfIntroPromptTemplate()
+                .replace("{companyName}", context.getCompanyName() != null ? context.getCompanyName() : "")
                 .replace("{position}", context.getPosition())
                 .replace("{jdRequirements}", formatJDRequirements(context.getJdContent()))
                 .replace("{resumeSummary}", formatResumeSummary(context.getResumeContent()));
@@ -535,6 +536,7 @@ public class InterviewerAgentHandler {
             SessionState state = voiceGateway.getInternalState(k);
             if (state != null) {
                 ctx.setPosition(state.getPosition() != null ? state.getPosition() : "Java 开发工程师");
+                ctx.setCompanyName(state.getCompanyName());
                 ctx.setJdContent(state.getJdContent());
                 ctx.setResumeContent(state.getResumeContent());
             }
@@ -620,20 +622,19 @@ public class InterviewerAgentHandler {
      * 结束面试
      */
     public void endInterview(String sessionId) {
-        log.info("[InterviewerAgent] 结束面试, sessionId={}", sessionId);
+        log.info("[InterviewerAgent] 所有问题完成，结束面试, sessionId={}", sessionId);
         SessionState state = voiceGateway.getInternalState(sessionId);
         if (state == null) {
             log.warn("[InterviewerAgent] 会话不存在, sessionId={}", sessionId);
             return;
         }
-        // 标记面试完成
-        state.setPhase(InterviewPhaseEnum.COMPLETED);
-        state.complete();
-        // 生成结束语
+        // 生成结束语并语音播报
         String closingText = "好的，今天的面试就到这里。感谢你的时间，我们会尽快联系你。";
         log.info("[InterviewerAgent] 面试结束: {}, sessionId={}", closingText, sessionId);
         recordInterviewerMessage(sessionId, closingText);
         synthesizeAndSend(sessionId, closingText, true);
+        // 委托 Gateway 完成后续收尾：保存结果 + 触发复盘分析 + 通知前端 + 清理资源
+        voiceGateway.endInterview(sessionId);
     }
 
     /**

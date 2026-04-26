@@ -511,7 +511,11 @@ const aiAnalysisEntryHint = computed(() => {
 })
 
 function goBack() {
-  router.back()
+  if (interview.value?.jobPositionId) {
+    router.push(`/interview-center/position/${interview.value.jobPositionId}`)
+  } else {
+    router.back()
+  }
 }
 
 async function togglePreparation(preparationId: string) {
@@ -792,7 +796,7 @@ async function createSessionAndNavigate() {
       regenerateQuestions: config.regenerateQuestions
     })
     router.push({
-      path: `/interview-center/${response.interviewId}/mock/${response.sessionId}`,
+      path: `/interview-center/${route.params.id}/mock/${response.sessionId}`,
       query: {
         position: response.position,
         interviewerStyle: config.interviewerStyle,

@@ -504,6 +504,11 @@ export function useInterviewVoice(sessionId: string) {
   function handleChunkStart(chunkDuration: number): void {
     if (!isFullVoice()) return
     accumulatedAudioDuration += chunkDuration
+    // 音频正常到达，重置回退定时器（TTS 没有失败，不需要回退）
+    if (textFallbackTimer && isTextStreamDone) {
+      clearTextFallbackTimer()
+      startTextFallbackTimer()
+    }
     // 第一个音频 chunk 到达且缓冲有文字时，启动释放定时器
     if (!revealTimer && textGateBuffer.length > 0) {
       revealTimer = window.setInterval(revealTick, REVEAL_INTERVAL_MS)

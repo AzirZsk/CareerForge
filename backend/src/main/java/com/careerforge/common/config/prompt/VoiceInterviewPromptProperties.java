@@ -197,6 +197,10 @@ private InterviewerStyleConfig createProfessionalConfig() {
     config.setSelfIntroPromptTemplate("""
             你正在面试一位应聘 {position} 的候选人。
 
+            <company_name>
+            {companyName}
+            </company_name>
+
             <jd_requirements>
             {jdRequirements}
             </jd_requirements>
@@ -212,6 +216,7 @@ private InterviewerStyleConfig createProfessionalConfig() {
             **要求**：
             - 30-60字，自然口语
             - 简单打招呼 + 提到岗位名称
+            - 如果 <company_name> 中提供了公司名称，自然地提到你代表该公司进行面试
             - 最后请对方做自我介绍
             - 语气正式但不生硬
             - 不要用"你好，欢迎来到面试"这种套话
@@ -356,6 +361,10 @@ private InterviewerStyleConfig createFriendlyConfig() {
 
             你正在面试一位应聘 {position} 的候选人。
 
+            <company_name>
+            {companyName}
+            </company_name>
+
             <jd_requirements>
             {jdRequirements}
             </jd_requirements>
@@ -372,6 +381,7 @@ private InterviewerStyleConfig createFriendlyConfig() {
             - 40-80字，自然口语，像聊天一样
             - 先轻松打招呼或寒暄一句
             - 可以提到岗位或对方简历里的亮点
+            - 如果 <company_name> 中提供了公司名称，自然地提到你代表该公司进行面试
             - 最后请对方做自我介绍
             - 语气要让人放松，不要有压迫感
             """);
@@ -517,6 +527,10 @@ private InterviewerStyleConfig createChallengingConfig() {
 
             你正在面试一位应聘 {position} 的候选人。
 
+            <company_name>
+            {companyName}
+            </company_name>
+
             <jd_requirements>
             {jdRequirements}
             </jd_requirements>
@@ -531,7 +545,7 @@ private InterviewerStyleConfig createChallengingConfig() {
 
             **要求**：
             - 20-40字，简洁有力
-            - 不需要寒暄，直接报岗位名称
+            - 不需要寒暄，直接报岗位名称和公司名称（如果 <company_name> 中提供了）
             - 最后请对方做自我介绍
             - 语气要有压迫感但保持专业
             - 不要有多余的客套话
@@ -1018,6 +1032,7 @@ return config;
          * 自我介绍请求的 LLM 用户提示词模板（动态生成开场白）
          * 占位符:
          * - {position} - 面试岗位
+         * - {companyName} - 面试公司名称（可能为空）
          * - {jdRequirements} - JD 核心要求
          * - {resumeSummary} - 候选人简历摘要
          */

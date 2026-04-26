@@ -25,6 +25,11 @@ public class ConversationContext {
      * 面试岗位名称
      */
     private String position;
+
+    /**
+     * 面试公司名称
+     */
+    private String companyName;
     /**
      * 职位描述（JD）内容
      */

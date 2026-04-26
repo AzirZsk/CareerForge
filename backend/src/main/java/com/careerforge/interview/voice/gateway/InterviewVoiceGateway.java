@@ -15,6 +15,8 @@ import com.careerforge.interview.voice.enums.MessageType;
 import com.careerforge.interview.voice.handler.InterviewerAgentHandler;
 import com.careerforge.interview.voice.service.QuestionPreGenerateService;
 import com.careerforge.interview.voice.service.VoiceSessionManager;
+import com.careerforge.company.entity.Company;
+import com.careerforge.company.service.CompanyService;
 import com.careerforge.jobposition.entity.JobPosition;
 import com.careerforge.jobposition.service.JobPositionService;
 import com.careerforge.resume.entity.Resume;
@@ -48,6 +50,7 @@ public class InterviewVoiceGateway {
     private final InterviewCenterHandler interviewCenterHandler;
     private final InterviewSessionService interviewSessionService;
     private final JobPositionService jobPositionService;
+    private final CompanyService companyService;
     private final ResumeService resumeService;
 
     // 会话状态：sessionId -> SessionState
@@ -67,6 +70,7 @@ public class InterviewVoiceGateway {
         // 验证并加载原始面试相关数据
         Interview originalInterview = validateAndGetInterview(request.getInterviewId());
         JobPosition jobPosition = validateAndGetJobPosition(originalInterview);
+        String companyName = resolveCompanyName(jobPosition);
 
         // 创建独立的模拟面试 Interview 记录
         Interview mockInterview = createMockInterviewRecord(originalInterview);
@@ -83,14 +87,14 @@ public class InterviewVoiceGateway {
                 sessionId, mockInterviewId, jobPosition.getTitle());
 
         // 初始化内存状态（使用新的模拟面试 Interview ID）
-        initSessionState(sessionId, mockInterviewId, jobPosition, resumeContent, session);
+        initSessionState(sessionId, mockInterviewId, jobPosition, resumeContent, session, companyName);
 
         // 决定问题生成策略：重新生成 or 复用历史
         boolean regenerate = request.getRegenerateQuestions() == null || request.getRegenerateQuestions();
         if (regenerate) {
-            preGenerateQuestions(sessionId, jobPosition, resumeContent, session);
+            preGenerateQuestions(sessionId, jobPosition, resumeContent, session, companyName);
         } else {
-            reuseOrGenerateQuestions(sessionId, jobPosition, resumeContent, session, request.getInterviewId());
+            reuseOrGenerateQuestions(sessionId, jobPosition, resumeContent, session, request.getInterviewId(), companyName);
         }
 
         // 返回创建结果（interviewId 为新创建的模拟面试 ID）
@@ -126,6 +130,20 @@ public class InterviewVoiceGateway {
             throw new BusinessException("关联的职位不存在");
         }
         return jobPosition;
+    }
+
+    /**
+     * 解析公司名称
+     *
+     * @param jobPosition 职位实体
+     * @return 公司名称，不存在则返回null
+     */
+    private String resolveCompanyName(JobPosition jobPosition) {
+        if (jobPosition.getCompanyId() == null || jobPosition.getCompanyId().isEmpty()) {
+            return null;
+        }
+        Company company = companyService.getById(jobPosition.getCompanyId());
+        return company != null ? company.getName() : null;
     }
 
     /**
@@ -209,10 +227,11 @@ public class InterviewVoiceGateway {
      * @param resumeContent 简历内容
      * @param session 会话实体
      */
-    private void initSessionState(String sessionId, String mockInterviewId, JobPosition jobPosition, String resumeContent, InterviewSession session) {
+    private void initSessionState(String sessionId, String mockInterviewId, JobPosition jobPosition, String resumeContent, InterviewSession session, String companyName) {
         SessionState state = new SessionState();
         state.setInterviewId(mockInterviewId);
         state.setPosition(jobPosition.getTitle());
+        state.setCompanyName(companyName);
         state.setJdContent(jobPosition.getJdContent());
         state.setResumeContent(resumeContent);
         state.setTotalQuestions(session.getTotalQuestions());
@@ -232,10 +251,11 @@ public class InterviewVoiceGateway {
      * @param resumeContent 简历内容
      * @param session 会话实体
      */
-    private void preGenerateQuestions(String sessionId, JobPosition jobPosition, String resumeContent, InterviewSession session) {
+    private void preGenerateQuestions(String sessionId, JobPosition jobPosition, String resumeContent, InterviewSession session, String companyName) {
         try {
             PreGenerateContext context = PreGenerateContext.builder()
                     .position(jobPosition.getTitle())
+                    .companyName(companyName)
                     .jdContent(jobPosition.getJdContent())
                     .resumeContent(resumeContent)
                     .totalQuestions(session.getTotalQuestions())
@@ -258,7 +278,7 @@ public class InterviewVoiceGateway {
      * @param session       新会话实体
      * @param interviewId   关联的面试ID
      */
-    private void reuseOrGenerateQuestions(String sessionId, JobPosition jobPosition, String resumeContent, InterviewSession session, String interviewId) {
+    private void reuseOrGenerateQuestions(String sessionId, JobPosition jobPosition, String resumeContent, InterviewSession session, String interviewId, String companyName) {
         try {
             InterviewSession latestSession = interviewSessionService.getLatestSessionByRealInterviewId(interviewId);
             if (latestSession != null) {
@@ -280,7 +300,7 @@ public class InterviewVoiceGateway {
             log.warn("[VoiceGateway] 复用历史问题异常, 降级到重新生成", e);
         }
         // 降级：重新调用 LLM 生成
-        preGenerateQuestions(sessionId, jobPosition, resumeContent, session);
+        preGenerateQuestions(sessionId, jobPosition, resumeContent, session, companyName);
     }
 
     /**
