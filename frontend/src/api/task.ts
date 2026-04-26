@@ -54,3 +54,17 @@ export async function clearCompletedTasks(): Promise<void> {
     method: 'DELETE'
   })
 }
+
+/**
+ * 按业务ID查询任务
+ */
+export async function getTaskByBusinessId(params: {
+  businessId: string
+  taskType: TaskType
+}): Promise<AsyncTask | null> {
+  return request({
+    url: '/tasks/by-business',
+    method: 'GET',
+    params
+  })
+}

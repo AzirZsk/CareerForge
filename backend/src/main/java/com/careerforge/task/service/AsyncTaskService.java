@@ -148,6 +148,19 @@ public class AsyncTaskService extends ServiceImpl<AsyncTaskMapper, AsyncTask> {
     }
 
     /**
+     * 删除指定业务ID的所有异步任务
+     *
+     * @param businessId 业务关联ID（面试ID/简历ID）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteByBusinessId(String businessId) {
+        LambdaQueryWrapper<AsyncTask> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(AsyncTask::getBusinessId, businessId);
+        baseMapper.delete(wrapper);
+        log.info("[AsyncTask] 删除业务关联任务: businessId={}", businessId);
+    }
+
+    /**
      * 获取业务关联的任务
      */
     public AsyncTask getByBusinessId(String businessId, TaskType taskType) {

@@ -1,5 +1,6 @@
 package com.careerforge.interview.handler;
 
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -25,7 +26,10 @@ import com.careerforge.interview.service.InterviewReviewNoteService;
 import com.careerforge.interview.service.InterviewAIAnalysisService;
 import com.careerforge.interview.service.InterviewSessionService;
 import com.careerforge.interview.voice.entity.RecordingIndex;
+import com.careerforge.interview.voice.entity.AssistantConversation;
 import com.careerforge.interview.voice.mapper.RecordingIndexMapper;
+import com.careerforge.interview.voice.mapper.AssistantConversationMapper;
+import com.careerforge.interview.voice.service.RecordingService;
 import com.careerforge.jobposition.entity.JobPosition;
 import com.careerforge.jobposition.service.JobPositionService;
 import com.careerforge.resume.dto.ResumeDetailVO;
@@ -83,6 +87,8 @@ public class InterviewCenterHandler {
     private final InterviewAIAnalysisService aiAnalysisService;
     private final InterviewSessionService interviewSessionService;
     private final RecordingIndexMapper recordingIndexMapper;
+    private final AssistantConversationMapper assistantConversationMapper;
+    private final RecordingService recordingService;
     private final JobPositionService jobPositionService;
     private final CompanyService companyService;
     private final InterviewPreparationGraphService preparationGraphService;
@@ -232,7 +238,9 @@ public class InterviewCenterHandler {
     }
 
     /**
-     * 删除面试
+     * 删除面试（级联清理所有附属数据）
+     *
+     * @param id 真实面试ID
      */
     @Transactional(rollbackFor = Exception.class)
     public void deleteInterview(String id) {
@@ -241,10 +249,65 @@ public class InterviewCenterHandler {
         if (interview == null) {
             throw new BusinessException("面试不存在: " + id);
         }
+        // 删除真实面试自身的 AI 分析结果
+        aiAnalysisService.deleteByInterviewId(id);
+        // 查找并清理所有附属模拟面试
+        LambdaQueryWrapper<Interview> mockWrapper = new LambdaQueryWrapper<>();
+        mockWrapper.eq(Interview::getParentInterviewId, id)
+                .eq(Interview::getSource, InterviewSource.MOCK.getCode());
+        List<Interview> mockInterviews = interviewCenterService.list(mockWrapper);
+        for (Interview mockInterview : mockInterviews) {
+            String mockId = String.valueOf(mockInterview.getId());
+            deleteMockInterviewCascade(mockId);
+        }
+        // 删除真实面试自身的复盘笔记和准备事项
         reviewNoteService.deleteByInterviewId(id);
         preparationService.deleteByInterviewId(id);
+        // 删除真实面试自身
         interviewCenterService.removeById(id);
-        log.info("删除面试成功: id={}", id);
+        log.info("删除面试成功: id={}, 关联模拟面试数量={}", id, mockInterviews.size());
+    }
+
+    /**
+     * 级联删除模拟面试及其所有关联数据
+     *
+     * @param mockId 模拟面试ID
+     */
+    private void deleteMockInterviewCascade(String mockId) {
+        // 取消进行中的异步复盘分析任务
+        Disposable analysis = activeAnalyses.remove(mockId);
+        if (analysis != null && !analysis.isDisposed()) {
+            analysis.dispose();
+            log.info("取消进行中的复盘分析: mockId={}", mockId);
+        }
+        // 删除异步任务记录
+        asyncTaskService.deleteByBusinessId(mockId);
+        // 删除模拟面试的 AI 分析结果
+        aiAnalysisService.deleteByInterviewId(mockId);
+        // 查找关联的所有 Session 并清理附属数据
+        LambdaQueryWrapper<InterviewSession> sessionWrapper = new LambdaQueryWrapper<>();
+        sessionWrapper.eq(InterviewSession::getInterviewId, mockId);
+        List<InterviewSession> sessions = interviewSessionService.list(sessionWrapper);
+        for (InterviewSession session : sessions) {
+            String sessionId = String.valueOf(session.getId());
+            // 删除录音（数据库记录 + 磁盘文件）
+            recordingService.deleteRecordings(sessionId);
+            // 删除录音索引
+            LambdaQueryWrapper<RecordingIndex> indexWrapper = new LambdaQueryWrapper<>();
+            indexWrapper.eq(RecordingIndex::getSessionId, sessionId);
+            recordingIndexMapper.delete(indexWrapper);
+            // 删除求助对话记录
+            LambdaQueryWrapper<AssistantConversation> convWrapper = new LambdaQueryWrapper<>();
+            convWrapper.eq(AssistantConversation::getSessionId, sessionId);
+            assistantConversationMapper.delete(convWrapper);
+        }
+        // 删除所有 Session 记录
+        interviewSessionService.deleteByInterviewId(mockId);
+        // 删除模拟面试自身
+        LambdaQueryWrapper<Interview> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Interview::getId, mockId);
+        interviewCenterService.remove(wrapper);
+        log.info("级联删除模拟面试成功: mockId={}, session数量={}", mockId, sessions.size());
     }
 
     // ===== 工作流 SSE 方法 =====
@@ -506,6 +569,10 @@ public class InterviewCenterHandler {
             JobPosition jobPosition = jobPositionService.getById(interview.getJobPositionId());
             if (jobPosition != null) {
                 vo.setPosition(jobPosition.getTitle());
+                // 填充 JD 原文（Interview 为空时从 JobPosition 补数据）
+                if (StrUtil.isBlank(vo.getJdContent()) && jobPosition.getJdContent() != null) {
+                    vo.setJdContent(jobPosition.getJdContent());
+                }
                 // 填充 JD 分析数据（从 JobPosition 表获取）
                 vo.setJdAnalysis(jobPosition.getJdAnalysis());
                 Company company = companyService.getById(jobPosition.getCompanyId());

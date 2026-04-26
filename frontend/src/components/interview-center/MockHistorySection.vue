@@ -1,5 +1,6 @@
 <!--=====================================================
   模拟面试历史记录区域
+  支持自动检测异步分析状态、三态标签、轮询刷新
   @author Azir
 =====================================================-->
 
@@ -58,12 +59,25 @@
             <span class="tag tag-style">{{ styleLabel(session.interviewerStyle) }}</span>
             <span class="tag tag-mode">{{ modeLabel(session.voiceMode) }}</span>
             <span v-if="session.hasAnalysis" class="tag tag-analysis">已分析</span>
+            <span v-else-if="isAnalyzing(session.id)" class="tag tag-analyzing">
+              <span class="analyzing-dot"></span>
+              分析中
+            </span>
             <span v-else class="tag tag-pending">待分析</span>
           </div>
         </div>
 
         <div class="card-actions">
           <button
+            v-if="isAnalyzing(session.id)"
+            class="btn btn-detail btn-analyzing"
+            disabled
+          >
+            <div class="btn-spinner"></div>
+            分析中...
+          </button>
+          <button
+            v-else
             class="btn btn-detail"
             :disabled="!session.hasAnalysis"
             @click="emit('openDetail', session.id)"
@@ -86,9 +100,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getMockSessions } from '@/api/interview-center'
+import { getTaskByBusinessId } from '@/api/task'
 import type { MockSessionSummary } from '@/types/interview-center'
 
 const props = defineProps<{
@@ -103,7 +118,22 @@ const router = useRouter()
 const sessions = ref<MockSessionSummary[]>([])
 const loading = ref(true)
 
+// 异步分析状态追踪
+const analyzingMockId = ref<string | null>(null)
+let pollingTimer: ReturnType<typeof setInterval> | null = null
+
 onMounted(async () => {
+  await loadSessions()
+  // 加载完成后检查是否有正在进行的分析任务
+  checkPendingAnalysis()
+})
+
+onUnmounted(() => {
+  stopPolling()
+})
+
+async function loadSessions() {
+  loading.value = true
   try {
     sessions.value = await getMockSessions(props.interviewId)
   } catch (e) {
@@ -111,7 +141,79 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
-})
+}
+
+/**
+ * 检查是否有正在进行的异步分析任务
+ * 找到最新一条 hasAnalysis=false 的记录，查询其关联的 AsyncTask
+ */
+async function checkPendingAnalysis() {
+  // 找最新的未分析记录
+  const pending = sessions.value.find(s => !s.hasAnalysis)
+  if (!pending) return
+  try {
+    const task = await getTaskByBusinessId({
+      businessId: pending.id,
+      taskType: 'review_analysis'
+    })
+    if (task && (task.status === 'pending' || task.status === 'running')) {
+      analyzingMockId.value = pending.id
+      startPolling()
+    }
+  } catch (e) {
+    console.warn('检查异步分析任务失败:', e)
+  }
+}
+
+function startPolling() {
+  if (pollingTimer) return
+  pollingTimer = setInterval(async () => {
+    if (!analyzingMockId.value) {
+      stopPolling()
+      return
+    }
+    try {
+      const task = await getTaskByBusinessId({
+        businessId: analyzingMockId.value,
+        taskType: 'review_analysis'
+      })
+      if (!task || task.status === 'completed' || task.status === 'failed') {
+        stopPolling()
+        // 刷新列表（分析完成或失败，列表数据需要更新）
+        await loadSessions()
+        if (task?.status === 'failed') {
+          analyzingMockId.value = null
+        }
+      }
+    } catch (e) {
+      console.error('轮询分析任务状态失败:', e)
+      stopPolling()
+    }
+  }, 5000)
+}
+
+function stopPolling() {
+  if (pollingTimer) {
+    clearInterval(pollingTimer)
+    pollingTimer = null
+  }
+}
+
+function isAnalyzing(mockId: string): boolean {
+  return analyzingMockId.value === mockId
+}
+
+/**
+ * 刷新列表（供父组件调用）
+ */
+async function refresh() {
+  stopPolling()
+  analyzingMockId.value = null
+  await loadSessions()
+  checkPendingAnalysis()
+}
+
+defineExpose({ refresh })
 
 function formatDate(dateStr: string): string {
   if (!dateStr) return '--'
@@ -287,10 +389,26 @@ function goRecording(sessionId: string): void {
     color: $color-success;
   }
 
+  &.tag-analyzing {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(212, 168, 83, 0.15);
+    color: $color-accent;
+  }
+
   &.tag-pending {
     background: rgba(255, 255, 255, 0.05);
     color: $color-text-tertiary;
   }
+}
+
+.analyzing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: $color-accent;
+  animation: pulse-opacity 1.5s ease-in-out infinite;
 }
 
 .card-actions {
@@ -323,6 +441,10 @@ function goRecording(sessionId: string): void {
     }
   }
 
+  &.btn-analyzing {
+    gap: 6px;
+  }
+
   &.btn-recording {
     background: rgba(96, 165, 250, 0.15);
     color: #60a5fa;
@@ -331,6 +453,15 @@ function goRecording(sessionId: string): void {
       background: rgba(96, 165, 250, 0.25);
     }
   }
+}
+
+.btn-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(212, 168, 83, 0.3);
+  border-top-color: $color-accent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 
 @keyframes slideUp {
@@ -348,5 +479,10 @@ function goRecording(sessionId: string): void {
   to {
     transform: rotate(360deg);
   }
+}
+
+@keyframes pulse-opacity {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
 }
 </style>

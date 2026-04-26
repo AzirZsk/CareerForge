@@ -43,6 +43,18 @@ public class InterviewSessionService extends ServiceImpl<InterviewSessionMapper,
     }
 
     /**
+     * 删除指定面试关联的所有会话
+     *
+     * @param interviewId 面试ID
+     */
+    public void deleteByInterviewId(String interviewId) {
+        LambdaQueryWrapper<InterviewSession> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(InterviewSession::getInterviewId, interviewId);
+        this.remove(wrapper);
+        log.info("[InterviewSessionService] 删除面试关联会话: interviewId={}", interviewId);
+    }
+
+    /**
      * 获取同一面试下最近的、带有预生成问题的会话
      *
      * @param interviewId 面试ID

@@ -5,6 +5,7 @@ import com.careerforge.common.response.ApiResponse;
 import com.careerforge.task.dto.TaskVO;
 import com.careerforge.task.entity.AsyncTask;
 import com.careerforge.task.enums.TaskStatus;
+import com.careerforge.task.enums.TaskType;
 import com.careerforge.task.service.AsyncTaskService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -47,6 +48,25 @@ public class TaskController {
         result.put("list", voList);
         result.put("total", voList.size());
         return ApiResponse.success(result);
+    }
+
+    /**
+     * 按业务ID查询任务
+     */
+    @Operation(summary = "按业务ID查询任务")
+    @GetMapping("/by-business")
+    public ApiResponse<TaskVO> getTaskByBusiness(
+            @Parameter(description = "业务ID") @RequestParam String businessId,
+            @Parameter(description = "任务类型") @RequestParam String taskType) {
+        TaskType type = TaskType.fromCode(taskType);
+        if (type == null) {
+            return ApiResponse.error(400, "无效的任务类型");
+        }
+        AsyncTask task = asyncTaskService.getByBusinessId(businessId, type);
+        if (task == null) {
+            return ApiResponse.success(null);
+        }
+        return ApiResponse.success(asyncTaskService.toVO(task));
     }
 
     /**

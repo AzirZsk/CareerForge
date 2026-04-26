@@ -264,6 +264,10 @@
             <span class="completed-stat-label">求助次数</span>
           </div>
         </div>
+        <div class="completed-analysis-hint">
+          <div class="hint-spinner"></div>
+          <span>AI 正在后台分析面试表现，返回面试详情页可查看分析结果</span>
+        </div>
         <div class="completed-actions">
           <button class="completed-back-btn" @click="goBackToDetail">
             返回面试详情
@@ -1306,6 +1310,27 @@ function goBackToDetail(): void {
   font-weight: $weight-medium;
 }
 
+.completed-analysis-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+  margin-top: $spacing-lg;
+  padding: $spacing-sm $spacing-md;
+  color: $color-text-secondary;
+  font-size: 0.85rem;
+
+  .hint-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(212, 168, 83, 0.3);
+    border-top-color: $color-accent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    flex-shrink: 0;
+  }
+}
+
 .completed-actions {
   display: flex;
   justify-content: center;
@@ -1331,5 +1356,9 @@ function goBackToDetail(): void {
   &:active {
     transform: translateY(0);
   }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 </style>
