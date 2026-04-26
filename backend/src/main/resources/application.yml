@@ -12,7 +12,7 @@ spring:
       max-request-size: 100MB
   datasource:
     driver-class-name: org.sqlite.JDBC
-    url: jdbc:sqlite:./data/careerforge.db
+    url: jdbc:sqlite:./data/careerforge.db?journal_mode=WAL&busy_timeout=5000
     # SQLite 不需要用户名密码
   # Spring AI OpenAI 配置
   ai:

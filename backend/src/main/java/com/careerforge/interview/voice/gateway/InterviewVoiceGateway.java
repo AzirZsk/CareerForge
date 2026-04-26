@@ -461,24 +461,31 @@ public class InterviewVoiceGateway {
      */
     private void saveInterviewResult(String sessionId, String interviewId) {
         try {
+            // 从运行时状态提取统计数据（此时 sessionStates 未清理，数据可用）
+            SessionState state = sessionStates.get(sessionId);
+            int durationMinutes = state != null ? state.getElapsedTime() / 60 : 0;
+            int questionsAnswered = state != null ? state.getCurrentQuestion() : 0;
+            int assistCountUsed = state != null ? state.getAssistLimit() - state.getAssistRemaining() : 0;
             String conversationHistory = interviewerAgentHandler.getFullConversationHistory(sessionId);
-            // 保存 transcript 到 Interview
+            // 保存 transcript 及统计数据到 Interview
             if (interviewId != null && !conversationHistory.isEmpty()) {
                 Interview interview = interviewService.getById(interviewId);
                 if (interview != null) {
                     interview.setTranscript(conversationHistory);
                     interview.setStatus(InterviewStatus.COMPLETED.getValue());
+                    interview.setDuration(durationMinutes);
+                    interview.setQuestions(questionsAnswered);
                     interviewService.updateById(interview);
                     log.info("[VoiceGateway] 对话文本已保存, interviewId={}, length={}", interviewId, conversationHistory.length());
-                    // 传递已查询的 Interview 对象，避免重复查询
                     interviewCenterHandler.autoReviewAnalysis(interview);
                     log.info("[VoiceGateway] 已触发异步复盘分析, interviewId={}", interviewId);
                 }
             }
-            // 更新 InterviewSession 状态
+            // 更新 InterviewSession 状态及求助次数
             InterviewSession sessionRecord = interviewSessionService.getById(sessionId);
             if (sessionRecord != null) {
                 sessionRecord.setStatus(InterviewStatus.COMPLETED.getValue());
+                sessionRecord.setAssistCount(assistCountUsed);
                 interviewSessionService.updateById(sessionRecord);
             }
         } catch (Exception e) {
