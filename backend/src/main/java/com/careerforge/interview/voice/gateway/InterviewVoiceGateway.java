@@ -463,8 +463,9 @@ public class InterviewVoiceGateway {
         try {
             // 从运行时状态提取统计数据（此时 sessionStates 未清理，数据可用）
             SessionState state = sessionStates.get(sessionId);
+            log.info("[VoiceGateway] 保存面试结果, state={}", state);
             int durationMinutes = state != null ? state.getElapsedTime() / 60 : 0;
-            int questionsAnswered = state != null ? state.getCurrentQuestion() : 0;
+            int questionsAnswered = (state != null ? state.getCurrentQuestion() : 0) + 1;
             int assistCountUsed = state != null ? state.getAssistLimit() - state.getAssistRemaining() : 0;
             String conversationHistory = interviewerAgentHandler.getFullConversationHistory(sessionId);
             // 保存 transcript 及统计数据到 Interview
