@@ -205,7 +205,7 @@ public class AliyunTTSService implements TTSService {
     }
 
     private float resolveSpeechRate() {
-        return role == VoiceRole.INTERVIEWER ? 1.0f : 1.1f;
+        return role == VoiceRole.INTERVIEWER ? 1.1f : 1.1f;
     }
 
     private int resolveVolume() {

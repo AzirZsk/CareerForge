@@ -15,6 +15,11 @@ public enum InterviewPhaseEnum {
     WAITING_SELF_INTRODUCTION("waiting_self_introduction", "等待自我介绍"),
 
     /**
+     * 自我介绍回应中（AI对自我介绍内容做个性化回应）
+     */
+    SELF_INTRO_RESPONSE("self_intro_response", "自我介绍回应中"),
+
+    /**
      * 正在提问
      */
     ASKING_QUESTIONS("asking_questions", "正在提问"),

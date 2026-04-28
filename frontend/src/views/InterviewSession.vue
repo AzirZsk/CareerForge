@@ -6,10 +6,10 @@
 =====================================================-->
 
 <template>
-  <!-- 倒计时遮罩层 -->
-  <div v-if="showCountdown" class="countdown-overlay">
+  <!-- 倒计时遮罩层（仅开始面试时全屏显示） -->
+  <div v-if="showCountdown && !isResumeCountdown" class="countdown-overlay">
     <div class="countdown-content">
-      <div class="countdown-title">{{ isFrozen ? '面试即将继续' : '面试即将开始' }}</div>
+      <div class="countdown-title">面试即将开始</div>
       <div class="countdown-number">{{ countdown }}</div>
       <div class="countdown-hint">请准备好麦克风</div>
     </div>
@@ -177,12 +177,22 @@
           <Transition name="freeze">
             <div v-if="isFrozen" class="freeze-dim"></div>
           </Transition>
+
+          <!-- 恢复面试倒计时（对话框内显示） -->
+          <div v-if="showCountdown && isResumeCountdown" class="countdown-in-dialog">
+            <div class="countdown-content">
+              <div class="countdown-title">面试即将继续</div>
+              <div class="countdown-number">{{ countdown }}</div>
+              <div class="countdown-hint">请准备好麦克风</div>
+            </div>
+          </div>
         </main>
 
         <!-- 右侧面板 -->
         <aside class="side-panel animate-in" style="--delay: 3">
           <!-- 语音控制 -->
           <VoiceControls
+            v-if="!isFrozen"
             v-model="voiceMode"
             :status-text="statusText"
             :status-type="statusType"
@@ -226,6 +236,39 @@
             />
           </template>
         </aside>
+      </div>
+    </div>
+
+    <!-- ========================================
+      状态四：面试已完成
+    ======================================== -->
+    <div v-else-if="isCompletedState" class="completed-container">
+      <div class="completed-content">
+        <div class="completed-icon">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+        <h2 class="completed-title">面试已完成</h2>
+        <div class="completed-stats">
+          <div class="completed-stat-card">
+            <span class="completed-stat-value">{{ formatTime(elapsedTime) }}</span>
+            <span class="completed-stat-label">面试时长</span>
+          </div>
+          <div class="completed-stat-card">
+            <span class="completed-stat-value">{{ answeredQuestions }}/{{ totalQuestions }}</span>
+            <span class="completed-stat-label">回答题目</span>
+          </div>
+          <div class="completed-stat-card">
+            <span class="completed-stat-value">{{ usedAssistCount }}/{{ assistLimit }}</span>
+            <span class="completed-stat-label">求助次数</span>
+          </div>
+        </div>
+        <div class="completed-actions">
+          <button class="completed-back-btn" @click="goBackToDetail">
+            返回面试详情
+          </button>
+        </div>
       </div>
     </div>
 
@@ -317,18 +360,31 @@ const statusType = computed(() => {
 })
 
 
-// 面试是否已开始（非 idle 状态时隐藏语音模式切换）
+// 面试进行中（不包含 completed，completed 有独立 UI）
 const isInterviewStarted = computed(() => {
   return voiceInterview.sessionState.value === 'interviewing' ||
-         voiceInterview.sessionState.value === 'frozen' ||
-         voiceInterview.sessionState.value === 'completed'
+         voiceInterview.sessionState.value === 'frozen'
 })
+
+// 面试已完成（独立于面试 UI）
+const isCompletedState = computed(() => voiceInterview.sessionState.value === 'completed')
 
 // 准备中（预生成进行中）
 const isPreparing = computed(() => voiceInterview.sessionState.value === 'preparing')
 
 // 准备就绪（预生成完成，等待用户确认）
 const isReady = computed(() => voiceInterview.sessionState.value === 'ready')
+
+// 已回答题目数
+const answeredQuestions = computed(() => {
+  const current = currentQuestionIndex.value + 1
+  return Math.min(current, totalQuestions.value)
+})
+
+// 已使用求助次数
+const usedAssistCount = computed(() => {
+  return assistLimit.value - assistRemaining.value
+})
 
 // 面试官风格标签
 const interviewerStyleLabel = computed(() => {
@@ -358,6 +414,7 @@ const scrollAnchor = ref<HTMLElement | null>(null)
 // 倒计时相关
 const showCountdown = ref(false)
 const countdown = ref(3)
+const isResumeCountdown = ref(false)
 
 // 面试标题（从路由参数读取真实职位名）
 const interviewTitle = computed(() => (route.query.position as string) || '模拟面试')
@@ -385,6 +442,13 @@ const sessionBadgeText = computed(() => {
 // ============================================================================
 // 生命周期
 // ============================================================================
+
+// 监听后端自动结束（所有问题问完后推送 completed 状态）
+watch(isCompletedState, (completed) => {
+  if (completed) {
+    voiceInterview.dispose()
+  }
+})
 
 onMounted(() => {
   // 直接初始化语音面试（WebSocket 连接后会自动进入 preparing 状态）
@@ -429,6 +493,7 @@ async function handleAssist(type: AssistType, question?: string) {
 }
 
 function handleResumeInterview() {
+  isResumeCountdown.value = true
   showCountdown.value = true
   countdown.value = 3
 
@@ -437,6 +502,7 @@ function handleResumeInterview() {
     if (countdown.value <= 0) {
       clearInterval(timer)
       showCountdown.value = false
+      isResumeCountdown.value = false
       voiceInterview.resumeInterview()
     }
   }, 1000)
@@ -446,7 +512,7 @@ function handleResumeInterview() {
  * 开始面试（用户确认）
  */
 function handleStartInterview() {
-  // 开始倒计时
+  isResumeCountdown.value = false
   showCountdown.value = true
   countdown.value = 3
 
@@ -455,7 +521,6 @@ function handleStartInterview() {
     if (countdown.value <= 0) {
       clearInterval(timer)
       showCountdown.value = false
-      // 倒计时结束后发送开始控制消息
       voiceInterview.startInterview()
     }
   }, 1000)
@@ -472,12 +537,7 @@ function confirmEnd() {
 function handleEndInterview() {
   voiceInterview.endInterview()
   voiceInterview.dispose()
-  const interviewId = route.params.id as string
-  if (interviewId) {
-    router.push(`/interview-center/${interviewId}`)
-  } else {
-    router.push('/interview-center')
-  }
+  showEndModal.value = false
 }
 
 // ============================================================================
@@ -497,6 +557,15 @@ function formatMessageTime(timestamp: number): string {
 function goToQuestion(index: number): void {
   if (index <= currentQuestionIndex.value) {
     // voiceInterview 不支持跳转，这里只是视觉反馈
+  }
+}
+
+function goBackToDetail(): void {
+  const interviewId = route.params.id as string
+  if (interviewId) {
+    router.push(`/interview-center/${interviewId}`)
+  } else {
+    router.push('/interview-center')
   }
 }
 </script>
@@ -538,6 +607,22 @@ function goToQuestion(index: number): void {
   margin-top: $spacing-xl;
 }
 
+// 对话框内倒计时（恢复面试时）
+.countdown-in-dialog {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  border-radius: inherit;
+
+  .countdown-number {
+    font-size: 80px;
+  }
+}
+
 @keyframes pulse-scale {
   0%, 100% {
     transform: scale(1);
@@ -564,6 +649,7 @@ function goToQuestion(index: number): void {
   margin: 0 auto;
   padding: $spacing-lg;
   gap: $spacing-md;
+  min-height: 0;
 }
 
 // 头部
@@ -698,7 +784,7 @@ function goToQuestion(index: number): void {
 .main-content {
   flex: 1;
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 7fr 3fr;
   gap: $spacing-md;
   min-height: 0;
 }
@@ -791,6 +877,8 @@ function goToQuestion(index: number): void {
   display: flex;
   flex-direction: column;
   gap: $spacing-md;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .tool-card {
@@ -1131,5 +1219,117 @@ function goToQuestion(index: number): void {
 .freeze-enter-from,
 .freeze-leave-to {
   opacity: 0;
+}
+
+// ============================================================================
+// 面试已完成状态样式
+// ============================================================================
+
+.completed-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-2xl;
+  animation: fadeIn 0.4s ease;
+}
+
+.completed-content {
+  text-align: center;
+  max-width: 520px;
+  width: 100%;
+}
+
+.completed-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto $spacing-xl;
+  border-radius: 50%;
+  background: rgba(52, 211, 153, 0.15);
+  color: $color-success;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: completed-pop 0.5s ease;
+}
+
+@keyframes completed-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.completed-title {
+  font-family: $font-display;
+  font-size: $text-2xl;
+  font-weight: $weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-2xl;
+}
+
+.completed-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: $spacing-md;
+  margin-bottom: $spacing-2xl;
+}
+
+.completed-stat-card {
+  background: $color-bg-secondary;
+  border-radius: $radius-lg;
+  padding: $spacing-lg $spacing-md;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.completed-stat-value {
+  font-family: $font-display;
+  font-size: $text-xl;
+  font-weight: $weight-semibold;
+  color: $color-accent;
+}
+
+.completed-stat-label {
+  font-size: $text-xs;
+  color: $color-text-tertiary;
+  font-weight: $weight-medium;
+}
+
+.completed-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.completed-back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-md $spacing-2xl;
+  background: $gradient-gold;
+  color: $color-bg-deep;
+  font-size: $text-base;
+  font-weight: $weight-semibold;
+  border: none;
+  border-radius: $radius-md;
+  cursor: pointer;
+  transition: all $transition-fast;
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(212, 168, 83, 0.3);
+  }
+  &:active {
+    transform: translateY(0);
+  }
 }
 </style>

@@ -216,6 +216,28 @@ private InterviewerStyleConfig createProfessionalConfig() {
             - 语气正式但不生硬
             - 不要用"你好，欢迎来到面试"这种套话
             """);
+    config.setSelfIntroResponsePromptTemplate("""
+            你正在面试一位应聘 {position} 的候选人，对方刚完成了自我介绍。
+
+            <self_introduction>
+            {candidateSelfIntro}
+            </self_introduction>
+
+            <jd_requirements>
+            {jdRequirements}
+            </jd_requirements>
+
+            ---
+
+            请对候选人的自我介绍做一段简短的个性化回应，自然过渡到接下来的面试环节。
+
+            **要求**：
+            - 提到自我介绍中的1-2个关键点（如某个项目、某项技能），体现你认真听了
+            - 20-40字，口语化，像真实面试官
+            - 回应末尾用一句过渡语收尾，如"那我们开始吧"、"接下来聊些技术方面的问题"
+            - 不要评价自我介绍的好坏，只是提及内容
+            - 不要问任何具体的面试问题
+            """);
     return config;
 }
 private InterviewerStyleConfig createFriendlyConfig() {
@@ -352,6 +374,28 @@ private InterviewerStyleConfig createFriendlyConfig() {
             - 可以提到岗位或对方简历里的亮点
             - 最后请对方做自我介绍
             - 语气要让人放松，不要有压迫感
+            """);
+    config.setSelfIntroResponsePromptTemplate("""
+            你正在面试一位应聘 {position} 的候选人，对方刚完成了自我介绍。
+
+            <self_introduction>
+            {candidateSelfIntro}
+            </self_introduction>
+
+            <jd_requirements>
+            {jdRequirements}
+            </jd_requirements>
+
+            ---
+
+            请对候选人的自我介绍做一段温暖的回应，让对方感到被重视，自然过渡到接下来的面试。
+
+            **要求**：
+            - 具体提到自我介绍中的一个亮点，让对方感觉被认真对待
+            - 30-50字，口语化、温暖，像在聊天
+            - 可以表达一点兴趣，如"这个项目听起来挺有意思的"
+            - 回应末尾用温和的过渡语收尾，如"那我们开始聊聊吧"
+            - 不要问任何具体的面试问题
             """);
     return config;
 }
@@ -491,6 +535,28 @@ private InterviewerStyleConfig createChallengingConfig() {
             - 最后请对方做自我介绍
             - 语气要有压迫感但保持专业
             - 不要有多余的客套话
+            """);
+    config.setSelfIntroResponsePromptTemplate("""
+            你正在面试一位应聘 {position} 的候选人，对方刚完成了自我介绍。
+
+            <self_introduction>
+            {candidateSelfIntro}
+            </self_introduction>
+
+            <jd_requirements>
+            {jdRequirements}
+            </jd_requirements>
+
+            ---
+
+            请对候选人的自我介绍做一段简短确认，然后直接表示开始提问。
+
+            **要求**：
+            - 用一句话确认自我介绍中的一个关键点，如"五年后端经验，做过支付系统"
+            - 10-20字，简洁有力，不寒暄
+            - 直接表示开始提问，如"好，开始吧"、"那我们直接聊技术"
+            - 不要说"谢谢"或"很好"
+            - 不要问任何具体的面试问题
             """);
     return config;
 }
@@ -956,5 +1022,15 @@ return config;
          * - {resumeSummary} - 候选人简历摘要
          */
         private String selfIntroPromptTemplate;
+
+        /**
+         * 自我介绍后的个性化回应模板
+         * 占位符:
+         * - {position} - 面试岗位
+         * - {jdRequirements} - JD 核心要求
+         * - {resumeSummary} - 候选人简历摘要
+         * - {candidateSelfIntro} - 候选人的自我介绍文本
+         */
+        private String selfIntroResponsePromptTemplate;
     }
 }

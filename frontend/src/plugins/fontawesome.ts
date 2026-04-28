@@ -116,6 +116,11 @@ import {
   faPencilSquare // 默认
 } from '@fortawesome/free-solid-svg-icons'
 
+// 导入 Brands 图标
+import {
+  faGithub // GitHub
+} from '@fortawesome/free-brands-svg-icons'
+
 // 导入 Regular 图标
 import {
   faClock // 时钟
@@ -223,6 +228,8 @@ library.add(
   faPenFancy,
   faComment,
   faPencilSquare,
+  // Brands 图标
+  faGithub,
   // Regular 图标
   faClock,
   // Emoji 替换图标

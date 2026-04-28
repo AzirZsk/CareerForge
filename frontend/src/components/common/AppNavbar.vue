@@ -39,6 +39,17 @@
 
       <!-- 用户区域 -->
       <div class="user-area">
+        <!-- GitHub 仓库入口 -->
+        <a
+          class="icon-btn"
+          href="https://github.com/AzirZsk/CareerForge"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="GitHub"
+        >
+          <font-awesome-icon icon="fa-brands fa-github" />
+        </a>
+
         <!-- 通知按钮 -->
         <button
           class="icon-btn notification-btn"
