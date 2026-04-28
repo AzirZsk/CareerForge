@@ -81,6 +81,10 @@ coverage/
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
+# VitePress
+docs/.vitepress/dist
+docs/.vitepress/cache
+
 # TypeScript
 *.tsbuildinfo
 

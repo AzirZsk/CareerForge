@@ -1,0 +1,6 @@
+<svg width="800" height="500" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="500" fill="#1a1a1d"/>
+  <rect x="200" y="150" width="400" height="200" rx="12" fill="#111113" stroke="#333" stroke-width="1" stroke-dasharray="8 4"/>
+  <text x="400" y="240" text-anchor="middle" fill="#71717a" font-family="sans-serif" font-size="16">[截图待替换]</text>
+  <text x="400" y="270" text-anchor="middle" fill="#52525b" font-family="sans-serif" font-size="14">语音面试准备界面</text>
+</svg>
