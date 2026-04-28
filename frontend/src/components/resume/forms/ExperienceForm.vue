@@ -548,7 +548,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 import { useValidationInject } from '@/composables/useFormValidation'
 import DynamicListInput from './DynamicListInput.vue'
 
@@ -705,10 +705,9 @@ watch(
     }
     isSyncing = true
     emit('update:modelValue', data)
-    // 使用 nextTick 确保 Vue 完成更新后再重置标志
-    setTimeout(() => {
+    nextTick(() => {
       isSyncing = false
-    }, 0)
+    })
   },
   { deep: true }
 )

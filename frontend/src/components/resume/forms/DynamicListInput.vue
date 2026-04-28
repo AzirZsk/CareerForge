@@ -39,7 +39,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 
 interface Props {
   modelValue: string[]
@@ -61,11 +61,16 @@ const emit = defineEmits<Emits>()
 // 本地数据，用于 v-model 绑定
 const localValue = ref<string[]>([])
 
+// 防止自己 emit 的变更又触发 Watcher A 重新赋值，导致无限循环
+let isSyncing = false
+
 // 监听外部变化
 watch(
   () => props.modelValue,
   (newValue) => {
-    localValue.value = Array.isArray(newValue) ? [...newValue] : []
+    if (!isSyncing) {
+      localValue.value = Array.isArray(newValue) ? [...newValue] : []
+    }
   },
   { immediate: true }
 )
@@ -74,7 +79,11 @@ watch(
 watch(
   localValue,
   (newValue) => {
-    emit('update:modelValue', newValue.filter((item) => item.trim()))
+    isSyncing = true
+    emit('update:modelValue', [...newValue])
+    nextTick(() => {
+      isSyncing = false
+    })
   },
   { deep: true }
 )

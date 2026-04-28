@@ -250,8 +250,8 @@ onMounted(async () => {
 })
 
 function startInterview(): void {
-  router.push('/interview')
-  store.setActiveNav('interview')
+  router.push('/interview-center')
+  store.setActiveNav('interview-center')
 }
 
 function goToResume(): void {

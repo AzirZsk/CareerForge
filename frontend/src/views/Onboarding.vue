@@ -8,11 +8,7 @@
     <div class="onboarding-container">
       <!-- 欢迎区域 -->
       <div class="welcome-section">
-        <div class="logo">
-          <span class="logo-icon"><font-awesome-icon icon="fa-solid fa-bullseye" /></span>
-          <span class="logo-text">CareerForge</span>
-        </div>
-        <h1 class="welcome-title">
+<h1 class="welcome-title">
           欢迎使用 CareerForge
         </h1>
         <p class="welcome-subtitle">

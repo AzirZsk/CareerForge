@@ -388,24 +388,32 @@ public class ResumeHandler {
 
         log.info("批量应用优化变更（完全替换）: resumeId={}, 区块数量={}", resumeId, afterSections.size());
 
-        // 1. 删除该简历的所有现有区块（非版本快照）
+        // 1. 缓存旧 section 评分，删除后新 section 需要继承旧评分
+        List<ResumeSection> oldSections = resumeService.getResumeSections(resumeId);
+        Map<String, Integer> oldScoreMap = oldSections.stream()
+                .filter(s -> s.getScore() != null && s.getScore() > 0)
+                .collect(Collectors.toMap(ResumeSection::getId, ResumeSection::getScore, (a, b) -> b));
+
+        // 2. 删除该简历的所有现有区块
         resumeSectionService.deleteAllByResumeId(resumeId);
 
-        // 2. 根据传入数据创建新区块
+        // 3. 根据传入数据创建新区块，继承旧评分
         for (ApplyOptimizeRequest.SectionDataItem section : afterSections) {
-            resumeSectionService.create(
+            Integer oldScore = oldScoreMap.getOrDefault(section.getId(), 0);
+            resumeSectionService.createWithScore(
                 resumeId,
                 section.getType(),
                 section.getTitle(),
-                section.getContent()
+                section.getContent(),
+                oldScore
             );
         }
 
-        // 3. 删除该简历的所有优化建议（内容已更新，旧建议不再适用）
+        // 4. 删除该简历的所有优化建议（内容已更新，旧建议不再适用）
         resumeSuggestionService.deleteByResumeId(resumeId);
         log.info("已清除简历的优化建议: resumeId={}", resumeId);
 
-        // 4. 评分更新：用户未编辑时跳过AI评分，使用估算分数
+        // 5. 评分更新：用户未编辑时跳过AI评分，使用估算分数
         boolean shouldSkipScoring = Boolean.TRUE.equals(request.getSkipScoring());
         if (shouldSkipScoring && request.getEstimatedOverallScore() != null) {
             log.info("跳过AI评分，使用估算分数: resumeId={}, estimatedScore={}", resumeId, request.getEstimatedOverallScore());
@@ -414,13 +422,13 @@ public class ResumeHandler {
             triggerDiagnosis(resumeId);
         }
 
-        // 5. 重新计算简历完整度
+        // 6. 重新计算简历完整度
         recalculateResumeCompleteness(resumeId);
 
-        // 6. 将简历状态更新为"已优化"（用户已应用优化变更）
+        // 7. 将简历状态更新为"已优化"（用户已应用优化变更）
         resumeService.updateStatus(resumeId, ResumeStatus.OPTIMIZED);
 
-        // 7. 返回更新后的简历详情
+        // 8. 返回更新后的简历详情
         return resumeService.getResumeDetail(resumeId);
     }
 
