@@ -102,12 +102,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores'
+import { usePageGuard } from '@/composables/usePageGuard'
 
 const router = useRouter()
 const store = useAppStore()
+const { registerGuard, unregisterGuard } = usePageGuard()
+
+// 页面打开期间始终阻止关闭，防止用户误操作丢失引导流程
+onMounted(() => registerGuard('onboarding'))
+onUnmounted(() => unregisterGuard('onboarding'))
 
 const isDragOver = ref<boolean>(false)
 const uploading = ref<boolean>(false)
