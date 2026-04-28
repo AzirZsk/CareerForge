@@ -5,7 +5,7 @@ export default defineConfig({
   title: 'CareerForge',
   description: 'AI 驱动的全流程智能求职助手',
 
-  base: '/',
+  base: '/CareerForge/',
   appearance: 'force-dark',
   cleanUrls: false,
 
