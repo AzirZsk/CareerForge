@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitepress'
+import lightbox from 'vitepress-plugin-lightbox'
 
 export default defineConfig({
   lang: 'zh-CN',
@@ -62,6 +63,12 @@ export default defineConfig({
     footer: {
       message: '基于 AGPL-3.0 许可证开源',
       copyright: 'Copyright 2024-present CareerForge'
+    },
+  },
+
+  markdown: {
+    config: (md) => {
+      md.use(lightbox, {})
     },
   },
 

@@ -12,7 +12,7 @@
 - **求助系统**：卡壳了可以随时求助，AI 会给你提示
 - **录音回放**：面试全程自动录音，结束后可以回放复盘
 
-<img :src="'/images/voice-mock-ready.svg'" alt="语音面试准备界面" loading="lazy" />
+![语音面试准备界面](/images/voice-mock-ready.png)
 
 **求助模式：**
 
@@ -26,9 +26,9 @@
 
 每种求助模式都有专属的展示界面，以结构化卡片形式呈现，帮你快速抓住重点。
 
-<img :src="'/images/voice-mock-assist.svg'" alt="求助面板" loading="lazy" />
+![求助面板](/images/voice-mock-assist.png)
 
-<img :src="'/images/voice-mock-active.svg'" alt="语音面试进行中" loading="lazy" />
+![语音面试进行中](/images/voice-mock-active.png)
 
 **录音回放：**
 
@@ -38,7 +38,7 @@
 - 查看文字记录
 - 下载录音文件
 
-<img :src="'/images/voice-recording-playback.svg'" alt="录音回放" loading="lazy" />
+![录音回放](/images/voice-recording-playback.svg)
 
 **使用方式：**
 
@@ -58,19 +58,19 @@
 
 填写面试信息，包括公司名称、目标岗位、面试轮次、日期时间等。
 
-<img :src="'/images/interview-create.svg'" alt="创建面试表单" loading="lazy" />
+![创建面试表单](/images/interview-create.png)
 
 ### 面试列表
 
 按职位分组展示所有面试记录，方便管理和追踪。
 
-<img :src="'/images/interview-center-list.svg'" alt="面试中心列表" loading="lazy" />
+![面试中心列表](/images/interview-center-list.png)
 
 ### 面试详情
 
 查看面试的完整信息，包括公司调研结果、JD 分析、准备事项等。
 
-<img :src="'/images/interview-detail.svg'" alt="面试详情页" loading="lazy" />
+![面试详情页](/images/interview-detail.png)
 
 ### 准备事项管理
 
@@ -84,7 +84,7 @@
 2. 分析 JD 中的核心要求
 3. 生成针对性的准备清单
 
-<img :src="'/images/interview-preparation.svg'" alt="准备事项管理" loading="lazy" />
+![准备事项管理](/images/interview-preparation.png)
 
 ### AI 复盘分析
 
@@ -96,7 +96,7 @@
 
 你也可以手动记录复盘笔记，记录自己的心得和反思。
 
-<img :src="'/images/interview-review.svg'" alt="复盘分析" loading="lazy" />
+![复盘分析](/images/interview-review.svg)
 
 **使用方式：**
 
