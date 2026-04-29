@@ -29,7 +29,7 @@ export default defineConfig({
 
     nav: [
       { text: '首页', link: '/' },
-      { text: '文档', link: '/guide/resume' },
+      { text: '文档', link: '/guide/introduction' },
       { text: 'GitHub', link: 'https://github.com/AzirZsk/CareerForge' },
       { text: '立即试用', link: 'https://careerforge.cc/' },
     ],
