@@ -39,16 +39,28 @@
 
       <!-- 用户区域 -->
       <div class="user-area">
-        <!-- GitHub 仓库入口 -->
-        <a
-          class="icon-btn"
-          href="https://github.com/AzirZsk/CareerForge"
-          target="_blank"
-          rel="noopener noreferrer"
-          title="GitHub"
-        >
-          <font-awesome-icon icon="fa-brands fa-github" />
-        </a>
+        <!-- 外部链接 -->
+        <div class="external-links">
+          <a
+            class="live-btn"
+            href="https://azirzsk.github.io/CareerForge/"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="在线体验"
+          >
+            <font-awesome-icon icon="fa-solid fa-arrow-up-right-from-square" />
+            <span>在线体验</span>
+          </a>
+          <a
+            class="icon-btn"
+            href="https://github.com/AzirZsk/CareerForge"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="GitHub"
+          >
+            <font-awesome-icon icon="fa-brands fa-github" />
+          </a>
+        </div>
 
         <!-- 通知按钮 -->
         <button
@@ -277,6 +289,32 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: $spacing-md;
+}
+
+.external-links {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.live-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: $radius-full;
+  color: $color-text-secondary;
+  font-size: $text-xs;
+  font-weight: $weight-medium;
+  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all $transition-fast;
+  white-space: nowrap;
+  &:hover {
+    color: $color-accent;
+    border-color: rgba($color-accent, 0.3);
+    background: rgba($color-accent, 0.05);
+  }
 }
 
 .icon-btn {

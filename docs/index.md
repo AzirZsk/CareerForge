@@ -10,6 +10,9 @@ hero:
       text: 快速开始
       link: /#quick-start
     - theme: alt
+      text: 立即试用
+      link: https://careerforge.cc/
+    - theme: alt
       text: GitHub
       link: https://github.com/AzirZsk/CareerForge
 
