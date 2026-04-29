@@ -211,6 +211,10 @@ function formatTime(timestamp: number): string {
       background: $color-accent;
     }
 
+    .avatar-initial {
+      color: $color-bg-deep;
+    }
+
     .message-content {
       background: rgba($color-accent, 0.2);
       border: 1px solid rgba($color-accent, 0.3);
