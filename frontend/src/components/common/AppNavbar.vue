@@ -46,10 +46,10 @@
             href="https://azirzsk.github.io/CareerForge/"
             target="_blank"
             rel="noopener noreferrer"
-            title="在线体验"
+            title="文档"
           >
-            <font-awesome-icon icon="fa-solid fa-arrow-up-right-from-square" />
-            <span>在线体验</span>
+            <font-awesome-icon icon="fa-solid fa-book" />
+            <span>文档</span>
           </a>
           <a
             class="icon-btn"
