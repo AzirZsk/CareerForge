@@ -296,3 +296,14 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* 图片介绍文字 */
+.img-caption {
+  margin: 1.5rem 0;
+  text-align: center;
+}
+.img-caption figcaption {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--vp-c-text-3);
+}

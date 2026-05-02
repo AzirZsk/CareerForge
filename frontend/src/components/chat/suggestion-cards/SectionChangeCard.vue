@@ -16,7 +16,7 @@
       @click="isCollapsed = !isCollapsed"
     >
       <div class="header-left">
-        <span class="section-icon">{{ sectionIcon }}</span>
+        <font-awesome-icon class="section-icon" :icon="sectionIcon" />
         <span
           class="change-type-badge"
           :class="change.changeType"

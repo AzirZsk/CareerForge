@@ -19,22 +19,22 @@ hero:
 features:
   - icon: 📄
     title: 智能简历管理
-    details: 上传解析、版本管理、区块式编辑、AI 优化建议、一键 PDF 导出
+    details: 上传 PDF 一键解析，区块式精细编辑，多版本管理与简历派生
+  - icon: ⚡
+    title: 简历优化工作流
+    details: 三阶段全自动优化：快速诊断 → 生成建议 → 内容改写，实时进度，一键应用
   - icon: 💬
     title: AI 对话式优化
-    details: 悬浮球交互、双模式支持、操作卡片式修改建议、批量一键应用
-  - icon: 🎙️
-    title: AI 语音模拟面试
-    details: 实时语音对话、问题预生成、智能追问、求助系统、录音回放
+    details: 悬浮球随时唤起，自然语言描述需求，字段级 Diff 对比，逐条或批量应用
+  - icon: 🎯
+    title: 简历定制
+    details: 输入目标岗位 JD，AI 分析匹配度并生成定制化简历
   - icon: 📋
     title: 面试中心
-    details: 真实面试管理、AI 准备工作流（公司调研 + JD 分析）、AI 复盘分析
-  - icon: 🔄
-    title: 简历优化工作流
-    details: 快速诊断 → 生成建议 → 内容优化，三步完成，实时进度推送
-  - icon: 🎨
-    title: 简历风格改写
-    details: 上传参考简历，AI 分析写作风格并按相同风格改写你的简历
+    details: 从准备到复盘一站式管理，AI 调研公司、分析 JD，面试后深度复盘
+  - icon: 🎙️
+    title: AI 语音模拟面试
+    details: 实时语音对话，智能出题追问，卡壳可求助，全程录音回放
 ---
 <div id="quick-start" class="home-section">
   <div class="home-section-title">
@@ -84,7 +84,6 @@ features:
 
   <div v-if="activeTab === 'claude'" class="tab-content">
     <div class="claude-deploy-card">
-      <div class="claude-deploy-icon">🤖</div>
       <h3>一句话部署</h3>
       <p style="color: #a1a1aa; font-size: 0.95rem; margin: 8px 0 24px;">把部署指令发给你的 AI 工具（Claude Code / OpenClaw 等），让它帮你搞定一切</p>
       <div class="code-block" style="max-width: 640px; margin: 0 auto; text-align: left;">
@@ -185,8 +184,4 @@ function copyCode(event, text) {
   margin: 0 auto;
 }
 
-.claude-deploy-icon {
-  font-size: 2.5rem;
-  margin-bottom: 8px;
-}
 </style>

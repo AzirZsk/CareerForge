@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitepress'
 import lightbox from 'vitepress-plugin-lightbox'
+import imageCaption from './imageCaption'
 
 export default defineConfig({
   lang: 'zh-CN',
@@ -69,6 +70,7 @@ export default defineConfig({
   markdown: {
     config: (md) => {
       md.use(lightbox, {})
+      md.use(imageCaption)
     },
   },
 
